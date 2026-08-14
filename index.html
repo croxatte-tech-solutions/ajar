@@ -3356,24 +3356,43 @@ function generateBatch(){
 }
 
 /* =========================================================
-   PROGRESS TRACKER — a calendar, not a script. Just shows where the
-   class is (week + weekday) and gently suggests an AREA OF STUDY for
-   that week — never a specific theme, never a rigid one-thing-per-day
-   sequence. The teacher navigates freely in both directions; nothing
-   here auto-generates content without her pressing the button.
+   PROGRESS TRACKER — a calendar, not a script. Shows where the class
+   is (week + weekday) and the AREA OF STUDY for that week — never a
+   specific theme, never a rigid one-thing-per-day sequence. The
+   teacher navigates freely in both directions, including back into
+   already-completed weeks (a calendar doesn't go blank for the past);
+   nothing here auto-generates content without her pressing the button.
    CSE classes run Monday–Thursday (per the Student Handbook), so a
-   week is 4 class days. Weeks 1-7 of the class's own 12-week TOEFL
-   plan already happened before this app existed, so tracking starts
-   at week 8. Weeks 8-11 each map to one real TOEFL task type, in the
-   plan's own order; week 12 is the full mock exam plus individual
-   review. Outside week 8-12, there's no suggestion — pick freely.
+   week is 4 class days.
+
+   All 12 weeks are covered, split across the 6 real TOEFL task types
+   in the real exam's own section order — Reading, then Speaking, then
+   Writing (there's no separate "Listening" task type here: Listen and
+   Repeat is itself a Speaking task on the real test). Time is spread
+   as evenly as 6 types fit into 12 weeks: Complete the Words (a single
+   vocabulary-in-context skill) gets 1 week, the other five task types
+   get 2 weeks each -- 1 + 5*2 = 11 content weeks, plus week 12 as the
+   full mock exam and individual review.
+
+   Weeks 1-7 of this 12-week arc already happened before this app
+   existed (per the teacher) -- weeks 1 through 7 land exactly on the
+   boundary between "Build a Sentence" (weeks 6-7) and "Write an
+   Email" (weeks 8-9), leaving weeks 8, 9, 10, 11 as the class's four
+   remaining weeks of new content.
    ========================================================= */
 const WEEKDAY_NAMES = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
 const WEEK_PLAN = {
-  8:  { type:'email',         label:'Write an Email' },
-  9:  { type:'discussion',    label:'Write for an Academic Discussion' },
-  10: { type:'listen-repeat', label:'Listen and Repeat' },
-  11: { type:'interview',     label:'Take an Interview' },
+  1:  { type:'complete-words', label:'Complete the Words' },
+  2:  { type:'listen-repeat',  label:'Listen and Repeat' },
+  3:  { type:'listen-repeat',  label:'Listen and Repeat' },
+  4:  { type:'interview',      label:'Take an Interview' },
+  5:  { type:'interview',      label:'Take an Interview' },
+  6:  { type:'sentence',       label:'Build a Sentence' },
+  7:  { type:'sentence',       label:'Build a Sentence' },
+  8:  { type:'email',          label:'Write an Email' },
+  9:  { type:'email',          label:'Write an Email' },
+  10: { type:'discussion',     label:'Write for an Academic Discussion' },
+  11: { type:'discussion',     label:'Write for an Academic Discussion' },
   12: { simulado:true },
 };
 function loadProgress(){ return JSON.parse(localStorage.getItem('cse_progress') || '{"week":8,"day":1}'); }
