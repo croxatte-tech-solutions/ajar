@@ -3202,7 +3202,7 @@ function paintShareBox(link, statusNote, s){
       <div class="field-row" style="margin-top:.8rem">
         <div class="field">
           <label for="speak-turn">🎤 Who's speaking this round? (Listen &amp; Repeat / Take an Interview — first names, comma-separated, optional)</label>
-          <input type="text" id="speak-turn" placeholder="e.g. Alex, Sam, Robin" value="${s.speakTurnRaw}" onchange="onSpeakTurnChange()">
+          <input type="text" id="speak-turn" placeholder="e.g. Alex, Sam, Robin" value="${escapeHtml(s.speakTurnRaw)}" onchange="onSpeakTurnChange()">
         </div>
         <button class="btn ghost sm" onclick="clearSpeakTurn()">Everyone can speak</button>
       </div>
@@ -3212,7 +3212,7 @@ function paintShareBox(link, statusNote, s){
       <div class="field-row" style="margin-top:.8rem">
         <div class="field">
           <label for="teacher-email">📧 App feedback goes to (optional — developer's email, or yours)</label>
-          <input type="email" id="teacher-email" placeholder="dev@example.com" value="${s.teacherEmailRaw}" onchange="onTeacherEmailChange()">
+          <input type="email" id="teacher-email" placeholder="dev@example.com" value="${escapeHtml(s.teacherEmailRaw)}" onchange="onTeacherEmailChange()">
         </div>
         <button class="btn ghost sm" onclick="clearTeacherEmail()">Remove</button>
       </div>
@@ -3921,7 +3921,7 @@ function renderPractice(){
     const turnBanner = (classroom && turnList)
       ? (myTurn
           ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
-          : `<p class="small-note">⏳ This round: ${turnList.join(', ')}. Not your name? No mic needed — just type your answer below.</p>`)
+          : `<p class="small-note">⏳ This round: ${escapeHtml(turnList.join(', '))}. Not your name? No mic needed — just type your answer below.</p>`)
       : '';
     wrap.innerHTML = `
       <div class="compose">
@@ -4006,7 +4006,7 @@ function renderListenRepeatStep(item){
   const turnBanner = (classroom && turnList)
     ? (myTurn
         ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
-        : `<p class="small-note">⏳ This round: ${turnList.join(', ')}. Not your name? Follow along quietly — your teacher will call on you soon.</p>`)
+        : `<p class="small-note">⏳ This round: ${escapeHtml(turnList.join(', '))}. Not your name? Follow along quietly — your teacher will call on you soon.</p>`)
     : '';
   const listenControls = !myTurn ? '' : (classroom
     ? `<button class="btn ok" onclick="lrHeardItLive()">✅ I heard it — start recording</button>
