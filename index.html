@@ -3518,12 +3518,26 @@ function renderShareBox(){
   const approved = loadBatch().filter(i=>i.status==='approved');
   const individual = individualForShare();
   const individualCount = Object.keys(individual).length;
-  if(approved.length===0 && individualCount===0){ box.innerHTML=''; return; }
-
   const speakTurnRaw = localStorage.getItem('cse_teacher_speak_turn_raw') || '';
   const speakTurn = parseSpeakTurn(speakTurnRaw);
   const teacherEmailRaw = (localStorage.getItem('cse_teacher_email_raw') || '').trim();
   const announcementRaw = (localStorage.getItem('cse_teacher_announcement_raw') || '').trim();
+
+  if(approved.length===0 && individualCount===0){
+    // Nothing is approved right now — actively clear the shared Firestore
+    // doc too (keeping email/announcement/speaking-turn settings intact).
+    // Generating a fresh batch replaces the LOCAL one, but used to leave
+    // the previously-approved batch sitting untouched in Firestore, so a
+    // student scanning the QR right after a re-generate would silently
+    // get served yesterday's (or five-minutes-ago's) exercise instead of
+    // whatever the teacher is currently looking at. This closes that gap.
+    if(window.CloudSync){
+      window.CloudSync.pushClassroomBatch({ items: [], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null }).catch(()=>{});
+    }
+    box.innerHTML = `<div class="panel"><p class="small-note">📤 Nothing approved yet — once you approve at least one item above, the link/QR here goes live automatically. Until then, students who scan it won't see anything new.</p></div>`;
+    return;
+  }
+
   const payload = { items: approved, individual, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null };
 
   if(window.CloudSync){
@@ -4095,6 +4109,14 @@ function renderStudent(){
   list.innerHTML='';
   if(batch.length===0){ empty.style.display='block'; document.getElementById('practice-wrap').innerHTML=''; return; }
   empty.style.display='none';
+  // With exactly one whole-class exercise approved (the common one-a-day
+  // case), skip the extra "pick from a list of 1" tap and land the student
+  // straight on the practice page — that's what scanning a QR should feel
+  // like. With 2+ approved items there's a real choice to show instead.
+  if(batch.length===1 && !batch.some(i=>i.id===selectedId)){
+    selectedId = batch[0].id;
+    practiceOverride = null;
+  }
   batch.forEach(item=>{
     const preview = item.type==='email' ? item.data.prompt.split('\n')[0]
       : item.type==='discussion' ? item.data.professor
@@ -4763,7 +4785,7 @@ function guideContent(role){
     <ul>
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
       <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
-      <li><b>Write an Email</b> — respond to a real-life scenario, 100–150 words.</li>
+      <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
       <li><b>Academic Discussion</b> — join a discussion thread, 120–130 words.</li>
       <li><b>Listen and Repeat</b> — hear a sentence once, repeat it back.</li>
       <li><b>Take an Interview</b> — answer a spontaneous spoken question.</li>
