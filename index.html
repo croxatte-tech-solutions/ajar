@@ -37,6 +37,11 @@
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
 }
 *{ box-sizing:border-box; }
+/* Every font-size in this file is in rem, so this one number scales the
+   whole app at once — bumped up for legibility on a phone in someone's
+   hand and on a TV across the room. Adjust here only if it's still too
+   small once tested on the actual classroom TV. */
+html{ font-size:112.5%; }
 body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; -webkit-font-smoothing:antialiased; }
 .app{ max-width:960px; margin:0 auto; padding:1.25rem 1rem 4rem; }
 
@@ -3287,21 +3292,64 @@ function generateBatch(){
 /* =========================================================
    PROGRESS TRACKER — "the app remembers where we stopped".
    CSE classes run Monday–Thursday (per the Student Handbook),
-   so a week is 4 class days. This is just a counter the
-   teacher advances by hand — it doesn't know what actually
-   happened in class, it only remembers what day you told it
-   you're on.
+   so a week is 4 class days. Weeks 1-7 of the class's own
+   12-week TOEFL plan already happened before this app existed,
+   so tracking starts at week 8 (the teacher's real starting
+   point) instead of week 1. Weeks 8-11 each map to one real
+   TOEFL task type, in the plan's own order; week 12 is the
+   full mock exam plus individual review. Outside week 8-12,
+   there's no suggestion — pick freely, same as before.
+   The teacher can still click through by hand; this never
+   auto-generates anything without her pressing the button.
    ========================================================= */
-function loadProgress(){ return JSON.parse(localStorage.getItem('cse_progress') || '{"week":1,"day":1}'); }
+const WEEKDAY_NAMES = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+const WEEK_PLAN = {
+  8:  { type:'email',         label:'Write an Email',                   themes:['campus','register','daily','career'] },
+  9:  { type:'discussion',    label:'Write for an Academic Discussion', themes:['social','current','grammar','environment'] },
+  10: { type:'listen-repeat', label:'Listen and Repeat',                themes:['campus','health','daily','career'] },
+  11: { type:'interview',     label:'Take an Interview',                themes:['career','social','health','current'] },
+  12: { simulado:true },
+};
+function loadProgress(){ return JSON.parse(localStorage.getItem('cse_progress') || '{"week":8,"day":1}'); }
 function saveProgress(p){ localStorage.setItem('cse_progress', JSON.stringify(p)); }
+function todaysPlan(){
+  const p = loadProgress();
+  const wk = WEEK_PLAN[p.week];
+  if(!wk) return null;
+  if(wk.simulado) return { simulado:true, day:p.day };
+  return { type:wk.type, label:wk.label, theme: wk.themes[(p.day - 1) % wk.themes.length] };
+}
+function useTodaysTopic(){
+  const plan = todaysPlan();
+  if(!plan || plan.simulado) return;
+  activeType = plan.type;
+  renderTypeTabs();
+  const themeSel = document.getElementById('topic');
+  if(themeSel) themeSel.value = plan.theme;
+}
 function renderProgressBox(){
   const el = document.getElementById('progress-box');
   if(!el) return;
   const p = loadProgress();
+  const dayName = WEEKDAY_NAMES[p.day] || ('Day ' + p.day);
+  const plan = todaysPlan();
+  let planNote;
+  if(!plan){
+    planNote = `Outside the 12-week plan — pick any task type and theme freely.`;
+  } else if(plan.simulado){
+    planNote = plan.day === 1
+      ? `Full mock exam day — sample all 6 task types for a diagnostic read.`
+      : `Individual review day — use "🎯 Assign to one student" + "📈 Check patterns first" to target each student's weak spot.`;
+  } else {
+    planNote = `Suggested: <b>${plan.label}</b> · ${THEME_LABELS[plan.theme]}`;
+  }
   el.innerHTML = `
     <div class="panel" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
-      <div><b>Week ${p.week} · Day ${p.day} of 4</b><span class="small-note" style="margin:0 0 0 .6rem">picks up where you left off, even after closing this tab</span></div>
-      <button class="btn ghost sm" onclick="advanceDay()">Next class day →</button>
+      <div><b>Week ${p.week} · ${dayName} (Day ${p.day} of 4)</b><span class="small-note" style="margin:0 0 0 .6rem">${planNote}</span></div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        ${plan && !plan.simulado ? `<button class="btn ghost sm" onclick="useTodaysTopic()">Use today's topic</button>` : ''}
+        <button class="btn ghost sm" onclick="advanceDay()">Next class day →</button>
+      </div>
     </div>`;
 }
 function advanceDay(){
