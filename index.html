@@ -1,0 +1,4541 @@
+<title>Real Life English by Croxatte Tech Solutions</title>
+<style>
+:root{
+  --bg: #f6f9f8; --surface: #ffffff; --surface-alt: #edf4f2; --border: #d7e0dc;
+  --text: #16211e; --text-dim: #5c6863; --accent: #0f6e56; --accent-soft: #e1f5ee;
+  --amber: #b5720f; --amber-soft: #f6ecd8; --red: #9c3b2e; --red-soft: #f5e6e1;
+  --green: #3c6e4a; --green-soft: #e6efe6; --purple: #6b4fa0; --purple-soft: #ece5f5;
+  --shadow: 0 1px 2px rgba(15,30,25,.06), 0 4px 16px rgba(15,30,25,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1614; --surface:#16211e; --surface-alt:#1c2925; --border:#2c3a35;
+    --text:#e3ede9; --text-dim:#93a39c; --accent:#5dcaa5; --accent-soft:#123128;
+    --amber:#d9a44e; --amber-soft:#3a2f18; --red:#d98d7d; --red-soft:#3a2420;
+    --green:#8fc09d; --green-soft:#1f3226; --purple:#b9a3dd; --purple-soft:#2c2440;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1614; --surface:#16211e; --surface-alt:#1c2925; --border:#2c3a35;
+  --text:#e3ede9; --text-dim:#93a39c; --accent:#5dcaa5; --accent-soft:#123128;
+  --amber:#d9a44e; --amber-soft:#3a2f18; --red:#d98d7d; --red-soft:#3a2420;
+  --green:#8fc09d; --green-soft:#1f3226; --purple:#b9a3dd; --purple-soft:#2c2440;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.3);
+}
+*{ box-sizing:border-box; }
+body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; -webkit-font-smoothing:antialiased; }
+.app{ max-width:960px; margin:0 auto; padding:1.25rem 1rem 4rem; }
+
+.masthead{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+.brand{ display:flex; align-items:center; gap:.6rem; }
+.brand-mark{ width:34px; height:34px; border-radius:9px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:1rem; font-family:Georgia,serif; flex-shrink:0; }
+.brand-text h1{ font-size:1.05rem; margin:0; font-weight:700; letter-spacing:-.01em; }
+.brand-text span{ font-size:.72rem; color:var(--text-dim); }
+.switcher{ display:flex; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:3px; gap:2px; }
+.switcher button{ border:none; background:transparent; padding:.5rem 1rem; border-radius:99px; font-size:.82rem; font-weight:600; color:var(--text-dim); cursor:pointer; }
+.switcher button.active{ background:var(--accent); color:#fff; }
+.switcher button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+.padrao-c{ display:flex; align-items:center; gap:.5rem; background:var(--accent-soft); color:var(--accent); border-radius:8px; padding:.55rem .8rem; font-size:.78rem; font-weight:600; margin-bottom:1.1rem; }
+.padrao-c svg{ flex-shrink:0; }
+
+.tech-note{ background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:.75rem .9rem; font-size:.76rem; color:var(--text-dim); margin-bottom:1.25rem; line-height:1.5; }
+.tech-note b{ color:var(--text); }
+
+.view{ display:none; }
+.view.active{ display:block; animation:fade .25s ease; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+@media (prefers-reduced-motion:reduce){ .view.active{ animation:none; } }
+
+.panel{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.1rem; box-shadow:var(--shadow); margin-bottom:1.25rem; }
+.panel h2{ font-size:.95rem; margin:0 0 .8rem; font-weight:700; }
+.field-row{ display:flex; gap:.6rem; flex-wrap:wrap; align-items:flex-end; }
+.field{ flex:1; min-width:170px; }
+.field label{ display:block; font-size:.7rem; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.35rem; }
+select,textarea,input[type=text]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
+select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+.btn{ border:none; border-radius:9px; padding:.65rem 1.1rem; font-size:.85rem; font-weight:700; cursor:pointer; background:var(--accent); color:#fff; display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }
+.btn:hover{ filter:brightness(1.1); }
+.btn:active{ transform:scale(.98); }
+.btn:disabled{ opacity:.45; cursor:default; }
+.btn.ghost{ background:var(--surface-alt); color:var(--text); border:1px solid var(--border); }
+.btn.danger{ background:var(--red-soft); color:var(--red); }
+.btn.ok{ background:var(--green-soft); color:var(--green); }
+.btn.sound{ background:var(--purple-soft); color:var(--purple); }
+.btn.sm{ padding:.4rem .7rem; font-size:.76rem; }
+
+.type-tabs{ display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:.9rem; }
+.type-tabs button{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); border-radius:8px; padding:.4rem .7rem; font-size:.74rem; font-weight:600; cursor:pointer; }
+.type-tabs button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+
+.batch-grid{ display:grid; gap:.8rem; }
+.ex-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; box-shadow:var(--shadow); }
+.ex-card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:.6rem; margin-bottom:.6rem; }
+.ex-tag{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); }
+.ex-status{ font-size:.68rem; font-weight:700; padding:.15rem .55rem; border-radius:99px; white-space:nowrap; }
+.ex-status.pending{ background:var(--amber-soft); color:var(--amber); }
+.ex-status.approved{ background:var(--green-soft); color:var(--green); }
+.ex-status.discarded{ background:var(--red-soft); color:var(--red); text-decoration:line-through; }
+.ex-body{ font-size:.9rem; line-height:1.55; white-space:pre-wrap; }
+.ex-body b{ font-weight:700; }
+.cw-passage{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.88rem; line-height:2; letter-spacing:.02em; }
+.cw-passage .blank{ font-weight:700; color:var(--accent); }
+.ex-actions{ display:flex; gap:.5rem; margin-top:.8rem; flex-wrap:wrap; }
+.ex-card.discarded .ex-body{ opacity:.45; }
+.chip-row{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
+.chip{ background:var(--surface-alt); border:1px solid var(--border); border-radius:6px; padding:.25rem .55rem; font-size:.8rem; }
+.scene-thumb{ border-radius:8px; border:1px solid var(--border); overflow:hidden; width:100%; max-width:220px; margin-top:.5rem; background:var(--surface-alt); }
+
+.empty{ text-align:center; padding:2.5rem 1rem; color:var(--text-dim); font-size:.88rem; }
+.empty svg{ opacity:.5; margin-bottom:.6rem; }
+
+.scenario-list{ display:grid; gap:.6rem; margin-bottom:1.25rem; }
+.scenario-pick{ text-align:left; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:.85rem 1rem; cursor:pointer; font:inherit; color:var(--text); box-shadow:var(--shadow); }
+.scenario-pick:hover{ border-color:var(--accent); }
+.scenario-pick.selected{ border-color:var(--accent); background:var(--accent-soft); }
+.scenario-pick .tag{ font-size:.68rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:.25rem; }
+.scenario-pick .txt{ font-size:.85rem; }
+
+.compose{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.1rem; box-shadow:var(--shadow); }
+.wordcount{ font-size:.76rem; color:var(--text-dim); margin-top:.4rem; font-variant-numeric:tabular-nums; }
+.feedback{ margin-top:1rem; border-radius:10px; padding:.9rem 1rem; background:var(--amber-soft); border:1px solid var(--border); }
+.feedback-label{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--amber); display:block; margin-bottom:.4rem; }
+.feedback ul{ margin:.4rem 0 0; padding-left:1.1rem; font-size:.84rem; }
+.feedback li{ margin-bottom:.3rem; }
+.small-note{ font-size:.74rem; color:var(--text-dim); margin-top:.5rem; }
+
+.word-bank{ display:flex; flex-wrap:wrap; gap:.5rem; margin:.7rem 0; min-height:2.4rem; }
+.word-chip{ background:var(--accent-soft); color:var(--accent); border:1px solid var(--border); border-radius:8px; padding:.4rem .75rem; font-size:.88rem; font-weight:600; cursor:pointer; }
+.word-chip:disabled{ opacity:.3; cursor:default; }
+.assembled{ min-height:3rem; border:2px dashed var(--border); border-radius:10px; padding:.6rem; display:flex; flex-wrap:wrap; gap:.4rem; align-items:center; margin-bottom:.6rem; }
+.assembled .word-chip{ background:var(--surface); }
+.blank-underline{ display:inline-block; min-width:2.4em; border-bottom:2px solid var(--accent); text-align:center; }
+.result-msg{ font-size:.85rem; font-weight:700; margin-top:.6rem; }
+.result-msg.ok{ color:var(--green); }
+.result-msg.no{ color:var(--red); }
+
+.timer-badge{ display:inline-flex; align-items:center; gap:.35rem; background:var(--accent-soft); color:var(--accent); border-radius:99px; padding:.3rem .75rem; font-size:.85rem; font-weight:700; font-variant-numeric:tabular-nums; margin-bottom:.7rem; }
+.timer-badge.warn{ background:var(--red-soft); color:var(--red); }
+.timer-note{ font-size:.68rem; color:var(--text-dim); margin:-.5rem 0 .7rem; }
+
+.guide-btn{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); border-radius:99px; padding:.45rem .8rem; font-size:.78rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; }
+.guide-btn:hover{ border-color:var(--accent); color:var(--accent); }
+.guide-overlay{ position:fixed; inset:0; background:rgba(20,17,10,.5); display:flex; align-items:center; justify-content:center; padding:1rem; z-index:50; }
+.guide-modal{ background:var(--surface); border:1px solid var(--border); border-radius:16px; max-width:560px; width:100%; max-height:85vh; overflow-y:auto; padding:1.5rem; box-shadow:var(--shadow); }
+.guide-modal h2{ margin:0 0 .3rem; font-size:1.15rem; }
+.guide-modal .sub{ color:var(--text-dim); font-size:.82rem; margin-bottom:1.1rem; }
+.guide-modal h3{ font-size:.88rem; margin:1.1rem 0 .4rem; color:var(--accent); }
+.guide-modal p, .guide-modal li{ font-size:.87rem; line-height:1.55; }
+.guide-modal ol, .guide-modal ul{ margin:.3rem 0; padding-left:1.2rem; }
+.guide-modal .rule{ background:var(--accent-soft); color:var(--accent); border-radius:10px; padding:.8rem 1rem; font-size:.85rem; font-weight:600; margin:.8rem 0; }
+.guide-close{ display:flex; justify-content:flex-end; margin-top:1.2rem; }
+</style>
+
+<div class="app">
+  <div class="masthead">
+    <div class="brand">
+      <div class="brand-mark">RL</div>
+      <div class="brand-text">
+        <h1>Real Life English <span style="font-weight:400;color:var(--text-dim)">by Croxatte Tech Solutions</span></h1>
+        <span>Prototype for a language school &middot; fictional data &middot; not connected to the school's own system</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.6rem">
+      <button class="guide-btn" onclick="showGuide(currentView)">❓ How this works</button>
+      <button class="guide-btn" onclick="showInsights()">📈 My patterns</button>
+      <button class="guide-btn" onclick="showFeedback()">💬 Feedback</button>
+      <div class="switcher">
+        <button id="btn-teacher" class="active" onclick="setView('teacher')">👩‍🏫 Teacher</button>
+        <button id="btn-student" onclick="setView('student')">🎓 Student</button>
+      </div>
+      <span id="who-am-i" style="font-size:.78rem;color:var(--text-dim);font-weight:600"></span>
+    </div>
+  </div>
+
+  <div id="guide-overlay" class="guide-overlay" style="display:none" onclick="if(event.target===this) closeGuide()">
+    <div class="guide-modal" id="guide-modal"></div>
+  </div>
+
+  <div class="padrao-c">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <span>Batch review: nothing reaches a student until the teacher approves that week's set.</span>
+  </div>
+
+  <div class="tech-note">
+    <b>How generation works in this prototype:</b> text is produced by a local template engine (no external API — works offline, free, instant). Audio uses your browser's built-in Text-to-Speech and Speech-to-Text (also free, no server). Images are original hand-authored scenes rendered as SVG (no external image service). Every module here is written behind a swappable interface, so upgrading to a locally-hosted generative model later (text, voice, or image) changes the engine, not the app around it.
+  </div>
+
+  <!-- TEACHER VIEW -->
+  <div id="view-teacher" class="view active">
+    <div id="progress-box"></div>
+
+    <div class="panel">
+      <h2>Generate today's batch</h2>
+      <p class="small-note" style="margin-top:0">Generate and share a fresh set every class day — the weekly theme keeps you on the 12-week plan, but each day gets its own link and QR code.</p>
+      <div class="type-tabs" id="type-tabs"></div>
+      <div class="field-row">
+        <div class="field">
+          <label for="topic">Theme</label>
+          <select id="topic">
+            <option value="campus">Campus &amp; F1 Student Life</option>
+            <option value="register">Communication &amp; Relationships</option>
+            <option value="current">Technology &amp; Modern Life</option>
+            <option value="grammar">Education &amp; Learning Methods</option>
+            <option value="social">Social Issues &amp; Globalization</option>
+            <option value="career">Work &amp; Career</option>
+            <option value="health">Health &amp; Wellbeing</option>
+            <option value="environment">Environment &amp; Sustainability</option>
+            <option value="daily">Daily Life &amp; Practical Logistics</option>
+          </select>
+        </div>
+        <button class="btn ghost" onclick="randomizeTheme()" title="Pick a random theme from all 9">🎲 Random</button>
+        <button class="btn" onclick="generateBatch()">✨ Generate for the whole class</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🎯 Assign to one student (optional)</h2>
+      <p class="small-note" style="margin-top:0">Pick a task type and theme just for this student — independent of what's selected above, so you're free to give someone a different focus than the rest of the class right now. Uses only the first name you type here; nothing is stored beyond this session.</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="indiv-name">Student's first name</label>
+          <input type="text" id="indiv-name" placeholder="e.g. Alex">
+        </div>
+        <button class="btn ghost sm" onclick="peekIndividualInsights()" title="See this student's practice patterns before deciding">📈 Check patterns first</button>
+      </div>
+      <div class="field-row" style="margin-top:.6rem">
+        <div class="field">
+          <label for="indiv-type">Task type</label>
+          <select id="indiv-type"></select>
+        </div>
+        <div class="field">
+          <label for="indiv-theme">Theme</label>
+          <select id="indiv-theme"></select>
+        </div>
+        <button class="btn" onclick="generateForIndividual()">Generate for this student</button>
+      </div>
+      <div id="individual-list"></div>
+    </div>
+
+    <div id="share-box"></div>
+    <div id="batch" class="batch-grid"></div>
+    <div id="teacher-empty" class="empty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 19V6a2 2 0 012-2h9l5 5v10a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5"/><path d="M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div>Pick a task type and theme, then generate a batch to begin.</div>
+    </div>
+  </div>
+
+  <!-- STUDENT VIEW -->
+  <div id="view-student" class="view">
+    <div id="announcement-banner"></div>
+    <div id="welcome-back"></div>
+    <div id="feedback-nudge"></div>
+    <div id="student-empty" class="empty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 3v4M12 3l3 2M12 3L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="14" r="7" stroke="currentColor" stroke-width="1.5"/></svg>
+      <div>No exercises approved yet. Check back after your teacher reviews this week's batch.</div>
+    </div>
+    <div id="scenario-list" class="scenario-list"></div>
+    <div id="practice-wrap"></div>
+  </div>
+</div>
+
+<script>
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+var qrcode = function() {
+
+  //---------------------------------------------------------------------
+  // qrcode
+  //---------------------------------------------------------------------
+
+  /**
+   * qrcode
+   * @param typeNumber 1 to 40
+   * @param errorCorrectionLevel 'L','M','Q','H'
+   */
+  var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+    var PAD0 = 0xEC;
+    var PAD1 = 0x11;
+
+    var _typeNumber = typeNumber;
+    var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+    var _modules = null;
+    var _moduleCount = 0;
+    var _dataCache = null;
+    var _dataList = [];
+
+    var _this = {};
+
+    var makeImpl = function(test, maskPattern) {
+
+      _moduleCount = _typeNumber * 4 + 17;
+      _modules = function(moduleCount) {
+        var modules = new Array(moduleCount);
+        for (var row = 0; row < moduleCount; row += 1) {
+          modules[row] = new Array(moduleCount);
+          for (var col = 0; col < moduleCount; col += 1) {
+            modules[row][col] = null;
+          }
+        }
+        return modules;
+      }(_moduleCount);
+
+      setupPositionProbePattern(0, 0);
+      setupPositionProbePattern(_moduleCount - 7, 0);
+      setupPositionProbePattern(0, _moduleCount - 7);
+      setupPositionAdjustPattern();
+      setupTimingPattern();
+      setupTypeInfo(test, maskPattern);
+
+      if (_typeNumber >= 7) {
+        setupTypeNumber(test);
+      }
+
+      if (_dataCache == null) {
+        _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+      }
+
+      mapData(_dataCache, maskPattern);
+    };
+
+    var setupPositionProbePattern = function(row, col) {
+
+      for (var r = -1; r <= 7; r += 1) {
+
+        if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+        for (var c = -1; c <= 7; c += 1) {
+
+          if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+          if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+              || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+              || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+            _modules[row + r][col + c] = true;
+          } else {
+            _modules[row + r][col + c] = false;
+          }
+        }
+      }
+    };
+
+    var getBestMaskPattern = function() {
+
+      var minLostPoint = 0;
+      var pattern = 0;
+
+      for (var i = 0; i < 8; i += 1) {
+
+        makeImpl(true, i);
+
+        var lostPoint = QRUtil.getLostPoint(_this);
+
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          pattern = i;
+        }
+      }
+
+      return pattern;
+    };
+
+    var setupTimingPattern = function() {
+
+      for (var r = 8; r < _moduleCount - 8; r += 1) {
+        if (_modules[r][6] != null) {
+          continue;
+        }
+        _modules[r][6] = (r % 2 == 0);
+      }
+
+      for (var c = 8; c < _moduleCount - 8; c += 1) {
+        if (_modules[6][c] != null) {
+          continue;
+        }
+        _modules[6][c] = (c % 2 == 0);
+      }
+    };
+
+    var setupPositionAdjustPattern = function() {
+
+      var pos = QRUtil.getPatternPosition(_typeNumber);
+
+      for (var i = 0; i < pos.length; i += 1) {
+
+        for (var j = 0; j < pos.length; j += 1) {
+
+          var row = pos[i];
+          var col = pos[j];
+
+          if (_modules[row][col] != null) {
+            continue;
+          }
+
+          for (var r = -2; r <= 2; r += 1) {
+
+            for (var c = -2; c <= 2; c += 1) {
+
+              if (r == -2 || r == 2 || c == -2 || c == 2
+                  || (r == 0 && c == 0) ) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    var setupTypeNumber = function(test) {
+
+      var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+      }
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+      }
+    };
+
+    var setupTypeInfo = function(test, maskPattern) {
+
+      var data = (_errorCorrectionLevel << 3) | maskPattern;
+      var bits = QRUtil.getBCHTypeInfo(data);
+
+      // vertical
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 6) {
+          _modules[i][8] = mod;
+        } else if (i < 8) {
+          _modules[i + 1][8] = mod;
+        } else {
+          _modules[_moduleCount - 15 + i][8] = mod;
+        }
+      }
+
+      // horizontal
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 8) {
+          _modules[8][_moduleCount - i - 1] = mod;
+        } else if (i < 9) {
+          _modules[8][15 - i - 1 + 1] = mod;
+        } else {
+          _modules[8][15 - i - 1] = mod;
+        }
+      }
+
+      // fixed module
+      _modules[_moduleCount - 8][8] = (!test);
+    };
+
+    var mapData = function(data, maskPattern) {
+
+      var inc = -1;
+      var row = _moduleCount - 1;
+      var bitIndex = 7;
+      var byteIndex = 0;
+      var maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+      for (var col = _moduleCount - 1; col > 0; col -= 2) {
+
+        if (col == 6) col -= 1;
+
+        while (true) {
+
+          for (var c = 0; c < 2; c += 1) {
+
+            if (_modules[row][col - c] == null) {
+
+              var dark = false;
+
+              if (byteIndex < data.length) {
+                dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+              }
+
+              var mask = maskFunc(row, col - c);
+
+              if (mask) {
+                dark = !dark;
+              }
+
+              _modules[row][col - c] = dark;
+              bitIndex -= 1;
+
+              if (bitIndex == -1) {
+                byteIndex += 1;
+                bitIndex = 7;
+              }
+            }
+          }
+
+          row += inc;
+
+          if (row < 0 || _moduleCount <= row) {
+            row -= inc;
+            inc = -inc;
+            break;
+          }
+        }
+      }
+    };
+
+    var createBytes = function(buffer, rsBlocks) {
+
+      var offset = 0;
+
+      var maxDcCount = 0;
+      var maxEcCount = 0;
+
+      var dcdata = new Array(rsBlocks.length);
+      var ecdata = new Array(rsBlocks.length);
+
+      for (var r = 0; r < rsBlocks.length; r += 1) {
+
+        var dcCount = rsBlocks[r].dataCount;
+        var ecCount = rsBlocks[r].totalCount - dcCount;
+
+        maxDcCount = Math.max(maxDcCount, dcCount);
+        maxEcCount = Math.max(maxEcCount, ecCount);
+
+        dcdata[r] = new Array(dcCount);
+
+        for (var i = 0; i < dcdata[r].length; i += 1) {
+          dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+        }
+        offset += dcCount;
+
+        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+        var modPoly = rawPoly.mod(rsPoly);
+        ecdata[r] = new Array(rsPoly.getLength() - 1);
+        for (var i = 0; i < ecdata[r].length; i += 1) {
+          var modIndex = i + modPoly.getLength() - ecdata[r].length;
+          ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+        }
+      }
+
+      var totalCodeCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalCodeCount += rsBlocks[i].totalCount;
+      }
+
+      var data = new Array(totalCodeCount);
+      var index = 0;
+
+      for (var i = 0; i < maxDcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < dcdata[r].length) {
+            data[index] = dcdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < maxEcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < ecdata[r].length) {
+            data[index] = ecdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      return data;
+    };
+
+    var createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+      var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+      var buffer = qrBitBuffer();
+
+      for (var i = 0; i < dataList.length; i += 1) {
+        var data = dataList[i];
+        buffer.put(data.getMode(), 4);
+        buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+        data.write(buffer);
+      }
+
+      // calc num max data.
+      var totalDataCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalDataCount += rsBlocks[i].dataCount;
+      }
+
+      if (buffer.getLengthInBits() > totalDataCount * 8) {
+        throw 'code length overflow. ('
+          + buffer.getLengthInBits()
+          + '>'
+          + totalDataCount * 8
+          + ')';
+      }
+
+      // end code
+      if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+        buffer.put(0, 4);
+      }
+
+      // padding
+      while (buffer.getLengthInBits() % 8 != 0) {
+        buffer.putBit(false);
+      }
+
+      // padding
+      while (true) {
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD0, 8);
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD1, 8);
+      }
+
+      return createBytes(buffer, rsBlocks);
+    };
+
+    _this.addData = function(data, mode) {
+
+      mode = mode || 'Byte';
+
+      var newData = null;
+
+      switch(mode) {
+      case 'Numeric' :
+        newData = qrNumber(data);
+        break;
+      case 'Alphanumeric' :
+        newData = qrAlphaNum(data);
+        break;
+      case 'Byte' :
+        newData = qr8BitByte(data);
+        break;
+      case 'Kanji' :
+        newData = qrKanji(data);
+        break;
+      default :
+        throw 'mode:' + mode;
+      }
+
+      _dataList.push(newData);
+      _dataCache = null;
+    };
+
+    _this.isDark = function(row, col) {
+      if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+        throw row + ',' + col;
+      }
+      return _modules[row][col];
+    };
+
+    _this.getModuleCount = function() {
+      return _moduleCount;
+    };
+
+    _this.make = function() {
+      if (_typeNumber < 1) {
+        var typeNumber = 1;
+
+        for (; typeNumber < 40; typeNumber++) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+          var buffer = qrBitBuffer();
+
+          for (var i = 0; i < _dataList.length; i++) {
+            var data = _dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+            data.write(buffer);
+          }
+
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i++) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+
+          if (buffer.getLengthInBits() <= totalDataCount * 8) {
+            break;
+          }
+        }
+
+        _typeNumber = typeNumber;
+      }
+
+      makeImpl(false, getBestMaskPattern() );
+    };
+
+    _this.createTableTag = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var qrHtml = '';
+
+      qrHtml += '<table style="';
+      qrHtml += ' border-width: 0px; border-style: none;';
+      qrHtml += ' border-collapse: collapse;';
+      qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+      qrHtml += '">';
+      qrHtml += '<tbody>';
+
+      for (var r = 0; r < _this.getModuleCount(); r += 1) {
+
+        qrHtml += '<tr>';
+
+        for (var c = 0; c < _this.getModuleCount(); c += 1) {
+          qrHtml += '<td style="';
+          qrHtml += ' border-width: 0px; border-style: none;';
+          qrHtml += ' border-collapse: collapse;';
+          qrHtml += ' padding: 0px; margin: 0px;';
+          qrHtml += ' width: ' + cellSize + 'px;';
+          qrHtml += ' height: ' + cellSize + 'px;';
+          qrHtml += ' background-color: ';
+          qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+          qrHtml += ';';
+          qrHtml += '"/>';
+        }
+
+        qrHtml += '</tr>';
+      }
+
+      qrHtml += '</tbody>';
+      qrHtml += '</table>';
+
+      return qrHtml;
+    };
+
+    _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+      var opts = {};
+      if (typeof arguments[0] == 'object') {
+        // Called by options.
+        opts = arguments[0];
+        // overwrite cellSize and margin.
+        cellSize = opts.cellSize;
+        margin = opts.margin;
+        alt = opts.alt;
+        title = opts.title;
+      }
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      // Compose alt property surrogate
+      alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+      alt.text = alt.text || null;
+      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+      // Compose title property surrogate
+      title = (typeof title === 'string') ? {text: title} : title || {};
+      title.text = title.text || null;
+      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var c, mc, r, mr, qrSvg='', rect;
+
+      rect = 'l' + cellSize + ',0 0,' + cellSize +
+        ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+      qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+      qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+      qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+      qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+      qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+      qrSvg += '>';
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+          escapeXml(title.text) + '</title>' : '';
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+          escapeXml(alt.text) + '</description>' : '';
+      qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+      qrSvg += '<path d="';
+
+      for (r = 0; r < _this.getModuleCount(); r += 1) {
+        mr = r * cellSize + margin;
+        for (c = 0; c < _this.getModuleCount(); c += 1) {
+          if (_this.isDark(r, c) ) {
+            mc = c*cellSize+margin;
+            qrSvg += 'M' + mc + ',' + mr + rect;
+          }
+        }
+      }
+
+      qrSvg += '" stroke="transparent" fill="black"/>';
+      qrSvg += '</svg>';
+
+      return qrSvg;
+    };
+
+    _this.createDataURL = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      return createDataURL(size, size, function(x, y) {
+        if (min <= x && x < max && min <= y && y < max) {
+          var c = Math.floor( (x - min) / cellSize);
+          var r = Math.floor( (y - min) / cellSize);
+          return _this.isDark(r, c)? 0 : 1;
+        } else {
+          return 1;
+        }
+      } );
+    };
+
+    _this.createImgTag = function(cellSize, margin, alt) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+
+      var img = '';
+      img += '<img';
+      img += '\u0020src="';
+      img += _this.createDataURL(cellSize, margin);
+      img += '"';
+      img += '\u0020width="';
+      img += size;
+      img += '"';
+      img += '\u0020height="';
+      img += size;
+      img += '"';
+      if (alt) {
+        img += '\u0020alt="';
+        img += escapeXml(alt);
+        img += '"';
+      }
+      img += '/>';
+
+      return img;
+    };
+
+    var escapeXml = function(s) {
+      var escaped = '';
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charAt(i);
+        switch(c) {
+        case '<': escaped += '&lt;'; break;
+        case '>': escaped += '&gt;'; break;
+        case '&': escaped += '&amp;'; break;
+        case '"': escaped += '&quot;'; break;
+        default : escaped += c; break;
+        }
+      }
+      return escaped;
+    };
+
+    var _createHalfASCII = function(margin) {
+      var cellSize = 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r1, r2, p;
+
+      var blocks = {
+        '██': '█',
+        '█ ': '▀',
+        ' █': '▄',
+        '  ': ' '
+      };
+
+      var blocksLastLineNoMargin = {
+        '██': '▀',
+        '█ ': '▀',
+        ' █': ' ',
+        '  ': ' '
+      };
+
+      var ascii = '';
+      for (y = 0; y < size; y += 2) {
+        r1 = Math.floor((y - min) / cellSize);
+        r2 = Math.floor((y + 1 - min) / cellSize);
+        for (x = 0; x < size; x += 1) {
+          p = '█';
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+            p = ' ';
+          }
+
+          if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+            p += ' ';
+          }
+          else {
+            p += '█';
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+        }
+
+        ascii += '\n';
+      }
+
+      if (size % 2 && margin > 0) {
+        return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.createASCII = function(cellSize, margin) {
+      cellSize = cellSize || 1;
+
+      if (cellSize < 2) {
+        return _createHalfASCII(margin);
+      }
+
+      cellSize -= 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r, p;
+
+      var white = Array(cellSize+1).join('██');
+      var black = Array(cellSize+1).join('  ');
+
+      var ascii = '';
+      var line = '';
+      for (y = 0; y < size; y += 1) {
+        r = Math.floor( (y - min) / cellSize);
+        line = '';
+        for (x = 0; x < size; x += 1) {
+          p = 1;
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+            p = 0;
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          line += p ? white : black;
+        }
+
+        for (r = 0; r < cellSize; r += 1) {
+          ascii += line + '\n';
+        }
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.renderTo2dContext = function(context, cellSize) {
+      cellSize = cellSize || 2;
+      var length = _this.getModuleCount();
+      for (var row = 0; row < length; row++) {
+        for (var col = 0; col < length; col++) {
+          context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+          context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrcode.stringToBytes
+  //---------------------------------------------------------------------
+
+  qrcode.stringToBytesFuncs = {
+    'default' : function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+      }
+      return bytes;
+    }
+  };
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['default'];
+
+  //---------------------------------------------------------------------
+  // qrcode.createStringToBytes
+  //---------------------------------------------------------------------
+
+  /**
+   * @param unicodeData base64 string of byte array.
+   * [16bit Unicode],[16bit Bytes], ...
+   * @param numChars
+   */
+  qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+    // create conversion map.
+
+    var unicodeMap = function() {
+
+      var bin = base64DecodeInputStream(unicodeData);
+      var read = function() {
+        var b = bin.read();
+        if (b == -1) throw 'eof';
+        return b;
+      };
+
+      var count = 0;
+      var unicodeMap = {};
+      while (true) {
+        var b0 = bin.read();
+        if (b0 == -1) break;
+        var b1 = read();
+        var b2 = read();
+        var b3 = read();
+        var k = String.fromCharCode( (b0 << 8) | b1);
+        var v = (b2 << 8) | b3;
+        unicodeMap[k] = v;
+        count += 1;
+      }
+      if (count != numChars) {
+        throw count + ' != ' + numChars;
+      }
+
+      return unicodeMap;
+    }();
+
+    var unknownChar = '?'.charCodeAt(0);
+
+    return function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        if (c < 128) {
+          bytes.push(c);
+        } else {
+          var b = unicodeMap[s.charAt(i)];
+          if (typeof b == 'number') {
+            if ( (b & 0xff) == b) {
+              // 1byte
+              bytes.push(b);
+            } else {
+              // 2bytes
+              bytes.push(b >>> 8);
+              bytes.push(b & 0xff);
+            }
+          } else {
+            bytes.push(unknownChar);
+          }
+        }
+      }
+      return bytes;
+    };
+  };
+
+  //---------------------------------------------------------------------
+  // QRMode
+  //---------------------------------------------------------------------
+
+  var QRMode = {
+    MODE_NUMBER :    1 << 0,
+    MODE_ALPHA_NUM : 1 << 1,
+    MODE_8BIT_BYTE : 1 << 2,
+    MODE_KANJI :     1 << 3
+  };
+
+  //---------------------------------------------------------------------
+  // QRErrorCorrectionLevel
+  //---------------------------------------------------------------------
+
+  var QRErrorCorrectionLevel = {
+    L : 1,
+    M : 0,
+    Q : 3,
+    H : 2
+  };
+
+  //---------------------------------------------------------------------
+  // QRMaskPattern
+  //---------------------------------------------------------------------
+
+  var QRMaskPattern = {
+    PATTERN000 : 0,
+    PATTERN001 : 1,
+    PATTERN010 : 2,
+    PATTERN011 : 3,
+    PATTERN100 : 4,
+    PATTERN101 : 5,
+    PATTERN110 : 6,
+    PATTERN111 : 7
+  };
+
+  //---------------------------------------------------------------------
+  // QRUtil
+  //---------------------------------------------------------------------
+
+  var QRUtil = function() {
+
+    var PATTERN_POSITION_TABLE = [
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+      [6, 28, 50],
+      [6, 30, 54],
+      [6, 32, 58],
+      [6, 34, 62],
+      [6, 26, 46, 66],
+      [6, 26, 48, 70],
+      [6, 26, 50, 74],
+      [6, 30, 54, 78],
+      [6, 30, 56, 82],
+      [6, 30, 58, 86],
+      [6, 34, 62, 90],
+      [6, 28, 50, 72, 94],
+      [6, 26, 50, 74, 98],
+      [6, 30, 54, 78, 102],
+      [6, 28, 54, 80, 106],
+      [6, 32, 58, 84, 110],
+      [6, 30, 58, 86, 114],
+      [6, 34, 62, 90, 118],
+      [6, 26, 50, 74, 98, 122],
+      [6, 30, 54, 78, 102, 126],
+      [6, 26, 52, 78, 104, 130],
+      [6, 30, 56, 82, 108, 134],
+      [6, 34, 60, 86, 112, 138],
+      [6, 30, 58, 86, 114, 142],
+      [6, 34, 62, 90, 118, 146],
+      [6, 30, 54, 78, 102, 126, 150],
+      [6, 24, 50, 76, 102, 128, 154],
+      [6, 28, 54, 80, 106, 132, 158],
+      [6, 32, 58, 84, 110, 136, 162],
+      [6, 26, 54, 82, 110, 138, 166],
+      [6, 30, 58, 86, 114, 142, 170]
+    ];
+    var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+    var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+    var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+    var _this = {};
+
+    var getBCHDigit = function(data) {
+      var digit = 0;
+      while (data != 0) {
+        digit += 1;
+        data >>>= 1;
+      }
+      return digit;
+    };
+
+    _this.getBCHTypeInfo = function(data) {
+      var d = data << 10;
+      while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+        d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+      }
+      return ( (data << 10) | d) ^ G15_MASK;
+    };
+
+    _this.getBCHTypeNumber = function(data) {
+      var d = data << 12;
+      while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+        d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+      }
+      return (data << 12) | d;
+    };
+
+    _this.getPatternPosition = function(typeNumber) {
+      return PATTERN_POSITION_TABLE[typeNumber - 1];
+    };
+
+    _this.getMaskFunction = function(maskPattern) {
+
+      switch (maskPattern) {
+
+      case QRMaskPattern.PATTERN000 :
+        return function(i, j) { return (i + j) % 2 == 0; };
+      case QRMaskPattern.PATTERN001 :
+        return function(i, j) { return i % 2 == 0; };
+      case QRMaskPattern.PATTERN010 :
+        return function(i, j) { return j % 3 == 0; };
+      case QRMaskPattern.PATTERN011 :
+        return function(i, j) { return (i + j) % 3 == 0; };
+      case QRMaskPattern.PATTERN100 :
+        return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+      case QRMaskPattern.PATTERN101 :
+        return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+      case QRMaskPattern.PATTERN110 :
+        return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+      case QRMaskPattern.PATTERN111 :
+        return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+      default :
+        throw 'bad maskPattern:' + maskPattern;
+      }
+    };
+
+    _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+      var a = qrPolynomial([1], 0);
+      for (var i = 0; i < errorCorrectLength; i += 1) {
+        a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+      }
+      return a;
+    };
+
+    _this.getLengthInBits = function(mode, type) {
+
+      if (1 <= type && type < 10) {
+
+        // 1 - 9
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 10;
+        case QRMode.MODE_ALPHA_NUM : return 9;
+        case QRMode.MODE_8BIT_BYTE : return 8;
+        case QRMode.MODE_KANJI     : return 8;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 27) {
+
+        // 10 - 26
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 12;
+        case QRMode.MODE_ALPHA_NUM : return 11;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 10;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 41) {
+
+        // 27 - 40
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 14;
+        case QRMode.MODE_ALPHA_NUM : return 13;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 12;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else {
+        throw 'type:' + type;
+      }
+    };
+
+    _this.getLostPoint = function(qrcode) {
+
+      var moduleCount = qrcode.getModuleCount();
+
+      var lostPoint = 0;
+
+      // LEVEL1
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount; col += 1) {
+
+          var sameCount = 0;
+          var dark = qrcode.isDark(row, col);
+
+          for (var r = -1; r <= 1; r += 1) {
+
+            if (row + r < 0 || moduleCount <= row + r) {
+              continue;
+            }
+
+            for (var c = -1; c <= 1; c += 1) {
+
+              if (col + c < 0 || moduleCount <= col + c) {
+                continue;
+              }
+
+              if (r == 0 && c == 0) {
+                continue;
+              }
+
+              if (dark == qrcode.isDark(row + r, col + c) ) {
+                sameCount += 1;
+              }
+            }
+          }
+
+          if (sameCount > 5) {
+            lostPoint += (3 + sameCount - 5);
+          }
+        }
+      };
+
+      // LEVEL2
+
+      for (var row = 0; row < moduleCount - 1; row += 1) {
+        for (var col = 0; col < moduleCount - 1; col += 1) {
+          var count = 0;
+          if (qrcode.isDark(row, col) ) count += 1;
+          if (qrcode.isDark(row + 1, col) ) count += 1;
+          if (qrcode.isDark(row, col + 1) ) count += 1;
+          if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+          if (count == 0 || count == 4) {
+            lostPoint += 3;
+          }
+        }
+      }
+
+      // LEVEL3
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount - 6; col += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row, col + 1)
+              &&  qrcode.isDark(row, col + 2)
+              &&  qrcode.isDark(row, col + 3)
+              &&  qrcode.isDark(row, col + 4)
+              && !qrcode.isDark(row, col + 5)
+              &&  qrcode.isDark(row, col + 6) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount - 6; row += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row + 1, col)
+              &&  qrcode.isDark(row + 2, col)
+              &&  qrcode.isDark(row + 3, col)
+              &&  qrcode.isDark(row + 4, col)
+              && !qrcode.isDark(row + 5, col)
+              &&  qrcode.isDark(row + 6, col) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      // LEVEL4
+
+      var darkCount = 0;
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount; row += 1) {
+          if (qrcode.isDark(row, col) ) {
+            darkCount += 1;
+          }
+        }
+      }
+
+      var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+      lostPoint += ratio * 10;
+
+      return lostPoint;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // QRMath
+  //---------------------------------------------------------------------
+
+  var QRMath = function() {
+
+    var EXP_TABLE = new Array(256);
+    var LOG_TABLE = new Array(256);
+
+    // initialize tables
+    for (var i = 0; i < 8; i += 1) {
+      EXP_TABLE[i] = 1 << i;
+    }
+    for (var i = 8; i < 256; i += 1) {
+      EXP_TABLE[i] = EXP_TABLE[i - 4]
+        ^ EXP_TABLE[i - 5]
+        ^ EXP_TABLE[i - 6]
+        ^ EXP_TABLE[i - 8];
+    }
+    for (var i = 0; i < 255; i += 1) {
+      LOG_TABLE[EXP_TABLE[i] ] = i;
+    }
+
+    var _this = {};
+
+    _this.glog = function(n) {
+
+      if (n < 1) {
+        throw 'glog(' + n + ')';
+      }
+
+      return LOG_TABLE[n];
+    };
+
+    _this.gexp = function(n) {
+
+      while (n < 0) {
+        n += 255;
+      }
+
+      while (n >= 256) {
+        n -= 255;
+      }
+
+      return EXP_TABLE[n];
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrPolynomial
+  //---------------------------------------------------------------------
+
+  function qrPolynomial(num, shift) {
+
+    if (typeof num.length == 'undefined') {
+      throw num.length + '/' + shift;
+    }
+
+    var _num = function() {
+      var offset = 0;
+      while (offset < num.length && num[offset] == 0) {
+        offset += 1;
+      }
+      var _num = new Array(num.length - offset + shift);
+      for (var i = 0; i < num.length - offset; i += 1) {
+        _num[i] = num[i + offset];
+      }
+      return _num;
+    }();
+
+    var _this = {};
+
+    _this.getAt = function(index) {
+      return _num[index];
+    };
+
+    _this.getLength = function() {
+      return _num.length;
+    };
+
+    _this.multiply = function(e) {
+
+      var num = new Array(_this.getLength() + e.getLength() - 1);
+
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        for (var j = 0; j < e.getLength(); j += 1) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+        }
+      }
+
+      return qrPolynomial(num, 0);
+    };
+
+    _this.mod = function(e) {
+
+      if (_this.getLength() - e.getLength() < 0) {
+        return _this;
+      }
+
+      var ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+      var num = new Array(_this.getLength() );
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        num[i] = _this.getAt(i);
+      }
+
+      for (var i = 0; i < e.getLength(); i += 1) {
+        num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+      }
+
+      // recursive call
+      return qrPolynomial(num, 0).mod(e);
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // QRRSBlock
+  //---------------------------------------------------------------------
+
+  var QRRSBlock = function() {
+
+    var RS_BLOCK_TABLE = [
+
+      // L
+      // M
+      // Q
+      // H
+
+      // 1
+      [1, 26, 19],
+      [1, 26, 16],
+      [1, 26, 13],
+      [1, 26, 9],
+
+      // 2
+      [1, 44, 34],
+      [1, 44, 28],
+      [1, 44, 22],
+      [1, 44, 16],
+
+      // 3
+      [1, 70, 55],
+      [1, 70, 44],
+      [2, 35, 17],
+      [2, 35, 13],
+
+      // 4
+      [1, 100, 80],
+      [2, 50, 32],
+      [2, 50, 24],
+      [4, 25, 9],
+
+      // 5
+      [1, 134, 108],
+      [2, 67, 43],
+      [2, 33, 15, 2, 34, 16],
+      [2, 33, 11, 2, 34, 12],
+
+      // 6
+      [2, 86, 68],
+      [4, 43, 27],
+      [4, 43, 19],
+      [4, 43, 15],
+
+      // 7
+      [2, 98, 78],
+      [4, 49, 31],
+      [2, 32, 14, 4, 33, 15],
+      [4, 39, 13, 1, 40, 14],
+
+      // 8
+      [2, 121, 97],
+      [2, 60, 38, 2, 61, 39],
+      [4, 40, 18, 2, 41, 19],
+      [4, 40, 14, 2, 41, 15],
+
+      // 9
+      [2, 146, 116],
+      [3, 58, 36, 2, 59, 37],
+      [4, 36, 16, 4, 37, 17],
+      [4, 36, 12, 4, 37, 13],
+
+      // 10
+      [2, 86, 68, 2, 87, 69],
+      [4, 69, 43, 1, 70, 44],
+      [6, 43, 19, 2, 44, 20],
+      [6, 43, 15, 2, 44, 16],
+
+      // 11
+      [4, 101, 81],
+      [1, 80, 50, 4, 81, 51],
+      [4, 50, 22, 4, 51, 23],
+      [3, 36, 12, 8, 37, 13],
+
+      // 12
+      [2, 116, 92, 2, 117, 93],
+      [6, 58, 36, 2, 59, 37],
+      [4, 46, 20, 6, 47, 21],
+      [7, 42, 14, 4, 43, 15],
+
+      // 13
+      [4, 133, 107],
+      [8, 59, 37, 1, 60, 38],
+      [8, 44, 20, 4, 45, 21],
+      [12, 33, 11, 4, 34, 12],
+
+      // 14
+      [3, 145, 115, 1, 146, 116],
+      [4, 64, 40, 5, 65, 41],
+      [11, 36, 16, 5, 37, 17],
+      [11, 36, 12, 5, 37, 13],
+
+      // 15
+      [5, 109, 87, 1, 110, 88],
+      [5, 65, 41, 5, 66, 42],
+      [5, 54, 24, 7, 55, 25],
+      [11, 36, 12, 7, 37, 13],
+
+      // 16
+      [5, 122, 98, 1, 123, 99],
+      [7, 73, 45, 3, 74, 46],
+      [15, 43, 19, 2, 44, 20],
+      [3, 45, 15, 13, 46, 16],
+
+      // 17
+      [1, 135, 107, 5, 136, 108],
+      [10, 74, 46, 1, 75, 47],
+      [1, 50, 22, 15, 51, 23],
+      [2, 42, 14, 17, 43, 15],
+
+      // 18
+      [5, 150, 120, 1, 151, 121],
+      [9, 69, 43, 4, 70, 44],
+      [17, 50, 22, 1, 51, 23],
+      [2, 42, 14, 19, 43, 15],
+
+      // 19
+      [3, 141, 113, 4, 142, 114],
+      [3, 70, 44, 11, 71, 45],
+      [17, 47, 21, 4, 48, 22],
+      [9, 39, 13, 16, 40, 14],
+
+      // 20
+      [3, 135, 107, 5, 136, 108],
+      [3, 67, 41, 13, 68, 42],
+      [15, 54, 24, 5, 55, 25],
+      [15, 43, 15, 10, 44, 16],
+
+      // 21
+      [4, 144, 116, 4, 145, 117],
+      [17, 68, 42],
+      [17, 50, 22, 6, 51, 23],
+      [19, 46, 16, 6, 47, 17],
+
+      // 22
+      [2, 139, 111, 7, 140, 112],
+      [17, 74, 46],
+      [7, 54, 24, 16, 55, 25],
+      [34, 37, 13],
+
+      // 23
+      [4, 151, 121, 5, 152, 122],
+      [4, 75, 47, 14, 76, 48],
+      [11, 54, 24, 14, 55, 25],
+      [16, 45, 15, 14, 46, 16],
+
+      // 24
+      [6, 147, 117, 4, 148, 118],
+      [6, 73, 45, 14, 74, 46],
+      [11, 54, 24, 16, 55, 25],
+      [30, 46, 16, 2, 47, 17],
+
+      // 25
+      [8, 132, 106, 4, 133, 107],
+      [8, 75, 47, 13, 76, 48],
+      [7, 54, 24, 22, 55, 25],
+      [22, 45, 15, 13, 46, 16],
+
+      // 26
+      [10, 142, 114, 2, 143, 115],
+      [19, 74, 46, 4, 75, 47],
+      [28, 50, 22, 6, 51, 23],
+      [33, 46, 16, 4, 47, 17],
+
+      // 27
+      [8, 152, 122, 4, 153, 123],
+      [22, 73, 45, 3, 74, 46],
+      [8, 53, 23, 26, 54, 24],
+      [12, 45, 15, 28, 46, 16],
+
+      // 28
+      [3, 147, 117, 10, 148, 118],
+      [3, 73, 45, 23, 74, 46],
+      [4, 54, 24, 31, 55, 25],
+      [11, 45, 15, 31, 46, 16],
+
+      // 29
+      [7, 146, 116, 7, 147, 117],
+      [21, 73, 45, 7, 74, 46],
+      [1, 53, 23, 37, 54, 24],
+      [19, 45, 15, 26, 46, 16],
+
+      // 30
+      [5, 145, 115, 10, 146, 116],
+      [19, 75, 47, 10, 76, 48],
+      [15, 54, 24, 25, 55, 25],
+      [23, 45, 15, 25, 46, 16],
+
+      // 31
+      [13, 145, 115, 3, 146, 116],
+      [2, 74, 46, 29, 75, 47],
+      [42, 54, 24, 1, 55, 25],
+      [23, 45, 15, 28, 46, 16],
+
+      // 32
+      [17, 145, 115],
+      [10, 74, 46, 23, 75, 47],
+      [10, 54, 24, 35, 55, 25],
+      [19, 45, 15, 35, 46, 16],
+
+      // 33
+      [17, 145, 115, 1, 146, 116],
+      [14, 74, 46, 21, 75, 47],
+      [29, 54, 24, 19, 55, 25],
+      [11, 45, 15, 46, 46, 16],
+
+      // 34
+      [13, 145, 115, 6, 146, 116],
+      [14, 74, 46, 23, 75, 47],
+      [44, 54, 24, 7, 55, 25],
+      [59, 46, 16, 1, 47, 17],
+
+      // 35
+      [12, 151, 121, 7, 152, 122],
+      [12, 75, 47, 26, 76, 48],
+      [39, 54, 24, 14, 55, 25],
+      [22, 45, 15, 41, 46, 16],
+
+      // 36
+      [6, 151, 121, 14, 152, 122],
+      [6, 75, 47, 34, 76, 48],
+      [46, 54, 24, 10, 55, 25],
+      [2, 45, 15, 64, 46, 16],
+
+      // 37
+      [17, 152, 122, 4, 153, 123],
+      [29, 74, 46, 14, 75, 47],
+      [49, 54, 24, 10, 55, 25],
+      [24, 45, 15, 46, 46, 16],
+
+      // 38
+      [4, 152, 122, 18, 153, 123],
+      [13, 74, 46, 32, 75, 47],
+      [48, 54, 24, 14, 55, 25],
+      [42, 45, 15, 32, 46, 16],
+
+      // 39
+      [20, 147, 117, 4, 148, 118],
+      [40, 75, 47, 7, 76, 48],
+      [43, 54, 24, 22, 55, 25],
+      [10, 45, 15, 67, 46, 16],
+
+      // 40
+      [19, 148, 118, 6, 149, 119],
+      [18, 75, 47, 31, 76, 48],
+      [34, 54, 24, 34, 55, 25],
+      [20, 45, 15, 61, 46, 16]
+    ];
+
+    var qrRSBlock = function(totalCount, dataCount) {
+      var _this = {};
+      _this.totalCount = totalCount;
+      _this.dataCount = dataCount;
+      return _this;
+    };
+
+    var _this = {};
+
+    var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+      switch(errorCorrectionLevel) {
+      case QRErrorCorrectionLevel.L :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+      case QRErrorCorrectionLevel.M :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+      case QRErrorCorrectionLevel.Q :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+      case QRErrorCorrectionLevel.H :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+      default :
+        return undefined;
+      }
+    };
+
+    _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+      var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+      if (typeof rsBlock == 'undefined') {
+        throw 'bad rs block @ typeNumber:' + typeNumber +
+            '/errorCorrectionLevel:' + errorCorrectionLevel;
+      }
+
+      var length = rsBlock.length / 3;
+
+      var list = [];
+
+      for (var i = 0; i < length; i += 1) {
+
+        var count = rsBlock[i * 3 + 0];
+        var totalCount = rsBlock[i * 3 + 1];
+        var dataCount = rsBlock[i * 3 + 2];
+
+        for (var j = 0; j < count; j += 1) {
+          list.push(qrRSBlock(totalCount, dataCount) );
+        }
+      }
+
+      return list;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrBitBuffer
+  //---------------------------------------------------------------------
+
+  var qrBitBuffer = function() {
+
+    var _buffer = [];
+    var _length = 0;
+
+    var _this = {};
+
+    _this.getBuffer = function() {
+      return _buffer;
+    };
+
+    _this.getAt = function(index) {
+      var bufIndex = Math.floor(index / 8);
+      return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+    };
+
+    _this.put = function(num, length) {
+      for (var i = 0; i < length; i += 1) {
+        _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+      }
+    };
+
+    _this.getLengthInBits = function() {
+      return _length;
+    };
+
+    _this.putBit = function(bit) {
+
+      var bufIndex = Math.floor(_length / 8);
+      if (_buffer.length <= bufIndex) {
+        _buffer.push(0);
+      }
+
+      if (bit) {
+        _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+      }
+
+      _length += 1;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrNumber
+  //---------------------------------------------------------------------
+
+  var qrNumber = function(data) {
+
+    var _mode = QRMode.MODE_NUMBER;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _data;
+
+      var i = 0;
+
+      while (i + 2 < data.length) {
+        buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+        i += 3;
+      }
+
+      if (i < data.length) {
+        if (data.length - i == 1) {
+          buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+        } else if (data.length - i == 2) {
+          buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+        }
+      }
+    };
+
+    var strToNum = function(s) {
+      var num = 0;
+      for (var i = 0; i < s.length; i += 1) {
+        num = num * 10 + chatToNum(s.charAt(i) );
+      }
+      return num;
+    };
+
+    var chatToNum = function(c) {
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      }
+      throw 'illegal char :' + c;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrAlphaNum
+  //---------------------------------------------------------------------
+
+  var qrAlphaNum = function(data) {
+
+    var _mode = QRMode.MODE_ALPHA_NUM;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var s = _data;
+
+      var i = 0;
+
+      while (i + 1 < s.length) {
+        buffer.put(
+          getCode(s.charAt(i) ) * 45 +
+          getCode(s.charAt(i + 1) ), 11);
+        i += 2;
+      }
+
+      if (i < s.length) {
+        buffer.put(getCode(s.charAt(i) ), 6);
+      }
+    };
+
+    var getCode = function(c) {
+
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      } else if ('A' <= c && c <= 'Z') {
+        return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+      } else {
+        switch (c) {
+        case ' ' : return 36;
+        case '$' : return 37;
+        case '%' : return 38;
+        case '*' : return 39;
+        case '+' : return 40;
+        case '-' : return 41;
+        case '.' : return 42;
+        case '/' : return 43;
+        case ':' : return 44;
+        default :
+          throw 'illegal char :' + c;
+        }
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qr8BitByte
+  //---------------------------------------------------------------------
+
+  var qr8BitByte = function(data) {
+
+    var _mode = QRMode.MODE_8BIT_BYTE;
+    var _data = data;
+    var _bytes = qrcode.stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _bytes.length;
+    };
+
+    _this.write = function(buffer) {
+      for (var i = 0; i < _bytes.length; i += 1) {
+        buffer.put(_bytes[i], 8);
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrKanji
+  //---------------------------------------------------------------------
+
+  var qrKanji = function(data) {
+
+    var _mode = QRMode.MODE_KANJI;
+    var _data = data;
+
+    var stringToBytes = qrcode.stringToBytesFuncs['SJIS'];
+    if (!stringToBytes) {
+      throw 'sjis not supported.';
+    }
+    !function(c, code) {
+      // self test for sjis support.
+      var test = stringToBytes(c);
+      if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+        throw 'sjis not supported.';
+      }
+    }('\u53cb', 0x9746);
+
+    var _bytes = stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return ~~(_bytes.length / 2);
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _bytes;
+
+      var i = 0;
+
+      while (i + 1 < data.length) {
+
+        var c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+        if (0x8140 <= c && c <= 0x9FFC) {
+          c -= 0x8140;
+        } else if (0xE040 <= c && c <= 0xEBBF) {
+          c -= 0xC140;
+        } else {
+          throw 'illegal char at ' + (i + 1) + '/' + c;
+        }
+
+        c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+        buffer.put(c, 13);
+
+        i += 2;
+      }
+
+      if (i < data.length) {
+        throw 'illegal char at ' + (i + 1);
+      }
+    };
+
+    return _this;
+  };
+
+  //=====================================================================
+  // GIF Support etc.
+  //
+
+  //---------------------------------------------------------------------
+  // byteArrayOutputStream
+  //---------------------------------------------------------------------
+
+  var byteArrayOutputStream = function() {
+
+    var _bytes = [];
+
+    var _this = {};
+
+    _this.writeByte = function(b) {
+      _bytes.push(b & 0xff);
+    };
+
+    _this.writeShort = function(i) {
+      _this.writeByte(i);
+      _this.writeByte(i >>> 8);
+    };
+
+    _this.writeBytes = function(b, off, len) {
+      off = off || 0;
+      len = len || b.length;
+      for (var i = 0; i < len; i += 1) {
+        _this.writeByte(b[i + off]);
+      }
+    };
+
+    _this.writeString = function(s) {
+      for (var i = 0; i < s.length; i += 1) {
+        _this.writeByte(s.charCodeAt(i) );
+      }
+    };
+
+    _this.toByteArray = function() {
+      return _bytes;
+    };
+
+    _this.toString = function() {
+      var s = '';
+      s += '[';
+      for (var i = 0; i < _bytes.length; i += 1) {
+        if (i > 0) {
+          s += ',';
+        }
+        s += _bytes[i];
+      }
+      s += ']';
+      return s;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64EncodeOutputStream
+  //---------------------------------------------------------------------
+
+  var base64EncodeOutputStream = function() {
+
+    var _buffer = 0;
+    var _buflen = 0;
+    var _length = 0;
+    var _base64 = '';
+
+    var _this = {};
+
+    var writeEncoded = function(b) {
+      _base64 += String.fromCharCode(encode(b & 0x3f) );
+    };
+
+    var encode = function(n) {
+      if (n < 0) {
+        // error.
+      } else if (n < 26) {
+        return 0x41 + n;
+      } else if (n < 52) {
+        return 0x61 + (n - 26);
+      } else if (n < 62) {
+        return 0x30 + (n - 52);
+      } else if (n == 62) {
+        return 0x2b;
+      } else if (n == 63) {
+        return 0x2f;
+      }
+      throw 'n:' + n;
+    };
+
+    _this.writeByte = function(n) {
+
+      _buffer = (_buffer << 8) | (n & 0xff);
+      _buflen += 8;
+      _length += 1;
+
+      while (_buflen >= 6) {
+        writeEncoded(_buffer >>> (_buflen - 6) );
+        _buflen -= 6;
+      }
+    };
+
+    _this.flush = function() {
+
+      if (_buflen > 0) {
+        writeEncoded(_buffer << (6 - _buflen) );
+        _buffer = 0;
+        _buflen = 0;
+      }
+
+      if (_length % 3 != 0) {
+        // padding
+        var padlen = 3 - _length % 3;
+        for (var i = 0; i < padlen; i += 1) {
+          _base64 += '=';
+        }
+      }
+    };
+
+    _this.toString = function() {
+      return _base64;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64DecodeInputStream
+  //---------------------------------------------------------------------
+
+  var base64DecodeInputStream = function(str) {
+
+    var _str = str;
+    var _pos = 0;
+    var _buffer = 0;
+    var _buflen = 0;
+
+    var _this = {};
+
+    _this.read = function() {
+
+      while (_buflen < 8) {
+
+        if (_pos >= _str.length) {
+          if (_buflen == 0) {
+            return -1;
+          }
+          throw 'unexpected end of file./' + _buflen;
+        }
+
+        var c = _str.charAt(_pos);
+        _pos += 1;
+
+        if (c == '=') {
+          _buflen = 0;
+          return -1;
+        } else if (c.match(/^\s$/) ) {
+          // ignore if whitespace.
+          continue;
+        }
+
+        _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+        _buflen += 6;
+      }
+
+      var n = (_buffer >>> (_buflen - 8) ) & 0xff;
+      _buflen -= 8;
+      return n;
+    };
+
+    var decode = function(c) {
+      if (0x41 <= c && c <= 0x5a) {
+        return c - 0x41;
+      } else if (0x61 <= c && c <= 0x7a) {
+        return c - 0x61 + 26;
+      } else if (0x30 <= c && c <= 0x39) {
+        return c - 0x30 + 52;
+      } else if (c == 0x2b) {
+        return 62;
+      } else if (c == 0x2f) {
+        return 63;
+      } else {
+        throw 'c:' + c;
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // gifImage (B/W)
+  //---------------------------------------------------------------------
+
+  var gifImage = function(width, height) {
+
+    var _width = width;
+    var _height = height;
+    var _data = new Array(width * height);
+
+    var _this = {};
+
+    _this.setPixel = function(x, y, pixel) {
+      _data[y * _width + x] = pixel;
+    };
+
+    _this.write = function(out) {
+
+      //---------------------------------
+      // GIF Signature
+
+      out.writeString('GIF87a');
+
+      //---------------------------------
+      // Screen Descriptor
+
+      out.writeShort(_width);
+      out.writeShort(_height);
+
+      out.writeByte(0x80); // 2bit
+      out.writeByte(0);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Global Color Map
+
+      // black
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+
+      // white
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+
+      //---------------------------------
+      // Image Descriptor
+
+      out.writeString(',');
+      out.writeShort(0);
+      out.writeShort(0);
+      out.writeShort(_width);
+      out.writeShort(_height);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Local Color Map
+
+      //---------------------------------
+      // Raster Data
+
+      var lzwMinCodeSize = 2;
+      var raster = getLZWRaster(lzwMinCodeSize);
+
+      out.writeByte(lzwMinCodeSize);
+
+      var offset = 0;
+
+      while (raster.length - offset > 255) {
+        out.writeByte(255);
+        out.writeBytes(raster, offset, 255);
+        offset += 255;
+      }
+
+      out.writeByte(raster.length - offset);
+      out.writeBytes(raster, offset, raster.length - offset);
+      out.writeByte(0x00);
+
+      //---------------------------------
+      // GIF Terminator
+      out.writeString(';');
+    };
+
+    var bitOutputStream = function(out) {
+
+      var _out = out;
+      var _bitLength = 0;
+      var _bitBuffer = 0;
+
+      var _this = {};
+
+      _this.write = function(data, length) {
+
+        if ( (data >>> length) != 0) {
+          throw 'length over';
+        }
+
+        while (_bitLength + length >= 8) {
+          _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+          length -= (8 - _bitLength);
+          data >>>= (8 - _bitLength);
+          _bitBuffer = 0;
+          _bitLength = 0;
+        }
+
+        _bitBuffer = (data << _bitLength) | _bitBuffer;
+        _bitLength = _bitLength + length;
+      };
+
+      _this.flush = function() {
+        if (_bitLength > 0) {
+          _out.writeByte(_bitBuffer);
+        }
+      };
+
+      return _this;
+    };
+
+    var getLZWRaster = function(lzwMinCodeSize) {
+
+      var clearCode = 1 << lzwMinCodeSize;
+      var endCode = (1 << lzwMinCodeSize) + 1;
+      var bitLength = lzwMinCodeSize + 1;
+
+      // Setup LZWTable
+      var table = lzwTable();
+
+      for (var i = 0; i < clearCode; i += 1) {
+        table.add(String.fromCharCode(i) );
+      }
+      table.add(String.fromCharCode(clearCode) );
+      table.add(String.fromCharCode(endCode) );
+
+      var byteOut = byteArrayOutputStream();
+      var bitOut = bitOutputStream(byteOut);
+
+      // clear code
+      bitOut.write(clearCode, bitLength);
+
+      var dataIndex = 0;
+
+      var s = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      while (dataIndex < _data.length) {
+
+        var c = String.fromCharCode(_data[dataIndex]);
+        dataIndex += 1;
+
+        if (table.contains(s + c) ) {
+
+          s = s + c;
+
+        } else {
+
+          bitOut.write(table.indexOf(s), bitLength);
+
+          if (table.size() < 0xfff) {
+
+            if (table.size() == (1 << bitLength) ) {
+              bitLength += 1;
+            }
+
+            table.add(s + c);
+          }
+
+          s = c;
+        }
+      }
+
+      bitOut.write(table.indexOf(s), bitLength);
+
+      // end code
+      bitOut.write(endCode, bitLength);
+
+      bitOut.flush();
+
+      return byteOut.toByteArray();
+    };
+
+    var lzwTable = function() {
+
+      var _map = {};
+      var _size = 0;
+
+      var _this = {};
+
+      _this.add = function(key) {
+        if (_this.contains(key) ) {
+          throw 'dup key:' + key;
+        }
+        _map[key] = _size;
+        _size += 1;
+      };
+
+      _this.size = function() {
+        return _size;
+      };
+
+      _this.indexOf = function(key) {
+        return _map[key];
+      };
+
+      _this.contains = function(key) {
+        return typeof _map[key] != 'undefined';
+      };
+
+      return _this;
+    };
+
+    return _this;
+  };
+
+  var createDataURL = function(width, height, getPixel) {
+    var gif = gifImage(width, height);
+    for (var y = 0; y < height; y += 1) {
+      for (var x = 0; x < width; x += 1) {
+        gif.setPixel(x, y, getPixel(x, y) );
+      }
+    }
+
+    var b = byteArrayOutputStream();
+    gif.write(b);
+
+    var base64 = base64EncodeOutputStream();
+    var bytes = b.toByteArray();
+    for (var i = 0; i < bytes.length; i += 1) {
+      base64.writeByte(bytes[i]);
+    }
+    base64.flush();
+
+    return 'data:image/gif;base64,' + base64;
+  };
+
+  //---------------------------------------------------------------------
+  // returns qrcode function.
+
+  return qrcode;
+}();
+
+// multibyte support
+!function() {
+
+  qrcode.stringToBytesFuncs['UTF-8'] = function(s) {
+    // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6),
+              0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+            | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18),
+              0x80 | ((charcode>>12) & 0x3f),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    return toUTF8Array(s);
+  };
+
+}();
+
+(function (factory) {
+  if (typeof define === 'function' && define.amd) {
+      define([], factory);
+  } else if (typeof exports === 'object') {
+      module.exports = factory();
+  }
+}(function () {
+    return qrcode;
+}));
+
+</script>
+<script>
+/* =========================================================
+   DATA — original content only, structured after the real
+   TOEFL iBT 2026 task formats (no copyrighted ETS text).
+   Themes match the topic categories that recur across the
+   most-used third-party TOEFL practice banks (ETS itself
+   does not publish an official topic list): Technology &
+   Modern Life, Education Methods, Social Issues & Globalization,
+   Communication & Relationships, Work & Career. "Campus &
+   F1 Student Life" is CSE-specific — not part of any generic
+   TOEFL bank, added because it's what actually happens here.
+   ========================================================= */
+
+const TASK_TYPES = [
+  { id:'complete-words', tag:'Complete the Words', section:'Reading' },
+  { id:'sentence',       tag:'Build a Sentence',    section:'Writing' },
+  { id:'email',          tag:'Write an Email',      section:'Writing' },
+  { id:'discussion',     tag:'Academic Discussion', section:'Writing' },
+  { id:'listen-repeat',  tag:'Listen and Repeat',   section:'Speaking' },
+  { id:'interview',      tag:'Take an Interview',   section:'Speaking' },
+];
+let activeType = 'email';
+const ALL_THEMES = ['campus','register','current','grammar','social','career','health','environment','daily'];
+const THEME_LABELS = {
+  campus:'Campus & F1 Student Life', register:'Communication & Relationships', current:'Technology & Modern Life',
+  grammar:'Education & Learning Methods', social:'Social Issues & Globalization', career:'Work & Career',
+  health:'Health & Wellbeing', environment:'Environment & Sustainability', daily:'Daily Life & Practical Logistics',
+};
+
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function pickN(arr,n){ const c=[...arr]; const out=[]; while(out.length<n && c.length){ out.push(c.splice(Math.floor(Math.random()*c.length),1)[0]); } return out; }
+function uid(){ return 'ex_' + Math.random().toString(36).slice(2,9); }
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+const ALL_TYPE_THEME_COMBOS = TASK_TYPES.flatMap(t => ALL_THEMES.map(th => t.id + '|' + th));
+// Shuffle-bag: draws items from a shuffled copy of allItems without
+// repeating any until the whole set has been drawn once, then reshuffles
+// for the next cycle — real "no repeats until we've covered everything,"
+// not just plain Math.random() each time. Kept per student name (falls
+// back to a shared '_anon' bag when no name is set) and per bag purpose
+// (theme-only vs full type+theme), each stored in localStorage so the
+// rotation survives across sessions on that device.
+function drawFromBag(bagKey, allItems, studentKey){
+  const storageKey = `cse_bag_${bagKey}_${(studentKey||'_anon').toLowerCase()}`;
+  let bag;
+  try{ bag = JSON.parse(localStorage.getItem(storageKey) || '[]'); }catch(e){ bag = []; }
+  if(!bag.length || !bag.every(x=>allItems.includes(x))) bag = shuffle(allItems);
+  const draw = bag.pop();
+  localStorage.setItem(storageKey, JSON.stringify(bag));
+  return draw;
+}
+
+// ---- Write an Email ----
+const EMAIL_BANK = {
+  campus: [
+    w=>`You need to request an Authorized Vacation from your Designated School Official (DSO). Write an email to your DSO. In your email: explain which week(s) you would like off, give a brief reason (${w}), and ask what documents you must provide.\n\nWrite 80–120 words.`,
+  ],
+  register: [
+    w=>`Write a short email to ${w}. Pay attention to the level of formality this recipient expects — compare how you would open and close the message differently for a teacher versus a classmate.\n\nWrite 80–120 words.`,
+  ],
+  current: [
+    w=>`Write an email to a classmate proposing to team up for a short presentation about ${w}. Suggest a time to meet and one idea to include.\n\nWrite 80–120 words.`,
+  ],
+  grammar: [
+    w=>`Write a short email to a friend explaining ${w}. Use at least two examples of reported speech (e.g. "She told me that...", "He said he would...").\n\nWrite 80–120 words.`,
+  ],
+  social: [
+    w=>`Write a short email to a classmate suggesting you both attend a campus talk about ${w}. Propose a day and time, and explain briefly why you're interested.\n\nWrite 80–120 words.`,
+  ],
+  career: [
+    w=>`Write an email to a former classmate who graduated, asking for advice about ${w}.\n\nWrite 80–120 words.`,
+  ],
+  health: [
+    w=>`Write a short email to a classmate about ${w}. Mention one specific tip or resource you found helpful.\n\nWrite 80–120 words.`,
+  ],
+  environment: [
+    w=>`Write a short email to a classmate proposing ${w}. Suggest one simple first step you could take together.\n\nWrite 80–120 words.`,
+  ],
+  daily: [
+    w=>`Write an email asking a Student Services Coordinator for help with ${w}.\n\nWrite 80–120 words.`,
+  ],
+};
+const EMAIL_FILL = {
+  campus: ['a family event back home','a medical appointment','a short trip before the next session starts'],
+  register: ['your teacher, asking to reschedule a make-up test','a classmate, proposing a time to meet for a group project','the front desk, asking about a lost textbook'],
+  current: ['renewable energy in your home country','how AI is changing everyday jobs','a recent change in immigration policy you read about'],
+  grammar: ['what your teacher said about the exam','what a classmate told you about the group deadline','what the front desk said about your missing textbook'],
+  social: ['immigration policy changes you both discussed in class','cultural adaptation challenges international students face','a recent global news story relevant to your major'],
+  career: ['finding an internship in your field','preparing for a job interview in English','writing a professional resume'],
+  health: ['getting a routine check-up before the semester starts','managing stress during exam weeks','finding a gym or fitness class near campus'],
+  environment: ['starting a recycling habit in your dorm','reducing plastic use around campus','joining a campus sustainability club'],
+  daily: ['opening a bank account near campus','finding an apartment for next semester','asking about the bus schedule to downtown'],
+};
+function genEmail(theme){
+  const filler = pick(EMAIL_FILL[theme] || EMAIL_FILL.campus);
+  const tpl = pick(EMAIL_BANK[theme] || EMAIL_BANK.campus);
+  return { prompt: tpl(filler) };
+}
+
+// ---- Write for an Academic Discussion ----
+const DISCUSSION_BANK = {
+  campus: [
+    { q:"Some people believe international students should speak only English outside class, even with friends who share their native language. Do you agree or disagree?", a:{name:'Marina',text:'I disagree. Avoiding your native language outside class can feel isolating, especially in the first weeks.'}, b:{name:'Youssef',text:'I agree — if we never practice outside class, we lose the chance to improve faster.'} },
+    { q:"Is it better for a new student to live with a host family or in an apartment with roommates?", a:{name:'Sofia',text:'A host family helps you practice English constantly, even during meals.'}, b:{name:'Kenji',text:'An apartment gives more independence, which some students need to feel comfortable.'} },
+  ],
+  register: [
+    { q:"Do you think written communication (email, chat) should always be formal, even between friends?", a:{name:'Diego',text:'No — formality depends on context. A friend deserves a casual tone.'}, b:{name:'Ha-eun',text:'I think a light layer of formality is still useful, even with friends.'} },
+    { q:"Should students correct their friends' grammar mistakes in casual conversation?", a:{name:'Noor',text:'Only if the friend asks — otherwise it can feel discouraging.'}, b:{name:'Bruno',text:'I appreciate quick corrections; that is how I improve fastest.'} },
+  ],
+  current: [
+    { q:"Should AI tools be allowed to help students with homework?", a:{name:'Camille',text:'Yes, as long as the student still does the thinking and the tool only supports.'}, b:{name:'Tariq',text:'I worry it removes the struggle that actually builds skill.'} },
+    { q:"Is remote work better than working in an office?", a:{name:'Ines',text:'Remote work gives flexibility, especially for people balancing studies and jobs.'}, b:{name:'Omar',text:'I miss the spontaneous conversations you only get in person.'} },
+  ],
+  grammar: [
+    { q:"Is it more useful to study grammar rules explicitly, or to absorb them naturally through exposure?", a:{name:'Fatima',text:'I learn faster from exposure — rules feel abstract until I see them in use.'}, b:{name:'Lucas',text:'I need the rule first, then examples make sense to me.'} },
+    { q:"Should teachers correct every small grammar mistake during speaking practice?", a:{name:'Priya',text:'No — interrupting too often kills the flow of the conversation.'}, b:{name:'Matteo',text:'I want to be corrected right away, before the mistake becomes a habit.'} },
+  ],
+  social: [
+    { q:"Should governments do more to help international students integrate into local communities?", a:{name:'Elena',text:'Yes — structured support programs make a real difference in the first months.'}, b:{name:'Kwame',text:'I think community initiatives work better than government programs.'} },
+    { q:"Is globalization making cultures more similar, or helping them stay unique?", a:{name:'Lin',text:'I see cultures blending more each year, especially among young people.'}, b:{name:'Ana',text:'I think local traditions are becoming more valued as a reaction to globalization.'} },
+  ],
+  career: [
+    { q:"Is it better to gain work experience through an internship, or to focus fully on studies first?", a:{name:'Victor',text:'An internship teaches skills no classroom can — I would try to do both together.'}, b:{name:'Amara',text:'I think focusing on studies first builds a stronger foundation for any career.'} },
+    { q:"Should employers value soft skills like communication as much as technical skills?", a:{name:'Julia',text:'Absolutely — technical skill without communication rarely leads to leadership.'}, b:{name:'Hassan',text:'I think technical skill should still come first, especially early in a career.'} },
+  ],
+  health: [
+    { q:"Is it more important to focus on physical health or mental health as a student?", a:{name:'Noah',text:'Mental health affects everything else, so I think it deserves more attention.'}, b:{name:'Aiko',text:'I think physical health gives you the energy to handle mental challenges better.'} },
+    { q:"Should universities require students to take a wellness or fitness class?", a:{name:'Ravi',text:'Yes — many students never build healthy habits until it is required.'}, b:{name:'Beatriz',text:'I think it should stay optional; motivation works better than obligation.'} },
+  ],
+  environment: [
+    { q:"Should individuals or governments hold the main responsibility for protecting the environment?", a:{name:'Sara',text:'Governments have the power to make large-scale change through policy.'}, b:{name:'Tomas',text:'I think individual habits add up and matter just as much.'} },
+    { q:"Is it realistic for cities to become completely car-free in the future?", a:{name:'Grace',text:'Yes, if public transportation improves enough to replace the need for cars.'}, b:{name:'Idris',text:'I doubt it — many people still need cars for daily life outside city centers.'} },
+  ],
+  daily: [
+    { q:"Is it better for new students to live within walking distance of school, or is a short commute acceptable?", a:{name:'Paulo',text:'Walking distance saves time and money — I would choose that every time.'}, b:{name:'Mei',text:'A short commute is fine if it means a quieter, cheaper neighborhood.'} },
+    { q:"Should new students open a local bank account, or rely on international banking apps?", a:{name:'Aisha',text:'A local account makes everyday payments and rent much simpler.'}, b:{name:'Erik',text:'International apps are convenient enough now that a local account isn\'t always necessary.'} },
+  ],
+};
+function genDiscussion(theme){
+  const item = pick(DISCUSSION_BANK[theme] || DISCUSSION_BANK.campus);
+  return { professor:item.q, posts:[item.a,item.b] };
+}
+
+// ---- Build a Sentence ----
+// Real TOEFL Build a Sentence items use roughly 5–7 word chunks (some
+// chunks are multi-word phrases on the real test — this prototype keeps it
+// simple with single-word chunks, matching total length, not chunk count).
+const SENTENCE_BANK = {
+  grammar: [
+    'She told me the teacher was late.',
+    "I don't know if it's postponed.",
+    'He asked whether I had finished.',
+    'They said they would review it.',
+    'She explained why sources matter here.',
+  ],
+  campus: [
+    'Students must submit forms before Friday.',
+    'The library opens early on Mondays.',
+    'Breakfast is served until nine o\'clock.',
+  ],
+  register: [
+    'Could you confirm the meeting time?',
+    'I appreciate your quick response today.',
+  ],
+  current: [
+    'Renewable energy keeps getting more affordable.',
+    'Daily practice clearly improves long-term retention.',
+  ],
+  social: [
+    'International students bring valuable new perspectives.',
+    'Cultural exchange reduces misunderstandings between groups.',
+    'Globalization keeps changing how countries connect.',
+  ],
+  career: [
+    'She updated her resume this morning.',
+    'Communication skills matter in every profession.',
+    'He prepared questions before the interview.',
+  ],
+  health: [
+    'Good sleep improves concentration during class.',
+    'She scheduled a check-up this week.',
+    'Exercise can reduce stress before exams.',
+  ],
+  environment: [
+    'Cities keep investing in public transportation.',
+    'Reducing plastic waste helps our campus.',
+    'Students now prefer reusable water bottles.',
+  ],
+  daily: [
+    'She opened a bank account nearby.',
+    'The downtown bus leaves every twenty minutes.',
+    'He found a small apartment nearby.',
+  ],
+};
+function genSentence(theme){
+  const target = pick(SENTENCE_BANK[theme] || SENTENCE_BANK.grammar);
+  const words = target.replace(/\.$/,'').split(' ');
+  return { target, scrambled: shuffle(words) };
+}
+
+// ---- Complete the Words ----
+// Real TOEFL Complete the Words passages run 70–100 words with exactly 10
+// blanks, and the first sentence is never blanked. One passage per theme
+// (down from two shorter ones) so each matches that length and count.
+const COMPLETE_WORDS_BANK = {
+  campus: [
+    "International students often arrive at a new school with very different levels of comfort speaking casually in English. Many have **strong** grammar knowledge built from years of **classroom** study, yet the **gap** between textbook English and **everyday** conversation can feel **surprising** during the first few **weeks**. Simple things, like ordering **lunch** in the cafeteria or asking a classmate for **directions**, become small **victories** that build real **confidence** over time and slowly make the new environment feel familiar.",
+  ],
+  register: [
+    "Choosing the right level of formality can be just as important as choosing the right words when you write to someone new. A message to a **professor** usually opens more **formally** than one to a **friend**, even when the actual **content** is nearly identical. A **polite** request often **includes** a softening phrase such as 'would you **mind**,' instead of a blunt **command**, and a warm **closing** line leaves a much better final **impression**.",
+  ],
+  current: [
+    "Artificial intelligence is changing how ordinary people interact with technology every single day. Renewable **energy** now accounts for a growing **share** of electricity **production** worldwide, though the **transition** away from fossil fuels remains **uneven** across regions. Many companies are **testing** how new **tools** can **support**, rather than fully **replace**, everyday **human** decisions, and researchers continue studying how these changes will shape workplaces and everyday routines in the years ahead.",
+  ],
+  grammar: [
+    "Learning a new grammar rule is often easier when you see it used in a real sentence first. Reported **speech** frequently confuses **learners** because the **tense** shifts backward, so 'I am tired' **becomes** 'she said she **was** tired' in indirect form. A **noun** clause can also **function** as the **subject** of a sentence, for **example**: 'What she said **surprised** everyone,' which shows how flexible English word order can actually be.",
+  ],
+  social: [
+    "Meeting classmates from many different countries is one of the most valuable parts of studying abroad. Cultural **exchange** programs give **students** a chance to **experience** daily life in a **different** country firsthand, often for the first time. As **globalization** continues, more **companies** operate across **multiple** countries and **cultures** at once, which makes cross-cultural **understanding** a genuinely **useful** skill for almost any future career path a student might eventually choose.",
+  ],
+  career: [
+    "Preparing for a job search while still studying can feel overwhelming at first, but small steps help. A **strong** **resume** highlights **relevant** experience and **specific** skills that match the **position** you want. Employers often **value** communication skills as much as **technical** knowledge during an **interview**, so practicing both areas **early** makes a real **difference** later on, long before graduation day actually arrives and the real job search truly begins in earnest.",
+  ],
+  health: [
+    "Staying healthy while adjusting to a new country and a busy class schedule takes real effort. Getting enough **sleep** and staying **active** can **improve** concentration and reduce **stress** during a demanding **semester**. A balanced **diet**, regular **exercise**, and enough **rest** all **contribute** to long-term **wellbeing**, even when the daily class schedule feels quite tight and free time seems almost impossible to find during some especially busy exam weeks.",
+  ],
+  environment: [
+    "Small daily habits can add up to a real difference for the environment over time. Many **campuses** now **encourage** recycling and **reducing** single-use **plastic** to lower their overall **impact** on the **planet**. Public **transportation** produces far **less** pollution per **person** than individual car travel does, which is one clear reason more **cities** around the world are investing heavily in better bus and train systems every single passing year.",
+  ],
+  daily: [
+    "Getting settled into daily life in a new city involves learning a lot of small practical steps. Opening a **local** **bank** account usually **requires** a passport, proof of **address**, and a **student** ID card. The **bus** schedule **changes** slightly on **weekends**, so it's always worth **checking** the exact times well in **advance** before you actually travel, especially during the first few confusing weeks in a completely new place.",
+  ],
+};
+function blankWord(word){
+  // Exactly one "_" per hidden letter (never a single dash standing in for
+  // several letters), so the number of blanks always tells the student the
+  // exact number of missing characters in that word.
+  if(word.length<=3) return word;
+  const chars = word.split('');
+  const idxs = shuffle(chars.map((_,i)=>i).filter(i=>i>0)).slice(0, Math.ceil(chars.length*0.4));
+  idxs.forEach(i=>{ chars[i]='_'; });
+  return chars.join('');
+}
+function genCompleteWords(theme){
+  const raw = pick(COMPLETE_WORDS_BANK[theme] || COMPLETE_WORDS_BANK.campus);
+  const answer = raw.replace(/\*\*(.+?)\*\*/g, '$1');
+  const display = raw.replace(/\*\*(.+?)\*\*/g, (_,w)=>`<span class="blank">${blankWord(w)}</span>`);
+  return { display, answer };
+}
+
+// ---- Listen and Repeat ----
+// Real TOEFL 2026 task: 7 sentences, each heard once, increasing difficulty
+// (~8 to ~25 words) and increasing recording time (8s / 10s / 12s). Scored
+// on 5 dimensions: Fluency, Intelligibility, Language Use, Organization,
+// and Repeat Accuracy (the only one this free prototype can approximate —
+// the others need real audio analysis, which needs a hosted speech model).
+const RECORD_SECONDS_OFFICIAL = [8,8,10,10,10,12,12];
+// Natural speaking rate varies a lot from person to person — the official
+// ETS windows above assume a fairly brisk pace. This prototype adds a flat
+// practice buffer on top so slower natural speakers aren't cut off while
+// still training close to the real pace. Shown in the UI as "+Ns buffer".
+const PRACTICE_BUFFER_SECONDS = 3;
+const RECORD_SECONDS = RECORD_SECONDS_OFFICIAL.map(s => s + PRACTICE_BUFFER_SECONDS);
+const LISTEN_SETS = {
+  campus: [
+    {text:'The library closes early on Fridays.', scene:'library'},
+    {text:'She usually eats lunch in the cafeteria before class.', scene:'cafeteria'},
+    {text:'Most new students take the campus bus to get downtown.', scene:'bus'},
+    {text:'If you arrive after nine, the front doors will already be locked.', scene:'classroom'},
+    {text:'The academic office asked every student to update their contact information by Friday.', scene:'classroom'},
+    {text:'Even though the schedule changed twice this month, most students still managed to attend every class on time.', scene:'classroom'},
+    {text:'According to the coordinator, students who miss more than two orientation sessions will need to schedule a private meeting before classes officially begin.', scene:'library'},
+  ],
+  register: [
+    {text:'Could you close the door, please?', scene:'classroom'},
+    {text:'I would like to schedule a short meeting with you.', scene:'classroom'},
+    {text:'Would you mind sending me the notes from yesterday\'s class?', scene:'library'},
+    {text:'If it\'s not too much trouble, could you review my draft before Friday?', scene:'library'},
+    {text:'The email should open more formally when you are writing to a professor.', scene:'classroom'},
+    {text:'Even a short message can sound rude if the tone doesn\'t match who is reading it.', scene:'dorm'},
+    {text:'Choosing the right level of formality often matters more than choosing the right vocabulary when writing to someone you don\'t know well.', scene:'classroom'},
+  ],
+  current: [
+    {text:'Renewable energy is growing every year.', scene:'classroom'},
+    {text:'Many companies are testing new artificial intelligence tools.', scene:'classroom'},
+    {text:'Electric cars are becoming more common in big cities.', scene:'bus'},
+    {text:'Some researchers believe remote work will keep growing after the pandemic.', scene:'dorm'},
+    {text:'Governments around the world are debating how to regulate new technology safely.', scene:'classroom'},
+    {text:'Even though prices have increased, more households are choosing solar panels for their homes.', scene:'dorm'},
+    {text:'According to a recent report, countries that invested early in clean energy are now seeing lower costs than those that waited.', scene:'library'},
+  ],
+  grammar: [
+    {text:'She said she was tired.', scene:'classroom'},
+    {text:'He asked if I had finished the homework.', scene:'classroom'},
+    {text:'The teacher explained what the assignment required.', scene:'classroom'},
+    {text:'I don\'t know whether the exam was postponed until next week.', scene:'library'},
+    {text:'She told me that the meeting had already started when she arrived.', scene:'cafeteria'},
+    {text:'The professor explained how important it was to cite every source correctly in the essay.', scene:'library'},
+    {text:'What the coordinator announced during orientation surprised almost everyone who was sitting in the room.', scene:'classroom'},
+  ],
+  social: [
+    {text:'Many students value cultural exchange.', scene:'classroom'},
+    {text:'International students often bring new perspectives to class.', scene:'classroom'},
+    {text:'Some communities offer programs to help newcomers adjust.', scene:'library'},
+    {text:'Globalization has changed how people from different countries connect.', scene:'library'},
+    {text:'Local organizations sometimes create programs to support new immigrants and international students.', scene:'cafeteria'},
+    {text:'Even though cultural differences can cause misunderstandings, most students adapt within a few months.', scene:'dorm'},
+    {text:'According to several studies, students who join community programs early tend to adjust faster and report feeling less isolated.', scene:'library'},
+  ],
+  career: [
+    {text:'She updated her resume.', scene:'dorm'},
+    {text:'He applied for a summer internship.', scene:'classroom'},
+    {text:'Strong communication skills matter in most careers.', scene:'classroom'},
+    {text:'Many students look for internships during their final year.', scene:'library'},
+    {text:'A good interview often depends on preparation, not just knowledge.', scene:'classroom'},
+    {text:'Even highly skilled candidates can struggle if they don\'t prepare for common interview questions.', scene:'cafeteria'},
+    {text:'According to recent workplace surveys, employers increasingly value adaptability and communication skills just as highly as technical expertise.', scene:'library'},
+  ],
+  health: [
+    {text:'Sleep matters a lot.', scene:'dorm'},
+    {text:'She goes for a short walk every morning.', scene:'dorm'},
+    {text:'Regular exercise can help reduce daily stress.', scene:'classroom'},
+    {text:'Many students forget to drink enough water during exams.', scene:'cafeteria'},
+    {text:'A balanced diet can improve both energy and focus in class.', scene:'cafeteria'},
+    {text:'Even small changes, like walking instead of driving, can improve overall health over time.', scene:'bus'},
+    {text:'According to several studies, students who sleep at least seven hours per night tend to perform better on exams and feel less anxious.', scene:'library'},
+  ],
+  environment: [
+    {text:'Recycling helps the environment.', scene:'dorm'},
+    {text:'She carries a reusable water bottle every day.', scene:'cafeteria'},
+    {text:'Many campuses now offer free recycling bins.', scene:'classroom'},
+    {text:'Public transportation produces less pollution than individual cars.', scene:'bus'},
+    {text:'Some students started a small garden behind the dormitory.', scene:'dorm'},
+    {text:'Even small habits, like turning off lights, can reduce a building\'s energy use over time.', scene:'classroom'},
+    {text:'According to recent research, universities that invest early in sustainable buildings often save money on energy costs within a few years.', scene:'library'},
+  ],
+  daily: [
+    {text:'The bank opens at nine.', scene:'classroom'},
+    {text:'She pays her rent on the first of the month.', scene:'dorm'},
+    {text:'The bus downtown leaves every twenty minutes.', scene:'bus'},
+    {text:'Most apartments near campus require a security deposit.', scene:'dorm'},
+    {text:'He compared three apartments before choosing one near the library.', scene:'library'},
+    {text:'Opening a local bank account usually requires a passport and proof of address.', scene:'classroom'},
+    {text:'According to the school\'s housing office, most students find an apartment within their first two weeks of searching.', scene:'library'},
+  ],
+};
+function genListenRepeatSet(theme){
+  const items = LISTEN_SETS[theme] || LISTEN_SETS.campus;
+  return { set: items.map((it,i)=>({ text:it.text, scene:it.scene, seconds:RECORD_SECONDS[i], index:i+1 })) };
+}
+
+// ---- Take an Interview ----
+const INTERVIEW_BANK = {
+  campus: ['What is one thing about American culture that surprised you the most since you arrived?','Describe a class you are currently taking and explain why you find it useful.'],
+  register: ['Tell me about a time you had to write a formal message. What made it formal?'],
+  current: ['What is one current event you have followed recently, and why does it interest you?'],
+  grammar: ['Describe a rule of English grammar that you find difficult, and why.'],
+  social: ['How do you think international students can help their local community?','What is one cultural tradition from your country you would like to share with others?'],
+  career: ['What kind of career are you hoping to pursue after finishing your studies?','Describe one skill you think is essential for almost any job.'],
+  health: ['What do you do to stay healthy while studying abroad?','Describe one habit you would like to improve for your wellbeing.'],
+  environment: ['What is one small change you have made to live more sustainably?','Should your school do more to protect the environment? Why or why not?'],
+  daily: ['What was the most confusing part of daily life when you first arrived?','Describe the process of finding your current place to live.'],
+};
+function genInterview(theme){
+  return { question: pick(INTERVIEW_BANK[theme] || INTERVIEW_BANK.campus) };
+}
+
+/* =========================================================
+   SCENES — original SVG illustrations (free, no external
+   image service; CSP-safe). Swappable later for a locally
+   generated image model behind the same getScene() call.
+   ========================================================= */
+const SCENE_COLORS = { classroom:'#e1f5ee', library:'#f6ecd8', cafeteria:'#e6efe6', bus:'#ece5f5', dorm:'#f5e6e1' };
+function getScene(name){
+  const bg = SCENE_COLORS[name] || '#eee';
+  const shapes = {
+    classroom: '<rect x="20" y="60" width="160" height="6" fill="#8a7a5c"/><rect x="40" y="20" width="30" height="35" fill="#fff" stroke="#8a7a5c"/><rect x="90" y="20" width="30" height="35" fill="#fff" stroke="#8a7a5c"/><circle cx="150" cy="90" r="14" fill="#0f6e56"/><rect x="136" y="104" width="28" height="30" fill="#0f6e56"/>',
+    library: '<rect x="20" y="30" width="14" height="90" fill="#b5720f"/><rect x="40" y="30" width="14" height="90" fill="#8a5c0f"/><rect x="60" y="30" width="14" height="90" fill="#b5720f"/><circle cx="140" cy="80" r="14" fill="#3c6e4a"/><rect x="126" y="94" width="28" height="30" fill="#3c6e4a"/>',
+    cafeteria: '<circle cx="60" cy="90" r="30" fill="#fff" stroke="#8a7a5c"/><circle cx="130" cy="70" r="14" fill="#9c3b2e"/><rect x="116" y="84" width="28" height="30" fill="#9c3b2e"/>',
+    bus: '<rect x="20" y="60" width="140" height="50" rx="8" fill="#6b4fa0"/><circle cx="45" cy="115" r="8" fill="#333"/><circle cx="135" cy="115" r="8" fill="#333"/><rect x="35" y="70" width="24" height="18" fill="#fff"/><rect x="70" y="70" width="24" height="18" fill="#fff"/>',
+    dorm: '<rect x="30" y="70" width="60" height="35" fill="#fff" stroke="#8a7a5c"/><rect x="110" y="40" width="50" height="65" fill="#f5e6e1" stroke="#8a7a5c"/><circle cx="60" cy="55" r="10" fill="#9c3b2e"/>'
+  };
+  return `<svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${name} scene"><rect width="200" height="140" fill="${bg}"/>${shapes[name]||''}</svg>`;
+}
+
+/* =========================================================
+   SPEECH — native browser APIs, free, no server round-trip.
+   TTS is reliable across modern browsers. STT (mic) support
+   varies by browser and may be restricted inside a sandboxed
+   preview; always falls back to a typed response.
+   ========================================================= */
+// Voice variety: same sentence always gets the same voice (stable across
+// replays, doesn't feel glitchy), but different sentences get different
+// voices when the device offers more than one — purely native browser
+// voices, still free. How many voices are actually available depends
+// entirely on the device/OS — some phones only expose one or two.
+let _voiceCache = null;
+function getEnglishVoices(){
+  if(_voiceCache && _voiceCache.length) return _voiceCache;
+  const all = (window.speechSynthesis && window.speechSynthesis.getVoices) ? window.speechSynthesis.getVoices() : [];
+  const en = all.filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+  _voiceCache = en.length ? en : all;
+  return _voiceCache;
+}
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = () => { _voiceCache = null; };
+}
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))|0; } return Math.abs(h); }
+function speak(text, onEnd){
+  if(!('speechSynthesis' in window)){ alert('Text-to-speech is not available in this browser.'); if(onEnd) onEnd(); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.95;
+  const voices = getEnglishVoices();
+  if(voices.length) u.voice = voices[hashStr(text) % voices.length];
+  if(onEnd) u.onend = onEnd;
+  window.speechSynthesis.speak(u);
+}
+function supportsSTT(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+function listenOnce(onResult, onError){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ onError('Speech-to-text is not supported in this browser — please type your answer instead.'); return; }
+  try{
+    const rec = new SR();
+    rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
+    rec.onresult = e => onResult(e.results[0][0].transcript);
+    rec.onerror = e => onError('Microphone unavailable in this preview (' + e.error + '). Please type your answer instead.');
+    rec.start();
+  }catch(err){ onError('Could not start the microphone here. Please type your answer instead.'); }
+}
+
+/* =========================================================
+   STORAGE + GENERATION
+   ========================================================= */
+function loadBatch(){ return JSON.parse(localStorage.getItem('cse_batch') || '[]'); }
+function saveBatch(b){ localStorage.setItem('cse_batch', JSON.stringify(b)); }
+
+/* =========================================================
+   NO-BACKEND SHARING — this workspace has no shared-state
+   capability (only `downloads` and `mcp` are available), so
+   there is no automatic live sync between the teacher's
+   device and student phones. Instead, the teacher exports
+   this week's APPROVED items into a link with the data
+   embedded in the URL itself; opening that link on any phone
+   loads the same approved set — no login, no server, free.
+   ponytail: one-way, per-week export, not real-time sync —
+   upgrade to a real shared backend if the pilot outgrows this.
+   ========================================================= */
+function encodeBatchForShare(items, startAt, individual, speakingTurn, teacherEmail, announcement){
+  const json = JSON.stringify({ items, startAt: startAt || null, individual: individual || {}, speakingTurn: (speakingTurn && speakingTurn.length) ? speakingTurn : null, teacherEmail: teacherEmail || null, announcement: announcement || null });
+  return encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
+}
+function decodeBatchFromShare(str){
+  try{
+    const payload = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
+    return Array.isArray(payload) ? { items: payload, startAt: null, individual: {}, speakingTurn: null, teacherEmail: null, announcement: null } : payload; // back-compat
+  } catch(e){ return null; }
+}
+function importSharedBatchFromURL(){
+  const m = location.hash.match(/batch=([^&]+)/);
+  if(!m) return false;
+  const payload = decodeBatchFromShare(m[1]);
+  if(!payload || !payload.items) return false;
+  saveBatch(payload.items);
+  if(payload.startAt) localStorage.setItem('cse_start_at', String(payload.startAt));
+  else localStorage.removeItem('cse_start_at');
+  if(payload.individual && Object.keys(payload.individual).length) localStorage.setItem('cse_individual', JSON.stringify(payload.individual));
+  else localStorage.removeItem('cse_individual');
+  if(payload.speakingTurn && payload.speakingTurn.length) localStorage.setItem('cse_speaking_turn', JSON.stringify(payload.speakingTurn));
+  else localStorage.removeItem('cse_speaking_turn');
+  if(payload.teacherEmail) localStorage.setItem('cse_teacher_email', payload.teacherEmail);
+  else localStorage.removeItem('cse_teacher_email');
+  if(payload.announcement) localStorage.setItem('cse_announcement', payload.announcement);
+  else localStorage.removeItem('cse_announcement');
+  return true;
+}
+
+// Kahoot-style "everyone starts together" without a live server: the
+// teacher picks a clock time, students' phones each unlock on their own
+// once their local clock passes it — no roster, no push, but same-moment
+// start with zero backend. Real live rosters need the local-server phase.
+function computeStartAtEpoch(hhmm){
+  if(!hhmm) return null;
+  const [h,m] = hhmm.split(':').map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d.getTime();
+}
+// QR rendering: builds a plain SVG from the qrcode-generator matrix (dark
+// modules on a white box, kept white regardless of app theme, since a QR
+// code needs strong contrast to scan reliably — that's not a themeable
+// choice, it's a physical requirement of the camera reading it).
+function renderQRSvg(text, pxSize){
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  const n = qr.getModuleCount();
+  const cell = pxSize / n;
+  let path = '';
+  for(let r=0;r<n;r++){
+    for(let c=0;c<n;c++){
+      if(qr.isDark(r,c)) path += `M${c*cell},${r*cell}h${cell}v${cell}h-${cell}z `;
+    }
+  }
+  return `<svg viewBox="0 0 ${pxSize} ${pxSize}" width="${pxSize}" height="${pxSize}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="QR code to open this week's practice set">
+    <rect width="${pxSize}" height="${pxSize}" fill="#ffffff"/>
+    <path d="${path}" fill="#141413"/>
+  </svg>`;
+}
+
+const CLASSROOM_MESSAGES = [
+  "You've got this. Ready? Let's go! 🚀",
+  "New week, new words. Let's get after it! 💪",
+  "Scan in, show up, level up. Let's go! ✨",
+  "Ready to practice? Let's make it count! 🔥",
+  "Big brains, small screens. Let's do this! 🧠",
+  "Show up. Speak up. Level up. Let's go! 🙌",
+  "Today's the day you sound a little more fluent. Ready? 🎯",
+  "Grab your phone, not your excuses. Let's go! 📱",
+  "One more day, one more win. You in? 🏆",
+  "English doesn't stand a chance today. Let's go! ⚡",
+  "Small steps, real progress. Let's start! 🌱",
+  "You showed up — that's the hard part done. Let's go! 🎉",
+  "Mistakes welcome here. Progress guaranteed. Ready? 💯",
+  "Your future self says thanks in advance. Let's go! 🙏",
+  "Practice like nobody's grading it (they're not). Let's go! 😎",
+  "Confidence is built one sentence at a time. Ready? 🏗️",
+  "You didn't come this far to stop now. Let's go! 🔥",
+  "Scan, speak, shine. Let's go! ✨",
+];
+function nextClassroomMessage(){
+  const last = localStorage.getItem('cse_last_msg') || '';
+  const pool = CLASSROOM_MESSAGES.filter(m => m !== last);
+  const msg = pick(pool.length ? pool : CLASSROOM_MESSAGES);
+  localStorage.setItem('cse_last_msg', msg);
+  return msg;
+}
+
+function individualForShare(){
+  const out = {};
+  for(const key of Object.keys(individualAssignments)){
+    const approved = individualAssignments[key].items.filter(i=>i.status==='approved');
+    if(approved.length) out[key] = approved;
+  }
+  return out;
+}
+
+function parseSpeakTurn(raw){
+  return (raw||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+}
+function renderShareBox(){
+  const box = document.getElementById('share-box');
+  const approved = loadBatch().filter(i=>i.status==='approved');
+  const individual = individualForShare();
+  const individualCount = Object.keys(individual).length;
+  if(approved.length===0 && individualCount===0){ box.innerHTML=''; return; }
+
+  const startChoice = localStorage.getItem('cse_teacher_start_choice') || '';
+  const startAt = computeStartAtEpoch(startChoice);
+  const speakTurnRaw = localStorage.getItem('cse_teacher_speak_turn_raw') || '';
+  const speakTurn = parseSpeakTurn(speakTurnRaw);
+  const teacherEmailRaw = (localStorage.getItem('cse_teacher_email_raw') || '').trim();
+  const announcementRaw = (localStorage.getItem('cse_teacher_announcement_raw') || '').trim();
+  const link = location.origin + location.pathname + '#batch=' + encodeBatchForShare(approved, startAt, individual, speakTurn, teacherEmailRaw, announcementRaw);
+  const msg = nextClassroomMessage();
+  const lockActive = startAt && startAt > Date.now();
+  const individualNote = individualCount ? ` Plus a personal set for ${individualCount} named student(s) — they'll get theirs automatically when they type their name.` : '';
+
+  box.innerHTML = `
+    <div class="panel">
+      <h2>📤 Share today's set with students</h2>
+      <p class="small-note" style="margin-top:0">Send the link below, or project this panel on the classroom screen and let students scan the QR code with their own phone camera. Everyone gets exactly the ${approved.length} whole-class item(s) you approved — nothing else.${individualNote}</p>
+      <div style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;margin:.8rem 0">
+        <div style="border:1px solid var(--border);border-radius:12px;padding:10px;background:#ffffff;flex-shrink:0">${renderQRSvg(link, 160)}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:1.3rem;font-weight:800;line-height:1.25;margin-bottom:.3rem">${msg}</div>
+          <div class="small-note" style="margin-top:0">Scan to start practicing</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <input type="text" id="share-link" value="${link}" readonly onclick="this.select()">
+        <button class="btn sm" onclick="copyShareLink()">Copy link</button>
+      </div>
+      <div class="field-row" style="margin-top:.8rem">
+        <div class="field">
+          <label for="start-time">🚦 Everyone starts together at (optional)</label>
+          <input type="time" id="start-time" value="${startChoice}" onchange="onStartTimeChange()">
+        </div>
+        <button class="btn ghost sm" onclick="clearStartTime()">No lock — start anytime</button>
+      </div>
+      <p class="small-note">${lockActive
+        ? `Locked until ${new Date(startAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — students who join early see a countdown, everyone unlocks at the same moment (based on each phone's own clock, no server needed).`
+        : 'No lock set — students can start as soon as they scan and enter their name.'}</p>
+      <div class="field-row" style="margin-top:.8rem">
+        <div class="field">
+          <label for="speak-turn">🎤 Who's speaking this round? (Listen &amp; Repeat / Take an Interview — first names, comma-separated, optional)</label>
+          <input type="text" id="speak-turn" placeholder="e.g. Alex, Sam, Robin" value="${speakTurnRaw}" onchange="onSpeakTurnChange()">
+        </div>
+        <button class="btn ghost sm" onclick="clearSpeakTurn()">Everyone can speak</button>
+      </div>
+      <p class="small-note">${speakTurn.length
+        ? `Only ${speakTurn.length} named student(s) will see an active mic for speaking tasks this round — everyone else follows along and can still type an answer. Change the names and reshare the link/QR for the next round.`
+        : "Everyone's mic is active by default. In a full room, naming 1-3 students per round avoids everyone talking at once and phones picking up each other's voices."}</p>
+      <div class="field-row" style="margin-top:.8rem">
+        <div class="field">
+          <label for="teacher-email">📧 App feedback goes to (optional — developer's email, or yours)</label>
+          <input type="email" id="teacher-email" placeholder="dev@example.com" value="${teacherEmailRaw}" onchange="onTeacherEmailChange()">
+        </div>
+        <button class="btn ghost sm" onclick="clearTeacherEmail()">Remove</button>
+      </div>
+      <p class="small-note">${teacherEmailRaw
+        ? `Students' "💬 Feedback" button opens their own mail app pre-addressed here — every Thursday, plus anytime they choose to use it.`
+        : `Add an email so students' "💬 Feedback" button knows where to send app suggestions — without it, they'll just get a copyable note instead.`}</p>
+      <div class="field-row" style="margin-top:.8rem">
+        <div class="field">
+          <label for="announcement-text">📣 Message to students (optional — shown as a banner when they open this link)</label>
+          <textarea id="announcement-text" rows="2" placeholder="e.g. Great work today! Quiz moved to Friday." onchange="onAnnouncementChange()">${escapeHtml(announcementRaw)}</textarea>
+        </div>
+        <button class="btn ghost sm" onclick="clearAnnouncement()">Remove</button>
+      </div>
+      <p class="small-note">${announcementRaw
+        ? `Every student who opens this link (or scans this QR) sees this message until they dismiss it. Change the text and reshare to send a new one.`
+        : `One-way, from you to the class — good for quick announcements. Not a live chat: reshare the link/QR whenever the message changes.`}</p>
+    </div>`;
+}
+function onStartTimeChange(){
+  const v = document.getElementById('start-time').value;
+  if(v) localStorage.setItem('cse_teacher_start_choice', v);
+  else localStorage.removeItem('cse_teacher_start_choice');
+  renderShareBox();
+}
+function clearStartTime(){
+  localStorage.removeItem('cse_teacher_start_choice');
+  renderShareBox();
+}
+function onSpeakTurnChange(){
+  const v = document.getElementById('speak-turn').value;
+  if(v.trim()) localStorage.setItem('cse_teacher_speak_turn_raw', v);
+  else localStorage.removeItem('cse_teacher_speak_turn_raw');
+  renderShareBox();
+}
+function clearSpeakTurn(){
+  localStorage.removeItem('cse_teacher_speak_turn_raw');
+  renderShareBox();
+}
+function onTeacherEmailChange(){
+  const v = document.getElementById('teacher-email').value.trim();
+  if(v){ localStorage.setItem('cse_teacher_email_raw', v); localStorage.setItem('cse_teacher_email', v); }
+  else { localStorage.removeItem('cse_teacher_email_raw'); localStorage.removeItem('cse_teacher_email'); }
+  renderShareBox();
+}
+function clearTeacherEmail(){
+  localStorage.removeItem('cse_teacher_email_raw');
+  localStorage.removeItem('cse_teacher_email');
+  renderShareBox();
+}
+function onAnnouncementChange(){
+  const v = document.getElementById('announcement-text').value.trim();
+  if(v) localStorage.setItem('cse_teacher_announcement_raw', v);
+  else localStorage.removeItem('cse_teacher_announcement_raw');
+  renderShareBox();
+}
+function clearAnnouncement(){
+  localStorage.removeItem('cse_teacher_announcement_raw');
+  renderShareBox();
+}
+function copyShareLink(){
+  const input = document.getElementById('share-link');
+  input.select();
+  navigator.clipboard?.writeText(input.value).then(
+    ()=>{ const btn = event.target; const old = btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old, 1500); },
+    ()=>{ /* clipboard blocked in this preview — selection still lets the user copy manually */ }
+  );
+}
+
+function generateOne(type, theme){
+  switch(type){
+    case 'email': return { type, data: genEmail(theme) };
+    case 'discussion': return { type, data: genDiscussion(theme) };
+    case 'sentence': return { type, data: genSentence(theme) };
+    case 'complete-words': return { type, data: genCompleteWords(theme) };
+    case 'listen-repeat': return { type, data: genListenRepeatSet(theme) };
+    case 'interview': return { type, data: genInterview(theme) };
+  }
+}
+function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
+
+// Builds a fresh batch of items for a given type+theme — reused for the
+// whole-class generator, individual-student assignment, and the "practice
+// again" regeneration button, so all three ways of getting content stay
+// consistent.
+function generateBatchItems(type, theme){
+  const items = [];
+  if(type === 'listen-repeat'){
+    // Real TOEFL structure: Listen and Repeat is ONE task made of 7
+    // sentences of increasing difficulty — approved/discarded as a set,
+    // not as 4 separate cards like the other task types.
+    const g = generateOne(type, theme);
+    items.push({ id: uid(), type:g.type, tag: tagFor(g.type), theme, status:'pending', data: g.data });
+    return items;
+  }
+  const seen = new Set();
+  for(let i=0;i<4;i++){
+    let g, key, tries = 0, usedTheme;
+    // avoid showing the exact same generated item twice in one batch;
+    // small banks (e.g. Complete the Words has 2 entries/theme) fall back
+    // to sampling other themes once the chosen theme is exhausted.
+    do{
+      usedTheme = tries < 6 ? theme : pick(ALL_THEMES);
+      g = generateOne(type, usedTheme);
+      key = JSON.stringify(g.data);
+      tries++;
+    } while(seen.has(key) && tries < 12);
+    seen.add(key);
+    items.push({ id: uid(), type:g.type, tag: tagFor(g.type), theme: usedTheme, status:'pending', data: g.data });
+  }
+  return items;
+}
+
+function randomizeTheme(){
+  document.getElementById('topic').value = pick(ALL_THEMES);
+}
+
+function generateBatch(){
+  const theme = document.getElementById('topic').value;
+  const items = generateBatchItems(activeType, theme);
+  saveBatch(items);
+  renderTeacher();
+}
+
+/* =========================================================
+   PROGRESS TRACKER — "the app remembers where we stopped".
+   CSE classes run Monday–Thursday (per the Student Handbook),
+   so a week is 4 class days. This is just a counter the
+   teacher advances by hand — it doesn't know what actually
+   happened in class, it only remembers what day you told it
+   you're on.
+   ========================================================= */
+function loadProgress(){ return JSON.parse(localStorage.getItem('cse_progress') || '{"week":1,"day":1}'); }
+function saveProgress(p){ localStorage.setItem('cse_progress', JSON.stringify(p)); }
+function renderProgressBox(){
+  const el = document.getElementById('progress-box');
+  if(!el) return;
+  const p = loadProgress();
+  el.innerHTML = `
+    <div class="panel" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
+      <div><b>Week ${p.week} · Day ${p.day} of 4</b><span class="small-note" style="margin:0 0 0 .6rem">picks up where you left off, even after closing this tab</span></div>
+      <button class="btn ghost sm" onclick="advanceDay()">Next class day →</button>
+    </div>`;
+}
+function advanceDay(){
+  const p = loadProgress();
+  p.day += 1;
+  if(p.day > 4){ p.day = 1; p.week += 1; }
+  saveProgress(p);
+  renderProgressBox();
+}
+
+/* =========================================================
+   INDIVIDUAL ASSIGNMENTS — same generator, scoped to one
+   named student instead of the whole class. Kept in memory
+   only (not localStorage) until she shares — first names are
+   typed fresh each session, never baked into the app itself.
+   ========================================================= */
+let individualAssignments = {};
+// Populates the individual-assignment type/theme selects once at startup —
+// deliberately separate <select>s from the whole-class generator above, so
+// the teacher can give one student a different type+theme without
+// disturbing what's queued up for the rest of the class.
+function renderIndividualControls(){
+  const typeSel = document.getElementById('indiv-type');
+  const themeSel = document.getElementById('indiv-theme');
+  if(typeSel) typeSel.innerHTML = TASK_TYPES.map(t=>`<option value="${t.id}">${t.tag} (${t.section})</option>`).join('');
+  if(themeSel) themeSel.innerHTML = ALL_THEMES.map(t=>`<option value="${t}">${THEME_LABELS[t]}</option>`).join('') + '<option value="__random">🎲 Random</option>';
+}
+function peekIndividualInsights(){
+  const name = (document.getElementById('indiv-name').value || '').trim();
+  if(!name) return;
+  showInsights(name);
+}
+function generateForIndividual(){
+  const nameInput = document.getElementById('indiv-name');
+  const name = (nameInput.value || '').trim();
+  if(!name) return;
+  const type = document.getElementById('indiv-type').value;
+  let theme = document.getElementById('indiv-theme').value;
+  if(theme === '__random') theme = pick(ALL_THEMES);
+  individualAssignments[name.toLowerCase()] = { displayName: name, items: generateBatchItems(type, theme).map(i=>({...i, status:'approved'})) };
+  nameInput.value = '';
+  renderIndividualList();
+  renderShareBox();
+}
+function removeIndividual(key){
+  delete individualAssignments[key];
+  renderIndividualList();
+  renderShareBox();
+}
+function renderIndividualList(){
+  const el = document.getElementById('individual-list');
+  const keys = Object.keys(individualAssignments);
+  if(keys.length===0){ el.innerHTML=''; return; }
+  el.innerHTML = '<div class="chip-row" style="margin-top:.6rem">' + keys.map(k=>{
+    const a = individualAssignments[k];
+    const theme = a.items[0]?.theme;
+    return `<span class="chip">${a.displayName} — ${a.items[0]?.tag || ''}${theme ? ' · ' + (THEME_LABELS[theme]||theme) : ''} <button class="btn ghost sm" style="padding:.1rem .4rem;margin-left:.3rem" onclick="removeIndividual('${k}')">✕</button></span>`;
+  }).join('') + '</div>';
+}
+
+/* =========================================================
+   RENDER — teacher review cards
+   ========================================================= */
+function renderTypeTabs(){
+  const wrap = document.getElementById('type-tabs');
+  wrap.innerHTML = TASK_TYPES.map(t =>
+    `<button class="${t.id===activeType?'active':''}" onclick="activeType='${t.id}'; renderTypeTabs();">${t.tag} <span style="opacity:.6">· ${t.section}</span></button>`
+  ).join('');
+}
+
+function cardBody(item){
+  const d = item.data;
+  if(item.type==='email') return `<div class="ex-body">${d.prompt}</div>`;
+  if(item.type==='discussion') return `<div class="ex-body"><b>Professor:</b> ${d.professor}<br><br><b>${d.posts[0].name}:</b> ${d.posts[0].text}<br><b>${d.posts[1].name}:</b> ${d.posts[1].text}<br><br><i>Student response: 120–130 words</i></div>`;
+  if(item.type==='sentence') return `<div class="ex-body">Target sentence (for teacher reference):<br><b>${d.target}</b></div><div class="chip-row">${d.scrambled.map(w=>`<span class="chip">${w}</span>`).join('')}</div>`;
+  if(item.type==='complete-words') return `<div class="ex-body cw-passage">${d.display}</div>`;
+  if(item.type==='listen-repeat') return `<div class="ex-body">7 sentences, increasing difficulty (~8 → ~25 words), recording time grows 8s → 10s → 12s — matches the real TOEFL Listen and Repeat task.</div>
+    <p class="small-note">📺 In class, these 🔊 buttons are also your live playback controls — with this tab open on the classroom screen, press each one when you're ready and it plays through the room speakers. Students don't play it on their own phones (avoids 13 phones firing out of sync) — they just listen and respond.</p>
+    <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.6rem">
+      ${d.set.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
+        <span class="chip" style="flex-shrink:0">#${s.index} · ${s.seconds}s</span>
+        <span style="flex:1">${s.text}</span>
+        <button class="btn sound sm" onclick="speak('${s.text.replace(/'/g,"\\'")}')">🔊</button>
+      </div>`).join('')}
+    </div>`;
+  if(item.type==='interview') return `<div class="ex-body">${d.question}</div><div class="ex-actions"><button class="btn sound sm" onclick="speak('${d.question.replace(/'/g,"\\'")}')">🔊 Preview audio</button></div>`;
+  return '';
+}
+
+function renderTeacher(){
+  const batch = loadBatch();
+  const wrap = document.getElementById('batch');
+  const empty = document.getElementById('teacher-empty');
+  renderProgressBox();
+  renderIndividualList();
+  renderShareBox();
+  wrap.innerHTML = '';
+  if(batch.length===0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  batch.forEach(item=>{
+    const card = document.createElement('div');
+    card.className = 'ex-card' + (item.status==='discarded' ? ' discarded':'');
+    card.innerHTML = `
+      <div class="ex-card-head">
+        <span class="ex-tag">${item.tag}</span>
+        <span class="ex-status ${item.status}">${item.status==='pending'?'Awaiting review':item.status==='approved'?'Approved':'Discarded'}</span>
+      </div>
+      ${cardBody(item)}
+      <div class="ex-actions">
+        ${item.status!=='approved' ? `<button class="btn ok sm" onclick="setStatus('${item.id}','approved')">✓ Approve</button>` : ''}
+        ${item.status!=='discarded' ? `<button class="btn danger sm" onclick="setStatus('${item.id}','discarded')">✕ Discard</button>` : ''}
+      </div>`;
+    wrap.appendChild(card);
+  });
+}
+function setStatus(id,status){ saveBatch(loadBatch().map(i=>i.id===id?{...i,status}:i)); renderTeacher(); }
+
+/* =========================================================
+   RENDER — student practice
+   ========================================================= */
+let selectedId = null;
+
+function renderNamePrompt(){
+  document.getElementById('student-empty').style.display = 'none';
+  document.getElementById('scenario-list').innerHTML = '';
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>Welcome!</b> What's your first name?</div>
+      <input type="text" id="name-input" placeholder="Your first name" style="margin-top:.6rem" onkeydown="if(event.key==='Enter') submitName()">
+      <div class="ex-actions"><button class="btn" onclick="submitName()">Start practicing</button></div>
+      <p class="small-note">Your name and practice history sync privately to this project's database, so your progress follows you if you switch phones or use a tablet — nothing is shared publicly or with classmates.</p>
+    </div>`;
+}
+function submitName(){
+  const v = (document.getElementById('name-input').value || '').trim();
+  if(!v) return;
+  setStudentName(v);
+  renderWhoAmI();
+  renderStudent();
+  hydrateFromCloud(v).then(()=>renderStudent());
+}
+
+let _waitTimer = null;
+function renderWaitingRoom(startAt){
+  document.getElementById('student-empty').style.display = 'none';
+  document.getElementById('scenario-list').innerHTML = '';
+  const tick = () => {
+    const msLeft = startAt - Date.now();
+    if(msLeft <= 0){
+      if(_waitTimer){ clearInterval(_waitTimer); _waitTimer = null; }
+      renderStudent();
+      return;
+    }
+    const s = Math.ceil(msLeft/1000);
+    const mm = Math.floor(s/60), ss = s%60;
+    document.getElementById('practice-wrap').innerHTML = `
+      <div class="compose" style="text-align:center">
+        <div style="font-size:.78rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Get ready, ${getStudentName()} 🎧</div>
+        <div style="font-size:2.6rem;font-weight:800;margin:.6rem 0;font-variant-numeric:tabular-nums">${mm}:${String(ss).padStart(2,'0')}</div>
+        <div class="small-note" style="margin-top:0">Everyone unlocks at the same moment — no need to refresh.</div>
+      </div>`;
+  };
+  tick();
+  if(_waitTimer) clearInterval(_waitTimer);
+  _waitTimer = setInterval(tick, 1000);
+}
+
+/* =========================================================
+   HOME / SELF PRACTICE — for a student opening the plain,
+   bookmarked link with no class session loaded. No name gate,
+   no lock, no QR needed: "motivate without forcing anything."
+   ========================================================= */
+function hasAnyTeacherContent(){
+  if(loadBatch().some(i=>i.status==='approved')) return true;
+  try{
+    const map = JSON.parse(localStorage.getItem('cse_individual') || '{}');
+    return Object.values(map).some(items => Array.isArray(items) && items.some(i=>i.status==='approved'));
+  }catch(e){ return false; }
+}
+function isIndividuallyAssigned(){
+  const name = getStudentName().toLowerCase();
+  if(!name) return false;
+  try{ const map = JSON.parse(localStorage.getItem('cse_individual') || '{}'); return !!map[name]; }
+  catch(e){ return false; }
+}
+// True when the student is on the same shared, whole-class batch as
+// everyone else in the room — the case where one phone playing audio out
+// loud (the teacher's, through the classroom speakers) makes far more
+// sense than 13 phones all playing it slightly out of sync. Self-practice
+// and individually-assigned content stay fully self-serve, since there's
+// no "room" to keep in sync with.
+function isSharedClassroomAudio(){
+  return selectedId !== '__self__' && hasAnyTeacherContent() && !isIndividuallyAssigned();
+}
+// Teacher-set "who speaks this round" list (first names, lowercased) —
+// travels in the same share link as the batch. Null/empty = no
+// restriction (everyone's mic is active, today's default). Only matters
+// in classroom mode: alone at home or on an individual assignment there's
+// no room to keep quiet for, so nothing is gated there.
+function speakingTurnList(){
+  try{
+    const arr = JSON.parse(localStorage.getItem('cse_speaking_turn') || 'null');
+    return Array.isArray(arr) && arr.length ? arr : null;
+  }catch(e){ return null; }
+}
+function isMyTurnToSpeak(){
+  if(!isSharedClassroomAudio()) return true;
+  const turn = speakingTurnList();
+  if(!turn) return true;
+  const name = getStudentName().toLowerCase();
+  if(!name) return true;
+  return turn.includes(name);
+}
+function getStudentBatch(){
+  const name = getStudentName().toLowerCase();
+  if(name){
+    try{
+      const map = JSON.parse(localStorage.getItem('cse_individual') || '{}');
+      if(map[name]) return map[name].filter(i=>i.status==='approved');
+    }catch(e){}
+  }
+  return loadBatch().filter(i=>i.status==='approved');
+}
+function renderSelfPractice(){
+  document.getElementById('student-empty').style.display = 'none';
+  document.getElementById('scenario-list').innerHTML = '';
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>🏠 Practice on your own</b><br>No class session loaded right now — perfect for practicing anytime, anywhere. Nothing here is tracked for a grade.</div>
+      <div class="field-row" style="margin-top:.8rem">
+        <div class="field">
+          <label for="self-type">Task type</label>
+          <select id="self-type">${TASK_TYPES.map(t=>`<option value="${t.id}">${t.tag} (${t.section})</option>`).join('')}</select>
+        </div>
+        <div class="field">
+          <label for="self-theme">Theme</label>
+          <select id="self-theme">${ALL_THEMES.map(t=>`<option value="${t}">${THEME_LABELS[t]}</option>`).join('')}<option value="__random">🎲 Surprise me (this theme only)</option></select>
+        </div>
+      </div>
+      <div class="ex-actions"><button class="btn" onclick="startSelfPractice()">Start practicing</button></div>
+      <div class="panel" style="background:var(--accent-soft);border:none;margin-top:1rem">
+        <b>🎲 Want a more intensive session?</b>
+        <p class="small-note" style="margin:.3rem 0 .7rem">Surprise practice picks a new task type <i>and</i> theme each time — it cycles through every combination before repeating any, so a full round always covers new ground.</p>
+        <button class="btn" onclick="startSurprisePractice()">🎲 Surprise practice</button>
+      </div>
+      <p class="small-note" style="margin-top:.8rem">💡 Tip: save this page to your browser's favorites/bookmarks to come back anytime.</p>
+    </div>`;
+}
+function startSelfPractice(){
+  const type = document.getElementById('self-type').value;
+  let theme = document.getElementById('self-theme').value;
+  if(theme === '__random') theme = drawFromBag('theme', ALL_THEMES, getStudentName());
+  const g = generateOne(type, theme);
+  window._selfItem = { id:'__self__', type, tag: tagFor(type), theme, status:'approved', data: g.data };
+  selectedId = '__self__';
+  practiceOverride = null;
+  renderPractice();
+}
+// "Surprise practice" — draws a full type+theme combo from the shuffle bag
+// (54 combinations: 6 task types × 9 themes) so an intensive practice
+// session cycles through everything before any combo repeats.
+function startSurprisePractice(){
+  const combo = drawFromBag('combo', ALL_TYPE_THEME_COMBOS, getStudentName());
+  const [type, theme] = combo.split('|');
+  const g = generateOne(type, theme);
+  window._selfItem = { id:'__self__', type, tag: tagFor(type), theme, status:'approved', data: g.data };
+  selectedId = '__self__';
+  practiceOverride = null;
+  renderPractice();
+}
+
+function renderStudent(){
+  renderAnnouncement();
+  renderWelcomeBack();
+  renderFeedbackNudge();
+  const contentExists = hasAnyTeacherContent();
+
+  if(contentExists && !getStudentName()){ renderNamePrompt(); return; }
+
+  const startAt = Number(localStorage.getItem('cse_start_at') || 0);
+  if(contentExists && startAt && Date.now() < startAt){ renderWaitingRoom(startAt); return; }
+  if(_waitTimer){ clearInterval(_waitTimer); _waitTimer = null; }
+
+  const list = document.getElementById('scenario-list');
+  const empty = document.getElementById('student-empty');
+
+  if(!contentExists){
+    list.innerHTML = '';
+    renderSelfPractice();
+    return;
+  }
+
+  const batch = getStudentBatch();
+  list.innerHTML='';
+  if(batch.length===0){ empty.style.display='block'; document.getElementById('practice-wrap').innerHTML=''; return; }
+  empty.style.display='none';
+  batch.forEach(item=>{
+    const preview = item.type==='email' ? item.data.prompt.split('\n')[0]
+      : item.type==='discussion' ? item.data.professor
+      : item.type==='sentence' ? 'Reorder the scrambled words'
+      : item.type==='complete-words' ? 'Fill in the missing letters'
+      : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
+      : item.data.question;
+    const b = document.createElement('button');
+    b.className = 'scenario-pick' + (selectedId===item.id ? ' selected':'');
+    b.innerHTML = `<span class="tag">${item.tag}</span><span class="txt">${preview}</span>`;
+    b.onclick = () => { selectedId = item.id; practiceOverride = null; renderStudent(); renderPractice(); };
+    list.appendChild(b);
+  });
+  renderPractice();
+}
+
+// practiceOverride lets "practice again" swap in a freshly generated
+// instance without touching the teacher-approved record in storage.
+let practiceOverride = null;
+function getBaseItem(){
+  if(selectedId === '__self__') return window._selfItem || null;
+  return getStudentBatch().find(i=>i.id===selectedId) || loadBatch().find(i=>i.id===selectedId);
+}
+function currentItem(){
+  const base = getBaseItem();
+  if(!base) return null;
+  if(practiceOverride && practiceOverride.forId === base.id) return { ...base, data: practiceOverride.data };
+  return base;
+}
+function practiceAgain(){
+  const base = getBaseItem();
+  if(!base) return;
+  const g = generateOne(base.type, base.theme || 'campus');
+  practiceOverride = { forId: base.id, data: g.data };
+  if(base.id === '__self__') window._selfItem = { ...window._selfItem, data: g.data };
+  if(base.type === 'listen-repeat') window._lrState = null; // force the 7-step walkthrough to restart on the new set
+  renderPractice();
+}
+
+const PRACTICE_AGAIN_BTN = `<div class="ex-actions" style="margin-top:.6rem"><button class="btn ghost sm" onclick="practiceAgain()">🔄 Try another one like this</button></div>`;
+
+/* =========================================================
+   COUNTDOWN TIMERS — matches real TOEFL 2026 per-task timing
+   so practice trains the actual pace, not just the content.
+   Email (7:00) and Academic Discussion (10:00) are published
+   by ETS. Take an Interview's 45s-no-prep is also ETS. Build
+   a Sentence (41s) and Complete the Words (90s) are NOT
+   published by ETS — these are practical pacing targets from
+   third-party prep guides, marked as such in the UI.
+   ========================================================= */
+const TASK_TIME_LIMITS = { email:420, discussion:600, sentence:41, 'complete-words':90, interview:45 };
+const OFFICIAL_TIMING = { email:true, discussion:true, sentence:false, 'complete-words':false, interview:true };
+
+function formatTime(s){
+  const m = Math.floor(s/60), ss = s%60;
+  return `${m}:${String(ss).padStart(2,'0')}`;
+}
+function clearPracticeTimer(){
+  if(window._practiceTimer){ clearInterval(window._practiceTimer); window._practiceTimer = null; }
+}
+function timerBadgeHtml(type){
+  const total = TASK_TIME_LIMITS[type];
+  const note = OFFICIAL_TIMING[type] ? 'Official TOEFL time for this task' : 'Practice pacing target — ETS does not publish an official time for this task';
+  return `<div class="timer-badge" id="task-timer">⏱ ${formatTime(total)}</div><div class="timer-note">${note}</div>`;
+}
+function startTaskTimer(type){
+  clearPracticeTimer();
+  let left = TASK_TIME_LIMITS[type];
+  const badge = document.getElementById('task-timer');
+  const render = () => {
+    const el = document.getElementById('task-timer');
+    if(!el) return;
+    el.textContent = '⏱ ' + formatTime(left);
+    el.classList.toggle('warn', left <= Math.max(10, Math.floor(TASK_TIME_LIMITS[type]*0.15)));
+  };
+  render();
+  window._practiceTimer = setInterval(()=>{
+    left--;
+    if(left <= 0){
+      clearPracticeTimer();
+      const el = document.getElementById('task-timer');
+      if(el){ el.textContent = "⏰ Time's up"; el.classList.add('warn'); }
+      const flag = document.getElementById('time-up-note');
+      if(flag) flag.style.display = 'block';
+      return;
+    }
+    render();
+  }, 1000);
+}
+
+function renderPractice(){
+  const wrap = document.getElementById('practice-wrap');
+  const item = currentItem();
+  clearPracticeTimer();
+  if(!item){ wrap.innerHTML=''; return; }
+
+  if(item.type==='email' || item.type==='discussion'){
+    const prompt = item.type==='email' ? item.data.prompt
+      : `<b>Professor:</b> ${item.data.professor}<br><br><b>${item.data.posts[0].name}:</b> ${item.data.posts[0].text}<br><b>${item.data.posts[1].name}:</b> ${item.data.posts[1].text}<br><br>Write your response (120–130 words):`;
+    wrap.innerHTML = `
+      <div class="compose">
+        ${timerBadgeHtml(item.type)}
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this task would end now. Keep going if you want to finish the draft.</div>
+        <div class="ex-body" style="margin-bottom:.8rem">${prompt}</div>
+        <textarea id="response" rows="6" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
+        <div class="wordcount" id="wordcount">0 words</div>
+        <div class="ex-actions"><button class="btn" onclick="checkWriting()">Check draft</button></div>
+        <div id="feedback"></div>
+      </div>`;
+    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    startTaskTimer(item.type);
+    return;
+  }
+
+  if(item.type==='sentence'){
+    wrap.innerHTML = `
+      <div class="compose">
+        ${timerBadgeHtml(item.type)}
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now.</div>
+        <div class="ex-body">Tap the words in the correct order to build the sentence:</div>
+        <div class="assembled" id="assembled"></div>
+        <div class="word-bank" id="word-bank"></div>
+        <div class="ex-actions">
+          <button class="btn ghost sm" onclick="resetSentence()">↺ Reset</button>
+          <button class="btn sm" onclick="checkSentence()">Check</button>
+        </div>
+        <div id="sentence-result"></div>
+      </div>`;
+    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    window._sentenceState = { remaining: [...item.data.scrambled], assembled: [] };
+    renderSentenceUI();
+    startTaskTimer(item.type);
+    return;
+  }
+
+  if(item.type==='complete-words'){
+    wrap.innerHTML = `
+      <div class="compose">
+        ${timerBadgeHtml(item.type)}
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now.</div>
+        <div class="ex-body cw-passage">${item.data.display}</div>
+        <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type the full text with words completed</label>
+        <textarea id="cw-answer" rows="4" placeholder="Type the complete passage..."></textarea>
+        <div class="ex-actions"><button class="btn sm" onclick="checkCompleteWords()">Check</button></div>
+        <div id="cw-result"></div>
+      </div>`;
+    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    startTaskTimer(item.type);
+    return;
+  }
+
+  if(item.type==='listen-repeat'){
+    if(!window._lrState || window._lrState.itemId !== item.id){
+      window._lrState = { itemId:item.id, step:0, played:false, results:[] };
+    }
+    renderListenRepeatStep(item);
+    return;
+  }
+
+  if(item.type==='interview'){
+    window._interviewTiming = null;
+    const classroom = isSharedClassroomAudio();
+    const myTurn = isMyTurnToSpeak();
+    const turnList = speakingTurnList();
+    const turnBanner = (classroom && turnList)
+      ? (myTurn
+          ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
+          : `<p class="small-note">⏳ This round: ${turnList.join(', ')}. Not your name? No mic needed — just type your answer below.</p>`)
+      : '';
+    wrap.innerHTML = `
+      <div class="compose">
+        <div id="interview-pretimer" class="small-note" style="margin-bottom:.6rem">⏱ No prep time on the real test — the 45s answer clock starts the moment you hear the question. Aim for about 150 words in 4–6 sentences.</div>
+        ${turnBanner}
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test the recording would stop now.</div>
+        <div class="ex-body">${item.data.question}</div>
+        <div class="ex-actions" style="margin-top:.7rem">
+          <button class="btn sound" onclick="hearInterviewQuestion('${item.data.question.replace(/'/g,"\\'")}')">🔊 Hear the question</button>
+          ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
+        </div>
+        ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
+        <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null"></textarea>
+        <div class="ex-actions" style="margin-top:.6rem"><button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button></div>
+        <div id="interview-feedback"></div>
+      </div>`;
+    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    return;
+  }
+}
+function hearInterviewQuestion(text){
+  speak(text);
+  const pre = document.getElementById('interview-pretimer');
+  if(pre) pre.outerHTML = timerBadgeHtml('interview');
+  startTaskTimer('interview');
+}
+
+// -- Build a Sentence interaction --
+function renderSentenceUI(){
+  const s = window._sentenceState;
+  document.getElementById('assembled').innerHTML = s.assembled.map((w,i)=>`<button class="word-chip" onclick="unpick(${i})">${w}</button>`).join('') || '<span class="small-note">Tap words below to build the sentence</span>';
+  document.getElementById('word-bank').innerHTML = s.remaining.map((w,i)=>`<button class="word-chip" onclick="pickWord(${i})">${w}</button>`).join('');
+}
+function pickWord(i){ const s=window._sentenceState; s.assembled.push(s.remaining[i]); s.remaining.splice(i,1); renderSentenceUI(); }
+function unpick(i){ const s=window._sentenceState; s.remaining.push(s.assembled[i]); s.assembled.splice(i,1); renderSentenceUI(); }
+function resetSentence(){ const item=currentItem(); window._sentenceState={ remaining:[...item.data.scrambled], assembled:[] }; renderSentenceUI(); document.getElementById('sentence-result').innerHTML=''; }
+function checkSentence(){
+  // Real TOEFL rule: Build a Sentence is graded correct/incorrect with no
+  // partial credit — one word out of place counts the same as a fully wrong
+  // sentence. This checker matches that exactly, on purpose.
+  const item = currentItem();
+  const attempt = window._sentenceState.assembled.join(' ') + '.';
+  const ok = attempt.toLowerCase() === item.data.target.toLowerCase();
+  document.getElementById('sentence-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! (exact word order — matches the real all-or-nothing scoring)' : '✕ Not correct yet — even one word out of place counts as incorrect on the real test. Keep trying, or tap Reset.'}</div>`;
+  logUsage('sentence', item.theme, ok ? 1 : 0);
+}
+
+// -- Complete the Words check --
+function checkCompleteWords(){
+  const item = currentItem();
+  const attempt = (document.getElementById('cw-answer').value||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const answer = item.data.answer.toLowerCase().replace(/\s+/g,' ');
+  const ok = attempt === answer;
+  document.getElementById('cw-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct!' : 'Close — compare carefully with the missing letters and try again.'}</div>`;
+  logUsage('complete-words', item.theme, ok ? 1 : 0);
+}
+
+// -- Listen and Repeat: 7-step walkthrough matching the real task rhythm --
+
+// Repeat Accuracy proxy (0-5): word-overlap between the target sentence and
+// what the student said. This is the ONLY one of the 5 real ETS dimensions
+// (Fluency, Intelligibility, Language Use, Organization, Repeat Accuracy)
+// a free, offline, text-based prototype can approximate — the other four
+// need real audio/prosody analysis, which requires a hosted speech model
+// (a good candidate for the local-server upgrade discussed for the pilot).
+function repeatAccuracy(target, said){
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(Boolean);
+  const t = norm(target), rest = norm(said);
+  if(t.length===0) return 0;
+  let matches = 0;
+  t.forEach(w=>{ const idx=rest.indexOf(w); if(idx>-1){ matches++; rest.splice(idx,1);} });
+  return Math.round((matches/t.length)*5*10)/10;
+}
+
+function renderListenRepeatStep(item){
+  const st = window._lrState;
+  const s = item.data.set[st.step];
+  const wrap = document.getElementById('practice-wrap');
+  const classroom = isSharedClassroomAudio();
+  const myTurn = isMyTurnToSpeak();
+  const turnList = speakingTurnList();
+  const turnBanner = (classroom && turnList)
+    ? (myTurn
+        ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
+        : `<p class="small-note">⏳ This round: ${turnList.join(', ')}. Not your name? Follow along quietly — your teacher will call on you soon.</p>`)
+    : '';
+  const listenControls = !myTurn ? '' : (classroom
+    ? `<button class="btn ok" onclick="lrHeardItLive()">✅ I heard it — start recording</button>
+       <button class="btn ghost sm" onclick="lrPlay('${s.text.replace(/'/g,"\\'")}')">🔈 Missed it? Play on my phone</button>`
+    : `<button class="btn sound" id="lr-play" onclick="lrPlay('${s.text.replace(/'/g,"\\'")}')">🔊 Listen ${st.played ? '(played)' : '(once)'}</button>
+       ${st.played ? `<button class="btn ghost sm" onclick="lrPlay('${s.text.replace(/'/g,"\\'")}')">↻ Replay (practice only — the real test plays it once)</button>` : ''}`);
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Sentence ${s.index} of 7 &middot; recording window: ${s.seconds}s (official ${RECORD_SECONDS_OFFICIAL[s.index-1]}s + ${PRACTICE_BUFFER_SECONDS}s buffer for natural speaking pace)</div>
+      ${turnBanner}
+      ${(classroom && myTurn) ? '<p class="small-note">🔊 Your teacher plays this once for the whole class through the room speakers — listen for it, then tap "I heard it."</p>' : ''}
+      <div class="scene-thumb" style="max-width:280px">${getScene(s.scene)}</div>
+      <div class="ex-actions" style="margin-top:.7rem">
+        ${listenControls}
+        ${(myTurn && st.played) ? `<button class="btn ${supportsSTT()?'ghost':'ghost'} sm" onclick="lrRecord('${s.text.replace(/'/g,"\\'")}', ${s.seconds})" ${supportsSTT()?'':'disabled'}>🎙️ Restart recording</button>` : ''}
+      </div>
+      ${!myTurn ? '' : (supportsSTT()
+        ? (st.played ? '<p class="small-note">Recording starts automatically the instant the sentence finishes — no prep time, matching the real test. Didn\'t catch it in time? Use "Restart recording" above.</p>' : `<p class="small-note">${classroom ? 'Tap "I heard it" the moment your teacher plays the sentence' : 'Tap Listen'} — recording starts automatically as soon as it finishes, with no extra click.</p>`)
+        : '<p class="small-note">Voice input isn\'t available in this browser/preview — use "Mark as practiced" to move on.</p>')}
+      <div id="lr-timer" class="wordcount"></div>
+      <div id="lr-result"></div>
+      <div class="ex-actions" style="margin-top:.8rem">
+        <button class="btn ghost sm" onclick="lrSkip()">${(myTurn && supportsSTT()) ? 'Skip' : 'Mark as practiced'} →</button>
+      </div>
+    </div>`;
+}
+// Both "heard it live" and "play on my phone" now auto-start the response
+// countdown the instant the sentence is done (no manual second click) —
+// matches the real test's zero-prep-time design, and because the trigger
+// is the actual audio ending (not a server signal), everyone in the room
+// starts and finishes within a second or two of each other for free.
+function lrHeardItLive(){
+  const st = window._lrState;
+  const item = currentItem();
+  const s = item.data.set[st.step];
+  st.played = true;
+  renderListenRepeatStep(item);
+  lrRecord(s.text, s.seconds);
+}
+function lrPlay(text){
+  const st = window._lrState;
+  const item = currentItem();
+  const s = item.data.set[st.step];
+  st.played = true;
+  renderListenRepeatStep(item);
+  speak(text, () => lrRecord(s.text, s.seconds));
+}
+function lrRecord(target, seconds){
+  const timerEl = document.getElementById('lr-timer');
+  let left = seconds;
+  timerEl.textContent = `Recording… ${left}s`;
+  const tick = setInterval(()=>{ left--; if(left>=0) timerEl.textContent = `Recording… ${left}s`; if(left<=0) clearInterval(tick); }, 1000);
+  document.getElementById('lr-result').innerHTML = '<p class="small-note">Listening…</p>';
+  listenOnce(
+    transcript => {
+      clearInterval(tick); timerEl.textContent='';
+      const score = repeatAccuracy(target, transcript);
+      window._lrState.results.push({ index: currentItem().data.set[window._lrState.step].index, score, transcript });
+      document.getElementById('lr-result').innerHTML = `<p>You said: <i>"${transcript}"</i></p><div class="result-msg ${score>=3.5?'ok':'no'}">Repeat Accuracy (approx.): ${score} / 5</div>`;
+    },
+    err => { clearInterval(tick); timerEl.textContent=''; document.getElementById('lr-result').innerHTML = `<p class="small-note">${err}</p>`; }
+  );
+}
+function lrSkip(){
+  const item = currentItem();
+  const st = window._lrState;
+  if(st.step < item.data.set.length - 1){
+    st.step++; st.played = false;
+    renderListenRepeatStep(item);
+  } else {
+    const avg = st.results.length ? (st.results.reduce((a,r)=>a+r.score,0)/st.results.length).toFixed(1) : '—';
+    if(st.results.length) logUsage('listen-repeat', item.theme, Number(avg)/5);
+    document.getElementById('practice-wrap').innerHTML = `
+      <div class="compose">
+        <div class="ex-body"><b>Set complete.</b> Average Repeat Accuracy (approx.): ${avg} / 5 across ${st.results.length} scored sentence(s).</div>
+        <p class="small-note">This score only reflects word-for-word match — Fluency, Intelligibility, Language Use, and Organization (the other 4 real ETS dimensions) need audio analysis this free prototype can't do yet.</p>
+        <div class="ex-actions"><button class="btn ghost sm" onclick="practiceAgain()">🔄 New set of 7 sentences</button></div>
+      </div>`;
+  }
+}
+function tryAnswer(){
+  document.getElementById('interview-answer').placeholder = 'Listening…';
+  const startedAt = Date.now();
+  listenOnce(
+    transcript => {
+      document.getElementById('interview-answer').value = transcript;
+      // Wall-clock time from mic-open to transcript-back is our only free,
+      // honest proxy for speaking rate (words per minute) — real fluency
+      // scoring needs actual audio/prosody analysis, which this offline
+      // prototype doesn't have.
+      window._interviewTiming = { elapsedSec: Math.max(1, (Date.now() - startedAt) / 1000) };
+    },
+    err => { document.getElementById('interview-answer').placeholder = err; }
+  );
+}
+
+// Real ETS rubric for Take an Interview: Fluency, Intelligibility, Language
+// Use, Organization (0-5 each). This free prototype can only honestly
+// approximate two of the four with text/timing signals — the other two
+// (Intelligibility/pronunciation, true grammar accuracy) need real audio
+// and language analysis, flagged explicitly rather than faked.
+function checkInterviewAnswer(){
+  const text = (document.getElementById('interview-answer').value || '').trim();
+  const box = document.getElementById('interview-feedback');
+  if(!text){ box.innerHTML = '<p class="small-note">Answer the question first — by voice or typed — then check.</p>'; return; }
+  const words = text.split(/\s+/).filter(Boolean);
+  const wordCount = words.length;
+  const sentenceCount = Math.max(1, (text.match(/[.!?]+/g) || []).length);
+  const uniqueRatio = new Set(words.map(w=>w.toLowerCase().replace(/[^a-z']/g,''))).size / wordCount;
+
+  const notes = [];
+  notes.push(`<b>Organization:</b> ${wordCount>=80 && wordCount<=220 && sentenceCount>=3 ? `good length (${wordCount} words, ~${sentenceCount} sentences) — close to the ~150-word, 4–6 sentence target.` : `${wordCount} words in ~${sentenceCount} sentence(s) — aim for about 150 words across 4–6 sentences to fully develop your answer.`}`);
+  notes.push(`<b>Language Use (vocabulary proxy):</b> ${uniqueRatio>0.6 ? `good word variety (${Math.round(uniqueRatio*100)}% unique words) — you're not just repeating the same few words.` : `${Math.round(uniqueRatio*100)}% unique words — try varying your vocabulary a bit more instead of repeating the same words.`} Grammar accuracy itself isn't checked yet — that needs real language analysis.`);
+  if(window._interviewTiming){
+    const wpm = Math.round(wordCount / (window._interviewTiming.elapsedSec/60));
+    notes.push(`<b>Fluency (pace proxy):</b> approx. ${wpm} words per minute (natural conversational pace is roughly 130–160). ${wpm>=110 && wpm<=190 ? 'Comfortably in range.' : wpm<110 ? 'A bit slow/hesitant for this proxy — but pauses to think are normal, this is only a rough signal.' : 'Quite fast for this proxy — clarity matters more than speed.'}`);
+  } else {
+    notes.push(`<b>Fluency:</b> only measurable when you answer by voice (needs real speaking time) — type-only answers skip this dimension.`);
+  }
+  notes.push(`<b>Intelligibility (pronunciation):</b> not measured in this free prototype — genuinely needs real audio analysis, planned for the hosted/local upgrade.`);
+
+  box.innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback, mapped to the 4 real ETS Speaking dimensions — your teacher's judgment is what actually counts</span><ul>${notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
+  const wellFormed = wordCount>=80 && wordCount<=220 && sentenceCount>=3;
+  logUsage('interview', currentItem()?.theme, wellFormed ? 1 : 0);
+}
+
+// -- Email / Discussion checks --
+function updateWordcount(){
+  const text = document.getElementById('response').value.trim();
+  const n = text ? text.split(/\s+/).length : 0;
+  document.getElementById('wordcount').textContent = n + ' words';
+}
+// Real ETS 0-5 rubric dimensions per task (this prototype approximates each
+// with a simple heuristic — a real hosted model would judge these properly):
+//   Write an Email        -> Communicative Purpose, Clarity & Cohesion,
+//                             Grammar & Vocabulary, Social Conventions
+//   Academic Discussion   -> Relevant Contribution, Elaboration & Support,
+//                             Syntactic Variety, Lexical & Grammatical Control
+function checkWriting(){
+  const item = currentItem();
+  // Real ETS targets: Email 80–120 words; Academic Discussion needs at
+  // least 100, with 120–130 as the ideal ("goal") length shown in the UI.
+  const target = item.type==='discussion' ? [100,130] : [80,120];
+  const text = document.getElementById('response').value.trim();
+  const n = text ? text.split(/\s+/).length : 0;
+  const notes = [];
+  if(item.type==='email'){
+    const hasGreeting = /^(dear|hi|hello|to whom)/i.test(text);
+    const hasClosing = /(sincerely|best regards|thank you|thanks|regards)/i.test(text);
+    notes.push(`<b>Social Conventions:</b> ${hasGreeting && hasClosing ? 'greeting and closing both present — appropriate register.' : hasGreeting ? 'greeting present, but consider adding a closing (e.g. "Best regards").' : hasClosing ? 'closing present, but consider opening with a greeting (e.g. "Dear...").' : 'add both a greeting and a closing to match email conventions.'}`);
+    notes.push(`<b>Communicative Purpose:</b> ${n>=target[0] && n<=target[1] ? `length is on target (${n} words) — enough room to address the full prompt.` : n<target[0] ? `a bit short (${n} words, target ${target[0]}–${target[1]}) — you may not be covering every part of the prompt yet.` : `a bit long (${n} words, target ${target[0]}–${target[1]}) — try to be more concise.`}`);
+  } else {
+    const hasStance = /(i agree|i disagree|i think|in my opinion|i believe)/i.test(text);
+    notes.push(`<b>Relevant Contribution:</b> ${hasStance ? 'a clear personal stance is present — good.' : 'state your position explicitly early on (e.g. "I agree..." / "I disagree...").'}`);
+    notes.push(`<b>Elaboration & Support:</b> ${n>=target[0] && n<=target[1] ? `length is on target (${n} words) — likely enough room to support your point.` : n<target[0] ? `a bit short (${n} words, target ${target[0]}–${target[1]}) — add a reason or example to support your view.` : `a bit long (${n} words, target ${target[0]}–${target[1]}) — tighten your explanation.`}`);
+  }
+  notes.push('<b>Grammar & Vocabulary / Syntactic Variety:</b> not checked by this free prototype yet — needs real language analysis, planned for the hosted upgrade.');
+  document.getElementById('feedback').innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback (approximates 2 of the 4 real ETS rubric dimensions) — your teacher reviews this before it counts as a grade</span><ul>${notes.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  logUsage(item.type, item.theme, (n>=target[0] && n<=target[1]) ? 1 : 0);
+}
+
+// The teacher identity is fixed (this prototype is for one section, one
+// teacher). Student identity is just a typed first name, kept only in that
+// student's own browser storage — never sent anywhere, never synced.
+const TEACHER_NAME = "Teacher";
+function getStudentName(){ return localStorage.getItem('cse_student_name') || ''; }
+
+/* =========================================================
+   USAGE LOG — "does the app learn from use and flag what
+   needs to change?" Honest scope: each device (student's
+   phone, or the teacher's own testing) keeps a rolling log of
+   how each practice attempt went, normalized to a 0-1
+   "outcome" per attempt, filed under the student's own typed
+   name so switching devices or checking a specific student's
+   pattern (from the teacher side) both resolve to the right
+   history. There's no backend, so this can't auto-aggregate
+   across the whole class — it can only summarize what happened
+   on THIS device, per name typed on it. Real classwide
+   auto-flagging needs the local-server phase already planned.
+   ponytail: per-device-per-name signal only, no cross-device
+   rollup — upgrade to a shared backend if the pilot needs that.
+   ========================================================= */
+function loadUsageLogAll(){
+  migrateLegacyUsageLog();
+  try{ return JSON.parse(localStorage.getItem('cse_usage_log_by_name') || '{}'); }catch(e){ return {}; }
+}
+// One-time upgrade path: fold any pre-existing flat per-device log (from
+// before per-name tracking existed) into whichever name is active now,
+// instead of silently discarding practice history already collected.
+function migrateLegacyUsageLog(){
+  const legacy = localStorage.getItem('cse_usage_log');
+  if(!legacy) return;
+  try{
+    const log = JSON.parse(legacy);
+    if(Array.isArray(log) && log.length){
+      const all = JSON.parse(localStorage.getItem('cse_usage_log_by_name') || '{}');
+      const key = (getStudentName() || '_anon').toLowerCase();
+      all[key] = (all[key] || []).concat(log).slice(-60);
+      localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
+    }
+  }catch(e){}
+  localStorage.removeItem('cse_usage_log');
+}
+function logUsage(type, theme, outcome01, name){
+  try{
+    const rawName = name !== undefined ? name : getStudentName();
+    const key = rawName.toLowerCase() || '_anon';
+    const all = loadUsageLogAll();
+    const log = all[key] || [];
+    const entry = { type, theme: theme || 'campus', outcome: Math.max(0, Math.min(1, outcome01)), ts: Date.now() };
+    log.push(entry);
+    while(log.length > 60) log.shift();
+    all[key] = log;
+    localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
+    // Fire-and-forget cloud push — CloudSync only exists where Firebase's
+    // CDN import actually loaded (blocked inside the Claude Artifact
+    // sandbox, works on a real domain). Missing or offline = local-only,
+    // exactly like before this existed. Never blocks the UI on network.
+    if(key !== '_anon') window.CloudSync?.pushAttempt(rawName, entry).catch(()=>{});
+  }catch(e){}
+}
+// Combine this device's local history with whatever came back from the
+// cloud for this name, de-duped by timestamp (a fresh Date.now() per
+// logUsage call makes collisions effectively impossible), newest last.
+function mergeUsageLogs(local, cloud){
+  const seen = new Set(local.map(e=>e.ts));
+  const merged = local.concat(cloud.filter(e=>!seen.has(e.ts)));
+  merged.sort((a,b)=>a.ts-b.ts);
+  return merged.slice(-60);
+}
+// Pulls this student's history down from Firestore (if reachable) and
+// folds it into the local cache — this is what makes "phone one day,
+// tablet the next" work: the phone can see practice logged on the
+// tablet, because both write to the same students/{name} record.
+async function hydrateFromCloud(name){
+  if(!window.CloudSync || !name) return;
+  try{
+    const cloudEntries = await window.CloudSync.pullHistory(name);
+    if(!cloudEntries.length) return;
+    const key = name.toLowerCase();
+    const all = loadUsageLogAll();
+    all[key] = mergeUsageLogs(all[key] || [], cloudEntries);
+    localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
+  }catch(e){ /* offline or blocked — local history still works fine */ }
+}
+// Called once by the Firebase module script below, right after CloudSync
+// becomes available — hydrates a returning device's already-known name
+// with anything logged elsewhere since the last visit.
+window.__onCloudSyncReady = function(){
+  const existing = getStudentName();
+  if(existing) hydrateFromCloud(existing).then(()=>{ if(currentView==='student') renderStudent(); });
+};
+// Generic, per-skill tips (not per-theme — the theme is just the content,
+// the tip is about the task itself) shown next to a flagged weak spot.
+const IMPROVEMENT_TIPS = {
+  'email': 'Review the 80–120 word target, and always include both a greeting and a closing.',
+  'discussion': 'State your stance in the first sentence, then back it up with one concrete reason or example.',
+  'sentence': 'Read the scrambled words aloud first — hearing the sentence often reveals the correct order faster than staring at it.',
+  'complete-words': 'Read the whole passage once before filling any blank — context from later sentences often confirms an earlier word.',
+  'listen-repeat': 'Try shadowing: whisper along with the sentence as it plays, instead of waiting until it ends to repeat it.',
+  'interview': 'Aim for 4–6 full sentences — a couple of short answers rarely reach the ~150-word target.',
+};
+function usageSummary(name){
+  const key = (name !== undefined ? name : getStudentName()).toLowerCase() || '_anon';
+  const log = loadUsageLogAll()[key] || [];
+  if(!log.length) return null;
+  const groups = {};
+  log.forEach(e=>{
+    const gk = e.type + '|' + e.theme;
+    if(!groups[gk]) groups[gk] = { type: e.type, theme: e.theme, sum: 0, n: 0 };
+    groups[gk].sum += e.outcome; groups[gk].n++;
+  });
+  const rows = Object.values(groups).map(g => ({ ...g, avg: g.sum / g.n }));
+  rows.sort((a,b)=>a.avg-b.avg || b.n-a.n);
+  // Only flag a pattern once there's more than one data point for it —
+  // a single unlucky (or lucky) attempt isn't a trend yet.
+  const weakestList = rows.filter(r=>r.n>=2).slice(0,2);
+  const strongestList = [...rows].filter(r=>r.n>=2).sort((a,b)=>b.avg-a.avg || b.n-a.n).slice(0,2);
+
+  // Simple recent-vs-prior trend signal — last 5 attempts vs the 5 before
+  // that, no model needed, just honest arithmetic on real outcomes.
+  let trend = null;
+  if(log.length >= 6){
+    const avg = arr => arr.reduce((a,e)=>a+e.outcome,0)/arr.length;
+    const delta = avg(log.slice(-5)) - avg(log.slice(-10,-5));
+    trend = delta > 0.1 ? 'up' : delta < -0.1 ? 'down' : 'flat';
+  }
+
+  // Consecutive calendar days with at least one logged attempt, counting
+  // back from today.
+  const days = new Set(log.map(e => new Date(e.ts).toDateString()));
+  let streak = 0;
+  for(let d = new Date(); days.has(d.toDateString()); d.setDate(d.getDate()-1)) streak++;
+
+  return { total: log.length, rows, weakest: weakestList[0] || null, weakestList, strongestList, trend, streak, recentLog: log.slice(-8).reverse() };
+}
+function setStudentName(name){ localStorage.setItem('cse_student_name', name.trim()); }
+function renderWhoAmI(){
+  const el = document.getElementById('who-am-i');
+  if(currentView === 'teacher'){ el.textContent = TEACHER_NAME; }
+  else { const n = getStudentName(); el.textContent = n ? `Hi, ${n}` : ''; }
+}
+
+let currentView = 'teacher';
+function setView(v){
+  currentView = v;
+  if(v==='teacher') clearPracticeTimer();
+  document.getElementById('view-teacher').classList.toggle('active', v==='teacher');
+  document.getElementById('view-student').classList.toggle('active', v==='student');
+  document.getElementById('btn-teacher').classList.toggle('active', v==='teacher');
+  document.getElementById('btn-student').classList.toggle('active', v==='student');
+  if(v==='student') renderStudent();
+  renderWhoAmI();
+  if(!localStorage.getItem('cse_guide_seen_'+v)) showGuide(v);
+}
+
+/* =========================================================
+   GUIDE — plain-language explanation of the method and goal
+   for each role, always one click away, shown automatically
+   the first time each role is opened.
+   ========================================================= */
+function guideContent(role){
+  if(role === 'teacher'){
+    return `
+      <h2>How this works — for teachers</h2>
+      <div class="sub">What this tool is, and what it will never do</div>
+      <p>This is a support tool that generates TOEFL-2026-style practice material for your students, built around real-life topics (health, career, environment, daily logistics, campus life...) so students build vocabulary the same way the real test now works — not just abstract grammar drills.</p>
+      <div class="rule">🛡️ Our one non-negotiable rule: you always have the final word. Nothing generated here reaches a student, and nothing a student does here becomes a grade, until you approve it. This tool suggests — you decide.</div>
+      <h3>How to use it, step by step</h3>
+      <ol>
+        <li>Pick one of the 6 real TOEFL task types and a real-life theme.</li>
+        <li>Click "Generate batch" — you'll get a fresh set of practice items.</li>
+        <li>Review each card: <b>Approve</b>, <b>Discard</b>, or leave it pending.</li>
+        <li>Only what you approve becomes visible to students, in the Student view.</li>
+      </ol>
+      <h3>What's still a prototype</h3>
+      <p>No real student data, no connection to the school's own system, no grade is ever recorded anywhere real — this is a working sketch of the idea for you to react to, not a finished product.</p>`;
+  }
+  return `
+    <h2>How this works — for students</h2>
+    <div class="sub">What you're looking at, and why it's safe to try</div>
+    <p>This is extra practice, in the same format as the real TOEFL 2026 test, built around real-life topics — the goal is vocabulary you'll actually use, not just test tricks.</p>
+    <div class="rule">🛡️ Your teacher reviews everything first. You will only ever see exercises your teacher has already approved — nothing appears here without her checking it.</div>
+    <h3>Does this affect my grade?</h3>
+    <p>No. Practicing here never changes your official grade in the school's own system. Any feedback you see is a draft, meant to help you improve — your teacher decides what actually counts.</p>
+    <h3>The 6 task types, matching the real exam</h3>
+    <ul>
+      <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
+      <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
+      <li><b>Write an Email</b> — respond to a real-life scenario, 100–150 words.</li>
+      <li><b>Academic Discussion</b> — join a discussion thread, 120–130 words.</li>
+      <li><b>Listen and Repeat</b> — hear a sentence once, repeat it back.</li>
+      <li><b>Take an Interview</b> — answer a spontaneous spoken question.</li>
+    </ul>
+    <h3>How to start</h3>
+    <p>Pick any approved exercise from the list, complete it, and use the feedback to improve. That's it.</p>`;
+}
+function showGuide(role){
+  document.getElementById('guide-modal').innerHTML = guideContent(role) + `<div class="guide-close"><button class="btn" onclick="closeGuide('${role}')">Got it</button></div>`;
+  document.getElementById('guide-overlay').style.display = 'flex';
+}
+function closeGuide(role){
+  document.getElementById('guide-overlay').style.display = 'none';
+  if(role) localStorage.setItem('cse_guide_seen_'+role, '1');
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* =========================================================
+   TEACHER -> STUDENT ANNOUNCEMENT — one-way broadcast riding
+   the same share link as the batch (no live channel exists, so
+   this is "message of the day" attached to whatever link/QR
+   the teacher last shared, not real-time chat). Dismissal is
+   tracked by a hash of the message text, so re-showing only
+   happens when the teacher actually changes the wording — not
+   every time the student reopens the link.
+   ========================================================= */
+function renderAnnouncement(){
+  const el = document.getElementById('announcement-banner');
+  if(!el) return;
+  const text = (localStorage.getItem('cse_announcement') || '').trim();
+  if(!text){ el.innerHTML = ''; return; }
+  const dismissed = localStorage.getItem('cse_announcement_dismissed');
+  if(dismissed === String(hashStr(text))){ el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="panel" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;background:var(--accent-soft);border:none;margin-bottom:1rem">
+      <div><b>📣 Message from ${TEACHER_NAME.split(' ')[0]}</b><div class="small-note" style="margin-top:.2rem">${escapeHtml(text)}</div></div>
+      <button class="btn ghost sm" onclick="dismissAnnouncement()">Got it</button>
+    </div>`;
+}
+function dismissAnnouncement(){
+  const text = (localStorage.getItem('cse_announcement') || '').trim();
+  localStorage.setItem('cse_announcement_dismissed', String(hashStr(text)));
+  renderAnnouncement();
+}
+
+// Once per session (not on every re-render as the student navigates
+// around), greet a named student who already has practice history with a
+// quick strengths/weak-spot teaser — "quando eles acessarem seus nomes
+// apareça as estatísticas deles com dicas de onde melhorar."
+let _welcomeShown = false;
+function renderWelcomeBack(){
+  const el = document.getElementById('welcome-back');
+  if(!el) return;
+  const name = getStudentName();
+  if(!name || _welcomeShown){ el.innerHTML = ''; return; }
+  const s = usageSummary(name);
+  if(!s){ el.innerHTML = ''; return; }
+  _welcomeShown = true;
+  const bits = [];
+  if(s.strongestList[0]) bits.push(`strongest so far: <b>${tagFor(s.strongestList[0].type)}</b> (${Math.round(s.strongestList[0].avg*100)}%)`);
+  if(s.weakestList[0]) bits.push(`worth another look: <b>${tagFor(s.weakestList[0].type)}</b> (${Math.round(s.weakestList[0].avg*100)}%)`);
+  el.innerHTML = `
+    <div class="panel" style="background:var(--accent-soft);border:none;margin-bottom:1rem">
+      <b>👋 Welcome back, ${escapeHtml(name)}!</b>
+      <div class="small-note" style="margin-top:.2rem">${s.total} exercise${s.total>1?'s':''} logged so far${bits.length ? ' — ' + bits.join(', ') : ''}. <a href="javascript:void(0)" onclick="showInsights()">See your full patterns →</a></div>
+    </div>`;
+}
+
+/* =========================================================
+   LANGUAGE DETECTION FOR FEEDBACK — the practice tasks stay in
+   English on purpose (that's the whole point of an immersion
+   app); the feedback channel is different, it's about hearing
+   a student's real opinion clearly, so it explicitly invites
+   writing in whatever language is easiest. Detection is just
+   the phone/browser's own configured language
+   (navigator.language) — a solid proxy for native language on
+   an international student's own device, and free/native, no
+   AI call needed. A plain <textarea> already accepts any
+   script/language typed on the phone's keyboard; what this
+   adds is making the invitation itself legible in that
+   language instead of silently defaulting to English-only copy.
+   ponytail: curated, Claude-drafted translations for one short
+   sentence in ~12 likely languages, not a full localization
+   layer — worth a native-speaker proofread before real rollout,
+   flagged here rather than silently assumed correct.
+   ========================================================= */
+function detectStudentLanguage(){
+  const raw = (navigator.language || (navigator.languages && navigator.languages[0]) || 'en').toLowerCase();
+  return raw.split('-')[0];
+}
+function languageDisplayName(code){
+  try{ return new Intl.DisplayNames(['en'], { type: 'language' }).of(code); }
+  catch(e){ return code; }
+}
+const FEEDBACK_LANG_NOTE = {
+  pt: 'Escreva em português ou no idioma que for mais confortável para você — isso é sigiloso e nos ajuda a melhorar o aplicativo.',
+  es: 'Escribe en español o en el idioma que te resulte más cómodo — esto es confidencial y nos ayuda a mejorar la aplicación.',
+  ko: '한국어나 편한 언어로 자유롭게 써 주세요 — 이 내용은 비공개이며 앱 개선에 도움이 됩니다.',
+  ja: '日本語でも、書きやすい言語でも自由に書いてください — これは非公開で、アプリの改善に役立ちます。',
+  zh: '请用中文或您最习惯的语言写——这是保密的,将帮助我们改进这个应用。',
+  vi: 'Hãy viết bằng tiếng Việt hoặc ngôn ngữ bạn thấy thoải mái nhất — nội dung này được bảo mật và giúp chúng tôi cải thiện ứng dụng.',
+  ar: 'يمكنك الكتابة بالعربية أو بأي لغة تشعر بالراحة معها — هذا سري ويساعدنا على تحسين التطبيق.',
+  fr: "Écrivez en français ou dans la langue qui vous convient le mieux — c'est confidentiel et cela nous aide à améliorer l'application.",
+  tr: 'Türkçe ya da kendinizi rahat hissettiğiniz herhangi bir dilde yazabilirsiniz — bu gizlidir ve uygulamayı geliştirmemize yardımcı olur.',
+  th: 'เขียนเป็นภาษาไทยหรือภาษาที่คุณถนัดที่สุดก็ได้ — ข้อมูลนี้เป็นความลับและช่วยให้เราปรับปรุงแอปได้',
+  de: 'Schreiben Sie auf Deutsch oder in der Sprache, mit der Sie sich am wohlsten fühlen — das bleibt vertraulich und hilft uns, die App zu verbessern.',
+  ru: 'Пишите на русском или на любом удобном для вас языке — это конфиденциально и помогает нам улучшать приложение.',
+};
+function feedbackLangNote(){
+  const code = detectStudentLanguage();
+  if(code === 'en') return '';
+  if(FEEDBACK_LANG_NOTE[code]) return FEEDBACK_LANG_NOTE[code];
+  return `Feel free to write in ${languageDisplayName(code)} or any language you're comfortable with.`;
+}
+
+/* =========================================================
+   WEEKLY FEEDBACK NUDGE — a dismissible banner, not a wall:
+   practice is never blocked by it. Anchored to a fixed weekday
+   (Thursday) rather than "7 days since last seen" — a
+   predictable weekly check-in reads as routine, not as an app
+   nagging at random times. Only shows once a student has
+   logged a few practice attempts (so there's something to
+   actually give feedback ABOUT), and at most once per calendar
+   day even on Thursday, so reopening the app repeatedly that
+   day doesn't re-nag. "Remind me later" or an actual submission
+   both mark today as handled; it comes back next Thursday
+   either way — the "necessário em algum momento" the project
+   asked for, without ever gating practice itself.
+   ========================================================= */
+const FEEDBACK_NUDGE_MIN_ATTEMPTS = 3;
+const FEEDBACK_NUDGE_WEEKDAY = 4; // 0=Sun, 1=Mon, ... 4=Thu
+function isSameLocalDay(ts1, ts2){
+  const a = new Date(ts1), b = new Date(ts2);
+  return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+}
+function shouldShowFeedbackNudge(){
+  const s = usageSummary();
+  if(!s || s.total < FEEDBACK_NUDGE_MIN_ATTEMPTS) return false;
+  if(new Date().getDay() !== FEEDBACK_NUDGE_WEEKDAY) return false;
+  const last = Number(localStorage.getItem('cse_feedback_last_prompt') || 0);
+  if(!last) return true;
+  return !isSameLocalDay(last, Date.now());
+}
+function renderFeedbackNudge(){
+  const el = document.getElementById('feedback-nudge');
+  if(!el) return;
+  el.innerHTML = shouldShowFeedbackNudge() ? `
+    <div class="panel" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;background:var(--accent-soft);border:none;margin-bottom:1rem">
+      <div>
+        <b>💬 Thursday check-in — got a minute?</b>
+        <div class="small-note" style="margin-top:.2rem">Quick, private feedback about the app helps the developer improve it — write in ${languageDisplayName(detectStudentLanguage())} or any language you're comfortable with.</div>
+      </div>
+      <div style="display:flex;gap:.5rem;flex-shrink:0">
+        <button class="btn ghost sm" onclick="snoozeFeedbackNudge()">Remind me later</button>
+        <button class="btn sm" onclick="showFeedback()">Give feedback</button>
+      </div>
+    </div>` : '';
+}
+function snoozeFeedbackNudge(){
+  localStorage.setItem('cse_feedback_last_prompt', String(Date.now()));
+  renderFeedbackNudge();
+}
+
+/* =========================================================
+   INSIGHTS — surfaces logUsage() patterns to whoever's using
+   this device. FEEDBACK — a serverless "suggestions/critique"
+   channel: builds a mailto: draft to the teacher's email (set
+   once in her share panel and carried in the share link), or
+   falls back to copyable text if no email is on file. Nothing
+   is ever transmitted by the app itself — the device's own
+   mail client does the actual sending, and only after the
+   person reviews and hits send themselves.
+   ========================================================= */
+function showInsights(name){
+  const activeName = (name !== undefined ? name : getStudentName()).trim();
+  const s = usageSummary(activeName);
+  const modal = document.getElementById('guide-modal');
+  const who = activeName ? escapeHtml(activeName) + "'s" : 'My';
+  if(!s){
+    modal.innerHTML = `<h2>📈 ${who} practice patterns</h2>
+      <p>Nothing logged${activeName ? ' for ' + escapeHtml(activeName) : ' on this device'} yet. Complete a few exercises and check back — this fills in automatically as you go.</p>
+      <div class="guide-close"><button class="btn" onclick="closeGuide()">Close</button></div>`;
+    document.getElementById('guide-overlay').style.display = 'flex';
+    return;
+  }
+  const bar = avg => `<div style="background:var(--border);border-radius:6px;height:6px;width:100%;overflow:hidden;margin-top:.25rem"><div style="background:var(--accent);height:100%;width:${Math.round(avg*100)}%"></div></div>`;
+  const rowsHtml = s.rows.map(r=>`<li style="margin-bottom:.5rem"><b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% (${r.n} attempt${r.n>1?'s':''})${bar(r.avg)}</li>`).join('');
+  const strengthsHtml = s.strongestList.length
+    ? s.strongestList.map(r=>`<li>💪 <b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% average</li>`).join('')
+    : '<li class="small-note">Keep practicing to surface a clear strength.</li>';
+  const weaknessesHtml = s.weakestList.length
+    ? s.weakestList.map(r=>`<li>🎯 <b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% average<br><span class="small-note">${IMPROVEMENT_TIPS[r.type]||''}</span></li>`).join('')
+    : '<li class="small-note">No clear weak spot yet — keep practicing across a few themes to get a real signal.</li>';
+  const trendHtml = s.trend
+    ? `<p class="small-note">${s.trend==='up' ? '📈 Trending up over the last few attempts — nice.' : s.trend==='down' ? '📉 Dipped a bit over the last few attempts — normal, keep going.' : '➡️ Holding steady over the last few attempts.'}</p>`
+    : '';
+  const streakHtml = s.streak >= 2 ? `<div class="rule">🔥 ${s.streak}-day practice streak — keep it going!</div>` : '';
+  const historyHtml = s.recentLog.map(e=>`<li>${new Date(e.ts).toLocaleDateString()} — ${tagFor(e.type)} (${THEME_LABELS[e.theme]||e.theme}): ${Math.round(e.outcome*100)}%</li>`).join('');
+  modal.innerHTML = `<h2>📈 ${who} practice patterns</h2>
+    <div class="sub">${s.total} attempt(s) logged${activeName ? ' under this name' : ' on this device'}</div>
+    ${streakHtml}
+    ${trendHtml}
+    <h3>💪 Strengths</h3><ul>${strengthsHtml}</ul>
+    <h3>🎯 Where to improve</h3><ul>${weaknessesHtml}</ul>
+    <h3>All patterns tracked so far</h3><ul>${rowsHtml}</ul>
+    <h3>Recent history</h3><ul>${historyHtml}</ul>
+    <p class="small-note">This only reflects practice logged under this name on this device — it can't see the whole class. Real classwide dashboards need a shared backend, which this free prototype doesn't have yet.</p>
+    <div class="guide-close"><button class="btn" onclick="closeGuide()">Close</button></div>`;
+  document.getElementById('guide-overlay').style.display = 'flex';
+}
+function showFeedback(){
+  const modal = document.getElementById('guide-modal');
+  const name = getStudentName();
+  const langNote = feedbackLangNote();
+  modal.innerHTML = `
+    <h2>💬 App Feedback</h2>
+    <div class="rule">🔒 Private &amp; confidential — this is explicitly about the app itself (not grades, not classroom matters). It goes straight to the developer to help improve the platform, and it's never stored on any server.</div>
+    <div class="sub">Suggestions and critiques about the app — what's working, what should change.</div>
+    ${langNote ? `<p class="small-note">🌍 ${escapeHtml(langNote)}</p>` : ''}
+    <div class="field"><label for="fb-name">Your name (optional)</label><input type="text" id="fb-name" value="${escapeHtml(name)}" placeholder="Your name"></div>
+    <div class="field" style="margin-top:.6rem"><label for="fb-good">What's working well?</label><textarea id="fb-good" rows="3" placeholder="In English or your own language..."></textarea></div>
+    <div class="field" style="margin-top:.6rem"><label for="fb-change">What should change?</label><textarea id="fb-change" rows="3" placeholder="In English or your own language..."></textarea></div>
+    <label style="display:flex;gap:.4rem;align-items:center;margin-top:.6rem;font-size:.82rem;font-weight:600">
+      <input type="checkbox" id="fb-include-stats" checked> Include my recent practice summary
+    </label>
+    <div id="fb-result" style="margin-top:.6rem"></div>
+    <div class="guide-close" style="gap:.5rem"><button class="btn ghost" onclick="closeGuide()">Cancel</button><button class="btn" onclick="sendFeedback()">Send feedback</button></div>`;
+  document.getElementById('guide-overlay').style.display = 'flex';
+}
+function sendFeedback(){
+  const name = (document.getElementById('fb-name').value || '').trim() || 'A student';
+  const good = (document.getElementById('fb-good').value || '').trim();
+  const change = (document.getElementById('fb-change').value || '').trim();
+  const includeStats = document.getElementById('fb-include-stats').checked;
+  if(!good && !change){
+    document.getElementById('fb-result').innerHTML = '<p class="small-note">Write something in at least one field first.</p>';
+    return;
+  }
+  let body = `From: ${name}\n\n`;
+  if(good) body += `What's working:\n${good}\n\n`;
+  if(change) body += `What should change:\n${change}\n\n`;
+  if(includeStats){
+    const s = usageSummary();
+    if(s){
+      body += `Recent practice summary (this device, ${s.total} attempts):\n`;
+      s.rows.forEach(r => body += `- ${tagFor(r.type)} / ${r.theme}: ${Math.round(r.avg*100)}% (${r.n} attempt${r.n>1?'s':''})\n`);
+    }
+  }
+  const email = (localStorage.getItem('cse_teacher_email') || '').trim();
+  const subject = `Real Life English — app feedback from ${name}`;
+  // Either path below means the student actually engaged with feedback
+  // this cycle, so the weekly nudge stays quiet for another 7 days.
+  localStorage.setItem('cse_feedback_last_prompt', String(Date.now()));
+  if(email){
+    location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    document.getElementById('fb-result').innerHTML = '<p class="small-note">Opening your mail app…</p>';
+  } else {
+    document.getElementById('fb-result').innerHTML = `
+      <p class="small-note">No teacher email on file yet — copy this and send it however you'd like.</p>
+      <textarea id="fb-copy-text" rows="6" readonly onclick="this.select()">${escapeHtml(body)}</textarea>
+      <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="copyFeedbackText()">Copy</button></div>`;
+  }
+}
+function copyFeedbackText(){
+  const ta = document.getElementById('fb-copy-text');
+  ta.select();
+  navigator.clipboard?.writeText(ta.value).then(
+    ()=>{ const btn=event.target; const old=btn.textContent; btn.textContent='Copied!'; setTimeout(()=>btn.textContent=old,1500); },
+    ()=>{}
+  );
+}
+
+const openedFromSharedLink = importSharedBatchFromURL();
+renderTypeTabs();
+renderIndividualControls();
+renderTeacher();
+renderStudent();
+renderWhoAmI();
+if(openedFromSharedLink){
+  // A student opening a teacher-shared link should land straight on
+  // their practice list, not the generator screen.
+  setView('student');
+} else if(!localStorage.getItem('cse_guide_seen_teacher')){
+  showGuide('teacher');
+}
+</script>
+
+
+<!-- ============================================================
+     CLOUD SYNC — Firebase (project: real-life-english). Runs as
+     an ES module so it can import from Firebase's CDN. This is
+     the ONLY part of the app that needs real network access —
+     everything else keeps working offline/local-only exactly as
+     before. If this import is blocked (e.g. previewed inside a
+     sandboxed environment with no outbound network), the module
+     simply never runs: window.CloudSync stays undefined, and
+     logUsage()/hydrateFromCloud() already check for that and
+     silently fall back to local-only history. Nothing else on
+     the page depends on this succeeding.
+     Firestore data model: students/{lowercasedName} (displayName,
+     lastSeen) with a students/{name}/attempts subcollection (one
+     doc per logged practice attempt). Security rules (pasted
+     separately, in the Firebase console) require an authenticated
+     — anonymous is fine — session, which just blocks bots/curl
+     hitting the database directly without ever loading this app.
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+  import { getFirestore, doc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDXIlimBWWXC-jtX9-Kh7GcdVXzxN5Ii3M",
+    authDomain: "real-life-english.firebaseapp.com",
+    projectId: "real-life-english",
+    storageBucket: "real-life-english.firebasestorage.app",
+    messagingSenderId: "19184588774",
+    appId: "1:19184588774:web:9f8083d51e83ae9ca16827"
+  };
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let authReadyResolve;
+    const authReady = new Promise(res => { authReadyResolve = res; });
+    onAuthStateChanged(auth, user => { if (user) authReadyResolve(); });
+    signInAnonymously(auth).catch(e => console.warn('CloudSync: anonymous sign-in failed', e));
+
+    window.CloudSync = {
+      async pullHistory(name) {
+        await authReady;
+        const key = name.toLowerCase();
+        const q = query(collection(db, 'students', key, 'attempts'), orderBy('ts', 'desc'), limit(60));
+        const snap = await getDocs(q);
+        return snap.docs.map(d => d.data());
+      },
+      async pushAttempt(name, entry) {
+        await authReady;
+        const key = name.toLowerCase();
+        await setDoc(doc(db, 'students', key), { displayName: name, lastSeen: serverTimestamp() }, { merge: true });
+        await addDoc(collection(db, 'students', key, 'attempts'), entry);
+      }
+    };
+
+    window.__onCloudSyncReady?.();
+  } catch (e) {
+    console.warn('CloudSync unavailable — falling back to local-only history:', e);
+  }
+</script>
