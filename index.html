@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Real Life English — free TOEFL 2026 practice built around real student life, from Croxatte Tech Solutions.">
+<meta name="theme-color" content="#0f6e56">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Real Life English">
 <title>Real Life English by Croxatte Tech Solutions</title>
 <style>
 :root{
@@ -131,6 +144,8 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .guide-modal .rule{ background:var(--accent-soft); color:var(--accent); border-radius:10px; padding:.8rem 1rem; font-size:.85rem; font-weight:600; margin:.8rem 0; }
 .guide-close{ display:flex; justify-content:flex-end; margin-top:1.2rem; }
 </style>
+</head>
+<body>
 
 <div class="app">
   <div class="masthead">
@@ -4460,6 +4475,13 @@ function copyFeedbackText(){
   );
 }
 
+// Offline app-shell + installability. Registration failure (e.g. served
+// from a context without service worker support) is silently ignored —
+// the app already works fully online-first without it.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
 const openedFromSharedLink = importSharedBatchFromURL();
 renderTypeTabs();
 renderIndividualControls();
@@ -4539,3 +4561,6 @@ if(openedFromSharedLink){
     console.warn('CloudSync unavailable — falling back to local-only history:', e);
   }
 </script>
+
+</body>
+</html>

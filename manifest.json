@@ -1,0 +1,14 @@
+{
+  "name": "Real Life English by Croxatte Tech Solutions",
+  "short_name": "Real Life English",
+  "description": "TOEFL 2026 practice companion built around real student life.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f9f8",
+  "theme_color": "#0f6e56",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
