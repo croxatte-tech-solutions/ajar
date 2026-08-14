@@ -210,7 +210,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
             <option value="daily">Daily Life &amp; Practical Logistics</option>
           </select>
         </div>
-        <button class="btn ghost" onclick="randomizeTheme()" title="Pick a random theme from all 9">🎲 Random</button>
+        <button class="btn ghost" onclick="randomizeTheme()" title="Pick a random theme from all 14">🎲 Random</button>
         <button class="btn" onclick="generateBatch()">✨ Generate for the whole class</button>
       </div>
     </div>
@@ -2583,11 +2583,17 @@ const TASK_TYPES = [
   { id:'interview',      tag:'Take an Interview',   section:'Speaking' },
 ];
 let activeType = 'email';
-const ALL_THEMES = ['campus','register','current','grammar','social','career','health','environment','daily'];
+const ALL_THEMES = ['campus','register','current','grammar','social','career','health','environment','daily','money','housing','travel','media','innovation'];
 const THEME_LABELS = {
   campus:'Campus & F1 Student Life', register:'Communication & Relationships', current:'Technology & Modern Life',
   grammar:'Education & Learning Methods', social:'Social Issues & Globalization', career:'Work & Career',
   health:'Health & Wellbeing', environment:'Environment & Sustainability', daily:'Daily Life & Practical Logistics',
+  // Added from the TOEFL 2026 real-world topic pool (see toefl-2026-gap-analysis):
+  // Personal Finances, Property Maintenance/roommates, Travel Planning/Transportation,
+  // Social Media/Influencers, and AI/Automation/Space Exploration were the most
+  // frequent topics in ETS's own sample questions that our 9 themes didn't cover.
+  money:'Money & Personal Finance', housing:'Housing & Roommates', travel:'Travel & Getting Around',
+  media:'Media & Entertainment', innovation:'Innovation & the Future',
 };
 
 function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
@@ -2616,51 +2622,81 @@ function drawFromBag(bagKey, allItems, studentKey){
 // Each theme has 3 genuinely different scenarios (different recipient,
 // different situation) — not one template with a swapped-in word, which
 // used to make 3 of 4 items in a batch read as near-duplicates.
+// Real TOEFL 2026 emails always list exactly 3 required details as a
+// numbered list in the prompt — every entry below follows that pattern.
+// Word count stays 80-120 (confirmed by Teacher, the class's own teacher,
+// as what the real test asks for — takes precedence over the 130-140
+// figure a few web guides suggested).
 const EMAIL_BANK = {
   campus: [
-    `You need to request an Authorized Vacation from your Designated School Official (DSO). Write an email to your DSO. In your email: explain which week(s) you would like off, give a brief reason (a medical appointment), and ask what documents you must provide.\n\nWrite 80–120 words.`,
-    `Write an email to your academic advisor asking to switch from one elective to another before the add/drop deadline. Explain which class you want to drop, which one you want instead, and why.\n\nWrite 80–120 words.`,
-    `Write an email to the campus housing office reporting a maintenance issue in your dorm room. Describe the problem and ask when someone can come fix it.\n\nWrite 80–120 words.`,
+    `You need to request an Authorized Vacation from your Designated School Official (DSO). Write an email to your DSO. In your email:\n1. Explain which week(s) you would like off.\n2. Give a brief reason (a medical appointment).\n3. Ask what documents you must provide.\n\nWrite 80–120 words.`,
+    `Write an email to your academic advisor asking to switch from one elective to another before the add/drop deadline. In your email:\n1. Explain which class you want to drop.\n2. Explain which class you want instead.\n3. Explain why you want to make the switch.\n\nWrite 80–120 words.`,
+    `Write an email to the campus housing office reporting a maintenance issue in your dorm room. In your email:\n1. Describe the problem.\n2. Ask when someone can come fix it.\n3. Ask whether you need to be home for the repair.\n\nWrite 80–120 words.`,
   ],
   register: [
-    `Write a short email to your teacher asking to reschedule a make-up test. Pay attention to the level of formality this recipient expects.\n\nWrite 80–120 words.`,
-    `Write a short email to a classmate proposing a time to meet for a group project. Compare how this tone differs from writing to a teacher.\n\nWrite 80–120 words.`,
-    `Write a short email to the front desk asking about a lost textbook. Keep the tone polite but efficient — you're asking a stranger for a favor.\n\nWrite 80–120 words.`,
+    `Write a short email to your teacher asking to reschedule a make-up test. In your email:\n1. Explain why you missed the original test.\n2. Propose a new date and time.\n3. Ask what material the make-up test will cover.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate proposing a time to meet for a group project. In your email:\n1. Suggest a day and time to meet.\n2. Suggest a location.\n3. Ask what they should bring or prepare.\n\nWrite 80–120 words.`,
+    `Write a short email to the front desk asking about a lost textbook. In your email:\n1. Describe the book (title and where you may have left it).\n2. Ask if anyone has turned it in.\n3. Ask how you could claim it if it's found.\n\nWrite 80–120 words.`,
   ],
   current: [
-    `Write an email to a classmate proposing to team up for a short presentation about renewable energy. Suggest a time to meet and one idea to include.\n\nWrite 80–120 words.`,
-    `Write an email to your professor asking a clarifying question about a recent lecture on how AI is changing everyday jobs.\n\nWrite 80–120 words.`,
-    `Write an email to a friend back home explaining an interesting piece of technology or a tech trend you've noticed since arriving.\n\nWrite 80–120 words.`,
+    `Write an email to a classmate proposing to team up for a short presentation about renewable energy. In your email:\n1. Suggest a time to meet.\n2. Propose one idea to include in the presentation.\n3. Ask what part they'd like to work on.\n\nWrite 80–120 words.`,
+    `Write an email to your professor asking a clarifying question about a recent lecture on how AI is changing everyday jobs. In your email:\n1. Reference the specific point from the lecture you're asking about.\n2. Ask your specific question.\n3. Ask for a reading or resource to learn more.\n\nWrite 80–120 words.`,
+    `Write an email to a friend back home explaining an interesting piece of technology or a tech trend you've noticed since arriving. In your email:\n1. Describe the technology or trend.\n2. Explain why it stood out to you.\n3. Ask if anything similar exists back home.\n\nWrite 80–120 words.`,
   ],
   grammar: [
-    `Write a short email to a friend explaining what your teacher said about the exam. Use at least two examples of reported speech (e.g. "She told me that...", "He said he would...").\n\nWrite 80–120 words.`,
-    `Write a short email to your roommate explaining what a classmate told you about a group project deadline. Use reported speech.\n\nWrite 80–120 words.`,
-    `Write a short email to your parents explaining what the front desk told you about a missing package. Use reported speech.\n\nWrite 80–120 words.`,
+    `Write a short email to a friend explaining what your teacher said about the exam. Use at least two examples of reported speech (e.g. "She told me that...", "He said he would..."). In your email:\n1. Explain what the teacher said about the exam format.\n2. Explain what the teacher said about the date.\n3. Ask if your friend wants to study together.\n\nWrite 80–120 words.`,
+    `Write a short email to your roommate explaining what a classmate told you about a group project deadline. Use reported speech. In your email:\n1. Explain what the classmate said the deadline is.\n2. Explain what parts of the project are due.\n3. Ask your roommate to help you plan a schedule.\n\nWrite 80–120 words.`,
+    `Write a short email to your parents explaining what the front desk told you about a missing package. Use reported speech. In your email:\n1. Explain what the front desk said happened.\n2. Ask what was inside the package.\n3. Ask what they'd like you to do next.\n\nWrite 80–120 words.`,
   ],
   social: [
-    `Write a short email to a classmate suggesting you both attend a campus talk about immigration policy changes you discussed in class. Propose a day and time.\n\nWrite 80–120 words.`,
-    `Write an email to a few classmates proposing to start a small peer-support group for new international students.\n\nWrite 80–120 words.`,
-    `Write an email to your discussion group sharing a global news story relevant to your major and asking what they think about it.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate suggesting you both attend a campus talk about immigration policy changes you discussed in class. In your email:\n1. Propose a day and time.\n2. Explain why the talk is relevant.\n3. Ask if they'd like to grab food together afterward.\n\nWrite 80–120 words.`,
+    `Write an email to a few classmates proposing to start a small peer-support group for new international students. In your email:\n1. Propose how often the group should meet.\n2. Suggest a first activity or topic.\n3. Ask for their ideas on how it should work.\n\nWrite 80–120 words.`,
+    `Write an email to your discussion group sharing a global news story relevant to your major. In your email:\n1. Briefly summarize the story.\n2. Explain why it's relevant to your field of study.\n3. Ask one specific question for the group to discuss.\n\nWrite 80–120 words.`,
   ],
   career: [
-    `Write an email to a former classmate who graduated, asking for advice about finding an internship in your field.\n\nWrite 80–120 words.`,
-    `Write an email to your school's career counselor requesting a mock interview appointment before your real job interviews start.\n\nWrite 80–120 words.`,
-    `Write an email to a professor asking if they would be willing to write you a letter of recommendation.\n\nWrite 80–120 words.`,
+    `Write an email to a former classmate who graduated, asking for advice about finding an internship in your field. In your email:\n1. Explain your field and the kind of internship you want.\n2. Ask a specific question about their own experience.\n3. Ask if they'd be willing to review your resume.\n\nWrite 80–120 words.`,
+    `Write an email to your school's career counselor requesting a mock interview appointment. In your email:\n1. Request an appointment.\n2. Mention your preferred dates.\n3. Ask what you should bring or prepare beforehand.\n\nWrite 80–120 words.`,
+    `Write an email to a professor asking if they would be willing to write you a letter of recommendation. In your email:\n1. Explain which program or position it's for.\n2. Mention the deadline.\n3. Offer to provide your resume or a draft to help them write it.\n\nWrite 80–120 words.`,
   ],
   health: [
-    `Write a short email to a classmate about managing stress during exam weeks. Mention one specific tip or resource you found helpful.\n\nWrite 80–120 words.`,
-    `Write an email to the student health center asking to schedule a routine check-up before the semester gets busy.\n\nWrite 80–120 words.`,
-    `Write a short email to a friend recommending a gym or fitness class you found near campus.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate about managing stress during exam weeks. In your email:\n1. Describe one specific tip or resource you found helpful.\n2. Explain how it helped you.\n3. Ask if they've tried something similar.\n\nWrite 80–120 words.`,
+    `Write an email to the student health center asking to schedule a routine check-up. In your email:\n1. Request an appointment.\n2. Mention your preferred dates.\n3. Ask what you should bring or prepare.\n\nWrite 80–120 words.`,
+    `Write a short email to a friend recommending a gym or fitness class you found near campus. In your email:\n1. Name the gym or class.\n2. Describe what you liked about it.\n3. Suggest going together sometime.\n\nWrite 80–120 words.`,
   ],
   environment: [
-    `Write a short email to your dorm floor proposing you all start a shared recycling habit. Suggest one simple first step.\n\nWrite 80–120 words.`,
-    `Write an email to campus administration suggesting one specific way to reduce plastic use around campus.\n\nWrite 80–120 words.`,
-    `Write a short email to a classmate inviting them to join a campus sustainability club with you.\n\nWrite 80–120 words.`,
+    `Write a short email to your dorm floor proposing you all start a shared recycling habit. In your email:\n1. Propose one simple first step.\n2. Ask for a volunteer to help set it up.\n3. Suggest a time to discuss it further.\n\nWrite 80–120 words.`,
+    `Write an email to campus administration suggesting one specific way to reduce plastic use around campus. In your email:\n1. Propose your specific idea.\n2. Explain the expected benefit.\n3. Ask who you should contact to move the idea forward.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate inviting them to join a campus sustainability club with you. In your email:\n1. Describe what the club does.\n2. Mention when it meets.\n3. Ask if they'd like to join you at the next meeting.\n\nWrite 80–120 words.`,
   ],
   daily: [
-    `Write an email asking a Student Services Coordinator for help opening a bank account near campus.\n\nWrite 80–120 words.`,
-    `Write an email to a campus housing coordinator asking about apartment options for next semester.\n\nWrite 80–120 words.`,
-    `Write an email to the transportation office asking about the bus schedule to downtown.\n\nWrite 80–120 words.`,
+    `Write an email asking a Student Services Coordinator for help opening a bank account near campus. In your email:\n1. Mention that you are a new international student.\n2. Ask what documents you need to bring.\n3. Ask how long the process usually takes.\n\nWrite 80–120 words.`,
+    `Write an email to a campus housing coordinator asking about apartment options for next semester. In your email:\n1. Mention your budget and preferences.\n2. Ask about current availability.\n3. Ask about the lease terms.\n\nWrite 80–120 words.`,
+    `Write an email to the transportation office asking about the bus schedule to downtown. In your email:\n1. Ask how often the bus runs.\n2. Ask about the cost.\n3. Ask whether the schedule changes on weekends.\n\nWrite 80–120 words.`,
+  ],
+  money: [
+    `Write an email to a Student Services Coordinator asking for help opening a local bank account. In your email:\n1. Mention that you are an international student.\n2. Ask what documents you need to bring.\n3. Ask how long the process usually takes.\n\nWrite 80–120 words.`,
+    `Write an email to your roommate proposing a system for splitting shared household expenses. In your email:\n1. Suggest one specific method (like a shared expense app).\n2. Propose a monthly day to settle up.\n3. Ask if they have a preference.\n\nWrite 80–120 words.`,
+    `Write an email to your bank asking about an unfamiliar fee that appeared on your account. In your email:\n1. Describe the fee you noticed.\n2. Ask why it was charged.\n3. Ask how to avoid it in the future.\n\nWrite 80–120 words.`,
+  ],
+  housing: [
+    `Write an email to your landlord reporting a broken heater in your apartment. In your email:\n1. Describe the problem.\n2. Mention how long it has been broken.\n3. Ask when someone can come repair it.\n\nWrite 80–120 words.`,
+    `Write an email to a new roommate proposing house rules before move-in day. In your email:\n1. Suggest one rule about shared spaces.\n2. Propose a day to discuss further.\n3. Ask about their own preferences.\n\nWrite 80–120 words.`,
+    `Write an email to your building's front desk about a noisy neighbor. In your email:\n1. Describe the situation.\n2. Mention when it usually happens.\n3. Ask what steps they can take.\n\nWrite 80–120 words.`,
+  ],
+  travel: [
+    `Write an email to a classmate proposing a weekend trip together. In your email:\n1. Suggest a destination.\n2. Propose a date.\n3. Ask what they'd like to do there.\n\nWrite 80–120 words.`,
+    `Write an email to a hotel asking about facilities before an upcoming trip. In your email:\n1. Mention your dates of stay.\n2. Ask about one specific facility.\n3. Ask about the cancellation policy.\n\nWrite 80–120 words.`,
+    `Write an email to the campus transportation office asking about a shuttle to the airport. In your email:\n1. Ask about the schedule.\n2. Ask about the cost.\n3. Ask if reservations are required.\n\nWrite 80–120 words.`,
+  ],
+  media: [
+    `Write an email to a classmate proposing a movie night. In your email:\n1. Suggest a film or genre.\n2. Propose a day and time.\n3. Ask what snacks they could bring.\n\nWrite 80–120 words.`,
+    `Write an email to your school newspaper suggesting a story idea. In your email:\n1. Describe the story idea.\n2. Explain why it would interest students.\n3. Ask who you should contact next.\n\nWrite 80–120 words.`,
+    `Write an email to a friend recommending a podcast or show you started watching. In your email:\n1. Describe what it's about.\n2. Explain why you like it.\n3. Ask if they'd want to watch or listen together.\n\nWrite 80–120 words.`,
+  ],
+  innovation: [
+    `Write an email to a professor asking about a research opportunity related to AI. In your email:\n1. Mention which class or topic sparked your interest.\n2. Ask what qualifications are needed.\n3. Ask how to apply.\n\nWrite 80–120 words.`,
+    `Write an email to classmates proposing a study group about a new technology discussed in class. In your email:\n1. Suggest a regular meeting time.\n2. Propose one topic to start with.\n3. Ask for their input on the plan.\n\nWrite 80–120 words.`,
+    `Write an email to a startup accelerator office asking about resources for student entrepreneurs. In your email:\n1. Briefly describe your business idea.\n2. Ask what resources are available.\n3. Ask about upcoming events.\n\nWrite 80–120 words.`,
   ],
 };
 function genEmail(theme){
@@ -2706,6 +2742,26 @@ const DISCUSSION_BANK = {
     { q:"Is it better for new students to live within walking distance of school, or is a short commute acceptable?", a:{name:'Paulo',text:'Walking distance saves time and money — I would choose that every time.'}, b:{name:'Mei',text:'A short commute is fine if it means a quieter, cheaper neighborhood.'} },
     { q:"Should new students open a local bank account, or rely on international banking apps?", a:{name:'Aisha',text:'A local account makes everyday payments and rent much simpler.'}, b:{name:'Erik',text:'International apps are convenient enough now that a local account isn\'t always necessary.'} },
   ],
+  money: [
+    { q:"Should governments do more to teach personal finance skills in schools?", a:{name:'Diego',text:'Yes — most students graduate without ever learning how credit or interest actually works.'}, b:{name:'Wei',text:'I think families should teach this, not schools — it is too personal for a classroom.'} },
+    { q:"Is it better for a student to get a part-time job, or to focus fully on studies and rely on savings?", a:{name:'Fatou',text:'A part-time job teaches real financial responsibility, even if it takes time from studying.'}, b:{name:'Lars',text:'Focusing on studies protects your grades, which matter more for your future income anyway.'} },
+  ],
+  housing: [
+    { q:"Is it better for a new student to sign a long lease right away, or to start with a short-term option?", a:{name:'Renata',text:'A short-term option lets you learn the neighborhood before committing to a full year.'}, b:{name:'Tobias',text:'A long lease is usually cheaper per month and gives you more stability.'} },
+    { q:"Should landlords be required to respond to maintenance requests within 24 hours?", a:{name:'Amina',text:'Yes — some problems, like a broken heater, genuinely cannot wait longer than that.'}, b:{name:'Jae-won',text:'That seems unrealistic for landlords managing many buildings with limited staff.'} },
+  ],
+  travel: [
+    { q:"Is it more valuable for a student to travel to many different places, or to explore one place deeply?", a:{name:'Camila',text:'Visiting many places broadens your perspective faster, even if each visit is short.'}, b:{name:'Noah',text:'I think staying longer in one place teaches you far more than a quick visit ever could.'} },
+    { q:"Should public transportation be free for university students?", a:{name:'Priya',text:'Yes — it would make it much easier for students to explore the city and attend events.'}, b:{name:'Matteo',text:'Free transit sounds nice, but someone still has to pay for it, and that cost has to come from somewhere.'} },
+  ],
+  media: [
+    { q:"Do social media platforms have a responsibility to control what young people see, or is that mainly a parent's job?", a:{name:'Zara',text:'Platforms have far more power to control what appears in a feed than any single parent does.'}, b:{name:'Kenji',text:'Parents ultimately decide what devices and access their children have — the responsibility starts there.'} },
+    { q:"Is streaming making people watch too much low-quality content, or does it just give people more choice?", a:{name:'Isabela',text:'More choice is good, but I think it also makes it easier to watch something without really choosing it.'}, b:{name:'Omar',text:'People have always had entertainment options — streaming just makes the good and bad more visible at once.'} },
+  ],
+  innovation: [
+    { q:"Should artificial intelligence be allowed to grade student writing?", a:{name:'Hana',text:'AI grading could be faster and more consistent than a tired human grader at the end of a long day.'}, b:{name:'Deshawn',text:'I do not trust it to understand nuance, tone, or creativity the way a real teacher can.'} },
+    { q:"Will automation create more jobs than it eliminates in the next twenty years?", a:{name:'Leila',text:'History shows new technology usually creates new kinds of jobs we cannot fully imagine yet.'}, b:{name:'Viktor',text:'This time feels different, since automation is starting to replace thinking work, not just physical labor.'} },
+  ],
 };
 function genDiscussion(theme){
   const item = pick(DISCUSSION_BANK[theme] || DISCUSSION_BANK.campus);
@@ -2716,57 +2772,89 @@ function genDiscussion(theme){
 // Real TOEFL Build a Sentence items use roughly 5–7 word chunks (some
 // chunks are multi-word phrases on the real test — this prototype keeps it
 // simple with single-word chunks, matching total length, not chunk count).
+// Each entry is tagged with the real grammar point it targets (subject-verb
+// inversion, embedded/indirect questions, relative clauses, SVO+negation)
+// and about half include a "distractor" — an extra unused word mixed into
+// the scramble, exactly like the real test sometimes does.
 const SENTENCE_BANK = {
   grammar: [
-    'She told me the teacher was late.',
-    "I don't know if it's postponed.",
-    'He asked whether I had finished.',
-    'They said they would review it.',
-    'She explained why sources matter here.',
+    { target:'She told me the teacher was late.' },
+    { target:'Can you tell me when the class starts?', distractor:'really' },
+    { target:'The book that I borrowed is overdue.' },
+    { target:"I don't know if it's postponed.", distractor:'even' },
+    { target:'He asked whether I had finished.' },
   ],
   campus: [
-    'Students must submit forms before Friday.',
-    'The library opens early on Mondays.',
-    'Breakfast is served until nine o\'clock.',
+    { target:'Students must submit forms before Friday.' },
+    { target:'Where is the library that just reopened?', distractor:'very' },
+    { target:'Rarely have I seen the gym this crowded.' },
   ],
   register: [
-    'Could you confirm the meeting time?',
-    'I appreciate your quick response today.',
+    { target:'Could you confirm the meeting time?' },
+    { target:'I have not replied to her message yet.', distractor:'still' },
+    { target:'Do you know why she seemed upset?' },
   ],
   current: [
-    'Renewable energy keeps getting more affordable.',
-    'Daily practice clearly improves long-term retention.',
+    { target:'Renewable energy keeps getting more affordable.' },
+    { target:'Never have I used an app this useful.' },
+    { target:'The update that fixed the bug was released today.', distractor:'quite' },
   ],
   social: [
-    'International students bring valuable new perspectives.',
-    'Cultural exchange reduces misunderstandings between groups.',
-    'Globalization keeps changing how countries connect.',
+    { target:'International students bring valuable new perspectives.' },
+    { target:'Could you explain why the policy changed?' },
+    { target:'The festival that celebrates local culture starts tomorrow.', distractor:'already' },
   ],
   career: [
-    'She updated her resume this morning.',
-    'Communication skills matter in every profession.',
-    'He prepared questions before the interview.',
+    { target:'She updated her resume this morning.' },
+    { target:'Do you know when the interview begins?', distractor:'just' },
+    { target:'Not once did he miss a deadline.' },
   ],
   health: [
-    'Good sleep improves concentration during class.',
-    'She scheduled a check-up this week.',
-    'Exercise can reduce stress before exams.',
+    { target:'Good sleep improves concentration during class.' },
+    { target:'The doctor who examined me recommended more rest.' },
+    { target:'Have you ever tried meditating before an exam?', distractor:'really' },
   ],
   environment: [
-    'Cities keep investing in public transportation.',
-    'Reducing plastic waste helps our campus.',
-    'Students now prefer reusable water bottles.',
+    { target:'Cities keep investing in public transportation.' },
+    { target:'Rarely do people recycle everything they could.', distractor:'quite' },
+    { target:'The program that reduces waste starts next month.' },
   ],
   daily: [
-    'She opened a bank account nearby.',
-    'The downtown bus leaves every twenty minutes.',
-    'He found a small apartment nearby.',
+    { target:'She opened a bank account nearby.' },
+    { target:'Can you tell me where the nearest stop is?' },
+    { target:"I don't know if the store is still open.", distractor:'even' },
+  ],
+  money: [
+    { target:'He has not paid his rent yet.' },
+    { target:'Do you know how much the fee costs?', distractor:'really' },
+    { target:'The account that earns the most interest requires a higher balance.' },
+  ],
+  housing: [
+    { target:'Rarely does the landlord respond this quickly.' },
+    { target:'Could you tell me when the repair will happen?', distractor:'still' },
+    { target:'The apartment that we toured yesterday was surprisingly affordable.' },
+  ],
+  travel: [
+    { target:'She has never missed a connecting flight.' },
+    { target:'Do you know why the train was delayed?' },
+    { target:'Not until we landed did I relax.', distractor:'quite' },
+  ],
+  media: [
+    { target:'The show that everyone recommended was actually disappointing.' },
+    { target:'Could you explain why that video went viral?', distractor:'just' },
+    { target:'Rarely do I finish a series in one weekend.' },
+  ],
+  innovation: [
+    { target:'The technology that changed everything was surprisingly simple.' },
+    { target:'Do you know when self-driving cars will be common?', distractor:'really' },
+    { target:'Never has automation advanced this quickly.' },
   ],
 };
 function genSentence(theme){
-  const target = pick(SENTENCE_BANK[theme] || SENTENCE_BANK.grammar);
-  const words = target.replace(/\.$/,'').split(' ');
-  return { target, scrambled: shuffle(words) };
+  const item = pick(SENTENCE_BANK[theme] || SENTENCE_BANK.grammar);
+  const words = item.target.replace(/[.?]$/,'').split(' ');
+  const pool = item.distractor ? [...words, item.distractor] : words;
+  return { target:item.target, scrambled: shuffle(pool) };
 }
 
 // ---- Complete the Words ----
@@ -2775,60 +2863,88 @@ function genSentence(theme){
 // (down from two shorter ones) so each matches that length and count.
 const COMPLETE_WORDS_BANK = {
   campus: [
-    `International students often arrive at a new school with very different levels of comfort speaking casually in English. Many have **strong** grammar knowledge built from years of **classroom** study, yet the **gap** between textbook English and **everyday** conversation can feel **surprising** during the first few **weeks**. Simple things, like ordering **lunch** in the cafeteria or asking a classmate for **directions**, become small **victories** that build real **confidence** over time and slowly make the new environment feel familiar.`,
-    `Orientation week can feel overwhelming for a brand new international student arriving on campus for the first time. There are **dozens** of forms to **complete**, a **campus** tour that covers more ground than anyone can **remember**, and an endless stream of new **faces** to meet in a single **afternoon**. Most schools also **assign** a peer mentor who already **survived** their own first semester, and that single **relationship** often becomes the thing new students remember most fondly once the whole week is finally **over**.`,
-    `Finding a good place to study can make a real difference during a busy exam period on any campus. Most **libraries** offer **quiet** floors for **individual** work and separate **rooms** where **groups** can **discuss** a project without **disturbing** other students nearby. Reserving a study room in **advance** is usually **necessary** during midterms, since popular spots fill up **quickly** once students realize how much calmer they feel away from a noisy dormitory.`,
+    `International students often arrive at a new school with very different levels of comfort speaking casually in English. Many have **strong** grammar knowledge built from years of **classroom** study, yet the **gap** between textbook English and **everyday** conversation can feel **surprising** during the first few **weeks**. Simple things, like ordering **lunch** in the cafeteria or asking a classmate for **directions**, become small **victories** that build real **confidence** over time and slowly make the new environment feel familiar. These small moments add up faster than most new students expect.`,
+    `Orientation week can feel overwhelming for a brand new international student arriving on campus for the first time. There are **dozens** of forms to **complete**, a **campus** tour that covers more ground than anyone can **remember**, and an endless stream of new **faces** to meet in a single **afternoon**. Most schools also **assign** a peer mentor who already **survived** their own first semester, and that single **relationship** often becomes the thing new students remember most fondly once the whole week is finally **over**. Most students look back on that first week fondly, even the chaotic parts.`,
+    `Finding a good place to study can make a real difference during a busy exam period on any campus. Most **libraries** offer **quiet** floors for **individual** work and separate **rooms** where **groups** can **discuss** a project without **disturbing** other students nearby. Reserving a study room in **advance** is usually **necessary** during midterms, since popular spots fill up **quickly** once students realize how much calmer they feel away from a noisy dormitory. A good study spot can make the whole exam period feel more manageable.`,
   ],
   register: [
-    `Choosing the right level of formality can be just as important as choosing the right words when you write to someone new. A message to a **professor** usually opens more **formally** than one to a **friend**, even when the actual **content** is nearly identical. A **polite** request often **includes** a softening phrase such as 'would you **mind**,' instead of a blunt **command**, and a warm **closing** line leaves a much better final **impression**.`,
-    `Visiting a professor during office hours can feel intimidating the very first time, especially for a new international student. Even in **person**, the level of **formality** you use still **matters** a great deal, though it can **relax** slightly once a real **conversation** begins. Starting with a **brief** greeting, stating your **question** clearly, and **thanking** them for their time leaves a much better final **impression** than rushing straight into what you **actually** came to ask.`,
-    `Choosing between a text message and a full email depends heavily on who exactly you are trying to reach. A quick **question** to a classmate about **homework** usually fits fine in a casual **text**, full of **abbreviations** and no real greeting at all. A message to a **professor**, however, still **deserves** a proper **subject** line, a complete **greeting**, and a closing **signature**, even if the actual content could have fit in a single **short** sentence.`,
+    `Choosing the right level of formality can be just as important as choosing the right words when you write to someone new. A message to a **professor** usually opens more **formally** than one to a **friend**, even when the actual **content** is nearly identical. A **polite** request often **includes** a softening phrase such as 'would you **mind**,' instead of a blunt **command**, and a warm **closing** line leaves a much better final **impression**. Small details like these often matter more than most writers realize.`,
+    `Visiting a professor during office hours can feel intimidating the very first time, especially for a new international student. Even in **person**, the level of **formality** you use still **matters** a great deal, though it can **relax** slightly once a real **conversation** begins. Starting with a **brief** greeting, stating your **question** clearly, and **thanking** them for their time leaves a much better final **impression** than rushing straight into what you **actually** came to ask. A calm start usually leads to a much smoother conversation overall.`,
+    `Choosing between a text message and a full email depends heavily on who exactly you are trying to reach. A quick **question** to a classmate about **homework** usually fits fine in a casual **text**, full of **abbreviations** and no real greeting at all. A message to a **professor**, however, still **deserves** a proper **subject** line, a complete **greeting**, and a closing **signature**, even if the actual content could have fit in a single **short** sentence. The format changes, but the underlying courtesy usually stays the same.`,
   ],
   current: [
-    `Artificial intelligence is changing how ordinary people interact with technology every single day. Renewable **energy** now accounts for a growing **share** of electricity **production** worldwide, though the **transition** away from fossil fuels remains **uneven** across regions. Many companies are **testing** how new **tools** can **support**, rather than fully **replace**, everyday **human** decisions, and researchers continue studying how these changes will shape workplaces and everyday routines for millions of people in the years ahead.`,
-    `Remote work has changed how many companies think about hiring people from anywhere in the world. A **growing** number of **employers** now **allow** staff to work from **home** several days a **week**, which has **real** **advantages** for people balancing a job with graduate **studies**. Critics **argue** that something important gets lost without in-person collaboration, but most surveys suggest that flexibility now **matters** just as much to workers as salary itself.`,
-    `Social media has completely reshaped the way many students stay connected with friends and family back home. A **short** **video** call can now **replace** a long, formal **letter**, and a single **photo** often communicates more than an entire **paragraph** ever could. Some **researchers** worry that constant scrolling **reduces** attention spans, while others point out that these same **platforms** make homesickness a little easier to manage during a **difficult** first semester abroad.`,
+    `Artificial intelligence is changing how ordinary people interact with technology every single day. Renewable **energy** now accounts for a growing **share** of electricity **production** worldwide, though the **transition** away from fossil fuels remains **uneven** across regions. Many companies are **testing** how new **tools** can **support**, rather than fully **replace**, everyday **human** decisions, and researchers continue studying how these changes will shape workplaces and everyday routines for millions of people in the years ahead. Nobody can say for certain exactly how far these changes will go.`,
+    `Remote work has changed how many companies think about hiring people from anywhere in the world. A **growing** number of **employers** now **allow** staff to work from **home** several days a **week**, which has **real** **advantages** for people balancing a job with graduate **studies**. Critics **argue** that something important gets lost without in-person collaboration, but most surveys suggest that flexibility now **matters** just as much to workers as salary itself. This shift shows no real sign of slowing down anytime soon.`,
+    `Social media has completely reshaped the way many students stay connected with friends and family back home. A **short** **video** call can now **replace** a long, formal **letter**, and a single **photo** often communicates more than an entire **paragraph** ever could. Some **researchers** worry that constant scrolling **reduces** attention spans, while others point out that these same **platforms** make homesickness a little easier to manage during a **difficult** first semester abroad. Staying connected has never been easier, even across such long distances.`,
   ],
   grammar: [
-    `Learning a new grammar rule is often easier when you see it used in a real sentence first. Reported **speech** frequently confuses **learners** because the **tense** shifts backward, so 'I am tired' **becomes** 'she said she **was** tired' in indirect form. A **noun** clause can also **function** as the **subject** of a sentence, for **example**: 'What she said **surprised** everyone,' which shows how flexible English word order can actually be.`,
-    `Modal verbs quietly do a lot of work in English, even though they rarely draw much attention to themselves. Saying you **must** finish an assignment sounds far stricter than saying you **should**, even though both technically **describe** an obligation of some kind. **Native** speakers also **soften** requests using **could** or **might** instead of a blunt **command**, which explains why "you might want to double-check that" often lands more **politely** than a **direct** order ever would.`,
-    `Conditional sentences let a speaker imagine situations that haven't actually happened yet, or that never will. A **first** conditional describes something realistic, like "if it **rains**, I'll bring an umbrella," while a **second** conditional imagines something purely **hypothetical**, like winning a **lottery**. Many learners **confuse** the two forms **initially**, but noticing whether a situation feels genuinely **possible** or only **imaginary** usually makes the correct **choice** much easier to spot for most learners.`,
+    `Learning a new grammar rule is often easier when you see it used in a real sentence first. Reported **speech** frequently confuses **learners** because the **tense** shifts backward, so 'I am tired' **becomes** 'she said she **was** tired' in indirect form. A **noun** clause can also **function** as the **subject** of a sentence, for **example**: 'What she said **surprised** everyone,' which shows how flexible English word order can actually be. Noticing these patterns in real sentences helps them feel far less abstract.`,
+    `Modal verbs quietly do a lot of work in English, even though they rarely draw much attention to themselves. Saying you **must** finish an assignment sounds far stricter than saying you **should**, even though both technically **describe** an obligation of some kind. **Native** speakers also **soften** requests using **could** or **might** instead of a blunt **command**, which explains why "you might want to double-check that" often lands more **politely** than a **direct** order ever would. Paying attention to these small shifts improves both writing and speaking alike.`,
+    `Conditional sentences let a speaker imagine situations that haven't actually happened yet, or that never will. A **first** conditional describes something realistic, like "if it **rains**, I'll bring an umbrella," while a **second** conditional imagines something purely **hypothetical**, like winning a **lottery**. Many learners **confuse** the two forms **initially**, but noticing whether a situation feels genuinely **possible** or only **imaginary** usually makes the correct **choice** much easier to spot for most learners. With enough practice, this distinction eventually becomes second nature.`,
   ],
   social: [
-    `Meeting classmates from many different countries is one of the most valuable parts of studying abroad. Cultural **exchange** programs give **students** a chance to **experience** daily life in a **different** country firsthand, often for the first time. As **globalization** continues, more **companies** operate across **multiple** countries and **cultures** at once, which makes cross-cultural **understanding** a genuinely **useful** skill for almost any future career path a student might eventually choose to pursue.`,
-    `Walking through almost any major city today, you can sample food from dozens of different countries within a single afternoon. This kind of culinary **globalization** makes eating **abroad** feel less **isolating**, since a familiar **dish** from home is often just a short walk **away**. Some **critics** worry that local food **traditions** slowly lose their **original** character as international **chains** spread, while others see it as a genuine form of everyday cultural **exchange**.`,
-    `Joining a local volunteer program is one of the fastest ways for a new international student to meet people outside of class. Many **communities** welcome **volunteers** at food banks, **shelters**, or neighborhood **cleanups**, and most organizations don't **require** any **special** experience to **start**. Beyond the obvious **benefit** to the community itself, students often say these **experiences** taught them more **practical** English than an entire semester of classroom study ever could.`,
+    `Meeting classmates from many different countries is one of the most valuable parts of studying abroad. Cultural **exchange** programs give **students** a chance to **experience** daily life in a **different** country firsthand, often for the first time. As **globalization** continues, more **companies** operate across **multiple** countries and **cultures** at once, which makes cross-cultural **understanding** a genuinely **useful** skill for almost any future career path a student might eventually choose to pursue. These early friendships often turn out to be surprisingly lasting ones.`,
+    `Walking through almost any major city today, you can sample food from dozens of different countries within a single afternoon. This kind of culinary **globalization** makes eating **abroad** feel less **isolating**, since a familiar **dish** from home is often just a short walk **away**. Some **critics** worry that local food **traditions** slowly lose their **original** character as international **chains** spread, while others see it as a genuine form of everyday cultural **exchange**. Either way, food remains one of the easiest ways to feel closer to home.`,
+    `Joining a local volunteer program is one of the fastest ways for a new international student to meet people outside of class. Many **communities** welcome **volunteers** at food banks, **shelters**, or neighborhood **cleanups**, and most organizations don't **require** any **special** experience to **start**. Beyond the obvious **benefit** to the community itself, students often say these **experiences** taught them more **practical** English than an entire semester of classroom study ever could. It is a simple way to feel part of a community quickly.`,
   ],
   career: [
-    `Preparing for a job search while still studying can feel overwhelming at first, but small steps help. A **strong** **resume** highlights **relevant** experience and **specific** skills that match the **position** you want. Employers often **value** communication skills as much as **technical** knowledge during an **interview**, so practicing both areas **early** makes a real **difference** later on, long before graduation day actually arrives and the real job search truly begins in earnest.`,
-    `Attending a networking event can feel awkward the first time, especially for someone still building confidence in a second language. Preparing a short **introduction** in **advance** makes the whole **experience** far less **stressful**, and asking **genuine** **questions** about someone's work usually matters more than sounding impressively **fluent**. Following up with a brief **email** the next day, thanking the person for their **time**, often makes a stronger lasting **impression** than anything said in the room itself.`,
-    `Choosing between two job offers involves weighing far more than just the salary each company is offering. A slightly **lower** salary at a company with strong **mentorship** and clear **growth** opportunities can sometimes matter more than a bigger **paycheck** with little long-term **support**. Location, company **culture**, and **visa** sponsorship policies all deserve serious **consideration** too, especially for an international graduate weighing exactly where to build a **lasting** career and a genuinely **happy** life.`,
+    `Preparing for a job search while still studying can feel overwhelming at first, but small steps help. A **strong** **resume** highlights **relevant** experience and **specific** skills that match the **position** you want. Employers often **value** communication skills as much as **technical** knowledge during an **interview**, so practicing both areas **early** makes a real **difference** later on, long before graduation day actually arrives and the real job search truly begins in earnest. Small, consistent effort now tends to pay off later on.`,
+    `Attending a networking event can feel awkward the first time, especially for someone still building confidence in a second language. Preparing a short **introduction** in **advance** makes the whole **experience** far less **stressful**, and asking **genuine** **questions** about someone's work usually matters more than sounding impressively **fluent**. Following up with a brief **email** the next day, thanking the person for their **time**, often makes a stronger lasting **impression** than anything said in the room itself. These small gestures are easy to forget, but rarely go unnoticed.`,
+    `Choosing between two job offers involves weighing far more than just the salary each company is offering. A slightly **lower** salary at a company with strong **mentorship** and clear **growth** opportunities can sometimes matter more than a bigger **paycheck** with little long-term **support**. Location, company **culture**, and **visa** sponsorship policies all deserve serious **consideration** too, especially for an international graduate weighing exactly where to build a **lasting** career and a genuinely **happy** life. There is rarely one single right answer for every situation.`,
   ],
   health: [
-    `Staying healthy while adjusting to a new country and a busy class schedule takes real effort. Getting enough **sleep** and staying **active** can **improve** concentration and reduce **stress** during a demanding **semester**. A balanced **diet**, regular **exercise**, and enough **rest** all **contribute** to long-term **wellbeing**, even when the daily class schedule feels quite tight and free time seems almost impossible to find during some especially busy exam weeks each semester.`,
-    `Adjusting to new eating habits is often one of the most underrated challenges of studying in a different country. Cafeteria food can be **convenient**, but it's **easy** to rely too **heavily** on **processed** options when **cooking** for yourself feels like one task **too** many. Keeping a few **simple** ingredients on **hand** — rice, eggs, frozen vegetables — makes it much easier to put together a **balanced** meal even during the busiest **week** of exams.`,
-    `Most universities offer mental health resources that many new students never realize actually exist. A **counseling** center usually offers **free** or low-cost **sessions**, and some campuses run **support** groups specifically for **international** students adjusting to a new **culture**. Reaching out can feel **difficult** at first, but staff consistently **report** that early conversations, even short ones, often prevent much bigger **struggles** later on, especially during an especially demanding and stressful **semester**.`,
+    `Staying healthy while adjusting to a new country and a busy class schedule takes real effort. Getting enough **sleep** and staying **active** can **improve** concentration and reduce **stress** during a demanding **semester**. A balanced **diet**, regular **exercise**, and enough **rest** all **contribute** to long-term **wellbeing**, even when the daily class schedule feels quite tight and free time seems almost impossible to find during some especially busy exam weeks each semester. Small, consistent habits usually matter more than occasional big efforts.`,
+    `Adjusting to new eating habits is often one of the most underrated challenges of studying in a different country. Cafeteria food can be **convenient**, but it's **easy** to rely too **heavily** on **processed** options when **cooking** for yourself feels like one task **too** many. Keeping a few **simple** ingredients on **hand** — rice, eggs, frozen vegetables — makes it much easier to put together a **balanced** meal even during the busiest **week** of exams. A little preparation goes a long way when time feels short.`,
+    `Most universities offer mental health resources that many new students never realize actually exist. A **counseling** center usually offers **free** or low-cost **sessions**, and some campuses run **support** groups specifically for **international** students adjusting to a new **culture**. Reaching out can feel **difficult** at first, but staff consistently **report** that early conversations, even short ones, often prevent much bigger **struggles** later on, especially during an especially demanding and stressful **semester**. Asking for help early is rarely as difficult as it first seems.`,
   ],
   environment: [
-    `Small daily habits can add up to a real difference for the environment over time. Many **campuses** now **encourage** recycling and **reducing** single-use **plastic** to lower their overall **impact** on the **planet**. Public **transportation** produces far **less** pollution per **person** than individual car travel does, which is one clear reason more **cities** around the world are investing heavily in better bus and train systems every single passing year across the region.`,
-    `Climate change has become one of the most common discussion topics in classrooms across nearly every academic subject. Even students **majoring** in unrelated **fields** now **regularly** **encounter** questions about rising **temperatures**, extreme **weather**, and shifting **policy** debates. Many professors **encourage** students to connect these larger global issues to their own **daily** choices, from what they eat to how they get to **class** each morning, long before graduation day ever actually arrives for any of them.`,
-    `Getting around campus without a car has become surprisingly easy at many universities that invest seriously in sustainable transportation. **Free** campus **shuttles**, discounted **bus** passes, and safe **bike** lanes all make it possible to skip owning a **vehicle** entirely. Students who choose these **options** often save **real** **money** each **month**, while also reducing their personal **impact** on a campus that's actively trying to shrink its overall carbon footprint for good.`,
+    `Small daily habits can add up to a real difference for the environment over time. Many **campuses** now **encourage** recycling and **reducing** single-use **plastic** to lower their overall **impact** on the **planet**. Public **transportation** produces far **less** pollution per **person** than individual car travel does, which is one clear reason more **cities** around the world are investing heavily in better bus and train systems every single passing year across the region. Even a small daily habit can add up over an entire year.`,
+    `Climate change has become one of the most common discussion topics in classrooms across nearly every academic subject. Even students **majoring** in unrelated **fields** now **regularly** **encounter** questions about rising **temperatures**, extreme **weather**, and shifting **policy** debates. Many professors **encourage** students to connect these larger global issues to their own **daily** choices, from what they eat to how they get to **class** each morning, long before graduation day ever actually arrives for any of them. These conversations are becoming harder for any student to avoid entirely.`,
+    `Getting around campus without a car has become surprisingly easy at many universities that invest seriously in sustainable transportation. **Free** campus **shuttles**, discounted **bus** passes, and safe **bike** lanes all make it possible to skip owning a **vehicle** entirely. Students who choose these **options** often save **real** **money** each **month**, while also reducing their personal **impact** on a campus that's actively trying to shrink its overall carbon footprint for good. Small daily choices like these quietly add up over an entire year.`,
   ],
   daily: [
-    `Getting settled into daily life in a new city involves learning a lot of small practical steps. Opening a **local** **bank** account usually **requires** a passport, proof of **address**, and a **student** ID card. The **bus** schedule **changes** slightly on **weekends**, so it's always worth **checking** the exact times well in **advance** before you actually travel, especially during the first few confusing weeks in a completely new place for everyone.`,
-    `Learning to grocery shop and cook for yourself is a quiet but important part of settling into life abroad. **Local** **supermarkets** can feel **overwhelming** at first, full of **unfamiliar** brands and **ingredients** that don't quite match what's available back **home**. Most students **discover** a handful of **reliable** recipes within the first **month**, and cooking a familiar dish from home often becomes a small but genuinely **comforting** ritual during a stressful week.`,
-    `Figuring out which government office handles which task can be one of the most confusing parts of settling into a new city. A **local** ID card, a **library** card, and a public **transit** **pass** might each require a **separate** visit to a different **building** entirely. Most students **eventually** build a mental map of exactly where to **go**, but it usually takes a few **frustrating** trips and one very **patient** classmate willing to explain it all first.`,
+    `Getting settled into daily life in a new city involves learning a lot of small practical steps. Opening a **local** **bank** account usually **requires** a passport, proof of **address**, and a **student** ID card. The **bus** schedule **changes** slightly on **weekends**, so it's always worth **checking** the exact times well in **advance** before you actually travel, especially during the first few confusing weeks in a completely new place for everyone. Things generally get easier once a routine starts to form.`,
+    `Learning to grocery shop and cook for yourself is a quiet but important part of settling into life abroad. **Local** **supermarkets** can feel **overwhelming** at first, full of **unfamiliar** brands and **ingredients** that don't quite match what's available back **home**. Most students **discover** a handful of **reliable** recipes within the first **month**, and cooking a familiar dish from home often becomes a small but genuinely **comforting** ritual during a stressful week. Cooking for yourself gets easier with just a little practice.`,
+    `Figuring out which government office handles which task can be one of the most confusing parts of settling into a new city. A **local** ID card, a **library** card, and a public **transit** **pass** might each require a **separate** visit to a different **building** entirely. Most students **eventually** build a mental map of exactly where to **go**, but it usually takes a few **frustrating** trips and one very **patient** classmate willing to explain it all first. Patience during those first errands eventually pays off completely.`,
+  ],
+  money: [
+    `Managing money as a new international student often takes more planning than most people expect before they arrive. A **monthly** **budget** helps **track** spending on rent, food, and **transportation** before the account **balance** gets low. Many students **open** a **local** bank account soon after arriving, since currency **exchange** fees can quietly **reduce** savings over **time**. Learning to separate needs from wants takes practice, but it becomes easier with each passing semester.`,
+    `Building a good credit history is something many new students never think about until they actually need it. A **secured** credit **card** can help **establish** a **record**, as long as the **balance** is **paid** in **full** each month. Missing even a single **payment** can **damage** a score that takes **years** to rebuild. Setting up automatic payments early is one of the smartest habits a student can develop, since a strong score later makes renting an apartment or financing a car far simpler.`,
+    `Comparing prices before a purchase can save an international student real money over the course of a semester. Store **loyalty** **programs** often **offer** small but **meaningful** **discounts** on groceries and everyday **items**. Many students also **track** **expenses** using a simple **app**, which makes small purchases easier to **notice**. These little habits add up to real savings by the end of the year, often without requiring any real sacrifice in day-to-day comfort along the way.`,
+  ],
+  housing: [
+    `Finding a good place to live is often one of the first major challenges a new international student faces. A **thorough** **inspection** before **signing** a **lease** can **reveal** **problems** that are not obvious during a quick visit. Reading every **clause** carefully, especially about **deposits** and **insulation**, protects a student from unpleasant **surprises**. A little patience during the search usually pays off once move-in day finally arrives and the new space genuinely starts to feel like home.`,
+    `Sharing an apartment with roommates can be a wonderful experience, but it usually works best with a little planning. Setting clear **expectations** about **chores**, **noise**, and **guests** early on **prevents** most **conflicts** before they even start. A simple **chart** on the refrigerator **listing** who is **responsible** for what each **week** can quietly help. Small habits like these often save a friendship down the road, especially once the early excitement of moving in together starts to fade a little.`,
+    `Dealing with a difficult landlord is a situation that eventually comes up for many renters, even careful ones. Keeping a written **record** of every **request**, along with the **date** it was **sent**, gives a **tenant** real **proof**. If a **dispute** ever reaches a **housing** office, **photos** of any **damage** taken before moving in help enormously. A little documentation early on can prevent a much bigger headache later, especially if a disagreement about the deposit ever comes up.`,
+  ],
+  travel: [
+    `Planning a trip during a short school break takes more coordination than most students expect at first. Booking **flights** several **weeks** in **advance** usually **saves** a meaningful amount of money compared to last-minute **fares**. Checking **visa** **requirements** for the destination is just as important, since some countries require **extra** **documents** before **departure**. A short checklist made a week early can prevent a lot of last-minute stress once the departure date finally arrives.`,
+    `Getting around a new city without a car can feel intimidating during the first few weeks after arriving. Most cities **offer** a **rechargeable** transit **card** that **works** across **buses**, **trains**, and sometimes even bike-share programs. Downloading a **reliable** map **app** ahead of time makes the whole system much less **confusing** once classes **begin**. Within a month, most students find their own favorite route without even thinking about it, no matter how confusing the map looked on the very first day.`,
+    `Packing efficiently for a long trip is a skill that genuinely improves with practice over several years. Rolling **clothes** instead of **folding** them **saves** noticeable **space** inside a **suitcase**, while a small **pouch** for **cables** and a **portable** charger **prevents** a frustrating search at the **airport**. Weighing a bag carefully before leaving home also avoids an expensive and completely avoidable surprise later on at the busy, crowded airport check-in counter.`,
+  ],
+  media: [
+    `Choosing what to watch has become surprisingly complicated now that so many streaming services exist at once. Many people **subscribe** to several **platforms** at the same time, then **struggle** to **remember** which show is on which **service**. A **recommendation** **algorithm** often **suggests** content based on past **viewing**, which can feel helpful or a little **unsettling**. Either way, deciding what to watch tonight can take longer than actually watching it, which almost everyone can probably relate to at this point.`,
+    `Social media has changed the way many students learn about news and events happening around them. A short **video** can now **explain** a complicated **topic** faster than a long **article** ever could **online**. Some **creators** **research** carefully before **posting**, while others **prioritize** speed over **accuracy**. Learning to tell the difference between the two has become an important skill on its own, especially for anyone trying to stay genuinely well informed.`,
+    `Online reviews now shape almost every entertainment choice people make, from movies to restaurants to books. A single **negative** **review** can quietly **influence** **dozens** of people **before** they ever try something themselves. Some **platforms** now **verify** that a **reviewer** actually experienced the **product**, which helps reduce fake **feedback**. Still, it remains wise to read a wide range of opinions before trusting any single one completely, no matter how convincing it initially seems.`,
+  ],
+  innovation: [
+    `Artificial intelligence has quietly become part of daily life for most students, even those who rarely notice it. A **chatbot** can now **summarize** a long **article** in **seconds**, though it sometimes **invents** **facts** that sound convincing. Learning to **verify** information instead of blindly **trusting** it has become an increasingly **valuable** **skill**. The technology keeps improving quickly, but healthy skepticism is unlikely to ever go out of style, no matter how convincing the next version sounds.`,
+    `Automation is changing the job market faster than most people expected only a few years ago. Some **routine** **tasks** are now **handled** entirely by **software**, which frees workers for more **complex** responsibilities. Other jobs are being **redesigned** rather than **eliminated**, requiring workers to learn **new** **tools** **quickly**. Adapting to this shift may matter more than any single degree earned along the way, since the pace of change shows no real sign of slowing.`,
+    `Space exploration has captured public attention again after decades of relatively quiet progress in the field. Private **companies** now **launch** rockets **regularly**, dramatically **lowering** the **cost** of reaching orbit compared to a decade ago. Some **researchers** hope this progress will **eventually** make **space** **travel** **accessible** to more than just professional astronauts. Whether that happens soon or not, the pace of change already feels genuinely remarkable to anyone paying close attention.`,
   ],
 };
 function blankWord(word){
-  // Exactly one "_" per hidden letter (never a single dash standing in for
-  // several letters), so the number of blanks always tells the student the
-  // exact number of missing characters in that word.
-  if(word.length<=3) return word;
-  const chars = word.split('');
-  const idxs = shuffle(chars.map((_,i)=>i).filter(i=>i>0)).slice(0, Math.ceil(chars.length*0.4));
-  idxs.forEach(i=>{ chars[i]='_'; });
-  return chars.join('');
+  // Real TOEFL 2026 rule (per ETS-adjacent guides): 1-6 missing letters per
+  // word, always in the SECOND HALF of the word as a contiguous run — never
+  // scattered letters from anywhere, like the old version of this function
+  // did. ETS doesn't publish an exact formula, but cross-checking several
+  // real samples (e.g. "essential" -> "esse_____", "investigate" ->
+  // "inves______") shows blanking roughly the last half, capped at 6.
+  // Exactly one "_" per hidden letter, so students always know the exact
+  // number of missing characters.
+  const blankCount = Math.min(6, Math.max(1, Math.round(word.length*0.5)));
+  const shown = Math.max(0, word.length - blankCount);
+  return word.slice(0, shown) + '_'.repeat(word.length - shown);
 }
 function genCompleteWords(theme){
   const raw = pick(COMPLETE_WORDS_BANK[theme] || COMPLETE_WORDS_BANK.campus);
@@ -2850,87 +2966,134 @@ const RECORD_SECONDS_OFFICIAL = [8,8,10,10,10,12,12];
 // still training close to the real pace. Shown in the UI as "+Ns buffer".
 const PRACTICE_BUFFER_SECONDS = 3;
 const RECORD_SECONDS = RECORD_SECONDS_OFFICIAL.map(s => s + PRACTICE_BUFFER_SECONDS);
+// Every set is calibrated to the real TOEFL 2026 syllable curve (verified
+// programmatically): sentences 1-2 = 9-11 syllables, 3-5 = 14-16, 6-7 = 19-23.
 const LISTEN_SETS = {
   campus: [
     {text:'The library closes early on Fridays.', scene:'library'},
-    {text:'She usually eats lunch in the cafeteria before class.', scene:'cafeteria'},
-    {text:'Most new students take the campus bus to get downtown.', scene:'bus'},
+    {text:'Most new students eat lunch before class.', scene:'cafeteria'},
+    {text:'The office asked students to update their contact details.', scene:'classroom'},
     {text:'If you arrive after nine, the front doors will already be locked.', scene:'classroom'},
-    {text:'The academic office asked every student to update their contact information by Friday.', scene:'classroom'},
-    {text:'Even though the schedule changed twice this month, most students still managed to attend every class on time.', scene:'classroom'},
-    {text:'According to the coordinator, students who miss more than two orientation sessions will need to schedule a private meeting before classes officially begin.', scene:'library'},
+    {text:'Students who miss orientation should schedule a meeting.', scene:'library'},
+    {text:'Even though the schedule changed twice this month, most students still attended class on time.', scene:'classroom'},
+    {text:'The advisor suggested each new student meet before picking a final schedule.', scene:'library'},
   ],
   register: [
-    {text:'Could you close the door, please?', scene:'classroom'},
-    {text:'I would like to schedule a short meeting with you.', scene:'classroom'},
-    {text:'Would you mind sending me the notes from yesterday\'s class?', scene:'library'},
-    {text:'If it\'s not too much trouble, could you review my draft before Friday?', scene:'library'},
-    {text:'The email should open more formally when you are writing to a professor.', scene:'classroom'},
-    {text:'Even a short message can sound rude if the tone doesn\'t match who is reading it.', scene:'dorm'},
-    {text:'Choosing the right level of formality often matters more than choosing the right vocabulary when writing to someone you don\'t know well.', scene:'classroom'},
+    {text:'Could you kindly close the door right now?', scene:'classroom'},
+    {text:'I would like to schedule a meeting.', scene:'classroom'},
+    {text:'Please let me know as soon as possible if that time still works.', scene:'library'},
+    {text:'Would it be possible to reschedule our meeting?', scene:'library'},
+    {text:'I wanted to follow up nicely about the message I sent.', scene:'classroom'},
+    {text:'Before we begin the meeting, I would like to review what we agreed on last time.', scene:'dorm'},
+    {text:'Whenever you have a free moment, could you let me know if the plan still works?', scene:'classroom'},
   ],
   current: [
-    {text:'Renewable energy is growing every year.', scene:'classroom'},
-    {text:'Many companies are testing new artificial intelligence tools.', scene:'classroom'},
-    {text:'Electric cars are becoming more common in big cities.', scene:'bus'},
-    {text:'Some researchers believe remote work will keep growing after the pandemic.', scene:'dorm'},
-    {text:'Governments around the world are debating how to regulate new technology safely.', scene:'classroom'},
-    {text:'Even though prices have increased, more households are choosing solar panels for their homes.', scene:'dorm'},
-    {text:'According to a recent report, countries that invested early in clean energy are now seeing lower costs than those that waited.', scene:'library'},
+    {text:'This app updates automatically.', scene:'classroom'},
+    {text:'Most students trust cloud storage completely.', scene:'classroom'},
+    {text:'The software update improved battery life a whole lot.', scene:'bus'},
+    {text:'Many teachers now share lecture recordings for students.', scene:'dorm'},
+    {text:'Most students check their phones just minutes after waking up.', scene:'classroom'},
+    {text:'The new streaming app launched last month and it already has millions of users.', scene:'dorm'},
+    {text:'Researchers study how constant phone notifications affect focus, memory, and grades.', scene:'library'},
   ],
   grammar: [
-    {text:'She said she was tired.', scene:'classroom'},
-    {text:'He asked if I had finished the homework.', scene:'classroom'},
-    {text:'The teacher explained what the assignment required.', scene:'classroom'},
-    {text:'I don\'t know whether the exam was postponed until next week.', scene:'library'},
-    {text:'She told me that the meeting had already started when she arrived.', scene:'cafeteria'},
-    {text:'The professor explained how important it was to cite every source correctly in the essay.', scene:'library'},
-    {text:'What the coordinator announced during orientation surprised almost everyone who was sitting in the room.', scene:'classroom'},
+    {text:'She explained the grammar rule twice.', scene:'classroom'},
+    {text:'He quickly asked if the deadline had changed.', scene:'classroom'},
+    {text:'The teacher reviewed irregular verbs carefully.', scene:'classroom'},
+    {text:'Reported speech takes real practice, but it slowly gets easier.', scene:'library'},
+    {text:'Learners confuse conditionals until seeing examples.', scene:'cafeteria'},
+    {text:'The teacher explained that relative clauses take longer than most students expect.', scene:'library'},
+    {text:'Students who practice grammar in real talk improve faster than those who just read rules.', scene:'classroom'},
   ],
   social: [
-    {text:'Many students value cultural exchange.', scene:'classroom'},
-    {text:'International students often bring new perspectives to class.', scene:'classroom'},
-    {text:'Some communities offer programs to help newcomers adjust.', scene:'library'},
-    {text:'Globalization has changed how people from different countries connect.', scene:'library'},
-    {text:'Local organizations sometimes create programs to support new immigrants and international students.', scene:'cafeteria'},
-    {text:'Even though cultural differences can cause misunderstandings, most students adapt within a few months.', scene:'dorm'},
-    {text:'According to several studies, students who join community programs early tend to adjust faster and report feeling less isolated.', scene:'library'},
+    {text:'Cultural exchange truly builds friendships.', scene:'classroom'},
+    {text:'Many clubs welcome new members warmly.', scene:'classroom'},
+    {text:'The multicultural fair attracted students from many countries.', scene:'library'},
+    {text:'Volunteering locally helps new students feel connected quickly.', scene:'library'},
+    {text:'This year\'s festival drew a much bigger crowd than usual.', scene:'cafeteria'},
+    {text:'Students who join a club early often feel more confident and connected sooner.', scene:'dorm'},
+    {text:'The student group announced next month\'s fair will feature food from many different countries.', scene:'library'},
   ],
   career: [
-    {text:'She updated her resume.', scene:'dorm'},
-    {text:'He applied for a summer internship.', scene:'classroom'},
-    {text:'Strong communication skills matter in most careers.', scene:'classroom'},
-    {text:'Many students look for internships during their final year.', scene:'library'},
-    {text:'A good interview often depends on preparation, not just knowledge.', scene:'classroom'},
-    {text:'Even highly skilled candidates can struggle if they don\'t prepare for common interview questions.', scene:'cafeteria'},
-    {text:'According to recent workplace surveys, employers increasingly value adaptability and communication skills just as highly as technical expertise.', scene:'library'},
+    {text:'She proudly updated her resume today.', scene:'dorm'},
+    {text:'He practiced interview questions aloud.', scene:'classroom'},
+    {text:'The career center offers free mock interviews every week.', scene:'classroom'},
+    {text:'Networking events help students meet professionals in their field.', scene:'library'},
+    {text:'Most employers value communication as much as skill.', scene:'classroom'},
+    {text:'A short introduction in advance makes networking events feel far less scary.', scene:'cafeteria'},
+    {text:'Students who research a company in advance often impress recruiters more.', scene:'library'},
   ],
   health: [
-    {text:'Sleep matters a lot.', scene:'dorm'},
-    {text:'She goes for a short walk every morning.', scene:'dorm'},
-    {text:'Regular exercise can help reduce daily stress.', scene:'classroom'},
-    {text:'Many students forget to drink enough water during exams.', scene:'cafeteria'},
-    {text:'A balanced diet can improve both energy and focus in class.', scene:'cafeteria'},
-    {text:'Even small changes, like walking instead of driving, can improve overall health over time.', scene:'bus'},
-    {text:'According to several studies, students who sleep at least seven hours per night tend to perform better on exams and feel less anxious.', scene:'library'},
+    {text:'Good sleep truly improves daily focus.', scene:'dorm'},
+    {text:'Exercise can reduce stress before exams.', scene:'dorm'},
+    {text:'The student health center offers free counseling each week.', scene:'classroom'},
+    {text:'Staying hydrated really helps focus during every class.', scene:'cafeteria'},
+    {text:'Most students really underestimate how much sleep they need.', scene:'cafeteria'},
+    {text:'Building a few healthy habits early in the term prevents bigger problems later.', scene:'bus'},
+    {text:'Students who exercise during stressful weeks tend to report better focus and mood.', scene:'library'},
   ],
   environment: [
-    {text:'Recycling helps the environment.', scene:'dorm'},
-    {text:'She carries a reusable water bottle every day.', scene:'cafeteria'},
-    {text:'Many campuses now offer free recycling bins.', scene:'classroom'},
-    {text:'Public transportation produces less pollution than individual cars.', scene:'bus'},
-    {text:'Some students started a small garden behind the dormitory.', scene:'dorm'},
-    {text:'Even small habits, like turning off lights, can reduce a building\'s energy use over time.', scene:'classroom'},
-    {text:'According to recent research, universities that invest early in sustainable buildings often save money on energy costs within a few years.', scene:'library'},
+    {text:'Campuses now offer more recycling bins.', scene:'dorm'},
+    {text:'Many students carry water bottles now.', scene:'cafeteria'},
+    {text:'Buses produce far less pollution than individual cars.', scene:'classroom'},
+    {text:'The office asked each department to reduce paper waste.', scene:'bus'},
+    {text:'Small daily habits can lower a campus\'s energy use.', scene:'dorm'},
+    {text:'Schools that invest early in solar panels often save real money within years.', scene:'classroom'},
+    {text:'The report found that less plastic in dining halls could lower total waste yearly.', scene:'library'},
   ],
   daily: [
-    {text:'The bank opens at nine.', scene:'classroom'},
-    {text:'She pays her rent on the first of the month.', scene:'dorm'},
-    {text:'The bus downtown leaves every twenty minutes.', scene:'bus'},
-    {text:'Most apartments near campus require a security deposit.', scene:'dorm'},
-    {text:'He compared three apartments before choosing one near the library.', scene:'library'},
-    {text:'Opening a local bank account usually requires a passport and proof of address.', scene:'classroom'},
-    {text:'According to the school\'s housing office, most students find an apartment within their first two weeks of searching.', scene:'library'},
+    {text:'The campus bank usually opens at nine.', scene:'classroom'},
+    {text:'She always pays her rent on the first.', scene:'dorm'},
+    {text:'The downtown bus usually leaves every twenty minutes.', scene:'bus'},
+    {text:'Most apartments near campus usually need a deposit.', scene:'dorm'},
+    {text:'A local bank account usually needs a passport and address.', scene:'library'},
+    {text:'Most new international students find a suitable apartment within their first two weeks.', scene:'classroom'},
+    {text:'He compared three apartments before choosing the one closest to the library.', scene:'library'},
+  ],
+  money: [
+    {text:'This app carefully tracks daily spending.', scene:'classroom'},
+    {text:'She quickly opened a savings account.', scene:'classroom'},
+    {text:'Most local banks now waive several fees for full-time students.', scene:'library'},
+    {text:'A monthly budget helps avoid running out of money early.', scene:'dorm'},
+    {text:'New students underestimate how quickly small costs add up.', scene:'cafeteria'},
+    {text:'Comparing prices before a big purchase can save real money over a term.', scene:'cafeteria'},
+    {text:'Students who track weekly expenses tend to save more than those who only check once.', scene:'library'},
+  ],
+  housing: [
+    {text:'The landlord fixed the heater today.', scene:'dorm'},
+    {text:'Roommates should always discuss chores early.', scene:'dorm'},
+    {text:'Most leases require a security deposit upfront.', scene:'classroom'},
+    {text:'Reading every clause protects a tenant from surprises.', scene:'library'},
+    {text:'Most disputes start with a simple misunderstanding about chores.', scene:'dorm'},
+    {text:'Taking photos of any damage before moving in protects a deposit later.', scene:'classroom'},
+    {text:'Keeping a written record of requests gives a tenant real proof if a dispute happens.', scene:'library'},
+  ],
+  travel: [
+    {text:'The morning flight departs at noon today.', scene:'bus'},
+    {text:'She proudly booked her hotel weeks ahead.', scene:'classroom'},
+    {text:'Most airlines often charge extra money for checked baggage.', scene:'bus'},
+    {text:'Checking visa rules early prevents a bad surprise.', scene:'library'},
+    {text:'Booking flights several weeks ahead usually saves real money.', scene:'classroom'},
+    {text:'A reliable transit map makes a brand new city feel far less confusing.', scene:'bus'},
+    {text:'Students who research transport in advance feel more confident during their first week abroad.', scene:'library'},
+  ],
+  media: [
+    {text:'This popular show just dropped a new season.', scene:'dorm'},
+    {text:'Many students listen to podcasts daily.', scene:'bus'},
+    {text:'Streaming services keep adding new original content monthly.', scene:'dorm'},
+    {text:'A short video can explain a topic faster than an essay.', scene:'classroom'},
+    {text:'Most students get their daily news from social media now.', scene:'cafeteria'},
+    {text:'Recommendation algorithms suggest content based on past viewing, which can feel unsettling.', scene:'dorm'},
+    {text:'Media instructors say learning to check a source takes seconds but reduces fake news.', scene:'library'},
+  ],
+  innovation: [
+    {text:'This chatbot answers questions instantly.', scene:'classroom'},
+    {text:'Many firms now test automation daily.', scene:'classroom'},
+    {text:'Self-driving cars are tested in several major cities.', scene:'bus'},
+    {text:'AI now helps doctors detect certain diseases much earlier.', scene:'library'},
+    {text:'Private companies now launch rockets more often than governments.', scene:'classroom'},
+    {text:'Automation is changing the job market faster than most experts predicted years ago.', scene:'library'},
+    {text:'Students who learn to work alongside AI tools now may gain a real career advantage.', scene:'classroom'},
   ],
 };
 function genListenRepeatSet(theme){
@@ -2939,19 +3102,214 @@ function genListenRepeatSet(theme){
 }
 
 // ---- Take an Interview ----
+// Real TOEFL 2026 "Take an Interview": 4 questions on ONE topic, asked
+// back-to-back, 45s each, no prep time. Each set below is a self-contained
+// mini-interview (not 4 unrelated questions) tagged with the real 3
+// recurring question styles: state an opinion/preference, describe an
+// aspect of your life, describe an event in your life — any style can
+// repeat within one interview, exactly like on the real test.
 const INTERVIEW_BANK = {
-  campus: ['What is one thing about American culture that surprised you the most since you arrived?','Describe a class you are currently taking and explain why you find it useful.','What\'s one thing you wish someone had told you before your first day of class here?'],
-  register: ['Tell me about a time you had to write a formal message. What made it formal?','Describe a situation where you had to be very formal in English. How did you know what tone to use?','Tell me about a time someone corrected the way you spoke or wrote. How did that feel?'],
-  current: ['What is one current event you have followed recently, and why does it interest you?','How has technology changed the way you communicate with friends and family back home?','What\'s one piece of technology you couldn\'t imagine studying without?'],
-  grammar: ['Describe a rule of English grammar that you find difficult, and why.','What\'s one English grammar rule you\'ve finally started to feel comfortable with? How did you learn it?','Do you think it\'s better to learn grammar from a textbook or from real conversations? Why?'],
-  social: ['How do you think international students can help their local community?','What is one cultural tradition from your country you would like to share with others?','Describe a moment when you felt a real cultural difference between your home country and here.'],
-  career: ['What kind of career are you hoping to pursue after finishing your studies?','Describe one skill you think is essential for almost any job.','If you could ask someone already working in your field one question, what would it be?'],
-  health: ['What do you do to stay healthy while studying abroad?','Describe one habit you would like to improve for your wellbeing.','What\'s the hardest part about staying healthy while being a full-time student?'],
-  environment: ['What is one small change you have made to live more sustainably?','Should your school do more to protect the environment? Why or why not?','Do you think your generation cares more about the environment than previous generations? Why or why not?'],
-  daily: ['What was the most confusing part of daily life when you first arrived?','Describe the process of finding your current place to live.','What\'s one everyday task that was much easier back home than it is here?'],
+  campus: [
+    { topic:'Your First Weeks Here', questions:[
+      {style:'event', text:'Describe your very first day on this campus. What do you remember most clearly?'},
+      {style:'aspect', text:'What part of daily campus life took the longest to get used to?'},
+      {style:'opinion', text:'Do you think new students get enough support during their first weeks? Why or why not?'},
+      {style:'opinion', text:'What is one thing about American culture that has surprised you the most since you arrived?'},
+    ]},
+    { topic:'Classes and Learning', questions:[
+      {style:'aspect', text:'Describe a class you are currently taking and explain why you find it useful.'},
+      {style:'opinion', text:"What's one thing you wish someone had told you before your first day of class here?"},
+      {style:'event', text:'Describe a moment in class when you felt especially proud of your progress in English.'},
+      {style:'opinion', text:'Should professors give international students extra time on written exams? Why or why not?'},
+    ]},
+  ],
+  register: [
+    { topic:'Formal Communication', questions:[
+      {style:'event', text:'Tell me about a time you had to write a formal message. What made it formal?'},
+      {style:'aspect', text:'Describe a situation where you had to be very formal in English. How did you know what tone to use?'},
+      {style:'event', text:'Tell me about a time someone corrected the way you spoke or wrote. How did that feel?'},
+      {style:'opinion', text:'Do you think formal writing rules should be relaxed in casual emails? Why or why not?'},
+    ]},
+    { topic:'Everyday Conversations', questions:[
+      {style:'aspect', text:'Describe how your speaking style changes depending on who you are talking to.'},
+      {style:'event', text:"Tell me about a conversation where you weren't sure how formal to be."},
+      {style:'opinion', text:'Do you think texting has made people less formal in all kinds of writing? Why or why not?'},
+      {style:'opinion', text:'Is it more important to sound polite or to sound clear when speaking a second language?'},
+    ]},
+  ],
+  current: [
+    { topic:'Technology in Daily Life', questions:[
+      {style:'opinion', text:'What is one current event you have followed recently, and why does it interest you?'},
+      {style:'aspect', text:'How has technology changed the way you communicate with friends and family back home?'},
+      {style:'opinion', text:"What's one piece of technology you couldn't imagine studying without?"},
+      {style:'event', text:'Describe a time when technology made a difficult situation much easier for you.'},
+    ]},
+    { topic:'Remote Work and Study', questions:[
+      {style:'opinion', text:'Do you think online classes are as effective as in-person classes? Why or why not?'},
+      {style:'aspect', text:'Describe how you personally stay focused during an online class or meeting.'},
+      {style:'event', text:'Tell me about a time a technical problem interrupted something important.'},
+      {style:'opinion', text:'Should schools require students to turn on their cameras during online classes?'},
+    ]},
+  ],
+  grammar: [
+    { topic:'Learning English', questions:[
+      {style:'opinion', text:'Describe a rule of English grammar that you find difficult, and why.'},
+      {style:'event', text:"What's one English grammar rule you've finally started to feel comfortable with? How did you learn it?"},
+      {style:'opinion', text:"Do you think it's better to learn grammar from a textbook or from real conversations? Why?"},
+      {style:'aspect', text:'Describe how you personally practice grammar outside of class.'},
+    ]},
+    { topic:'Mistakes and Progress', questions:[
+      {style:'event', text:'Tell me about a grammar mistake you made that you now remember clearly.'},
+      {style:'opinion', text:'Should teachers correct every small grammar mistake during speaking practice? Why or why not?'},
+      {style:'aspect', text:'Describe how your confidence in speaking English has changed since you arrived.'},
+      {style:'opinion', text:'Is it more useful to focus on grammar accuracy or on speaking fluently? Why?'},
+    ]},
+  ],
+  social: [
+    { topic:'Community and Culture', questions:[
+      {style:'opinion', text:'How do you think international students can help their local community?'},
+      {style:'event', text:'Describe a moment when you felt a real cultural difference between your home country and here.'},
+      {style:'aspect', text:'Describe one cultural tradition from your country you would like to share with others.'},
+      {style:'opinion', text:'Should schools do more to help international students feel included? Why or why not?'},
+    ]},
+    { topic:'Making Friends', questions:[
+      {style:'event', text:'Tell me about how you made your first close friend here.'},
+      {style:'aspect', text:'Describe how making friends here compares to making friends back home.'},
+      {style:'opinion', text:"Do you think it's easier to make friends online or in person? Why?"},
+      {style:'opinion', text:'Should universities organize more events specifically to help students meet each other?'},
+    ]},
+  ],
+  career: [
+    { topic:'Career Planning', questions:[
+      {style:'opinion', text:'What kind of career are you hoping to pursue after finishing your studies?'},
+      {style:'aspect', text:'Describe one skill you think is essential for almost any job.'},
+      {style:'event', text:'Tell me about a time you learned something important about your future career.'},
+      {style:'opinion', text:'If you could ask someone already working in your field one question, what would it be?'},
+    ]},
+    { topic:'Work Experience', questions:[
+      {style:'event', text:'Describe your first experience with any kind of paid or volunteer work.'},
+      {style:'opinion', text:'Do you think students should work part-time while studying? Why or why not?'},
+      {style:'aspect', text:'Describe what a typical workday might look like in your dream career.'},
+      {style:'opinion', text:'Should companies value real-world experience more than a university degree?'},
+    ]},
+  ],
+  health: [
+    { topic:'Staying Healthy', questions:[
+      {style:'opinion', text:'What do you do to stay healthy while studying abroad?'},
+      {style:'aspect', text:'Describe one habit you would like to improve for your wellbeing.'},
+      {style:'event', text:'Tell me about a time you had to prioritize your health over your studies.'},
+      {style:'opinion', text:"What's the hardest part about staying healthy while being a full-time student?"},
+    ]},
+    { topic:'Stress and Balance', questions:[
+      {style:'aspect', text:'Describe how you personally manage stress during exam weeks.'},
+      {style:'event', text:'Tell me about a time you felt overwhelmed and how you handled it.'},
+      {style:'opinion', text:'Do you think universities do enough to support student mental health?'},
+      {style:'opinion', text:'Is it more important to get enough sleep or to study more before an exam?'},
+    ]},
+  ],
+  environment: [
+    { topic:'Personal Habits', questions:[
+      {style:'opinion', text:'What is one small change you have made to live more sustainably?'},
+      {style:'event', text:'Describe a moment when you became more aware of your own environmental impact.'},
+      {style:'aspect', text:'Describe how your daily routine has changed to be more environmentally friendly.'},
+      {style:'opinion', text:'Should your school do more to protect the environment? Why or why not?'},
+    ]},
+    { topic:'Bigger Questions', questions:[
+      {style:'opinion', text:'Do you think your generation cares more about the environment than previous generations? Why or why not?'},
+      {style:'aspect', text:'Describe an environmental problem that concerns you most where you live.'},
+      {style:'event', text:'Tell me about a time you saw the effects of climate change firsthand.'},
+      {style:'opinion', text:'Should individuals or governments hold the main responsibility for protecting the environment?'},
+    ]},
+  ],
+  daily: [
+    { topic:'Getting Settled', questions:[
+      {style:'event', text:'What was the most confusing part of daily life when you first arrived?'},
+      {style:'aspect', text:'Describe the process of finding your current place to live.'},
+      {style:'opinion', text:"What's one everyday task that was much easier back home than it is here?"},
+      {style:'event', text:'Tell me about a time a simple errand turned out more complicated than expected.'},
+    ]},
+    { topic:'Daily Routines', questions:[
+      {style:'aspect', text:'Describe your typical daily routine during a normal school week.'},
+      {style:'opinion', text:'Do you think having a strict routine helps or limits students? Why?'},
+      {style:'event', text:'Tell me about a routine you had to change after moving here.'},
+      {style:'opinion', text:"What's one daily habit you think every student should have?"},
+    ]},
+  ],
+  money: [
+    { topic:'Managing Money', questions:[
+      {style:'opinion', text:'What do you do to manage your money as a student?'},
+      {style:'aspect', text:'Describe one financial habit you would like to improve.'},
+      {style:'event', text:'Tell me about a time you had to save up for something important.'},
+      {style:'opinion', text:'Do you think schools should teach personal finance as a required class?'},
+    ]},
+    { topic:'Spending Decisions', questions:[
+      {style:'event', text:'Describe a purchase you regretted making. What happened?'},
+      {style:'aspect', text:'Describe how you personally decide what is worth spending money on.'},
+      {style:'opinion', text:"Is it better to save carefully or enjoy your money while you're young? Why?"},
+      {style:'opinion', text:'Should students get a part-time job, or focus fully on their studies?'},
+    ]},
+  ],
+  housing: [
+    { topic:'Where You Live', questions:[
+      {style:'aspect', text:'Describe the place where you currently live.'},
+      {style:'event', text:'Tell me about the process of finding your current home.'},
+      {style:'opinion', text:'Is it better to live alone or with roommates? Why?'},
+      {style:'opinion', text:'What is the most important thing to look for in a good place to live?'},
+    ]},
+    { topic:'Living with Others', questions:[
+      {style:'event', text:"Describe a disagreement you've had with a roommate and how it was resolved."},
+      {style:'aspect', text:'Describe how you and your roommates divide household responsibilities.'},
+      {style:'opinion', text:'Do you think landlords should be required to respond to requests within 24 hours?'},
+      {style:'opinion', text:'Is it better to sign a long lease, or start with something short-term?'},
+    ]},
+  ],
+  travel: [
+    { topic:'Travel Experiences', questions:[
+      {style:'event', text:'Describe a memorable trip you have taken.'},
+      {style:'aspect', text:'Describe your typical routine when preparing for a trip.'},
+      {style:'opinion', text:'Is it better to travel to many places, or explore one place deeply?'},
+      {style:'opinion', text:'What is the most important thing to research before visiting a new country?'},
+    ]},
+    { topic:'Getting Around', questions:[
+      {style:'aspect', text:'Describe how you usually get around your current city.'},
+      {style:'event', text:'Tell me about a time getting somewhere took much longer than expected.'},
+      {style:'opinion', text:'Should public transportation be free for university students?'},
+      {style:'opinion', text:'Is it better to explore a new city on foot or by public transit?'},
+    ]},
+  ],
+  media: [
+    { topic:'Entertainment Choices', questions:[
+      {style:'opinion', text:'What kind of shows or movies do you enjoy watching most?'},
+      {style:'aspect', text:'Describe how you usually decide what to watch or listen to.'},
+      {style:'event', text:'Tell me about a show or podcast that really impacted you.'},
+      {style:'opinion', text:'Do you think streaming has made people watch too much low-quality content?'},
+    ]},
+    { topic:'Social Media Habits', questions:[
+      {style:'aspect', text:'Describe your typical relationship with social media.'},
+      {style:'event', text:'Tell me about a time social media gave you useful information.'},
+      {style:'opinion', text:'Do social media platforms have a responsibility to control what young people see?'},
+      {style:'opinion', text:'Is it better to get news from social media or from traditional news sources?'},
+    ]},
+  ],
+  innovation: [
+    { topic:'AI and Automation', questions:[
+      {style:'opinion', text:'What do you think about using AI tools for schoolwork?'},
+      {style:'aspect', text:'Describe how you personally use technology to help you study.'},
+      {style:'event', text:'Tell me about a time a new piece of technology genuinely surprised you.'},
+      {style:'opinion', text:'Will automation create more jobs than it eliminates in the next twenty years?'},
+    ]},
+    { topic:'The Future', questions:[
+      {style:'opinion', text:'What area of technology are you most excited about for the future?'},
+      {style:'aspect', text:'Describe how you imagine your future job might be different from jobs today.'},
+      {style:'event', text:'Tell me about a moment when you realized how quickly technology is changing.'},
+      {style:'opinion', text:'Should artificial intelligence be allowed to grade student writing?'},
+    ]},
+  ],
 };
 function genInterview(theme){
-  return { question: pick(INTERVIEW_BANK[theme] || INTERVIEW_BANK.campus) };
+  const sets = INTERVIEW_BANK[theme] || INTERVIEW_BANK.campus;
+  const set = pick(sets);
+  return { topic: set.topic, questions: set.questions };
 }
 
 /* =========================================================
@@ -3289,10 +3647,11 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // consistent.
 function generateBatchItems(type, theme){
   const items = [];
-  if(type === 'listen-repeat'){
-    // Real TOEFL structure: Listen and Repeat is ONE task made of 7
-    // sentences of increasing difficulty — approved/discarded as a set,
-    // not as 4 separate cards like the other task types.
+  if(type === 'listen-repeat' || type === 'interview'){
+    // Real TOEFL structure: both Speaking tasks are ONE connected unit —
+    // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
+    // on a single topic — approved/discarded as a set, not as 4 separate
+    // cards like the Reading/Writing task types.
     const g = generateOne(type, theme);
     items.push({ id: uid(), type:g.type, tag: tagFor(g.type), theme, status:'pending', data: g.data });
     return items;
@@ -3349,7 +3708,7 @@ function renderThemeSelect(){
   if(ALL_THEMES.includes(prev)) sel.value = prev;
 }
 // Random theme, scoped per task type — same shuffle-bag mechanism as
-// student self-practice, so it cycles through all 9 themes for this
+// student self-practice, so it cycles through all 14 themes for this
 // type before any repeat, instead of plain Math.random() risking
 // back-to-back repeats.
 function randomizeTheme(){
@@ -3538,7 +3897,7 @@ function cardBody(item){
   if(item.type==='discussion') return `<div class="ex-body"><b>Professor:</b> ${d.professor}<br><br><b>${d.posts[0].name}:</b> ${d.posts[0].text}<br><b>${d.posts[1].name}:</b> ${d.posts[1].text}<br><br><i>Student response: 120–130 words</i></div>`;
   if(item.type==='sentence') return `<div class="ex-body">Target sentence (for teacher reference):<br><b>${d.target}</b></div><div class="chip-row">${d.scrambled.map(w=>`<span class="chip">${w}</span>`).join('')}</div>`;
   if(item.type==='complete-words') return `<div class="ex-body cw-passage">${d.display}</div>`;
-  if(item.type==='listen-repeat') return `<div class="ex-body">7 sentences, increasing difficulty (~8 → ~25 words), recording time grows 8s → 10s → 12s — matches the real TOEFL Listen and Repeat task.</div>
+  if(item.type==='listen-repeat') return `<div class="ex-body">7 sentences, increasing difficulty (9-11 syllables → 14-16 → 19-23, matching the real ETS tiers), recording time grows 8s → 10s → 12s — matches the real TOEFL Listen and Repeat task.</div>
     <p class="small-note">📺 In class, these 🔊 buttons are also your live playback controls — with this tab open on the classroom screen, press each one when you're ready and it plays through the room speakers. Students don't play it on their own phones (avoids 13 phones firing out of sync) — they just listen and respond.</p>
     <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.6rem">
       ${d.set.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
@@ -3547,7 +3906,14 @@ function cardBody(item){
         <button class="btn sound sm" onclick="speak('${s.text.replace(/'/g,"\\'")}')">🔊</button>
       </div>`).join('')}
     </div>`;
-  if(item.type==='interview') return `<div class="ex-body">${d.question}</div><div class="ex-actions"><button class="btn sound sm" onclick="speak('${d.question.replace(/'/g,"\\'")}')">🔊 Preview audio</button></div>`;
+  if(item.type==='interview') return `<div class="ex-body"><b>${d.topic}</b> — 4 connected questions:</div>
+    <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.6rem">
+      ${d.questions.map((q,i)=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
+        <span class="chip" style="flex-shrink:0">#${i+1}</span>
+        <span style="flex:1">${q.text}</span>
+        <button class="btn sound sm" onclick="speak('${q.text.replace(/'/g,"\\'")}')">🔊</button>
+      </div>`).join('')}
+    </div>`;
   return '';
 }
 
@@ -3696,7 +4062,7 @@ function startSelfPractice(){
   renderPractice();
 }
 // "Surprise practice" — draws a full type+theme combo from the shuffle bag
-// (54 combinations: 6 task types × 9 themes) so an intensive practice
+// (84 combinations: 6 task types × 14 themes) so an intensive practice
 // session cycles through everything before any combo repeats.
 function startSurprisePractice(){
   const combo = drawFromBag('combo', ALL_TYPE_THEME_COMBOS, getStudentName());
@@ -3735,7 +4101,7 @@ function renderStudent(){
       : item.type==='sentence' ? 'Reorder the scrambled words'
       : item.type==='complete-words' ? 'Fill in the missing letters'
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
-      : item.data.question;
+      : `${item.data.topic} · 4 questions`;
     const b = document.createElement('button');
     b.className = 'scenario-pick' + (selectedId===item.id ? ' selected':'');
     b.innerHTML = `<span class="tag">${item.tag}</span><span class="txt">${preview}</span>`;
@@ -3765,6 +4131,7 @@ function practiceAgain(){
   practiceOverride = { forId: base.id, data: g.data };
   if(base.id === '__self__') window._selfItem = { ...window._selfItem, data: g.data };
   if(base.type === 'listen-repeat') window._lrState = null; // force the 7-step walkthrough to restart on the new set
+  if(base.type === 'interview') window._interviewState = null; // force the 4-question walkthrough to restart on the new set
   renderPractice();
 }
 
@@ -3800,7 +4167,12 @@ function timerBadgeHtml(type){
   const note = OFFICIAL_TIMING[type] ? 'Official TOEFL time for this task' : 'Practice pacing target — ETS does not publish an official time for this task';
   return `<div class="timer-badge" id="task-timer">⏱ ${formatTime(total)}</div><div class="timer-note">${note}</div>`;
 }
-function startTaskTimer(type){
+// onExpire lets a task decide what "time's up" actually advances into —
+// most types move to the next exercise in the batch (the default), but
+// Take an Interview instead needs to move to its next internal question
+// and only leave the item once all 4 are done.
+function startTaskTimer(type, onExpire){
+  onExpire = onExpire || goToNextExercise;
   clearPracticeTimer();
   let left = TASK_TIME_LIMITS[type];
   const badge = document.getElementById('task-timer');
@@ -3820,7 +4192,7 @@ function startTaskTimer(type){
       if(el){ el.textContent = "⏰ Time's up"; el.classList.add('warn'); }
       const flag = document.getElementById('time-up-note');
       if(flag) flag.style.display = 'block';
-      window._autoAdvanceTimer = setTimeout(goToNextExercise, AUTO_ADVANCE_DELAY_MS);
+      window._autoAdvanceTimer = setTimeout(onExpire, AUTO_ADVANCE_DELAY_MS);
       return;
     }
     render();
@@ -3842,6 +4214,21 @@ function goToNextExercise(){
   }
   const flag = document.getElementById('time-up-note');
   if(flag) flag.textContent = "⏰ Time's up — that was the last exercise in today's set. Nice work!";
+}
+// Take an Interview's own 4-question walkthrough: each question gets its
+// own 45s timer (started only once "Hear the question" plays, matching
+// the real test's no-prep-time rule). When it expires, move to the next
+// question in THIS interview — only once all 4 are answered does it fall
+// through to goToNextExercise() and leave the item entirely.
+function advanceInterviewQuestion(){
+  const st = window._interviewState;
+  if(!st){ goToNextExercise(); return; }
+  if(st.step < 3){
+    st.step++;
+    renderPractice();
+  } else {
+    goToNextExercise();
+  }
 }
 
 function renderPractice(){
@@ -3914,39 +4301,55 @@ function renderPractice(){
   }
 
   if(item.type==='interview'){
-    window._interviewTiming = null;
-    const classroom = isSharedClassroomAudio();
-    const myTurn = isMyTurnToSpeak();
-    const turnList = speakingTurnList();
-    const turnBanner = (classroom && turnList)
-      ? (myTurn
-          ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
-          : `<p class="small-note">⏳ This round: ${escapeHtml(turnList.join(', '))}. Not your name? No mic needed — just type your answer below.</p>`)
-      : '';
-    wrap.innerHTML = `
-      <div class="compose">
-        <div id="interview-pretimer" class="small-note" style="margin-bottom:.6rem">⏱ No prep time on the real test — the 45s answer clock starts the moment you hear the question. Aim for about 150 words in 4–6 sentences.</div>
-        ${turnBanner}
-        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test the recording would stop now. Moving to the next exercise…</div>
-        <div class="ex-body">${item.data.question}</div>
-        <div class="ex-actions" style="margin-top:.7rem">
-          <button class="btn sound" onclick="hearInterviewQuestion('${item.data.question.replace(/'/g,"\\'")}')">🔊 Hear the question</button>
-          ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
-        </div>
-        ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
-        <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null"></textarea>
-        <div class="ex-actions" style="margin-top:.6rem"><button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button></div>
-        <div id="interview-feedback"></div>
-      </div>`;
-    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    if(!window._interviewState || window._interviewState.itemId !== item.id){
+      window._interviewState = { itemId:item.id, step:0 };
+    }
+    renderInterviewStep(item);
     return;
   }
+}
+// Real TOEFL 2026 "Take an Interview": 4 questions on one topic, asked
+// back-to-back, 45s each, no prep time. window._interviewState.step
+// tracks which of the 4 is currently showing.
+function renderInterviewStep(item){
+  const wrap = document.getElementById('practice-wrap');
+  const st = window._interviewState;
+  const q = item.data.questions[st.step];
+  window._interviewTiming = null;
+  const classroom = isSharedClassroomAudio();
+  const myTurn = isMyTurnToSpeak();
+  const turnList = speakingTurnList();
+  const turnBanner = (classroom && turnList)
+    ? (myTurn
+        ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
+        : `<p class="small-note">⏳ This round: ${escapeHtml(turnList.join(', '))}. Not your name? No mic needed — just type your answer below.</p>`)
+    : '';
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Question ${st.step+1} of 4 &middot; ${item.data.topic}</div>
+      <div id="interview-pretimer" class="small-note" style="margin-bottom:.6rem">⏱ No prep time on the real test — the 45s answer clock starts the moment you hear the question. Aim for about 150 words in 4–6 sentences.</div>
+      ${turnBanner}
+      <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test the recording would stop now. Moving to the next question…</div>
+      <div class="ex-body">${q.text}</div>
+      <div class="ex-actions" style="margin-top:.7rem">
+        <button class="btn sound" onclick="hearInterviewQuestion('${q.text.replace(/'/g,"\\'")}')">🔊 Hear the question</button>
+        ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
+      </div>
+      ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
+      <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null"></textarea>
+      <div class="ex-actions" style="margin-top:.6rem">
+        <button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button>
+        <button class="btn ghost sm" onclick="advanceInterviewQuestion()">${st.step<3 ? 'Next question →' : 'Finish this interview →'}</button>
+      </div>
+      <div id="interview-feedback"></div>
+    </div>`;
+  wrap.innerHTML += PRACTICE_AGAIN_BTN;
 }
 function hearInterviewQuestion(text){
   speak(text);
   const pre = document.getElementById('interview-pretimer');
   if(pre) pre.outerHTML = timerBadgeHtml('interview');
-  startTaskTimer('interview');
+  startTaskTimer('interview', advanceInterviewQuestion);
 }
 
 // -- Build a Sentence interaction --
@@ -3962,8 +4365,12 @@ function checkSentence(){
   // Real TOEFL rule: Build a Sentence is graded correct/incorrect with no
   // partial credit — one word out of place counts the same as a fully wrong
   // sentence. This checker matches that exactly, on purpose.
+  // Some targets are questions ("Could you confirm...?"), not just
+  // statements — re-use whichever final punctuation the target actually
+  // ends with instead of always appending a period.
   const item = currentItem();
-  const attempt = window._sentenceState.assembled.join(' ') + '.';
+  const punct = /[.?]$/.test(item.data.target) ? item.data.target.slice(-1) : '.';
+  const attempt = window._sentenceState.assembled.join(' ') + punct;
   const ok = attempt.toLowerCase() === item.data.target.toLowerCase();
   document.getElementById('sentence-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! (exact word order — matches the real all-or-nothing scoring)' : '✕ Not correct yet — even one word out of place counts as incorrect on the real test. Keep trying, or tap Reset.'}</div>`;
   logUsage('sentence', item.theme, ok ? 1 : 0);
