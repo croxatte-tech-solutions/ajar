@@ -3278,36 +3278,68 @@ function generateBatchItems(type, theme){
   return items;
 }
 
+// Which (task type, theme) combos have actually been generated for the
+// class already — tracked per area of study, not tied to any fixed
+// day-by-day schedule, since a real class doesn't always move in a
+// straight line. Drives the checkmarks in the theme dropdown below.
+function loadThemeProgress(){ try{ return JSON.parse(localStorage.getItem('cse_theme_done') || '{}'); }catch(e){ return {}; } }
+function markThemeDone(type, theme){
+  const done = loadThemeProgress();
+  if(!done[type]) done[type] = [];
+  if(!done[type].includes(theme)) done[type].push(theme);
+  localStorage.setItem('cse_theme_done', JSON.stringify(done));
+}
+function isThemeDone(type, theme){ return (loadThemeProgress()[type] || []).includes(theme); }
+// Renders the theme <select> fresh each time the active task type
+// changes, so the "already done" checkmarks always reflect THIS type's
+// history, not whichever type was selected before.
+function renderThemeSelect(){
+  const sel = document.getElementById('topic');
+  if(!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = ALL_THEMES.map(t=>{
+    const done = isThemeDone(activeType, t);
+    const label = (done ? '✓ ' : '') + THEME_LABELS[t];
+    return `<option value="${t}"${done ? ' style="color:var(--text-dim);font-style:italic"' : ''}>${label}</option>`;
+  }).join('');
+  if(ALL_THEMES.includes(prev)) sel.value = prev;
+}
+// Random theme, scoped per task type — same shuffle-bag mechanism as
+// student self-practice, so it cycles through all 9 themes for this
+// type before any repeat, instead of plain Math.random() risking
+// back-to-back repeats.
 function randomizeTheme(){
-  document.getElementById('topic').value = pick(ALL_THEMES);
+  document.getElementById('topic').value = drawFromBag('teacher_theme_' + activeType, ALL_THEMES, '_class');
 }
 
 function generateBatch(){
   const theme = document.getElementById('topic').value;
   const items = generateBatchItems(activeType, theme);
   saveBatch(items);
+  markThemeDone(activeType, theme);
+  renderThemeSelect();
   renderTeacher();
 }
 
 /* =========================================================
-   PROGRESS TRACKER — "the app remembers where we stopped".
-   CSE classes run Monday–Thursday (per the Student Handbook),
-   so a week is 4 class days. Weeks 1-7 of the class's own
-   12-week TOEFL plan already happened before this app existed,
-   so tracking starts at week 8 (the teacher's real starting
-   point) instead of week 1. Weeks 8-11 each map to one real
-   TOEFL task type, in the plan's own order; week 12 is the
-   full mock exam plus individual review. Outside week 8-12,
-   there's no suggestion — pick freely, same as before.
-   The teacher can still click through by hand; this never
-   auto-generates anything without her pressing the button.
+   PROGRESS TRACKER — a calendar, not a script. Just shows where the
+   class is (week + weekday) and gently suggests an AREA OF STUDY for
+   that week — never a specific theme, never a rigid one-thing-per-day
+   sequence. The teacher navigates freely in both directions; nothing
+   here auto-generates content without her pressing the button.
+   CSE classes run Monday–Thursday (per the Student Handbook), so a
+   week is 4 class days. Weeks 1-7 of the class's own 12-week TOEFL
+   plan already happened before this app existed, so tracking starts
+   at week 8. Weeks 8-11 each map to one real TOEFL task type, in the
+   plan's own order; week 12 is the full mock exam plus individual
+   review. Outside week 8-12, there's no suggestion — pick freely.
    ========================================================= */
 const WEEKDAY_NAMES = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
 const WEEK_PLAN = {
-  8:  { type:'email',         label:'Write an Email',                   themes:['campus','register','daily','career'] },
-  9:  { type:'discussion',    label:'Write for an Academic Discussion', themes:['social','current','grammar','environment'] },
-  10: { type:'listen-repeat', label:'Listen and Repeat',                themes:['campus','health','daily','career'] },
-  11: { type:'interview',     label:'Take an Interview',                themes:['career','social','health','current'] },
+  8:  { type:'email',         label:'Write an Email' },
+  9:  { type:'discussion',    label:'Write for an Academic Discussion' },
+  10: { type:'listen-repeat', label:'Listen and Repeat' },
+  11: { type:'interview',     label:'Take an Interview' },
   12: { simulado:true },
 };
 function loadProgress(){ return JSON.parse(localStorage.getItem('cse_progress') || '{"week":8,"day":1}'); }
@@ -3317,15 +3349,16 @@ function todaysPlan(){
   const wk = WEEK_PLAN[p.week];
   if(!wk) return null;
   if(wk.simulado) return { simulado:true, day:p.day };
-  return { type:wk.type, label:wk.label, theme: wk.themes[(p.day - 1) % wk.themes.length] };
+  return { type:wk.type, label:wk.label };
 }
-function useTodaysTopic(){
+// Sets only the task type — never the theme. The teacher still picks
+// the theme herself (or hits Random, which won't repeat until every
+// theme has come up for this type).
+function useThisWeeksFocus(){
   const plan = todaysPlan();
   if(!plan || plan.simulado) return;
   activeType = plan.type;
   renderTypeTabs();
-  const themeSel = document.getElementById('topic');
-  if(themeSel) themeSel.value = plan.theme;
 }
 function renderProgressBox(){
   const el = document.getElementById('progress-box');
@@ -3335,27 +3368,42 @@ function renderProgressBox(){
   const plan = todaysPlan();
   let planNote;
   if(!plan){
-    planNote = `Outside the 12-week plan — pick any task type and theme freely.`;
+    planNote = `Outside the 12-week plan — pick any area of study freely.`;
   } else if(plan.simulado){
     planNote = plan.day === 1
-      ? `Full mock exam day — sample all 6 task types for a diagnostic read.`
-      : `Individual review day — use "🎯 Assign to one student" + "📈 Check patterns first" to target each student's weak spot.`;
+      ? `This week: full mock exam — sample all 6 task types for a diagnostic read.`
+      : `This week: individual review — use "🎯 Assign to one student" + "📈 Check patterns first" to target each student's weak spot.`;
   } else {
-    planNote = `Suggested: <b>${plan.label}</b> · ${THEME_LABELS[plan.theme]}`;
+    planNote = `This week's suggested area of study: <b>${plan.label}</b>`;
   }
   el.innerHTML = `
-    <div class="panel" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem">
-      <div><b>Week ${p.week} · ${dayName} (Day ${p.day} of 4)</b><span class="small-note" style="margin:0 0 0 .6rem">${planNote}</span></div>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        ${plan && !plan.simulado ? `<button class="btn ghost sm" onclick="useTodaysTopic()">Use today's topic</button>` : ''}
-        <button class="btn ghost sm" onclick="advanceDay()">Next class day →</button>
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <button class="btn ghost sm" onclick="changeWeek(-1)" title="Previous week">◀</button>
+          <b>Week ${p.week}</b>
+          <button class="btn ghost sm" onclick="changeWeek(1)" title="Next week">▶</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <button class="btn ghost sm" onclick="changeDay(-1)" title="Previous day">◀</button>
+          <b>${dayName} (Day ${p.day} of 4)</b>
+          <button class="btn ghost sm" onclick="changeDay(1)" title="Next day">▶</button>
+        </div>
       </div>
+      <p class="small-note" style="margin:.6rem 0 0">${planNote}${plan && !plan.simulado ? ` <button class="btn ghost sm" style="margin-left:.4rem" onclick="useThisWeeksFocus()">Use this focus</button>` : ''}</p>
     </div>`;
 }
-function advanceDay(){
+function changeWeek(delta){
   const p = loadProgress();
-  p.day += 1;
+  p.week = Math.max(1, p.week + delta);
+  saveProgress(p);
+  renderProgressBox();
+}
+function changeDay(delta){
+  const p = loadProgress();
+  p.day += delta;
   if(p.day > 4){ p.day = 1; p.week += 1; }
+  else if(p.day < 1){ p.day = 4; p.week = Math.max(1, p.week - 1); }
   saveProgress(p);
   renderProgressBox();
 }
@@ -3418,6 +3466,7 @@ function renderTypeTabs(){
   wrap.innerHTML = TASK_TYPES.map(t =>
     `<button class="${t.id===activeType?'active':''}" onclick="activeType='${t.id}'; renderTypeTabs();">${t.tag} <span style="opacity:.6">· ${t.section}</span></button>`
   ).join('');
+  renderThemeSelect();
 }
 
 function cardBody(item){
