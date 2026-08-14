@@ -3035,20 +3035,18 @@ function saveBatch(b){ localStorage.setItem('cse_batch', JSON.stringify(b)); }
    for when Firestore is unreachable — sharing should degrade to
    a denser QR, never break outright.
    ========================================================= */
-function encodeBatchForShare(items, startAt, individual, speakingTurn, teacherEmail, announcement){
-  const json = JSON.stringify({ items, startAt: startAt || null, individual: individual || {}, speakingTurn: (speakingTurn && speakingTurn.length) ? speakingTurn : null, teacherEmail: teacherEmail || null, announcement: announcement || null });
+function encodeBatchForShare(items, individual, speakingTurn, teacherEmail, announcement){
+  const json = JSON.stringify({ items, individual: individual || {}, speakingTurn: (speakingTurn && speakingTurn.length) ? speakingTurn : null, teacherEmail: teacherEmail || null, announcement: announcement || null });
   return encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
 }
 function decodeBatchFromShare(str){
   try{
     const payload = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
-    return Array.isArray(payload) ? { items: payload, startAt: null, individual: {}, speakingTurn: null, teacherEmail: null, announcement: null } : payload; // back-compat
+    return Array.isArray(payload) ? { items: payload, individual: {}, speakingTurn: null, teacherEmail: null, announcement: null } : payload; // back-compat
   } catch(e){ return null; }
 }
 function applySharedPayload(payload){
   saveBatch(payload.items);
-  if(payload.startAt) localStorage.setItem('cse_start_at', String(payload.startAt));
-  else localStorage.removeItem('cse_start_at');
   if(payload.individual && Object.keys(payload.individual).length) localStorage.setItem('cse_individual', JSON.stringify(payload.individual));
   else localStorage.removeItem('cse_individual');
   if(payload.speakingTurn && payload.speakingTurn.length) localStorage.setItem('cse_speaking_turn', JSON.stringify(payload.speakingTurn));
@@ -3080,17 +3078,6 @@ async function loadSharedClassroomContent(){
   return isSharedLink;
 }
 
-// Kahoot-style "everyone starts together" without a live server: the
-// teacher picks a clock time, students' phones each unlock on their own
-// once their local clock passes it — no roster, no push, but same-moment
-// start with zero backend. Real live rosters need the local-server phase.
-function computeStartAtEpoch(hhmm){
-  if(!hhmm) return null;
-  const [h,m] = hhmm.split(':').map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.getTime();
-}
 // QR rendering: builds a plain SVG from the qrcode-generator matrix (dark
 // modules on a white box, kept white regardless of app theme, since a QR
 // code needs strong contrast to scan reliably — that's not a themeable
@@ -3165,8 +3152,8 @@ function parseSpeakTurn(raw){
 // sharing never simply breaks — it only gets denser as a QR code,
 // exactly like it always has.
 function shortShareLink(){ return location.origin + location.pathname + '?s=1'; }
-function legacyShareLink(approved, startAt, individual, speakTurn, teacherEmailRaw, announcementRaw){
-  return location.origin + location.pathname + '#batch=' + encodeBatchForShare(approved, startAt, individual, speakTurn, teacherEmailRaw, announcementRaw);
+function legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw){
+  return location.origin + location.pathname + '#batch=' + encodeBatchForShare(approved, individual, speakTurn, teacherEmailRaw, announcementRaw);
 }
 function renderShareBox(){
   const box = document.getElementById('share-box');
@@ -3175,28 +3162,25 @@ function renderShareBox(){
   const individualCount = Object.keys(individual).length;
   if(approved.length===0 && individualCount===0){ box.innerHTML=''; return; }
 
-  const startChoice = localStorage.getItem('cse_teacher_start_choice') || '';
-  const startAt = computeStartAtEpoch(startChoice);
   const speakTurnRaw = localStorage.getItem('cse_teacher_speak_turn_raw') || '';
   const speakTurn = parseSpeakTurn(speakTurnRaw);
   const teacherEmailRaw = (localStorage.getItem('cse_teacher_email_raw') || '').trim();
   const announcementRaw = (localStorage.getItem('cse_teacher_announcement_raw') || '').trim();
-  const payload = { items: approved, startAt: startAt || null, individual, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null };
+  const payload = { items: approved, individual, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null };
 
   if(window.CloudSync){
-    paintShareBox(shortShareLink(), '☁️ Saving to the cloud…', { approved, individualCount, startAt, startChoice, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
+    paintShareBox(shortShareLink(), '☁️ Saving to the cloud…', { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
     window.CloudSync.pushClassroomBatch(payload)
-      .then(()=> paintShareBox(shortShareLink(), null, { approved, individualCount, startAt, startChoice, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw }))
-      .catch(()=> paintShareBox(legacyShareLink(approved, startAt, individual, speakTurn, teacherEmailRaw, announcementRaw), '⚠️ Cloud save failed — using the older, denser QR code as a fallback.', { approved, individualCount, startAt, startChoice, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw }));
+      .then(()=> paintShareBox(shortShareLink(), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw }))
+      .catch(()=> paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), '⚠️ Cloud save failed — using the older, denser QR code as a fallback.', { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw }));
   } else {
-    paintShareBox(legacyShareLink(approved, startAt, individual, speakTurn, teacherEmailRaw, announcementRaw), null, { approved, individualCount, startAt, startChoice, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
+    paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
   }
 }
 function paintShareBox(link, statusNote, s){
   const box = document.getElementById('share-box');
   if(!box) return;
   const msg = nextClassroomMessage();
-  const lockActive = s.startAt && s.startAt > Date.now();
   const individualNote = s.individualCount ? ` Plus a personal set for ${s.individualCount} named student(s) — they'll get theirs automatically when they type their name.` : '';
 
   box.innerHTML = `
@@ -3215,16 +3199,6 @@ function paintShareBox(link, statusNote, s){
         <input type="text" id="share-link" value="${link}" readonly onclick="this.select()">
         <button class="btn sm" onclick="copyShareLink()">Copy link</button>
       </div>
-      <div class="field-row" style="margin-top:.8rem">
-        <div class="field">
-          <label for="start-time">🚦 Everyone starts together at (optional)</label>
-          <input type="time" id="start-time" value="${s.startChoice}" onchange="onStartTimeChange()">
-        </div>
-        <button class="btn ghost sm" onclick="clearStartTime()">No lock — start anytime</button>
-      </div>
-      <p class="small-note">${lockActive
-        ? `Locked until ${new Date(s.startAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — students who join early see a countdown, everyone unlocks at the same moment (based on each phone's own clock, no server needed).`
-        : 'No lock set — students can start as soon as they scan and enter their name.'}</p>
       <div class="field-row" style="margin-top:.8rem">
         <div class="field">
           <label for="speak-turn">🎤 Who's speaking this round? (Listen &amp; Repeat / Take an Interview — first names, comma-separated, optional)</label>
@@ -3256,16 +3230,6 @@ function paintShareBox(link, statusNote, s){
         ? `Every student who opens this link (or scans this QR) sees this message until they dismiss it. Change the text and reshare to send a new one.`
         : `One-way, from you to the class — good for quick announcements. Not a live chat: reshare the link/QR whenever the message changes.`}</p>
     </div>`;
-}
-function onStartTimeChange(){
-  const v = document.getElementById('start-time').value;
-  if(v) localStorage.setItem('cse_teacher_start_choice', v);
-  else localStorage.removeItem('cse_teacher_start_choice');
-  renderShareBox();
-}
-function clearStartTime(){
-  localStorage.removeItem('cse_teacher_start_choice');
-  renderShareBox();
 }
 function onSpeakTurnChange(){
   const v = document.getElementById('speak-turn').value;
@@ -3640,31 +3604,6 @@ function submitName(){
   hydrateFromCloud(v).then(()=>renderStudent());
 }
 
-let _waitTimer = null;
-function renderWaitingRoom(startAt){
-  document.getElementById('student-empty').style.display = 'none';
-  document.getElementById('scenario-list').innerHTML = '';
-  const tick = () => {
-    const msLeft = startAt - Date.now();
-    if(msLeft <= 0){
-      if(_waitTimer){ clearInterval(_waitTimer); _waitTimer = null; }
-      renderStudent();
-      return;
-    }
-    const s = Math.ceil(msLeft/1000);
-    const mm = Math.floor(s/60), ss = s%60;
-    document.getElementById('practice-wrap').innerHTML = `
-      <div class="compose" style="text-align:center">
-        <div style="font-size:.78rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;font-weight:700">Get ready, ${getStudentName()} 🎧</div>
-        <div style="font-size:2.6rem;font-weight:800;margin:.6rem 0;font-variant-numeric:tabular-nums">${mm}:${String(ss).padStart(2,'0')}</div>
-        <div class="small-note" style="margin-top:0">Everyone unlocks at the same moment — no need to refresh.</div>
-      </div>`;
-  };
-  tick();
-  if(_waitTimer) clearInterval(_waitTimer);
-  _waitTimer = setInterval(tick, 1000);
-}
-
 /* =========================================================
    HOME / SELF PRACTICE — for a student opening the plain,
    bookmarked link with no class session loaded. No name gate,
@@ -3777,10 +3716,6 @@ function renderStudent(){
 
   if(contentExists && !getStudentName()){ renderNamePrompt(); return; }
 
-  const startAt = Number(localStorage.getItem('cse_start_at') || 0);
-  if(contentExists && startAt && Date.now() < startAt){ renderWaitingRoom(startAt); return; }
-  if(_waitTimer){ clearInterval(_waitTimer); _waitTimer = null; }
-
   const list = document.getElementById('scenario-list');
   const empty = document.getElementById('student-empty');
 
@@ -3851,8 +3786,14 @@ function formatTime(s){
   const m = Math.floor(s/60), ss = s%60;
   return `${m}:${String(ss).padStart(2,'0')}`;
 }
+// After a task's clock hits zero, auto-advance to the next exercise on
+// its own (no "everyone starts together" lock anymore — each student's
+// own timer runs and moves them forward independently). This pause just
+// gives them a moment to see the "Time's up" state before moving on.
+const AUTO_ADVANCE_DELAY_MS = 2500;
 function clearPracticeTimer(){
   if(window._practiceTimer){ clearInterval(window._practiceTimer); window._practiceTimer = null; }
+  if(window._autoAdvanceTimer){ clearTimeout(window._autoAdvanceTimer); window._autoAdvanceTimer = null; }
 }
 function timerBadgeHtml(type){
   const total = TASK_TIME_LIMITS[type];
@@ -3873,15 +3814,34 @@ function startTaskTimer(type){
   window._practiceTimer = setInterval(()=>{
     left--;
     if(left <= 0){
-      clearPracticeTimer();
+      clearInterval(window._practiceTimer);
+      window._practiceTimer = null;
       const el = document.getElementById('task-timer');
       if(el){ el.textContent = "⏰ Time's up"; el.classList.add('warn'); }
       const flag = document.getElementById('time-up-note');
       if(flag) flag.style.display = 'block';
+      window._autoAdvanceTimer = setTimeout(goToNextExercise, AUTO_ADVANCE_DELAY_MS);
       return;
     }
     render();
   }, 1000);
+}
+// Moves the student to the next item in today's batch (or draws a fresh
+// self-practice item, in that mode) once a task's timer runs out. Stays
+// put on the last item — nothing queued to advance into.
+function goToNextExercise(){
+  if(selectedId === '__self__'){ startSurprisePractice(); return; }
+  const batch = getStudentBatch();
+  const idx = batch.findIndex(i => i.id === selectedId);
+  if(idx > -1 && idx < batch.length - 1){
+    selectedId = batch[idx + 1].id;
+    practiceOverride = null;
+    renderStudent();
+    renderPractice();
+    return;
+  }
+  const flag = document.getElementById('time-up-note');
+  if(flag) flag.textContent = "⏰ Time's up — that was the last exercise in today's set. Nice work!";
 }
 
 function renderPractice(){
@@ -3896,7 +3856,7 @@ function renderPractice(){
     wrap.innerHTML = `
       <div class="compose">
         ${timerBadgeHtml(item.type)}
-        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this task would end now. Keep going if you want to finish the draft.</div>
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this task would end now. Moving to the next exercise…</div>
         <div class="ex-body" style="margin-bottom:.8rem">${prompt}</div>
         <textarea id="response" rows="6" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
         <div class="wordcount" id="wordcount">0 words</div>
@@ -3912,7 +3872,7 @@ function renderPractice(){
     wrap.innerHTML = `
       <div class="compose">
         ${timerBadgeHtml(item.type)}
-        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now.</div>
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
         <div class="ex-body">Tap the words in the correct order to build the sentence:</div>
         <div class="assembled" id="assembled"></div>
         <div class="word-bank" id="word-bank"></div>
@@ -3933,7 +3893,7 @@ function renderPractice(){
     wrap.innerHTML = `
       <div class="compose">
         ${timerBadgeHtml(item.type)}
-        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now.</div>
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
         <div class="ex-body cw-passage">${item.data.display}</div>
         <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type the full text with words completed</label>
         <textarea id="cw-answer" rows="4" placeholder="Type the complete passage..."></textarea>
@@ -3967,7 +3927,7 @@ function renderPractice(){
       <div class="compose">
         <div id="interview-pretimer" class="small-note" style="margin-bottom:.6rem">⏱ No prep time on the real test — the 45s answer clock starts the moment you hear the question. Aim for about 150 words in 4–6 sentences.</div>
         ${turnBanner}
-        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test the recording would stop now.</div>
+        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test the recording would stop now. Moving to the next exercise…</div>
         <div class="ex-body">${item.data.question}</div>
         <div class="ex-actions" style="margin-top:.7rem">
           <button class="btn sound" onclick="hearInterviewQuestion('${item.data.question.replace(/'/g,"\\'")}')">🔊 Hear the question</button>
