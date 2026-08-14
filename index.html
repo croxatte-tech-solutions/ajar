@@ -100,6 +100,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .ex-body b{ font-weight:700; }
 .cw-passage{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.88rem; line-height:2; letter-spacing:.02em; }
 .cw-passage .blank{ font-weight:700; color:var(--accent); }
+.cw-passage .blank-marks{ letter-spacing:3px; }
 .ex-actions{ display:flex; gap:.5rem; margin-top:.8rem; flex-wrap:wrap; }
 .ex-card.discarded .ex-body{ opacity:.45; }
 .chip-row{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
@@ -2944,7 +2945,12 @@ function blankWord(word){
   // number of missing characters.
   const blankCount = Math.min(6, Math.max(1, Math.round(word.length*0.5)));
   const shown = Math.max(0, word.length - blankCount);
-  return word.slice(0, shown) + '_'.repeat(word.length - shown);
+  // The underscores are already one-per-letter, but consecutive "_"
+  // characters render as one solid line in most fonts with no way to
+  // tell them apart — wrap them in their own span with letter-spacing
+  // so each missing letter reads as a distinct, countable blank.
+  const blanks = '_'.repeat(word.length - shown);
+  return word.slice(0, shown) + `<span class="blank-marks">${blanks}</span>`;
 }
 function genCompleteWords(theme){
   const raw = pick(COMPLETE_WORDS_BANK[theme] || COMPLETE_WORDS_BANK.campus);
