@@ -2612,50 +2612,59 @@ function drawFromBag(bagKey, allItems, studentKey){
 }
 
 // ---- Write an Email ----
+// Each theme has 3 genuinely different scenarios (different recipient,
+// different situation) — not one template with a swapped-in word, which
+// used to make 3 of 4 items in a batch read as near-duplicates.
 const EMAIL_BANK = {
   campus: [
-    w=>`You need to request an Authorized Vacation from your Designated School Official (DSO). Write an email to your DSO. In your email: explain which week(s) you would like off, give a brief reason (${w}), and ask what documents you must provide.\n\nWrite 80–120 words.`,
+    `You need to request an Authorized Vacation from your Designated School Official (DSO). Write an email to your DSO. In your email: explain which week(s) you would like off, give a brief reason (a medical appointment), and ask what documents you must provide.\n\nWrite 80–120 words.`,
+    `Write an email to your academic advisor asking to switch from one elective to another before the add/drop deadline. Explain which class you want to drop, which one you want instead, and why.\n\nWrite 80–120 words.`,
+    `Write an email to the campus housing office reporting a maintenance issue in your dorm room. Describe the problem and ask when someone can come fix it.\n\nWrite 80–120 words.`,
   ],
   register: [
-    w=>`Write a short email to ${w}. Pay attention to the level of formality this recipient expects — compare how you would open and close the message differently for a teacher versus a classmate.\n\nWrite 80–120 words.`,
+    `Write a short email to your teacher asking to reschedule a make-up test. Pay attention to the level of formality this recipient expects.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate proposing a time to meet for a group project. Compare how this tone differs from writing to a teacher.\n\nWrite 80–120 words.`,
+    `Write a short email to the front desk asking about a lost textbook. Keep the tone polite but efficient — you're asking a stranger for a favor.\n\nWrite 80–120 words.`,
   ],
   current: [
-    w=>`Write an email to a classmate proposing to team up for a short presentation about ${w}. Suggest a time to meet and one idea to include.\n\nWrite 80–120 words.`,
+    `Write an email to a classmate proposing to team up for a short presentation about renewable energy. Suggest a time to meet and one idea to include.\n\nWrite 80–120 words.`,
+    `Write an email to your professor asking a clarifying question about a recent lecture on how AI is changing everyday jobs.\n\nWrite 80–120 words.`,
+    `Write an email to a friend back home explaining an interesting piece of technology or a tech trend you've noticed since arriving.\n\nWrite 80–120 words.`,
   ],
   grammar: [
-    w=>`Write a short email to a friend explaining ${w}. Use at least two examples of reported speech (e.g. "She told me that...", "He said he would...").\n\nWrite 80–120 words.`,
+    `Write a short email to a friend explaining what your teacher said about the exam. Use at least two examples of reported speech (e.g. "She told me that...", "He said he would...").\n\nWrite 80–120 words.`,
+    `Write a short email to your roommate explaining what a classmate told you about a group project deadline. Use reported speech.\n\nWrite 80–120 words.`,
+    `Write a short email to your parents explaining what the front desk told you about a missing package. Use reported speech.\n\nWrite 80–120 words.`,
   ],
   social: [
-    w=>`Write a short email to a classmate suggesting you both attend a campus talk about ${w}. Propose a day and time, and explain briefly why you're interested.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate suggesting you both attend a campus talk about immigration policy changes you discussed in class. Propose a day and time.\n\nWrite 80–120 words.`,
+    `Write an email to a few classmates proposing to start a small peer-support group for new international students.\n\nWrite 80–120 words.`,
+    `Write an email to your discussion group sharing a global news story relevant to your major and asking what they think about it.\n\nWrite 80–120 words.`,
   ],
   career: [
-    w=>`Write an email to a former classmate who graduated, asking for advice about ${w}.\n\nWrite 80–120 words.`,
+    `Write an email to a former classmate who graduated, asking for advice about finding an internship in your field.\n\nWrite 80–120 words.`,
+    `Write an email to your school's career counselor requesting a mock interview appointment before your real job interviews start.\n\nWrite 80–120 words.`,
+    `Write an email to a professor asking if they would be willing to write you a letter of recommendation.\n\nWrite 80–120 words.`,
   ],
   health: [
-    w=>`Write a short email to a classmate about ${w}. Mention one specific tip or resource you found helpful.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate about managing stress during exam weeks. Mention one specific tip or resource you found helpful.\n\nWrite 80–120 words.`,
+    `Write an email to the student health center asking to schedule a routine check-up before the semester gets busy.\n\nWrite 80–120 words.`,
+    `Write a short email to a friend recommending a gym or fitness class you found near campus.\n\nWrite 80–120 words.`,
   ],
   environment: [
-    w=>`Write a short email to a classmate proposing ${w}. Suggest one simple first step you could take together.\n\nWrite 80–120 words.`,
+    `Write a short email to your dorm floor proposing you all start a shared recycling habit. Suggest one simple first step.\n\nWrite 80–120 words.`,
+    `Write an email to campus administration suggesting one specific way to reduce plastic use around campus.\n\nWrite 80–120 words.`,
+    `Write a short email to a classmate inviting them to join a campus sustainability club with you.\n\nWrite 80–120 words.`,
   ],
   daily: [
-    w=>`Write an email asking a Student Services Coordinator for help with ${w}.\n\nWrite 80–120 words.`,
+    `Write an email asking a Student Services Coordinator for help opening a bank account near campus.\n\nWrite 80–120 words.`,
+    `Write an email to a campus housing coordinator asking about apartment options for next semester.\n\nWrite 80–120 words.`,
+    `Write an email to the transportation office asking about the bus schedule to downtown.\n\nWrite 80–120 words.`,
   ],
 };
-const EMAIL_FILL = {
-  campus: ['a family event back home','a medical appointment','a short trip before the next session starts'],
-  register: ['your teacher, asking to reschedule a make-up test','a classmate, proposing a time to meet for a group project','the front desk, asking about a lost textbook'],
-  current: ['renewable energy in your home country','how AI is changing everyday jobs','a recent change in immigration policy you read about'],
-  grammar: ['what your teacher said about the exam','what a classmate told you about the group deadline','what the front desk said about your missing textbook'],
-  social: ['immigration policy changes you both discussed in class','cultural adaptation challenges international students face','a recent global news story relevant to your major'],
-  career: ['finding an internship in your field','preparing for a job interview in English','writing a professional resume'],
-  health: ['getting a routine check-up before the semester starts','managing stress during exam weeks','finding a gym or fitness class near campus'],
-  environment: ['starting a recycling habit in your dorm','reducing plastic use around campus','joining a campus sustainability club'],
-  daily: ['opening a bank account near campus','finding an apartment for next semester','asking about the bus schedule to downtown'],
-};
 function genEmail(theme){
-  const filler = pick(EMAIL_FILL[theme] || EMAIL_FILL.campus);
-  const tpl = pick(EMAIL_BANK[theme] || EMAIL_BANK.campus);
-  return { prompt: tpl(filler) };
+  const bank = EMAIL_BANK[theme] || EMAIL_BANK.campus;
+  return { prompt: pick(bank) };
 }
 
 // ---- Write for an Academic Discussion ----
@@ -2765,31 +2774,49 @@ function genSentence(theme){
 // (down from two shorter ones) so each matches that length and count.
 const COMPLETE_WORDS_BANK = {
   campus: [
-    "International students often arrive at a new school with very different levels of comfort speaking casually in English. Many have **strong** grammar knowledge built from years of **classroom** study, yet the **gap** between textbook English and **everyday** conversation can feel **surprising** during the first few **weeks**. Simple things, like ordering **lunch** in the cafeteria or asking a classmate for **directions**, become small **victories** that build real **confidence** over time and slowly make the new environment feel familiar.",
+    `International students often arrive at a new school with very different levels of comfort speaking casually in English. Many have **strong** grammar knowledge built from years of **classroom** study, yet the **gap** between textbook English and **everyday** conversation can feel **surprising** during the first few **weeks**. Simple things, like ordering **lunch** in the cafeteria or asking a classmate for **directions**, become small **victories** that build real **confidence** over time and slowly make the new environment feel familiar.`,
+    `Orientation week can feel overwhelming for a brand new international student arriving on campus for the first time. There are **dozens** of forms to **complete**, a **campus** tour that covers more ground than anyone can **remember**, and an endless stream of new **faces** to meet in a single **afternoon**. Most schools also **assign** a peer mentor who already **survived** their own first semester, and that single **relationship** often becomes the thing new students remember most fondly once the whole week is finally **over**.`,
+    `Finding a good place to study can make a real difference during a busy exam period on any campus. Most **libraries** offer **quiet** floors for **individual** work and separate **rooms** where **groups** can **discuss** a project without **disturbing** other students nearby. Reserving a study room in **advance** is usually **necessary** during midterms, since popular spots fill up **quickly** once students realize how much calmer they feel away from a noisy dormitory.`,
   ],
   register: [
-    "Choosing the right level of formality can be just as important as choosing the right words when you write to someone new. A message to a **professor** usually opens more **formally** than one to a **friend**, even when the actual **content** is nearly identical. A **polite** request often **includes** a softening phrase such as 'would you **mind**,' instead of a blunt **command**, and a warm **closing** line leaves a much better final **impression**.",
+    `Choosing the right level of formality can be just as important as choosing the right words when you write to someone new. A message to a **professor** usually opens more **formally** than one to a **friend**, even when the actual **content** is nearly identical. A **polite** request often **includes** a softening phrase such as 'would you **mind**,' instead of a blunt **command**, and a warm **closing** line leaves a much better final **impression**.`,
+    `Visiting a professor during office hours can feel intimidating the very first time, especially for a new international student. Even in **person**, the level of **formality** you use still **matters** a great deal, though it can **relax** slightly once a real **conversation** begins. Starting with a **brief** greeting, stating your **question** clearly, and **thanking** them for their time leaves a much better final **impression** than rushing straight into what you **actually** came to ask.`,
+    `Choosing between a text message and a full email depends heavily on who exactly you are trying to reach. A quick **question** to a classmate about **homework** usually fits fine in a casual **text**, full of **abbreviations** and no real greeting at all. A message to a **professor**, however, still **deserves** a proper **subject** line, a complete **greeting**, and a closing **signature**, even if the actual content could have fit in a single **short** sentence.`,
   ],
   current: [
-    "Artificial intelligence is changing how ordinary people interact with technology every single day. Renewable **energy** now accounts for a growing **share** of electricity **production** worldwide, though the **transition** away from fossil fuels remains **uneven** across regions. Many companies are **testing** how new **tools** can **support**, rather than fully **replace**, everyday **human** decisions, and researchers continue studying how these changes will shape workplaces and everyday routines in the years ahead.",
+    `Artificial intelligence is changing how ordinary people interact with technology every single day. Renewable **energy** now accounts for a growing **share** of electricity **production** worldwide, though the **transition** away from fossil fuels remains **uneven** across regions. Many companies are **testing** how new **tools** can **support**, rather than fully **replace**, everyday **human** decisions, and researchers continue studying how these changes will shape workplaces and everyday routines for millions of people in the years ahead.`,
+    `Remote work has changed how many companies think about hiring people from anywhere in the world. A **growing** number of **employers** now **allow** staff to work from **home** several days a **week**, which has **real** **advantages** for people balancing a job with graduate **studies**. Critics **argue** that something important gets lost without in-person collaboration, but most surveys suggest that flexibility now **matters** just as much to workers as salary itself.`,
+    `Social media has completely reshaped the way many students stay connected with friends and family back home. A **short** **video** call can now **replace** a long, formal **letter**, and a single **photo** often communicates more than an entire **paragraph** ever could. Some **researchers** worry that constant scrolling **reduces** attention spans, while others point out that these same **platforms** make homesickness a little easier to manage during a **difficult** first semester abroad.`,
   ],
   grammar: [
-    "Learning a new grammar rule is often easier when you see it used in a real sentence first. Reported **speech** frequently confuses **learners** because the **tense** shifts backward, so 'I am tired' **becomes** 'she said she **was** tired' in indirect form. A **noun** clause can also **function** as the **subject** of a sentence, for **example**: 'What she said **surprised** everyone,' which shows how flexible English word order can actually be.",
+    `Learning a new grammar rule is often easier when you see it used in a real sentence first. Reported **speech** frequently confuses **learners** because the **tense** shifts backward, so 'I am tired' **becomes** 'she said she **was** tired' in indirect form. A **noun** clause can also **function** as the **subject** of a sentence, for **example**: 'What she said **surprised** everyone,' which shows how flexible English word order can actually be.`,
+    `Modal verbs quietly do a lot of work in English, even though they rarely draw much attention to themselves. Saying you **must** finish an assignment sounds far stricter than saying you **should**, even though both technically **describe** an obligation of some kind. **Native** speakers also **soften** requests using **could** or **might** instead of a blunt **command**, which explains why "you might want to double-check that" often lands more **politely** than a **direct** order ever would.`,
+    `Conditional sentences let a speaker imagine situations that haven't actually happened yet, or that never will. A **first** conditional describes something realistic, like "if it **rains**, I'll bring an umbrella," while a **second** conditional imagines something purely **hypothetical**, like winning a **lottery**. Many learners **confuse** the two forms **initially**, but noticing whether a situation feels genuinely **possible** or only **imaginary** usually makes the correct **choice** much easier to spot for most learners.`,
   ],
   social: [
-    "Meeting classmates from many different countries is one of the most valuable parts of studying abroad. Cultural **exchange** programs give **students** a chance to **experience** daily life in a **different** country firsthand, often for the first time. As **globalization** continues, more **companies** operate across **multiple** countries and **cultures** at once, which makes cross-cultural **understanding** a genuinely **useful** skill for almost any future career path a student might eventually choose.",
+    `Meeting classmates from many different countries is one of the most valuable parts of studying abroad. Cultural **exchange** programs give **students** a chance to **experience** daily life in a **different** country firsthand, often for the first time. As **globalization** continues, more **companies** operate across **multiple** countries and **cultures** at once, which makes cross-cultural **understanding** a genuinely **useful** skill for almost any future career path a student might eventually choose to pursue.`,
+    `Walking through almost any major city today, you can sample food from dozens of different countries within a single afternoon. This kind of culinary **globalization** makes eating **abroad** feel less **isolating**, since a familiar **dish** from home is often just a short walk **away**. Some **critics** worry that local food **traditions** slowly lose their **original** character as international **chains** spread, while others see it as a genuine form of everyday cultural **exchange**.`,
+    `Joining a local volunteer program is one of the fastest ways for a new international student to meet people outside of class. Many **communities** welcome **volunteers** at food banks, **shelters**, or neighborhood **cleanups**, and most organizations don't **require** any **special** experience to **start**. Beyond the obvious **benefit** to the community itself, students often say these **experiences** taught them more **practical** English than an entire semester of classroom study ever could.`,
   ],
   career: [
-    "Preparing for a job search while still studying can feel overwhelming at first, but small steps help. A **strong** **resume** highlights **relevant** experience and **specific** skills that match the **position** you want. Employers often **value** communication skills as much as **technical** knowledge during an **interview**, so practicing both areas **early** makes a real **difference** later on, long before graduation day actually arrives and the real job search truly begins in earnest.",
+    `Preparing for a job search while still studying can feel overwhelming at first, but small steps help. A **strong** **resume** highlights **relevant** experience and **specific** skills that match the **position** you want. Employers often **value** communication skills as much as **technical** knowledge during an **interview**, so practicing both areas **early** makes a real **difference** later on, long before graduation day actually arrives and the real job search truly begins in earnest.`,
+    `Attending a networking event can feel awkward the first time, especially for someone still building confidence in a second language. Preparing a short **introduction** in **advance** makes the whole **experience** far less **stressful**, and asking **genuine** **questions** about someone's work usually matters more than sounding impressively **fluent**. Following up with a brief **email** the next day, thanking the person for their **time**, often makes a stronger lasting **impression** than anything said in the room itself.`,
+    `Choosing between two job offers involves weighing far more than just the salary each company is offering. A slightly **lower** salary at a company with strong **mentorship** and clear **growth** opportunities can sometimes matter more than a bigger **paycheck** with little long-term **support**. Location, company **culture**, and **visa** sponsorship policies all deserve serious **consideration** too, especially for an international graduate weighing exactly where to build a **lasting** career and a genuinely **happy** life.`,
   ],
   health: [
-    "Staying healthy while adjusting to a new country and a busy class schedule takes real effort. Getting enough **sleep** and staying **active** can **improve** concentration and reduce **stress** during a demanding **semester**. A balanced **diet**, regular **exercise**, and enough **rest** all **contribute** to long-term **wellbeing**, even when the daily class schedule feels quite tight and free time seems almost impossible to find during some especially busy exam weeks.",
+    `Staying healthy while adjusting to a new country and a busy class schedule takes real effort. Getting enough **sleep** and staying **active** can **improve** concentration and reduce **stress** during a demanding **semester**. A balanced **diet**, regular **exercise**, and enough **rest** all **contribute** to long-term **wellbeing**, even when the daily class schedule feels quite tight and free time seems almost impossible to find during some especially busy exam weeks each semester.`,
+    `Adjusting to new eating habits is often one of the most underrated challenges of studying in a different country. Cafeteria food can be **convenient**, but it's **easy** to rely too **heavily** on **processed** options when **cooking** for yourself feels like one task **too** many. Keeping a few **simple** ingredients on **hand** — rice, eggs, frozen vegetables — makes it much easier to put together a **balanced** meal even during the busiest **week** of exams.`,
+    `Most universities offer mental health resources that many new students never realize actually exist. A **counseling** center usually offers **free** or low-cost **sessions**, and some campuses run **support** groups specifically for **international** students adjusting to a new **culture**. Reaching out can feel **difficult** at first, but staff consistently **report** that early conversations, even short ones, often prevent much bigger **struggles** later on, especially during an especially demanding and stressful **semester**.`,
   ],
   environment: [
-    "Small daily habits can add up to a real difference for the environment over time. Many **campuses** now **encourage** recycling and **reducing** single-use **plastic** to lower their overall **impact** on the **planet**. Public **transportation** produces far **less** pollution per **person** than individual car travel does, which is one clear reason more **cities** around the world are investing heavily in better bus and train systems every single passing year.",
+    `Small daily habits can add up to a real difference for the environment over time. Many **campuses** now **encourage** recycling and **reducing** single-use **plastic** to lower their overall **impact** on the **planet**. Public **transportation** produces far **less** pollution per **person** than individual car travel does, which is one clear reason more **cities** around the world are investing heavily in better bus and train systems every single passing year across the region.`,
+    `Climate change has become one of the most common discussion topics in classrooms across nearly every academic subject. Even students **majoring** in unrelated **fields** now **regularly** **encounter** questions about rising **temperatures**, extreme **weather**, and shifting **policy** debates. Many professors **encourage** students to connect these larger global issues to their own **daily** choices, from what they eat to how they get to **class** each morning, long before graduation day ever actually arrives for any of them.`,
+    `Getting around campus without a car has become surprisingly easy at many universities that invest seriously in sustainable transportation. **Free** campus **shuttles**, discounted **bus** passes, and safe **bike** lanes all make it possible to skip owning a **vehicle** entirely. Students who choose these **options** often save **real** **money** each **month**, while also reducing their personal **impact** on a campus that's actively trying to shrink its overall carbon footprint for good.`,
   ],
   daily: [
-    "Getting settled into daily life in a new city involves learning a lot of small practical steps. Opening a **local** **bank** account usually **requires** a passport, proof of **address**, and a **student** ID card. The **bus** schedule **changes** slightly on **weekends**, so it's always worth **checking** the exact times well in **advance** before you actually travel, especially during the first few confusing weeks in a completely new place.",
+    `Getting settled into daily life in a new city involves learning a lot of small practical steps. Opening a **local** **bank** account usually **requires** a passport, proof of **address**, and a **student** ID card. The **bus** schedule **changes** slightly on **weekends**, so it's always worth **checking** the exact times well in **advance** before you actually travel, especially during the first few confusing weeks in a completely new place for everyone.`,
+    `Learning to grocery shop and cook for yourself is a quiet but important part of settling into life abroad. **Local** **supermarkets** can feel **overwhelming** at first, full of **unfamiliar** brands and **ingredients** that don't quite match what's available back **home**. Most students **discover** a handful of **reliable** recipes within the first **month**, and cooking a familiar dish from home often becomes a small but genuinely **comforting** ritual during a stressful week.`,
+    `Figuring out which government office handles which task can be one of the most confusing parts of settling into a new city. A **local** ID card, a **library** card, and a public **transit** **pass** might each require a **separate** visit to a different **building** entirely. Most students **eventually** build a mental map of exactly where to **go**, but it usually takes a few **frustrating** trips and one very **patient** classmate willing to explain it all first.`,
   ],
 };
 function blankWord(word){
@@ -2912,15 +2939,15 @@ function genListenRepeatSet(theme){
 
 // ---- Take an Interview ----
 const INTERVIEW_BANK = {
-  campus: ['What is one thing about American culture that surprised you the most since you arrived?','Describe a class you are currently taking and explain why you find it useful.'],
-  register: ['Tell me about a time you had to write a formal message. What made it formal?'],
-  current: ['What is one current event you have followed recently, and why does it interest you?'],
-  grammar: ['Describe a rule of English grammar that you find difficult, and why.'],
-  social: ['How do you think international students can help their local community?','What is one cultural tradition from your country you would like to share with others?'],
-  career: ['What kind of career are you hoping to pursue after finishing your studies?','Describe one skill you think is essential for almost any job.'],
-  health: ['What do you do to stay healthy while studying abroad?','Describe one habit you would like to improve for your wellbeing.'],
-  environment: ['What is one small change you have made to live more sustainably?','Should your school do more to protect the environment? Why or why not?'],
-  daily: ['What was the most confusing part of daily life when you first arrived?','Describe the process of finding your current place to live.'],
+  campus: ['What is one thing about American culture that surprised you the most since you arrived?','Describe a class you are currently taking and explain why you find it useful.','What\'s one thing you wish someone had told you before your first day of class here?'],
+  register: ['Tell me about a time you had to write a formal message. What made it formal?','Describe a situation where you had to be very formal in English. How did you know what tone to use?','Tell me about a time someone corrected the way you spoke or wrote. How did that feel?'],
+  current: ['What is one current event you have followed recently, and why does it interest you?','How has technology changed the way you communicate with friends and family back home?','What\'s one piece of technology you couldn\'t imagine studying without?'],
+  grammar: ['Describe a rule of English grammar that you find difficult, and why.','What\'s one English grammar rule you\'ve finally started to feel comfortable with? How did you learn it?','Do you think it\'s better to learn grammar from a textbook or from real conversations? Why?'],
+  social: ['How do you think international students can help their local community?','What is one cultural tradition from your country you would like to share with others?','Describe a moment when you felt a real cultural difference between your home country and here.'],
+  career: ['What kind of career are you hoping to pursue after finishing your studies?','Describe one skill you think is essential for almost any job.','If you could ask someone already working in your field one question, what would it be?'],
+  health: ['What do you do to stay healthy while studying abroad?','Describe one habit you would like to improve for your wellbeing.','What\'s the hardest part about staying healthy while being a full-time student?'],
+  environment: ['What is one small change you have made to live more sustainably?','Should your school do more to protect the environment? Why or why not?','Do you think your generation cares more about the environment than previous generations? Why or why not?'],
+  daily: ['What was the most confusing part of daily life when you first arrived?','Describe the process of finding your current place to live.','What\'s one everyday task that was much easier back home than it is here?'],
 };
 function genInterview(theme){
   return { question: pick(INTERVIEW_BANK[theme] || INTERVIEW_BANK.campus) };
@@ -3264,12 +3291,19 @@ function generateBatchItems(type, theme){
   for(let i=0;i<4;i++){
     let g, key, tries = 0, usedTheme;
     // avoid showing the exact same generated item twice in one batch;
-    // small banks (e.g. Complete the Words has 2 entries/theme) fall back
-    // to sampling other themes once the chosen theme is exhausted.
+    // small banks fall back to sampling other themes once the chosen
+    // theme is exhausted. The dedup key must be the STABLE underlying
+    // content, not the full randomized data object — Complete the
+    // Words re-shuffles which letters are blanked, and Build a Sentence
+    // re-shuffles the word order, on every pick. Comparing the full
+    // (randomized) data would let the exact same passage/sentence slip
+    // through twice with a different shuffle and never get caught.
     do{
       usedTheme = tries < 6 ? theme : pick(ALL_THEMES);
       g = generateOne(type, usedTheme);
-      key = JSON.stringify(g.data);
+      key = g.type === 'complete-words' ? g.data.answer
+          : g.type === 'sentence' ? g.data.target
+          : JSON.stringify(g.data);
       tries++;
     } while(seen.has(key) && tries < 12);
     seen.add(key);
