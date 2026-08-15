@@ -20,7 +20,10 @@ globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERV
 `, sb);
 const d=sb.__dump, out=[];
 for(const th of d.themes){
-  (d.listen[th]||[]).forEach((s,i)=>out.push({kind:'lr', theme:th, set:0, idx:i, text:s.text}));
+  // LISTEN_SETS[theme] is now an array of complete 7-sentence scenarios,
+  // so each scenario is its own "exercise" and gets its own single voice.
+  (d.listen[th]||[]).forEach((set,si)=>set.forEach((s,i)=>
+    out.push({kind:'lr', theme:th, set:si, idx:i, text:s.text})));
   (d.interview[th]||[]).forEach((set,si)=>set.questions.forEach((q,qi)=>
     out.push({kind:'iv', theme:th, set:si, idx:qi, text:q.text})));
 }
