@@ -3759,8 +3759,46 @@ if('speechSynthesis' in window){
   window.speechSynthesis.onvoiceschanged = () => { _voiceCache = null; };
 }
 function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))|0; } return Math.abs(h); }
+// Pre-rendered audio. Every sentence the app speaks comes from a fixed
+// bank, so each one is rendered ahead of time to a small AAC clip named
+// after hashStr(its own text) — see scripts/gen_audio.py. That matters
+// for fairness: with browser text-to-speech, a student on a new phone
+// hears a good voice while a student on an older one may only have a
+// robotic voice, for the exact same exercise. In Listen and Repeat a bad
+// voice is worse than unpleasant — the student is asked to imitate it.
+//
+// Content-addressed naming means there is no manifest to keep in sync:
+// if a sentence is ever edited its hash changes, the clip is simply not
+// found, and playback falls back to browser TTS rather than playing
+// audio that no longer matches the text.
+const AUDIO_DIR = 'audio/';
+const _audioMissing = new Set();   // remembered so we only 404 once per text
+function audioUrlFor(text){ return AUDIO_DIR + hashStr(text) + '.m4a'; }
 function speak(text, onEnd){
-  if(!('speechSynthesis' in window)){ alert('Text-to-speech is not available in this browser.'); if(onEnd) onEnd(); return; }
+  if(window._currentAudio){ try{ window._currentAudio.pause(); }catch(e){} window._currentAudio = null; }
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  const key = hashStr(text);
+  if(!_audioMissing.has(key)){
+    const a = new Audio(audioUrlFor(text));
+    window._currentAudio = a;
+    let settled = false;
+    const done = () => { if(!settled){ settled = true; window._currentAudio = null; if(onEnd) onEnd(); } };
+    a.onended = done;
+    a.onerror = () => {
+      // No clip for this text (not generated yet, or the text changed) —
+      // remember that and use the browser voice instead, this time and
+      // every later time, so we never re-request a file we know is absent.
+      _audioMissing.add(key);
+      window._currentAudio = null;
+      if(!settled){ settled = true; speakWithTTS(text, onEnd); }
+    };
+    a.play().catch(() => { if(a.onerror) a.onerror(); });
+    return;
+  }
+  speakWithTTS(text, onEnd);
+}
+function speakWithTTS(text, onEnd){
+  if(!('speechSynthesis' in window)){ if(onEnd) onEnd(); return; }
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.rate = 0.95;
