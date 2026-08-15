@@ -3424,10 +3424,24 @@ function applySharedPayload(payload){
 // just ones with "?s=1" — a bookmarked plain URL should still pick up
 // today's class if one exists). Falls back to decoding the legacy
 // full-payload hash if Firestore isn't reachable. Returns true when this
-// device should land straight on the student view (opened via the
-// share link/QR specifically, marked by "?s=1").
+// device should land straight on the student view (opened via a share
+// link/QR specifically, marked by "?s=1" or "?ex=<id>").
 async function loadSharedClassroomContent(){
-  const isSharedLink = new URLSearchParams(location.search).get('s') === '1';
+  const params = new URLSearchParams(location.search);
+  const exId = params.get('ex');
+  const isSharedLink = params.get('s') === '1' || !!exId;
+
+  // "?ex=<id>" points at ONE specific approved exercise, saved to its own
+  // Firestore doc the moment the teacher approved it — scanning it always
+  // opens exactly that exercise, never a stale or unrelated one, and
+  // never a list to pick from. Falls through to the whole-class batch
+  // below if that specific doc isn't reachable for any reason.
+  if(exId && window.CloudSync){
+    try{
+      const payload = await window.CloudSync.pullClassroomItem(exId);
+      if(payload && payload.items && payload.items.length){ applySharedPayload(payload); return true; }
+    }catch(e){ /* fall through */ }
+  }
   if(window.CloudSync){
     try{
       const payload = await window.CloudSync.pullClassroomBatch();
@@ -3440,6 +3454,15 @@ async function loadSharedClassroomContent(){
     if(payload && payload.items){ applySharedPayload(payload); return true; }
   }
   return isSharedLink;
+}
+// The link/QR for one specific approved exercise. Firestore-backed (same
+// low-density short link as the whole-class share); falls back to the
+// legacy hash-encoded link — carrying just this one item — if Firestore
+// isn't reachable at all.
+function itemShareLink(item){
+  return window.CloudSync
+    ? location.origin + location.pathname + '?ex=' + item.id
+    : location.origin + location.pathname + '#batch=' + encodeBatchForShare([item], {}, [], '', '');
 }
 
 // QR rendering: builds a plain SVG from the qrcode-generator matrix (dark
@@ -3551,6 +3574,13 @@ function renderShareBox(){
     window.CloudSync.pushClassroomBatch(payload)
       .then(()=> paintShareBox(shortShareLink(), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw }))
       .catch(()=> paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), '⚠️ Cloud save failed — using the older, denser QR code as a fallback.', { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw }));
+    // Also save each approved item under its OWN doc, so the individual
+    // per-exercise QR on each card (see cardBody()) always resolves to
+    // exactly that exercise — independent of whatever else is or isn't
+    // in the whole-class batch right now.
+    approved.forEach(item => {
+      window.CloudSync.pushClassroomItem(item.id, { items: [item], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null }).catch(()=>{});
+    });
   } else {
     paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
   }
@@ -3956,6 +3986,14 @@ function renderTeacher(){
         <span class="ex-status ${item.status}">${item.status==='pending'?'Awaiting review':item.status==='approved'?'Approved':'Discarded'}</span>
       </div>
       ${cardBody(item)}
+      ${item.status==='approved' ? `
+      <div class="field-row" style="margin-top:.7rem;align-items:center">
+        <div style="border:1px solid var(--border);border-radius:8px;padding:6px;background:#ffffff;flex-shrink:0">${renderQRSvg(itemShareLink(item), 90)}</div>
+        <div style="flex:1;min-width:0">
+          <input type="text" value="${itemShareLink(item)}" readonly style="font-size:.72rem" onclick="this.select()">
+          <div class="small-note" style="margin-top:.2rem">Scan to go straight to this exercise — nothing else</div>
+        </div>
+      </div>` : ''}
       <div class="ex-actions">
         ${item.status!=='approved' ? `<button class="btn ok sm" onclick="setStatus('${item.id}','approved')">✓ Approve</button>` : ''}
         ${item.status!=='discarded' ? `<button class="btn danger sm" onclick="setStatus('${item.id}','discarded')">✕ Discard</button>` : ''}
@@ -5073,11 +5111,13 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
-// "?s=1" is known synchronously from the URL, so a student who scanned
-// the QR flips to their view immediately (no flash of the teacher
-// screen) even though the real batch content loads in moments later,
-// once the async Firestore fetch (or legacy hash decode) resolves.
-const openedFromSharedLink = new URLSearchParams(location.search).get('s') === '1';
+// "?s=1" (whole-class batch) or "?ex=<id>" (one specific exercise) are
+// both known synchronously from the URL, so a student who scanned either
+// kind of QR flips to their view immediately (no flash of the teacher
+// screen) even though the real content loads in moments later, once the
+// async Firestore fetch (or legacy hash decode) resolves.
+const sharedParams = new URLSearchParams(location.search);
+const openedFromSharedLink = sharedParams.get('s') === '1' || !!sharedParams.get('ex');
 renderTypeTabs();
 renderIndividualControls();
 renderTeacher();
@@ -5158,6 +5198,20 @@ loadSharedClassroomContent().then(()=>{
       async pullClassroomBatch() {
         await authReady;
         const snap = await getDoc(doc(db, 'classroom', 'current'));
+        return snap.exists() ? snap.data() : null;
+      },
+      // One doc per individually-approved exercise (same 'classroom'
+      // collection/security rule as the whole-class doc above, just a
+      // different doc id per item) — lets a single exercise's own QR
+      // resolve to exactly that exercise, independent of whatever else
+      // is or isn't in the current whole-class batch.
+      async pushClassroomItem(id, payload) {
+        await authReady;
+        await setDoc(doc(db, 'classroom', 'item_' + id), { ...payload, updatedAt: serverTimestamp() });
+      },
+      async pullClassroomItem(id) {
+        await authReady;
+        const snap = await getDoc(doc(db, 'classroom', 'item_' + id));
         return snap.exists() ? snap.data() : null;
       }
     };
