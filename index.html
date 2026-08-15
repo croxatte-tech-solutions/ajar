@@ -3416,6 +3416,13 @@ function decodeBatchFromShare(str){
   } catch(e){ return null; }
 }
 function applySharedPayload(payload){
+  // Marks that a real pull from Firestore has actually landed during this
+  // page load — window.__onCloudSyncReady's retry checks THIS, not
+  // "is the local batch non-empty", because a returning device can have
+  // a genuinely non-empty batch left over from a PREVIOUS exercise, which
+  // made the retry wrongly think "already loaded" and skip re-fetching
+  // the NEW one the current URL actually points to.
+  window.__classroomContentApplied = true;
   saveBatch(payload.items);
   if(payload.individual && Object.keys(payload.individual).length) localStorage.setItem('cse_individual', JSON.stringify(payload.individual));
   else localStorage.removeItem('cse_individual');
@@ -4743,16 +4750,20 @@ async function hydrateFromCloud(name){
 window.__onCloudSyncReady = function(){
   const existing = getStudentName();
   if(existing) hydrateFromCloud(existing).then(()=>{ if(currentView==='student') renderStudent(); });
-  // Module scripts load AFTER classic scripts (deferred by spec), so on a
-  // brand new device with no cached Firebase session, the very first
+  // Module scripts load AFTER classic scripts (deferred by spec), so on
+  // ANY page load — first-ever visit or a later one — the very first
   // loadSharedClassroomContent() call in the init tail can run BEFORE
   // window.CloudSync even exists yet — that call silently no-ops (no
   // CloudSync = nothing to pull) and, since it only ever ran once, a
-  // shared "?ex=" or "?s=1" link would come up permanently empty even
-  // though the content was there in Firestore the whole time. Retry now
-  // that CloudSync is actually ready, but only if nothing loaded yet, so
-  // this never clobbers content that already loaded successfully.
-  if(!loadBatch().length){
+  // shared "?ex=" or "?s=1" link would come up showing whatever was
+  // ALREADY in local storage from a previous visit instead of the new
+  // exercise this link actually points to. Retry now that CloudSync is
+  // ready. Checking __classroomContentApplied (not "is the batch
+  // non-empty") matters: a returning device can have a perfectly
+  // non-empty batch left over from a DIFFERENT, earlier exercise, which
+  // used to make this look like "already loaded" and skip the retry —
+  // leaving the stale exercise showing instead of the new one.
+  if(!window.__classroomContentApplied){
     loadSharedClassroomContent().then(()=>{ renderStudent(); });
   }
 };
