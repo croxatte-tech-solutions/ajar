@@ -101,6 +101,13 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .cw-passage{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.88rem; line-height:2; letter-spacing:.02em; }
 .cw-passage .blank{ font-weight:700; color:var(--accent); }
 .cw-passage .blank-marks{ letter-spacing:3px; }
+.cw-inputs{ display:grid; gap:.5rem; }
+.cw-input-row{ display:flex; align-items:center; gap:.6rem; }
+.cw-input-num{ font-size:.76rem; font-weight:700; color:var(--text-dim); min-width:1.1em; }
+.cw-input-hint{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.82rem; color:var(--text-dim); min-width:5ch; }
+.cw-blank-input{ flex:1; }
+.cw-blank-input.cw-ok{ border-color:var(--green); background:var(--green-soft); color:var(--green); }
+.cw-blank-input.cw-no{ border-color:var(--red); background:var(--red-soft); color:var(--red); }
 .ex-actions{ display:flex; gap:.5rem; margin-top:.8rem; flex-wrap:wrap; }
 .ex-card.discarded .ex-body{ opacity:.45; }
 .chip-row{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
@@ -2936,29 +2943,32 @@ const COMPLETE_WORDS_BANK = {
     `Space exploration has captured public attention again after decades of relatively quiet progress in the field. Private **companies** now **launch** rockets **regularly**, dramatically **lowering** the **cost** of reaching orbit compared to a decade ago. Some **researchers** hope this progress will **eventually** make **space** **travel** **accessible** to more than just professional astronauts. Whether that happens soon or not, the pace of change already feels genuinely remarkable to anyone paying close attention.`,
   ],
 };
-function blankWord(word){
+function blankInfo(word){
   // Real TOEFL 2026 rule (per ETS-adjacent guides): 1-6 missing letters per
   // word, always in the SECOND HALF of the word as a contiguous run — never
   // scattered letters from anywhere, like the old version of this function
   // did. ETS doesn't publish an exact formula, but cross-checking several
   // real samples (e.g. "essential" -> "esse_____", "investigate" ->
   // "inves______") shows blanking roughly the last half, capped at 6.
-  // Exactly one "_" per hidden letter, so students always know the exact
-  // number of missing characters.
   const blankCount = Math.min(6, Math.max(1, Math.round(word.length*0.5)));
   const shown = Math.max(0, word.length - blankCount);
-  // The underscores are already one-per-letter, but consecutive "_"
-  // characters render as one solid line in most fonts with no way to
-  // tell them apart — wrap them in their own span with letter-spacing
-  // so each missing letter reads as a distinct, countable blank.
-  const blanks = '_'.repeat(word.length - shown);
-  return word.slice(0, shown) + `<span class="blank-marks">${blanks}</span>`;
+  return { shown: word.slice(0, shown), hiddenCount: word.length - shown };
+}
+function blankWord(word){
+  const { shown, hiddenCount } = blankInfo(word);
+  // Exactly one "_" per hidden letter, so students always know the exact
+  // number of missing characters. The underscores are already one-per-letter,
+  // but consecutive "_" characters render as one solid line in most fonts
+  // with no way to tell them apart — wrap them in their own span with
+  // letter-spacing so each missing letter reads as a distinct, countable blank.
+  return shown + `<span class="blank-marks">${'_'.repeat(hiddenCount)}</span>`;
 }
 function genCompleteWords(theme){
   const raw = pick(COMPLETE_WORDS_BANK[theme] || COMPLETE_WORDS_BANK.campus);
   const answer = raw.replace(/\*\*(.+?)\*\*/g, '$1');
+  const words = [...raw.matchAll(/\*\*(.+?)\*\*/g)].map(m => m[1]);
   const display = raw.replace(/\*\*(.+?)\*\*/g, (_,w)=>`<span class="blank">${blankWord(w)}</span>`);
-  return { display, answer };
+  return { display, answer, words };
 }
 
 // ---- Listen and Repeat ----
@@ -4360,16 +4370,7 @@ function renderPractice(){
   }
 
   if(item.type==='complete-words'){
-    wrap.innerHTML = `
-      <div class="compose">
-        ${timerBadgeHtml(item.type)}
-        <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
-        <div class="ex-body cw-passage">${item.data.display}</div>
-        <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type the full text with words completed</label>
-        <textarea id="cw-answer" rows="4" placeholder="Type the complete passage..."></textarea>
-        <div class="ex-actions"><button class="btn sm" onclick="checkCompleteWords()">Check</button></div>
-        <div id="cw-result"></div>
-      </div>`;
+    wrap.innerHTML = completeWordsHtml(item);
     wrap.innerHTML += PRACTICE_AGAIN_BTN;
     startTaskTimer(item.type);
     return;
@@ -4459,13 +4460,52 @@ function checkSentence(){
   logUsage('sentence', item.theme, ok ? 1 : 0);
 }
 
+// Split out of renderPractice() as its own function (not just inlined) so
+// its markup compiles as a separate unit — renderPractice() already handles
+// every exercise type inline and was pushing right up against the engine's
+// per-function bytecode-size ceiling that caused the earlier silent
+// "code length overflow" failure (same class of bug, different function).
+function completeWordsHtml(item){
+  const inputsHtml = item.data.words.map((w,i) => {
+    const { shown, hiddenCount } = blankInfo(w);
+    return `<div class="cw-input-row">
+      <span class="cw-input-num">${i+1}</span>
+      <span class="cw-input-hint">${shown}${'_'.repeat(hiddenCount)}</span>
+      <input type="text" id="cw-blank-${i}" class="cw-blank-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the word">
+    </div>`;
+  }).join('');
+  return `
+    <div class="compose">
+      ${timerBadgeHtml(item.type)}
+      <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
+      <div class="ex-body cw-passage">${item.data.display}</div>
+      <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type only the missing words, in order — capitalization and punctuation don't matter</label>
+      <div class="cw-inputs">${inputsHtml}</div>
+      <div class="ex-actions"><button class="btn sm" onclick="checkCompleteWords()">Check</button></div>
+      <div id="cw-result"></div>
+    </div>`;
+}
+
 // -- Complete the Words check --
+// Grades each missing word on its own: letters only (case folded, all
+// punctuation/whitespace stripped), so "Video", "video," and "VIDEO" all
+// count as the same correct answer — only the letters forming the word matter.
+function normWord(w){
+  return (w||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
 function checkCompleteWords(){
   const item = currentItem();
-  const attempt = (document.getElementById('cw-answer').value||'').trim().toLowerCase().replace(/\s+/g,' ');
-  const answer = item.data.answer.toLowerCase().replace(/\s+/g,' ');
-  const ok = attempt === answer;
-  document.getElementById('cw-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct!' : 'Close — compare carefully with the missing letters and try again.'}</div>`;
+  const words = item.data.words;
+  let correctCount = 0;
+  words.forEach((w,i) => {
+    const el = document.getElementById('cw-blank-'+i);
+    const isOk = normWord(el.value) === normWord(w);
+    if(isOk) correctCount++;
+    el.classList.toggle('cw-ok', isOk);
+    el.classList.toggle('cw-no', !isOk);
+  });
+  const ok = correctCount === words.length;
+  document.getElementById('cw-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! All missing words matched.' : `${correctCount}/${words.length} correct — the highlighted words need another look.`}</div>`;
   logUsage('complete-words', item.theme, ok ? 1 : 0);
 }
 
