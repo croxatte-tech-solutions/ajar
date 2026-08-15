@@ -112,6 +112,13 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .interview-scenario{ background:var(--accent-soft); border-radius:10px; padding:.7rem .85rem; margin-bottom:.7rem; font-size:.84rem; line-height:1.5; }
 .interview-scenario-label{ display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:.25rem; }
 .interview-figure{ width:100%; max-width:260px; margin:.2rem 0 .8rem; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.task-bullets{ margin:.2rem 0 .5rem; padding-left:1.2rem; font-size:.88rem; line-height:1.6; }
+.task-bullets li{ margin-bottom:.2rem; }
+.email-head{ background:var(--surface-alt); border:1px solid var(--border); border-radius:8px; padding:.5rem .7rem; margin:.5rem 0 .7rem; font-size:.85rem; line-height:1.7; }
+.email-field{ font-weight:700; color:var(--text-dim); display:inline-block; min-width:4.2em; }
+.forum-post{ background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:.6rem .8rem; margin-bottom:.5rem; font-size:.86rem; line-height:1.6; }
+.forum-post.forum-prof{ background:var(--accent-soft); border-color:var(--accent); }
+.forum-name{ display:block; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin-bottom:.25rem; }
 .lr-diff{ font-size:.95rem; line-height:2; margin:.5rem 0; }
 .lr-diff span{ padding:.1rem .3rem; border-radius:5px; }
 .lr-ok{ color:var(--green); font-weight:600; }
@@ -2648,147 +2655,424 @@ function drawFromBag(bagKey, allItems, studentKey){
 // Word count stays 80-120 (confirmed by Teacher, the class's own teacher,
 // as what the real test asks for — takes precedence over the 130-140
 // figure a few web guides suggested).
+// Write an Email — rebuilt to the real ETS task shape, taken from the
+// official practice tests (toefl-ibt-full-length-practice-test-1/2 and the
+// five teacher-resources tests). Every real item has four parts, and the
+// old version of this bank had only one of them:
+//
+//   1. A SITUATION of 2-3 sentences that sets up a real-life problem
+//      ("Your coworker Kevin recently recommended a new restaurant... You
+//      took the team there, but everyone was disappointed."). This is what
+//      gives the student something concrete to write about. Ours jumped
+//      straight to "Write an email to your advisor", with no scenario.
+//   2. A NAMED recipient (Kevin, Robin, Alex, the magazine's editor), not
+//      an abstract role.
+//   3. Three BULLETS, each a concrete action ("Explain what was wrong",
+//      "Describe the team's reaction", "Suggest alternatives").
+//   4. A given To: and Subject: line — the real test pre-fills both, so
+//      the student writes the body, not the envelope.
+//
+// The task is 7 minutes on the real test. ETS itself says only "Write as
+// much as you can and in complete sentences" with no word count; the
+// 80-120 word target shown in the app is the teacher's own guidance for
+// this class, so it lives in the UI rather than being baked in here as if
+// it were an ETS rule.
 const EMAIL_BANK = {
   campus: [
-    `You need to request an Authorized Vacation from your Designated School Official (DSO). Write an email to your DSO. In your email:\n1. Explain which week(s) you would like off.\n2. Give a brief reason (a medical appointment).\n3. Ask what documents you must provide.\n\nWrite 80–120 words.`,
-    `Write an email to your academic advisor asking to switch from one elective to another before the add/drop deadline. In your email:\n1. Explain which class you want to drop.\n2. Explain which class you want instead.\n3. Explain why you want to make the switch.\n\nWrite 80–120 words.`,
-    `Write an email to the campus housing office reporting a maintenance issue in your dorm room. In your email:\n1. Describe the problem.\n2. Ask when someone can come fix it.\n3. Ask whether you need to be home for the repair.\n\nWrite 80–120 words.`,
+    { situation: `You applied for an Authorized Vacation through your school's international student office several weeks ago, but you still have not received a decision. Your travel dates are approaching and the airline fare you found is about to expire.`,
+      to: 'Ms. Delgado (DSO)', subject: 'Status of my Authorized Vacation request',
+      bullets: ['Remind her when and how you submitted the request.', 'Explain why the timing has now become urgent.', 'Ask what you should do if the decision is delayed further.'] },
+    { situation: `You signed up for an elective that turned out to overlap with the only section of a required class. The add/drop deadline is this Friday, and your academic advisor has not replied to your first message.`,
+      to: 'Mr. Okafor (academic advisor)', subject: 'Schedule conflict before the add/drop deadline',
+      bullets: ['Describe the conflict between the two classes.', 'Say which class you would prefer to drop, and why.', 'Ask whether the deadline can be extended if he cannot meet before Friday.'] },
+    { situation: `The heating in your dormitory room stopped working four days ago. You reported it once at the front desk, but nobody has come, and the temperature has dropped sharply this week.`,
+      to: 'Campus Housing Office', subject: 'Heating still not repaired in Room 214',
+      bullets: ['Explain when you first reported the problem.', 'Describe how it is affecting you.', 'Ask for a specific date when a technician will come.'] },
   ],
   register: [
-    `Write a short email to your teacher asking to reschedule a make-up test. In your email:\n1. Explain why you missed the original test.\n2. Propose a new date and time.\n3. Ask what material the make-up test will cover.\n\nWrite 80–120 words.`,
-    `Write a short email to a classmate proposing a time to meet for a group project. In your email:\n1. Suggest a day and time to meet.\n2. Suggest a location.\n3. Ask what they should bring or prepare.\n\nWrite 80–120 words.`,
-    `Write a short email to the front desk asking about a lost textbook. In your email:\n1. Describe the book (title and where you may have left it).\n2. Ask if anyone has turned it in.\n3. Ask how you could claim it if it's found.\n\nWrite 80–120 words.`,
+    { situation: `You missed an important test because you were unwell and went to a clinic that morning. Your teacher's syllabus says make-up tests must be arranged within three days, and today is the second day.`,
+      to: 'Ms. Whitfield', subject: 'Request for a make-up test',
+      bullets: ['Explain why you missed the original test.', 'Propose two possible times you could take it.', 'Ask what material the make-up test will cover.'] },
+    { situation: `A classmate you have been assigned to work with sent you a very casual message about your group presentation, and you are not sure the two of you agree on the topic or the deadline.`,
+      to: 'Priya', subject: 'Confirming our presentation plan',
+      bullets: ['Summarize what you understood the plan to be.', 'Point out the part you are unsure about.', 'Suggest a time to meet and settle it.'] },
+    { situation: `You left a textbook in a classroom last week. When you asked at the front desk, the staff member said items are only kept for ten days before being donated, and you cannot get there before then.`,
+      to: 'Front Desk, Student Services', subject: 'Textbook left in Room 108',
+      bullets: ['Describe the book and where you left it.', 'Explain why you cannot collect it this week.', 'Ask whether it can be held for you until you return.'] },
   ],
   current: [
-    `Write an email to a classmate proposing to team up for a short presentation about renewable energy. In your email:\n1. Suggest a time to meet.\n2. Propose one idea to include in the presentation.\n3. Ask what part they'd like to work on.\n\nWrite 80–120 words.`,
-    `Write an email to your professor asking a clarifying question about a recent lecture on how AI is changing everyday jobs. In your email:\n1. Reference the specific point from the lecture you're asking about.\n2. Ask your specific question.\n3. Ask for a reading or resource to learn more.\n\nWrite 80–120 words.`,
-    `Write an email to a friend back home explaining an interesting piece of technology or a tech trend you've noticed since arriving. In your email:\n1. Describe the technology or trend.\n2. Explain why it stood out to you.\n3. Ask if anything similar exists back home.\n\nWrite 80–120 words.`,
+    { situation: `You bought a used laptop online for your studies. It arrived on time, but the battery lasts less than an hour, which the seller had described as "excellent condition". The return window closes in five days.`,
+      to: 'Seller (online marketplace)', subject: 'Battery problem with the laptop I purchased',
+      bullets: ['Describe what is wrong with the laptop.', 'Point out how this differs from the description.', 'Say what you would like the seller to do about it.'] },
+    { situation: `Your phone plan was charged twice this month. You called the provider and waited forty minutes without reaching anyone, so you have decided to write instead.`,
+      to: 'Customer Service, Vantage Mobile', subject: 'Duplicate charge on my account this month',
+      bullets: ['Explain what the incorrect charge was.', 'Describe what you already tried in order to fix it.', 'Ask how and when the money will be returned.'] },
+    { situation: `A free app you rely on for studying has started showing advertisements that interrupt every session. You have used it daily for a year and would consider paying, but the paid plan's features are not clearly explained.`,
+      to: 'Support Team, StudyFlow', subject: 'Question about the paid plan',
+      bullets: ['Explain how the recent change has affected your studying.', 'Ask specifically what the paid plan removes or adds.', 'Ask whether long-term users get a reduced price.'] },
   ],
   grammar: [
-    `Write a short email to a friend explaining what your teacher said about the exam. Use at least two examples of reported speech (e.g. "She told me that...", "He said he would..."). In your email:\n1. Explain what the teacher said about the exam format.\n2. Explain what the teacher said about the date.\n3. Ask if your friend wants to study together.\n\nWrite 80–120 words.`,
-    `Write a short email to your roommate explaining what a classmate told you about a group project deadline. Use reported speech. In your email:\n1. Explain what the classmate said the deadline is.\n2. Explain what parts of the project are due.\n3. Ask your roommate to help you plan a schedule.\n\nWrite 80–120 words.`,
-    `Write a short email to your parents explaining what the front desk told you about a missing package. Use reported speech. In your email:\n1. Explain what the front desk said happened.\n2. Ask what was inside the package.\n3. Ask what they'd like you to do next.\n\nWrite 80–120 words.`,
+    { situation: `You have been attending a conversation club run by the language department. It has helped your speaking a great deal, but the meeting time was just moved to a slot when you have class.`,
+      to: 'Dr. Lindqvist', subject: 'New conversation club time',
+      bullets: ['Say what the club has helped you with.', 'Explain why the new time does not work for you.', 'Ask whether a second session could be offered.'] },
+    { situation: `Your writing teacher returned an essay with a grade much lower than you expected. The comments mention "unclear structure", but you are not sure which part of the essay she means.`,
+      to: 'Ms. Aterido', subject: 'Question about the feedback on my essay',
+      bullets: ['Thank her for the feedback and say what you understood from it.', 'Ask specifically which section was unclear.', 'Ask whether you may revise and resubmit it.'] },
+    { situation: `You want to join an advanced grammar workshop, but registration closed yesterday. You only heard about it from a classmate this morning, and there is no waiting list on the website.`,
+      to: 'Language Center Office', subject: 'Late registration for the grammar workshop',
+      bullets: ['Explain why you missed the registration date.', 'Explain why the workshop matters for your studies.', 'Ask whether a place could still be made available.'] },
   ],
   social: [
-    `Write a short email to a classmate suggesting you both attend a campus talk about immigration policy changes you discussed in class. In your email:\n1. Propose a day and time.\n2. Explain why the talk is relevant.\n3. Ask if they'd like to grab food together afterward.\n\nWrite 80–120 words.`,
-    `Write an email to a few classmates proposing to start a small peer-support group for new international students. In your email:\n1. Propose how often the group should meet.\n2. Suggest a first activity or topic.\n3. Ask for their ideas on how it should work.\n\nWrite 80–120 words.`,
-    `Write an email to your discussion group sharing a global news story relevant to your major. In your email:\n1. Briefly summarize the story.\n2. Explain why it's relevant to your field of study.\n3. Ask one specific question for the group to discuss.\n\nWrite 80–120 words.`,
+    { situation: `Your neighbourhood association has organised an international food evening. You would like to take part and cook a dish from your country, but the sign-up form only lists dishes you do not recognise.`,
+      to: 'Mrs. Adeyemi (association organiser)', subject: 'Taking part in the international food evening',
+      bullets: ['Say which dish you would like to bring.', 'Ask what kitchen equipment will be available.', 'Offer to help with something else on the day.'] },
+    { situation: `A community centre near you runs a free language exchange, but the description online is two years old and you cannot tell whether it still happens.`,
+      to: 'Riverside Community Centre', subject: 'Is the language exchange still running?',
+      bullets: ['Explain where you saw the information.', 'Ask whether the meetings still take place, and when.', 'Ask what someone needs to do to join.'] },
+    { situation: `You volunteered at a local event and were promised a certificate of participation, which you now need for a scholarship application due in two weeks. Nothing has arrived.`,
+      to: 'Volunteer Coordinator', subject: 'Certificate of participation for the spring event',
+      bullets: ['Remind the coordinator which event you helped at and when.', 'Explain why you need the certificate now.', 'Ask how quickly it can be sent.'] },
   ],
   career: [
-    `Write an email to a former classmate who graduated, asking for advice about finding an internship in your field. In your email:\n1. Explain your field and the kind of internship you want.\n2. Ask a specific question about their own experience.\n3. Ask if they'd be willing to review your resume.\n\nWrite 80–120 words.`,
-    `Write an email to your school's career counselor requesting a mock interview appointment. In your email:\n1. Request an appointment.\n2. Mention your preferred dates.\n3. Ask what you should bring or prepare beforehand.\n\nWrite 80–120 words.`,
-    `Write an email to a professor asking if they would be willing to write you a letter of recommendation. In your email:\n1. Explain which program or position it's for.\n2. Mention the deadline.\n3. Offer to provide your resume or a draft to help them write it.\n\nWrite 80–120 words.`,
+    { situation: `You had an interview for a part-time position two weeks ago. The manager said you would hear back within a week, and you have since received an offer from somewhere else that you must answer by Friday.`,
+      to: 'Mr. Halvorsen', subject: 'Following up on my interview',
+      bullets: ['Remind him which position you interviewed for and when.', 'Say that you remain interested in the role.', 'Explain, politely, why you need an answer by Friday.'] },
+    { situation: `Your supervisor asked you to take on an extra project. You are willing, but it overlaps with work you were already given, and you are not sure which should come first.`,
+      to: 'Ms. Rahimi', subject: 'Priorities for the new project',
+      bullets: ['Confirm that you are happy to take the project on.', 'Explain clearly what it overlaps with.', 'Ask her which of the two should be finished first.'] },
+    { situation: `A colleague, Kevin, recommended a restaurant for your team lunch. You booked it, but the food was poor and the service was very slow. Kevin is now suggesting the same place for next month.`,
+      to: 'Kevin', subject: 'About the team lunch venue',
+      bullets: ["Explain what went wrong at the restaurant.", "Describe how the team reacted.", 'Suggest a different arrangement for next time.'] },
   ],
   health: [
-    `Write a short email to a classmate about managing stress during exam weeks. In your email:\n1. Describe one specific tip or resource you found helpful.\n2. Explain how it helped you.\n3. Ask if they've tried something similar.\n\nWrite 80–120 words.`,
-    `Write an email to the student health center asking to schedule a routine check-up. In your email:\n1. Request an appointment.\n2. Mention your preferred dates.\n3. Ask what you should bring or prepare.\n\nWrite 80–120 words.`,
-    `Write a short email to a friend recommending a gym or fitness class you found near campus. In your email:\n1. Name the gym or class.\n2. Describe what you liked about it.\n3. Suggest going together sometime.\n\nWrite 80–120 words.`,
+    { situation: `You have been having trouble sleeping for several weeks and it is affecting your classes. The campus health centre's online booking system only shows appointments two months away.`,
+      to: 'Campus Health Centre', subject: 'Requesting an earlier appointment',
+      bullets: ['Describe the problem and how long it has lasted.', 'Explain how it is affecting your studies.', 'Ask whether there is a cancellation list you could join.'] },
+    { situation: `You joined a gym on a twelve-month contract. You have since been advised by a doctor not to do intense exercise for several months, but the gym's website says contracts cannot be paused.`,
+      to: 'Membership Team, Northline Fitness', subject: 'Request to pause my membership',
+      bullets: ['Explain why you cannot use the gym at the moment.', 'Say how long you expect this to last.', 'Ask whether pausing is possible, and what proof is needed.'] },
+    { situation: `The cafeteria recently changed its menu and there are now very few options that suit your dietary needs. You eat there most days because it is included in your student plan.`,
+      to: 'Dining Services Manager', subject: 'Menu options and dietary requirements',
+      bullets: ['Explain what you can no longer eat and why.', 'Describe how often you rely on the cafeteria.', 'Suggest one change that would help.'] },
   ],
   environment: [
-    `Write a short email to your dorm floor proposing you all start a shared recycling habit. In your email:\n1. Propose one simple first step.\n2. Ask for a volunteer to help set it up.\n3. Suggest a time to discuss it further.\n\nWrite 80–120 words.`,
-    `Write an email to campus administration suggesting one specific way to reduce plastic use around campus. In your email:\n1. Propose your specific idea.\n2. Explain the expected benefit.\n3. Ask who you should contact to move the idea forward.\n\nWrite 80–120 words.`,
-    `Write a short email to a classmate inviting them to join a campus sustainability club with you. In your email:\n1. Describe what the club does.\n2. Mention when it meets.\n3. Ask if they'd like to join you at the next meeting.\n\nWrite 80–120 words.`,
+    { situation: `The recycling bins in your building were removed last month with no explanation, and residents have been putting everything into general waste since then.`,
+      to: 'Building Manager', subject: 'Recycling bins removed from our building',
+      bullets: ['Explain what you noticed and when.', 'Describe what residents have been doing instead.', 'Ask whether the bins will be replaced.'] },
+    { situation: `Your class is organising a park clean-up. The city requires a permit, and the application form asks for details you do not understand, with the deadline in four days.`,
+      to: 'City Parks Department', subject: 'Help with a clean-up event permit',
+      bullets: ['Describe the event you are planning.', 'Say exactly which part of the form is unclear.', 'Ask whether the form can be submitted after the deadline if needed.'] },
+    { situation: `You noticed that a campus building leaves all its lights on overnight, every night. You mentioned it to a member of staff, who said it was "probably necessary", but could not explain why.`,
+      to: 'Facilities Office', subject: 'Lights left on overnight in the Science Building',
+      bullets: ['Describe what you have observed and over what period.', 'Explain why you think it is worth looking into.', 'Ask whether the schedule can be reviewed.'] },
   ],
   daily: [
-    `Write an email asking a Student Services Coordinator for help opening a bank account near campus. In your email:\n1. Mention that you are a new international student.\n2. Ask what documents you need to bring.\n3. Ask how long the process usually takes.\n\nWrite 80–120 words.`,
-    `Write an email to a campus housing coordinator asking about apartment options for next semester. In your email:\n1. Mention your budget and preferences.\n2. Ask about current availability.\n3. Ask about the lease terms.\n\nWrite 80–120 words.`,
-    `Write an email to the transportation office asking about the bus schedule to downtown. In your email:\n1. Ask how often the bus runs.\n2. Ask about the cost.\n3. Ask whether the schedule changes on weekends.\n\nWrite 80–120 words.`,
+    { situation: `A parcel you were expecting was marked as "delivered" three days ago, but it never arrived. The tracking page shows it was left at an address that is not yours.`,
+      to: 'Customer Support, SwiftPost', subject: 'Parcel marked delivered but not received',
+      bullets: ['Give the details of the delivery and what the tracking shows.', 'Explain what you have already done to find it.', 'Ask what will happen next and by when.'] },
+    { situation: `You booked a haircut appointment weeks ago. This morning the salon called to move it to a time when you have an exam, and said it was the only option available.`,
+      to: 'Brightside Salon', subject: 'Rescheduling my appointment',
+      bullets: ['Confirm which appointment you originally booked.', 'Explain why the new time does not work.', 'Ask for two alternative times later that week.'] },
+    { situation: `Your landlord raised the rent by fifteen percent with two weeks' notice. Your contract says any increase requires thirty days' notice in writing.`,
+      to: 'Mr. Castellanos (landlord)', subject: 'Notice period for the rent increase',
+      bullets: ['State what notice you received and when.', 'Refer to what the contract says about notice.', 'Ask him to confirm the correct date the increase will start.'] },
   ],
   money: [
-    `Write an email to a Student Services Coordinator asking for help opening a local bank account. In your email:\n1. Mention that you are an international student.\n2. Ask what documents you need to bring.\n3. Ask how long the process usually takes.\n\nWrite 80–120 words.`,
-    `Write an email to your roommate proposing a system for splitting shared household expenses. In your email:\n1. Suggest one specific method (like a shared expense app).\n2. Propose a monthly day to settle up.\n3. Ask if they have a preference.\n\nWrite 80–120 words.`,
-    `Write an email to your bank asking about an unfamiliar fee that appeared on your account. In your email:\n1. Describe the fee you noticed.\n2. Ask why it was charged.\n3. Ask how to avoid it in the future.\n\nWrite 80–120 words.`,
+    { situation: `Your bank charged you a monthly account fee that you were told would be waived for students. You provided your enrolment letter when you opened the account.`,
+      to: 'Customer Service, Meridian Bank', subject: 'Student account fee charged in error',
+      bullets: ['Explain what you were told when you opened the account.', 'Describe the charges you have seen.', 'Ask for the fees to be refunded and the account corrected.'] },
+    { situation: `You are sharing a flat and agreed to split the bills evenly. One flatmate has not paid their share for two months, and you have been covering it.`,
+      to: 'Tomás', subject: 'Outstanding share of the bills',
+      bullets: ['State clearly what is owed and for which months.', 'Explain the effect it is having on you.', 'Propose a specific way to settle it.'] },
+    { situation: `A scholarship you received was for a smaller amount than the award letter stated. The finance office is only reachable by email and has not replied for a week.`,
+      to: 'Financial Aid Office', subject: 'Scholarship amount does not match my award letter',
+      bullets: ['Give the amount in your letter and the amount you received.', 'Say when you first contacted the office.', 'Ask when you can expect the difference to be paid.'] },
   ],
   housing: [
-    `Write an email to your landlord reporting a broken heater in your apartment. In your email:\n1. Describe the problem.\n2. Mention how long it has been broken.\n3. Ask when someone can come repair it.\n\nWrite 80–120 words.`,
-    `Write an email to a new roommate proposing house rules before move-in day. In your email:\n1. Suggest one rule about shared spaces.\n2. Propose a day to discuss further.\n3. Ask about their own preferences.\n\nWrite 80–120 words.`,
-    `Write an email to your building's front desk about a noisy neighbor. In your email:\n1. Describe the situation.\n2. Mention when it usually happens.\n3. Ask what steps they can take.\n\nWrite 80–120 words.`,
+    { situation: `You are moving out of your apartment next month. Your landlord has said the full deposit will be kept for "cleaning", although you have cleaned the apartment thoroughly and have photographs.`,
+      to: 'Ms. Beaumont (landlord)', subject: 'Return of my security deposit',
+      bullets: ['State when you are leaving and what condition you are leaving the flat in.', 'Mention the evidence you have.', 'Ask for a written breakdown of any deductions.'] },
+    { situation: `A new flatmate has been having friends over late on weeknights. You have an early class and have not slept properly in over a week, but you would rather sort it out directly than involve the landlord.`,
+      to: 'Jonas', subject: 'Weeknight noise',
+      bullets: ['Describe the situation without blaming him personally.', 'Explain how it is affecting you.', 'Suggest a specific arrangement you could both live with.'] },
+    { situation: `You are looking for a room near campus for next term. A listing you found online has no photographs and does not say whether bills are included.`,
+      to: 'Room advertiser', subject: 'Questions about the room on Oak Street',
+      bullets: ['Say which listing you are asking about and introduce yourself briefly.', 'Ask the two questions the advertisement does not answer.', 'Ask whether you could view the room this week.'] },
   ],
   travel: [
-    `Write an email to a classmate proposing a weekend trip together. In your email:\n1. Suggest a destination.\n2. Propose a date.\n3. Ask what they'd like to do there.\n\nWrite 80–120 words.`,
-    `Write an email to a hotel asking about facilities before an upcoming trip. In your email:\n1. Mention your dates of stay.\n2. Ask about one specific facility.\n3. Ask about the cancellation policy.\n\nWrite 80–120 words.`,
-    `Write an email to the campus transportation office asking about a shuttle to the airport. In your email:\n1. Ask about the schedule.\n2. Ask about the cost.\n3. Ask if reservations are required.\n\nWrite 80–120 words.`,
+    { situation: `Your flight home was cancelled and the airline rebooked you two days later, which means missing the start of term. There is an earlier flight with seats available on the same airline.`,
+      to: 'Customer Relations, Altair Airways', subject: 'Rebooking after cancelled flight AH412',
+      bullets: ['Give the details of the cancelled flight and the replacement offered.', 'Explain why the new date is a problem.', 'Ask to be moved to the earlier flight you found.'] },
+    { situation: `A colleague, Robin, recently travelled to the city where you are about to go for a study programme. You have three free days there and no idea how to use them.`,
+      to: 'Robin', subject: 'Recommendations for my trip',
+      bullets: ['Explain why you are travelling and how long you will stay.', 'Ask for her recommendations for food and things to do.', 'Mention what you would most like to see and what you would rather avoid.'] },
+    { situation: `You booked a room through a booking site. On arrival, the hotel gave you a much smaller room than the one shown, saying the original was unavailable, and refused to adjust the price.`,
+      to: 'Bookings Support', subject: 'Room did not match my reservation',
+      bullets: ['Describe what you booked and what you were actually given.', 'Explain what the hotel said when you raised it.', 'Say what outcome you are asking for.'] },
   ],
   media: [
-    `Write an email to a classmate proposing a movie night. In your email:\n1. Suggest a film or genre.\n2. Propose a day and time.\n3. Ask what snacks they could bring.\n\nWrite 80–120 words.`,
-    `Write an email to your school newspaper suggesting a story idea. In your email:\n1. Describe the story idea.\n2. Explain why it would interest students.\n3. Ask who you should contact next.\n\nWrite 80–120 words.`,
-    `Write an email to a friend recommending a podcast or show you started watching. In your email:\n1. Describe what it's about.\n2. Explain why you like it.\n3. Ask if they'd want to watch or listen together.\n\nWrite 80–120 words.`,
+    { situation: `You subscribed to a streaming service for one month to watch a specific series. You cancelled before the renewal date, but you were charged again anyway.`,
+      to: 'Billing Support, Lumen Stream', subject: 'Charged after cancelling my subscription',
+      bullets: ['Say when you cancelled and how.', 'Describe the charge you received.', 'Ask for a refund and confirmation that the account is closed.'] },
+    { situation: `A new magazine invited readers to submit writing, and you sent in two short pieces. The submission page froze while uploading, and you are not certain your work was received.`,
+      to: 'editor@northlightreview.com', subject: 'Problem using the submission form',
+      bullets: ['Say what you like about the new magazine.', 'Describe the problem you had with the form.', 'Ask whether your submissions arrived.'] },
+    { situation: `You run a small student podcast. A local bookshop offered to sponsor an episode, but they have not said what they expect in return or how the arrangement would work.`,
+      to: 'Ms. Nakamura (Corner Books)', subject: 'Details of the sponsorship offer',
+      bullets: ['Thank her and say what your podcast is about.', 'Ask what the bookshop would expect from the sponsorship.', 'Propose a short call or meeting to agree the details.'] },
   ],
   innovation: [
-    `Write an email to a professor asking about a research opportunity related to AI. In your email:\n1. Mention which class or topic sparked your interest.\n2. Ask what qualifications are needed.\n3. Ask how to apply.\n\nWrite 80–120 words.`,
-    `Write an email to classmates proposing a study group about a new technology discussed in class. In your email:\n1. Suggest a regular meeting time.\n2. Propose one topic to start with.\n3. Ask for their input on the plan.\n\nWrite 80–120 words.`,
-    `Write an email to a startup accelerator office asking about resources for student entrepreneurs. In your email:\n1. Briefly describe your business idea.\n2. Ask what resources are available.\n3. Ask about upcoming events.\n\nWrite 80–120 words.`,
+    { situation: `Your department has introduced an AI writing tool for assignments, but the rules about when students may use it are not clearly written, and different teachers have said different things.`,
+      to: 'Dr. Almeida (department head)', subject: 'Clarifying the rules on AI writing tools',
+      bullets: ['Explain what different teachers have told you.', 'Give one concrete example where you are unsure.', 'Ask for clear written guidance for students.'] },
+    { situation: `You signed up to test a new campus app. It logs you out every few minutes, and the feedback form inside the app is itself broken, so there is no way to report the problem.`,
+      to: 'Campus App Development Team', subject: 'Bug report: repeated logouts',
+      bullets: ['Describe exactly what happens and how often.', 'Explain why you could not use the in-app feedback form.', 'Offer to help test the fix.'] },
+    { situation: `A science museum near campus is offering free tickets to student groups. Your class would like to go, but the offer page does not say how many people a group can include or whether a teacher must come.`,
+      to: 'Education Team, Halden Science Museum', subject: 'Group visit for a language class',
+      bullets: ['Introduce your class and say why you would like to visit.', 'Ask the two questions the offer page does not answer.', 'Suggest two possible dates.'] },
   ],
 };
 function genEmail(theme){
   const bank = EMAIL_BANK[theme] || EMAIL_BANK.campus;
-  return { prompt: pick(bank) };
+  const e = pick(bank);
+  // `prompt` is kept as a flat text version of the task: several places
+  // (the batch de-dup key, the student's scenario list preview, the
+  // teacher's review card) want one string, and older saved batches in a
+  // student's local storage still carry only this field.
+  const prompt = `${e.situation}\n\nWrite an email to ${e.to}. In your email, do the following.\n`
+    + e.bullets.map(b => '• ' + b).join('\n');
+  return { situation:e.situation, to:e.to, subject:e.subject, bullets:e.bullets, prompt };
 }
 
 </script>
 <script>
 // ---- Write for an Academic Discussion ----
+// Write for an Academic Discussion — rebuilt to the real ETS task shape
+// from the official practice tests. Four features of the real task were
+// missing here, and they are what make it an academic discussion rather
+// than a bare opinion question:
+//
+//   1. A COURSE CONTEXT: "Your professor is teaching a course on labor
+//      studies." The student is posting into a specific class.
+//   2. A PROFESSOR'S POST that gives real background before asking —
+//      typically defining or framing the issue over several sentences
+//      (the official example explains what "digital nomads" are before
+//      asking whether the trend will continue). Ours was a single
+//      question with no framing, so there was nothing to react to.
+//   3. STUDENT POSTS of real substance (3-4 sentences with actual
+//      reasoning), not one-line opinions.
+//   4. The second student frequently ENGAGES THE FIRST BY NAME ("While
+//      Claire makes a good point, ..."), which is what turns two
+//      opinions into a thread the student must enter.
+//
+// The task is 10 minutes, and ETS states "An effective response will
+// contain at least 100 words" — a floor, not a range.
 const DISCUSSION_BANK = {
   campus: [
-    { q:"Some people believe international students should speak only English outside class, even with friends who share their native language. Do you agree or disagree?", a:{name:'Marina',text:'I disagree. Avoiding your native language outside class can feel isolating, especially in the first weeks.'}, b:{name:'Youssef',text:'I agree — if we never practice outside class, we lose the chance to improve faster.'} },
-    { q:"Is it better for a new student to live with a host family or in an apartment with roommates?", a:{name:'Sofia',text:'A host family helps you practice English constantly, even during meals.'}, b:{name:'Kenji',text:'An apartment gives more independence, which some students need to feel comfortable.'} },
+    { course: 'a course on education policy',
+      professor: { name: 'Dr. Whitfield', post: `Many universities now require international students to attend a structured orientation programme before classes begin, sometimes lasting a full week. Supporters argue that these programmes prevent problems later; critics argue that students learn far more by simply starting their studies and asking questions as they arise. Should universities make orientation programmes compulsory for international students? Why or why not?` },
+      posts: [
+        { name: 'Marina', text: `I think they should be compulsory. When I arrived, I had no idea how the library system worked or who to ask about visa paperwork, and I wasted weeks finding out. A required programme means nobody misses that information just because they were too shy to ask.` },
+        { name: 'Youssef', text: `Marina's experience is common, but I would still make it optional. Students arrive with very different levels of preparation, and forcing everyone through the same week wastes the time of those who already know the basics. A good handbook and an open help desk would solve the same problem.` },
+      ] },
+    { course: 'a course on higher education',
+      professor: { name: 'Dr. Okonjo', post: `Living arrangements shape a student's experience as much as their classes do. Some institutions encourage international students to live with host families, arguing that constant exposure to the language accelerates learning. Others point out that students who share flats with peers develop independence and build their own support networks. Which arrangement do you think benefits a language student more, and why?` },
+      posts: [
+        { name: 'Sofia', text: `A host family, without question. You practise English at breakfast, during dinner, while watching television — situations no classroom reproduces. You also learn the small everyday expressions that textbooks never include, simply by hearing them used naturally.` },
+        { name: 'Kenji', text: `I understand Sofia's point about constant exposure, but living with a family can also mean constant pressure. When I shared a flat, I could switch off when I needed to, and that made me more willing to speak the rest of the time. Independence matters too.` },
+      ] },
   ],
   register: [
-    { q:"Do you think written communication (email, chat) should always be formal, even between friends?", a:{name:'Diego',text:'No — formality depends on context. A friend deserves a casual tone.'}, b:{name:'Ha-eun',text:'I think a light layer of formality is still useful, even with friends.'} },
-    { q:"Should students correct their friends' grammar mistakes in casual conversation?", a:{name:'Noor',text:'Only if the friend asks — otherwise it can feel discouraging.'}, b:{name:'Bruno',text:'I appreciate quick corrections; that is how I improve fastest.'} },
+    { course: 'a course on professional communication',
+      professor: { name: 'Dr. Almeida', post: `Written communication at work has changed considerably in the last decade. Messages that would once have been formal letters are now short chat messages, and some organisations now discourage formal openings and closings entirely, arguing they waste time. Others insist that a professional register signals respect and reduces misunderstandings. Should workplaces expect formal writing, or is a casual style acceptable?` },
+      posts: [
+        { name: 'Diego', text: `Formality should depend on the situation, not on a company rule. A quick message to a colleague I see every day does not need a formal opening, and adding one makes it sound cold. Insisting on formality everywhere just slows communication down for no real benefit.` },
+        { name: 'Ha-eun', text: `I would push back on Diego slightly. Casual writing works well between people who already know each other, but a lot of workplace writing goes to people you have never met, and the same message can read as rude when the tone is too relaxed. A basic level of formality protects you.` },
+      ] },
+    { course: 'a course on applied linguistics',
+      professor: { name: 'Dr. Vasquez', post: `Learners often ask whether friends should correct their mistakes in ordinary conversation. Some researchers argue that immediate correction prevents errors from becoming fixed habits. Others find that frequent correction increases anxiety and makes learners speak less, which slows progress overall. In your view, should friends correct a language learner's mistakes during casual conversation?` },
+      posts: [
+        { name: 'Noor', text: `Only when the learner has asked for it. Being corrected in the middle of a story makes you lose your thread and start monitoring every word instead of communicating. I improved fastest when people simply let me talk and corrected me afterwards if I wanted.` },
+        { name: 'Bruno', text: `Noor and I disagree here. I actively want to be corrected immediately, because otherwise I repeat the same mistake for months without knowing. The key is how it is done — a quick, friendly repetition of the correct form does not interrupt anything.` },
+      ] },
   ],
   current: [
-    { q:"Should AI tools be allowed to help students with homework?", a:{name:'Camille',text:'Yes, as long as the student still does the thinking and the tool only supports.'}, b:{name:'Tariq',text:'I worry it removes the struggle that actually builds skill.'} },
-    { q:"Is remote work better than working in an office?", a:{name:'Ines',text:'Remote work gives flexibility, especially for people balancing studies and jobs.'}, b:{name:'Omar',text:'I miss the spontaneous conversations you only get in person.'} },
+    { course: 'a course on technology and society',
+      professor: { name: 'Dr. Reinhardt', post: `Artificial intelligence tools that write, summarise and translate are now freely available to students. Some educators argue that banning them is unrealistic and that students should instead be taught to use them critically. Others believe that using such tools prevents students from developing the very skills a course is meant to build. Should students be allowed to use AI tools for their coursework? Why or why not?` },
+      posts: [
+        { name: 'Camille', text: `They should be allowed, provided students declare it. These tools already exist in every workplace my classmates will enter, and pretending otherwise helps nobody. What matters is whether the student understands the final work well enough to defend it.` },
+        { name: 'Andrei', text: `Camille's comparison to the workplace is fair, but there is a difference between using a tool and learning a skill. A student who never struggles through a first draft never learns to structure an argument. I would allow these tools only after the basic skill has been demonstrated.` },
+      ] },
+    { course: 'a course on media studies',
+      professor: { name: 'Dr. Lindqvist', post: `Most people now encounter news through social media feeds rather than by choosing a newspaper or broadcast. This has made information far more accessible, but it also means an algorithm, rather than an editor, decides what each person sees. Some argue this democratises news; others argue it fragments public understanding. Do you think getting news mainly through social media is a positive or negative development?` },
+        posts: [
+        { name: 'Priya', text: `Mostly positive. I follow journalists and specialists directly instead of relying on whichever stories one newspaper decided to print, and I see reporting from countries that never appeared in my national media at all. The range available now is far wider.` },
+        { name: 'Tomás', text: `Priya describes the best case, but that assumes a reader who chooses carefully. Most people simply read what appears, and what appears is whatever holds attention longest — usually the most extreme version of a story. Wider access does not automatically mean better information.` },
+      ] },
   ],
   grammar: [
-    { q:"Is it more useful to study grammar rules explicitly, or to absorb them naturally through exposure?", a:{name:'Fatima',text:'I learn faster from exposure — rules feel abstract until I see them in use.'}, b:{name:'Lucas',text:'I need the rule first, then examples make sense to me.'} },
-    { q:"Should teachers correct every small grammar mistake during speaking practice?", a:{name:'Priya',text:'No — interrupting too often kills the flow of the conversation.'}, b:{name:'Matteo',text:'I want to be corrected right away, before the mistake becomes a habit.'} },
+    { course: 'a course on second language acquisition',
+      professor: { name: 'Dr. Sato', post: `There is a long-running debate about how grammar should be taught. One tradition holds that learners need explicit rules before they can produce accurate language. Another argues that grammar is acquired mainly through large amounts of meaningful input, and that studying rules produces knowledge learners cannot actually use when speaking. Which approach do you think serves adult learners better?` },
+      posts: [
+        { name: 'Elif', text: `Adults benefit from explicit rules. We already understand abstract concepts, so being told how a structure works saves months of guessing. When I learned the rule for reported speech directly, I could use it the same week rather than slowly absorbing it.` },
+        { name: 'Mateo', text: `I would qualify what Elif says. Knowing a rule and using it under time pressure are different things. I could recite conditional forms perfectly and still not produce them in conversation, and that only changed after a lot of listening and speaking practice.` },
+      ] },
+    { course: 'a course on assessment and learning',
+      professor: { name: 'Dr. Haddad', post: `Many institutions are reconsidering how often they test students. Frequent short assessments give teachers regular evidence of progress and keep students working steadily. Critics argue that constant testing encourages memorisation for the next test rather than lasting understanding, and adds significant stress. Should courses rely on frequent small assessments, or on fewer major ones?` },
+      posts: [
+        { name: 'Ingrid', text: `Frequent small assessments, clearly. They tell you where you stand while there is still time to act on it. With one large exam at the end, you discover your weaknesses when it is far too late to do anything about them.` },
+        { name: 'Rafael', text: `Ingrid is right that feedback should come early, but that does not require grading everything. Weekly graded tests made me study only what I expected to be tested on. Regular unmarked practice with real feedback would give the same information without the narrowing effect.` },
+      ] },
   ],
   social: [
-    { q:"Should governments do more to help international students integrate into local communities?", a:{name:'Elena',text:'Yes — structured support programs make a real difference in the first months.'}, b:{name:'Kwame',text:'I think community initiatives work better than government programs.'} },
-    { q:"Is globalization making cultures more similar, or helping them stay unique?", a:{name:'Lin',text:'I see cultures blending more each year, especially among young people.'}, b:{name:'Ana',text:'I think local traditions are becoming more valued as a reaction to globalization.'} },
+    { course: 'a course on sociology',
+      professor: { name: 'Dr. Achebe', post: `Volunteering refers to offering your time without payment for the benefit of a community or cause. While most people volunteer by choice, some institutions have made it compulsory — many secondary schools, for example, require a set number of volunteer hours before graduation. Supporters say this builds civic responsibility; critics say compulsory volunteering is a contradiction. Should schools require students to volunteer?` },
+      posts: [
+        { name: 'Claire', text: `Yes, schools should require it. Many teenagers never encounter volunteering at home and would not seek it out on their own. A requirement introduces them to the idea that their time can matter to someone else, and plenty continue voluntarily afterwards.` },
+        { name: 'Andrew', text: `I disagree with Claire on this. Many students already have part-time jobs or care for younger siblings after school. Adding a compulsory requirement penalises exactly those students, whose lives already involve far more responsibility than the requirement is meant to teach.` },
+      ] },
+    { course: 'a course on cultural studies',
+      professor: { name: 'Dr. Moreau', post: `As international brands, films and platforms reach almost every country, some observers worry that local cultures are converging into a single global culture. Others argue the opposite: that global exposure gives people new ways to express and even revive local traditions. Do you think globalisation is making cultures more similar to one another, and does it matter?` },
+      posts: [
+        { name: 'Amara', text: `It clearly makes cities more similar. The same coffee chains, the same clothing shops, the same films — you can walk through the centre of three different countries and see almost identical streets. Something specific is genuinely lost when that happens.` },
+        { name: 'Nikolai', text: `Amara is describing shop fronts rather than culture. In my country, global platforms let musicians reach audiences abroad using traditional instruments, and that revived interest at home. Surfaces converge; what people actually value does not necessarily follow.` },
+      ] },
   ],
   career: [
-    { q:"Is it better to gain work experience through an internship, or to focus fully on studies first?", a:{name:'Victor',text:'An internship teaches skills no classroom can — I would try to do both together.'}, b:{name:'Amara',text:'I think focusing on studies first builds a stronger foundation for any career.'} },
-    { q:"Should employers value soft skills like communication as much as technical skills?", a:{name:'Julia',text:'Absolutely — technical skill without communication rarely leads to leadership.'}, b:{name:'Hassan',text:'I think technical skill should still come first, especially early in a career.'} },
+    { course: 'a course on labor studies',
+      professor: { name: 'Dr. Ferreira', post: `More people can now work remotely from portable devices rather than a fixed office. These workers often choose when and where they work, and some become "digital nomads" — travelling regularly while working from different locations, both inside and outside their own countries. Do you think digital nomadism is likely to keep increasing? Why or why not?` },
+      posts: [
+        { name: 'Claire', text: `Digital nomadism offers real freedom, but it depends completely on reliable internet. That requirement limits which places are actually workable far more than people admit, so I do not expect it to grow as much globally as the enthusiasm suggests.` },
+        { name: 'Marcus', text: `While Claire makes a good point about connectivity, network speed and coverage improve every year. Why work in a city office simply to afford two weeks somewhere beautiful, when you could work from such places for much of the year? I expect it to keep growing.` },
+      ] },
+    { course: 'a course on career development',
+      professor: { name: 'Dr. Nakamura', post: `Students are often advised to work part-time while studying, on the grounds that it develops time management, communication and workplace awareness that classes cannot teach. Others point to research suggesting that beyond a certain number of hours, employment measurably harms academic results. Should students be encouraged to work part-time during their studies?` },
+      posts: [
+        { name: 'Leila', text: `Yes, within limits. My part-time job taught me how to deal with difficult customers and how to be relied on, and neither of those appeared anywhere in my syllabus. Employers noticed that experience far more than they noticed my grades.` },
+        { name: 'Hiroshi', text: `Leila gained genuinely useful things, but her example assumes a manageable job. For students on a visa with restricted hours and higher fees, part-time work is not a choice about personal development — it is a necessity, and pretending it is optional misses the real problem.` },
+      ] },
   ],
   health: [
-    { q:"Is it more important to focus on physical health or mental health as a student?", a:{name:'Noah',text:'Mental health affects everything else, so I think it deserves more attention.'}, b:{name:'Aiko',text:'I think physical health gives you the energy to handle mental challenges better.'} },
-    { q:"Should universities require students to take a wellness or fitness class?", a:{name:'Ravi',text:'Yes — many students never build healthy habits until it is required.'}, b:{name:'Beatriz',text:'I think it should stay optional; motivation works better than obligation.'} },
+    { course: 'a course on public health',
+      professor: { name: 'Dr. Bergström', post: `Universities are under growing pressure to provide free mental health support to students. Advocates argue that untreated difficulties directly damage academic performance and that institutions have a duty of care. Others argue that universities are educational institutions, not health providers, and that limited budgets are better spent on teaching. Should universities provide free mental health services to all students?` },
+      posts: [
+        { name: 'Fatima', text: `They should. A student struggling badly will not learn regardless of how good the teaching is, so the two things are not really separate. Providing support early is also far cheaper than dealing with students who drop out entirely.` },
+        { name: 'Lucas', text: `I agree with Fatima's principle but not her conclusion about who pays. Universities are not equipped to run clinical services, and half-funded counselling with three-month waiting lists helps nobody. This belongs with the health system, properly funded, not bolted onto a university.` },
+      ] },
+    { course: 'a course on health behaviour',
+      professor: { name: 'Dr. Iversen', post: `Regular physical activity is consistently linked to better outcomes in both physical and mental health. Yet participation drops sharply once people leave education. Some institutions have responded by making a physical education course compulsory for all students; others regard this as inappropriate for adults. Should universities require students to take a physical activity course?` },
+      posts: [
+        { name: 'Chen', text: `A requirement would help more than people expect. Most students intend to exercise and never start, and a scheduled class removes that decision. It also introduces activities you would never try alone, which is how habits actually form.` },
+        { name: 'Aisha', text: `Chen assumes the obstacle is motivation. For many students it is time — between classes, work and commuting, a compulsory course becomes one more thing to fail. Free access to facilities at flexible hours would achieve far more than a mandatory class.` },
+      ] },
   ],
   environment: [
-    { q:"Should individuals or governments hold the main responsibility for protecting the environment?", a:{name:'Sara',text:'Governments have the power to make large-scale change through policy.'}, b:{name:'Tomas',text:'I think individual habits add up and matter just as much.'} },
-    { q:"Is it realistic for cities to become completely car-free in the future?", a:{name:'Grace',text:'Yes, if public transportation improves enough to replace the need for cars.'}, b:{name:'Idris',text:'I doubt it — many people still need cars for daily life outside city centers.'} },
+    { course: 'a course on environmental policy',
+      professor: { name: 'Dr. Tanaka', post: `Public campaigns often focus on individual actions such as recycling, reducing water use or avoiding single-use plastic. Critics argue that this focus is misleading, since a small number of industrial producers account for the overwhelming majority of emissions, and that emphasising personal habits shifts responsibility away from those producers. Are individual environmental actions worth encouraging, or a distraction?` },
+      posts: [
+        { name: 'Elena', text: `They are largely a distraction. I sorted my recycling carefully for years, then learned how little of it was actually processed. That effort would have achieved more directed at the regulations that decide what companies are permitted to produce.` },
+        { name: 'Omar', text: `Elena is right about the scale, but I would not conclude that individual action is pointless. Habits change what people consider normal, and normal is what makes stricter regulation politically possible. The two work together rather than competing.` },
+      ] },
+    { course: 'a course on urban planning',
+      professor: { name: 'Dr. Petrova', post: `Several cities have made public transport free at the point of use, aiming to reduce car traffic and improve air quality. Early results are mixed: ridership rises, but much of the increase comes from people who previously walked or cycled rather than from drivers. Should cities make public transport free in order to reduce car use?` },
+      posts: [
+        { name: 'Mateus', text: `Yes, and the mixed results are not a good argument against it. Making transport free removes a daily calculation from people with the least money, which is worth doing on its own terms, whatever it does to traffic figures.` },
+        { name: 'Sanne', text: `Mateus is right that affordability matters, but free transport that arrives late and is overcrowded will not persuade anyone to give up a car. I would spend the same money on frequency and reliability first, and reduce fares afterwards.` },
+      ] },
   ],
   daily: [
-    { q:"Is it better for new students to live within walking distance of school, or is a short commute acceptable?", a:{name:'Paulo',text:'Walking distance saves time and money — I would choose that every time.'}, b:{name:'Mei',text:'A short commute is fine if it means a quieter, cheaper neighborhood.'} },
-    { q:"Should new students open a local bank account, or rely on international banking apps?", a:{name:'Aisha',text:'A local account makes everyday payments and rent much simpler.'}, b:{name:'Erik',text:'International apps are convenient enough now that a local account isn\'t always necessary.'} },
+    { course: 'a course on organisational behaviour',
+      professor: { name: 'Dr. Kowalski', post: `Some people plan their days in detail, scheduling work, meals and even leisure in advance. Others prefer to decide as they go, arguing that rigid planning removes spontaneity and creates stress when plans inevitably change. Research on productivity is not conclusive either way. Do you think a highly structured daily routine helps or hinders people?` },
+      posts: [
+        { name: 'Julia', text: `Structure helps enormously. When my week is planned, I stop spending energy deciding what to do next and simply do it. The plan also shows me immediately when I have agreed to more than is actually possible.` },
+        { name: 'Ravi', text: `Julia's point about decision fatigue is fair, but detailed plans assume a predictable week. Mine is not: something always moves, and a rigid schedule then turns a normal change into a failure. A short list of priorities does the same job with far less friction.` },
+      ] },
+    { course: 'a course on work and employment',
+      professor: { name: 'Dr. Nowak', post: `A growing number of employers allow staff to set their own working hours, provided the work is completed. Supporters argue this respects the fact that people concentrate at different times and have different responsibilities outside work. Critics say it erodes the boundary between work and personal life and makes collaboration harder. Should employers let people choose their own hours?` },
+      posts: [
+        { name: 'Beatriz', text: `They should. I work far better early in the morning, and being required to be present until six achieved nothing except making me tired. Judging people on what they produce rather than when they sit at a desk seems obviously more sensible.` },
+        { name: 'Kwame', text: `Beatriz describes the benefit for individuals, and I agree. My concern is what happens to teams. When nobody shares working hours, simple questions turn into day-long delays. Flexible hours with a few required overlapping hours would keep both advantages.` },
+      ] },
   ],
   money: [
-    { q:"Should governments do more to teach personal finance skills in schools?", a:{name:'Diego',text:'Yes — most students graduate without ever learning how credit or interest actually works.'}, b:{name:'Wei',text:'I think families should teach this, not schools — it is too personal for a classroom.'} },
-    { q:"Is it better for a student to get a part-time job, or to focus fully on studies and rely on savings?", a:{name:'Fatou',text:'A part-time job teaches real financial responsibility, even if it takes time from studying.'}, b:{name:'Lars',text:'Focusing on studies protects your grades, which matter more for your future income anyway.'} },
+    { course: 'a course on personal finance education',
+      professor: { name: 'Dr. Costa', post: `Surveys consistently show that young adults feel unprepared to manage money, and several countries have responded by making personal finance a compulsory school subject covering budgeting, debt and saving. Others argue that financial behaviour is shaped far more by income and family circumstances than by classroom instruction. Should personal finance be a required subject in secondary school?` },
+      posts: [
+        { name: 'Ana', text: `It should be required. I left school knowing how to solve equations but not how interest on a loan actually accumulates, and I made expensive mistakes as a direct result. This is knowledge everyone will use, regardless of what they go on to study.` },
+        { name: 'Viktor', text: `Ana's example is real, but I doubt a school course would have prevented it. Knowing how interest works does not help much when the actual problem is not having enough money. Without addressing that, such courses risk implying that financial difficulty is simply poor planning.` },
+      ] },
+    { course: 'a course on consumer behaviour',
+      professor: { name: 'Dr. Lindgren', post: `Online shopping has made purchasing faster and more convenient than at any point in history. Some researchers argue that this convenience measurably increases spending, since the effort that once caused people to reconsider a purchase has been removed. Others say it simply gives consumers better prices and more choice. Has online shopping been good for consumers overall?` },
+      posts: [
+        { name: 'Isabel', text: `Overall, yes. I can compare prices across a dozen sellers in minutes and read what other buyers experienced before deciding. Someone living far from a large town now has the same access as someone in a capital city, which was never true before.` },
+        { name: 'Daniel', text: `Isabel is describing a careful shopper. The same design that makes comparison easy also makes buying almost frictionless, and most purchases are not carefully compared at all. The convenience is genuine, but so is the amount people now buy without thinking.` },
+      ] },
   ],
   housing: [
-    { q:"Is it better for a new student to sign a long lease right away, or to start with a short-term option?", a:{name:'Renata',text:'A short-term option lets you learn the neighborhood before committing to a full year.'}, b:{name:'Tobias',text:'A long lease is usually cheaper per month and gives you more stability.'} },
-    { q:"Should landlords be required to respond to maintenance requests within 24 hours?", a:{name:'Amina',text:'Yes — some problems, like a broken heater, genuinely cannot wait longer than that.'}, b:{name:'Jae-won',text:'That seems unrealistic for landlords managing many buildings with limited staff.'} },
+    { course: 'a course on housing policy',
+      professor: { name: 'Dr. Ibrahim', post: `Student housing costs have risen faster than other living costs in many cities, and some argue that universities should guarantee affordable accommodation to every student they admit. Others reply that universities cannot control local property markets and that building housing diverts money from teaching. Should universities be responsible for guaranteeing affordable housing?` },
+      posts: [
+        { name: 'Paulo', text: `If a university admits students it knows cannot find housing nearby, it has already taken on the responsibility. Students who spend two hours commuting or move every few months do not perform well, so this is not separate from the university's core purpose.` },
+        { name: 'Freya', text: `Paulo is right about the effect on students, but guaranteeing housing without building it just moves the queue around. Unless universities actually construct accommodation, a guarantee becomes a promise nobody can keep. The realistic route is pressing local government to permit more building.` },
+      ] },
+    { course: 'a course on sociology of everyday life',
+      professor: { name: 'Dr. Halvorsen', post: `Shared housing is the norm for students in most countries, and researchers have taken an interest in how households manage conflict. Some argue that written agreements covering cleaning, noise and guests prevent most disputes. Others find that formal rules make a home feel institutional and that flexible negotiation works better. What is the better approach to sharing a home?` },
+      posts: [
+        { name: 'Nadia', text: `Written agreements, made at the start. Almost every argument I have witnessed came from people assuming different standards and never discussing them. Writing it down is not cold; it simply means nobody has to guess what the others expect.` },
+        { name: 'Emeka', text: `Nadia's point about assumptions is correct, but a written rota did not survive a single month in my flat. What actually worked was a short conversation whenever something started to bother someone. The agreement matters less than the willingness to raise things early.` },
+      ] },
   ],
   travel: [
-    { q:"Is it more valuable for a student to travel to many different places, or to explore one place deeply?", a:{name:'Camila',text:'Visiting many places broadens your perspective faster, even if each visit is short.'}, b:{name:'Noah',text:'I think staying longer in one place teaches you far more than a quick visit ever could.'} },
-    { q:"Should public transportation be free for university students?", a:{name:'Priya',text:'Yes — it would make it much easier for students to explore the city and attend events.'}, b:{name:'Matteo',text:'Free transit sounds nice, but someone still has to pay for it, and that cost has to come from somewhere.'} },
+    { course: 'a course on tourism studies',
+      professor: { name: 'Dr. Rossi', post: `Several heavily visited destinations have begun limiting visitor numbers, through booking systems, entry fees or caps on cruise arrivals. Supporters argue this protects fragile sites and the residents who live beside them. Critics argue it turns access into something only wealthier travellers can afford. Should popular destinations limit the number of visitors they admit?` },
+      posts: [
+        { name: 'Giulia', text: `They should. I grew up in a city where residents can no longer afford the centre because every building became short-term accommodation. Without limits, the place people travelled to see stops existing, and then nobody benefits.` },
+        { name: 'Thabo', text: `Giulia describes a genuine problem, but limits usually mean higher prices, and higher prices decide who travels by wealth rather than interest. I would target the causes she names — regulating short-term rentals — rather than restricting entry itself.` },
+      ] },
+    { course: 'a course on education and experience',
+      professor: { name: 'Dr. Fontaine', post: `It is often claimed that travel is the best form of education, and that a month abroad teaches more than a year of study. Others argue this romanticises tourism: that most travel involves brief, superficial contact with a place, and that sustained study offers depth travel rarely reaches. Is travel genuinely educational, or is that claim overstated?` },
+      posts: [
+        { name: 'Marta', text: `It is genuinely educational, but only if you engage. Living somewhere for three months and using the language daily taught me more about how that society works than any book had. The learning came from necessity, not from sightseeing.` },
+        { name: 'Ibrahim', text: `Marta's condition is the important part, and most travel does not meet it. A week photographing landmarks teaches very little. I would say travel provides experience, and experience only becomes education when you do something with it afterwards.` },
+      ] },
   ],
   media: [
-    { q:"Do social media platforms have a responsibility to control what young people see, or is that mainly a parent's job?", a:{name:'Zara',text:'Platforms have far more power to control what appears in a feed than any single parent does.'}, b:{name:'Kenji',text:'Parents ultimately decide what devices and access their children have — the responsibility starts there.'} },
-    { q:"Is streaming making people watch too much low-quality content, or does it just give people more choice?", a:{name:'Isabela',text:'More choice is good, but I think it also makes it easier to watch something without really choosing it.'}, b:{name:'Omar',text:'People have always had entertainment options — streaming just makes the good and bad more visible at once.'} },
+    { course: 'a course on digital media',
+      professor: { name: 'Dr. Solberg', post: `Several countries have introduced or debated minimum age requirements for social media accounts, arguing that these platforms are designed to hold attention in ways young people cannot reasonably resist, and that the effects on sleep and wellbeing are well documented. Opponents argue such bans are unenforceable and cut young people off from their communities. Should there be a minimum age for social media?` },
+      posts: [
+        { name: 'Hannah', text: `Yes. We already restrict other things designed to be difficult to stop using, and there is no obvious reason to treat these platforms differently. The companies themselves know how their systems work; expecting twelve-year-olds to manage that is unrealistic.` },
+        { name: 'Ren', text: `Hannah's comparison sounds reasonable but the enforcement problem is fatal. Any determined teenager enters a false date of birth in seconds, so a ban mostly reassures adults while changing nothing. Requiring the platforms to remove the addictive mechanisms would do more.` },
+      ] },
+    { course: 'a course on cultural production',
+      professor: { name: 'Dr. Bianchi', post: `Some governments require streaming services to include a minimum proportion of locally produced content in their catalogues, arguing that without such rules domestic film and television cannot compete with international budgets. Others argue that audiences should decide what succeeds and that quotas protect work nobody wants to watch. Should streaming platforms be required to carry local content?` },
+      posts: [
+        { name: 'Lucía', text: `Quotas are justified. Without them, platforms simply buy whatever is cheapest to license internationally, and domestic production collapses — not because audiences reject it, but because it never gets made or shown at all.` },
+        { name: 'Anders', text: `Lucía assumes the alternative is no local production, but several of the most successful recent series were made locally and found global audiences precisely because platforms wanted distinctive material. Quotas may protect quantity while doing very little for quality.` },
+      ] },
   ],
   innovation: [
-    { q:"Should artificial intelligence be allowed to grade student writing?", a:{name:'Hana',text:'AI grading could be faster and more consistent than a tired human grader at the end of a long day.'}, b:{name:'Deshawn',text:'I do not trust it to understand nuance, tone, or creativity the way a real teacher can.'} },
-    { q:"Will automation create more jobs than it eliminates in the next twenty years?", a:{name:'Leila',text:'History shows new technology usually creates new kinds of jobs we cannot fully imagine yet.'}, b:{name:'Viktor',text:'This time feels different, since automation is starting to replace thinking work, not just physical labor.'} },
+    { course: 'a course on economics of technology',
+      professor: { name: 'Dr. Yusupova', post: `Every major wave of automation has provoked concern about employment, and historically new categories of work have eventually emerged. Some economists argue the current wave differs, because systems are now replacing cognitive tasks rather than physical ones, and are improving far faster than workers can retrain. Do you think automation will ultimately create more jobs than it removes?` },
+      posts: [
+        { name: 'Sebastián', text: `History suggests it will. The same fears accompanied mechanised agriculture and factory automation, and employment grew rather than disappeared. What changes is the kind of work available, not the existence of work itself.` },
+        { name: 'Mei', text: `Sebastián's historical pattern held when transitions took decades and workers could retrain within a career. If a capability that took twenty years now takes two, the pattern may hold in the long run while still being devastating for the people living through it.` },
+      ] },
+    { course: 'a course on science policy',
+      professor: { name: 'Dr. Eriksen', post: `Governments face repeated decisions about funding space exploration. Supporters point to technologies developed for space that later became part of everyday life, and argue that such programmes drive scientific capability broadly. Critics argue that pressing problems on Earth have a stronger claim on limited public money. Should governments continue to fund space exploration at current levels?` },
+      posts: [
+        { name: 'Tomás', text: `Yes. Framing it as space versus problems on Earth is misleading — these budgets are small next to most government spending, and the research consistently produces applications nobody predicted, from medical imaging to weather forecasting.` },
+        { name: 'Zara', text: `Tomás is right that the budgets are comparatively small, but "we might discover something useful" is a weak argument when the need is immediate and specific. Funding the research directly, rather than hoping for it as a side effect, seems the more honest approach.` },
+      ] },
   ],
 };
 function genDiscussion(theme){
   const item = pick(DISCUSSION_BANK[theme] || DISCUSSION_BANK.campus);
-  return { professor:item.q, posts:[item.a,item.b] };
+  // `professor` stays a plain string for the same backward-compatibility
+  // reasons as genEmail's `prompt`; the professor's NAME and the course
+  // are new fields alongside it.
+  return { course:item.course, professorName:item.professor.name,
+           professor:item.professor.post, posts:item.posts };
 }
 
 // ---- Build a Sentence ----
@@ -4068,8 +4352,8 @@ function renderTypeTabs(){
 
 function cardBody(item){
   const d = item.data;
-  if(item.type==='email') return `<div class="ex-body">${d.prompt}</div>`;
-  if(item.type==='discussion') return `<div class="ex-body"><b>Professor:</b> ${d.professor}<br><br><b>${d.posts[0].name}:</b> ${d.posts[0].text}<br><b>${d.posts[1].name}:</b> ${d.posts[1].text}<br><br><i>Student response: 120–130 words</i></div>`;
+  if(item.type==='email') return emailPromptHtml(d);
+  if(item.type==='discussion') return discussionPromptHtml(d);
   if(item.type==='sentence') return `<div class="ex-body">Target sentence (for teacher reference):<br><b>${d.target}</b></div><div class="chip-row">${d.scrambled.map(w=>`<span class="chip">${w}</span>`).join('')}</div>`;
   if(item.type==='complete-words') return `<div class="ex-body cw-passage">${d.display}</div>`;
   if(item.type==='listen-repeat') return `<div class="ex-body">7 sentences, increasing difficulty (9-11 syllables → 14-16 → 19-23, matching the real ETS tiers), recording time grows 8s → 10s → 12s — matches the real TOEFL Listen and Repeat task.</div>
@@ -4289,7 +4573,7 @@ function renderStudent(){
   }
   batch.forEach(item=>{
     const preview = item.type==='email' ? item.data.prompt.split('\n')[0]
-      : item.type==='discussion' ? item.data.professor
+      : item.type==='discussion' ? (item.data.course ? 'Class discussion · ' + item.data.course : item.data.professor)
       : item.type==='sentence' ? 'Reorder the scrambled words'
       : item.type==='complete-words' ? 'Fill in the missing letters'
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
@@ -4458,13 +4742,11 @@ function renderPractice(){
   if(!item){ wrap.innerHTML=''; return; }
 
   if(item.type==='email' || item.type==='discussion'){
-    const prompt = item.type==='email' ? item.data.prompt
-      : `<b>Professor:</b> ${item.data.professor}<br><br><b>${item.data.posts[0].name}:</b> ${item.data.posts[0].text}<br><b>${item.data.posts[1].name}:</b> ${item.data.posts[1].text}<br><br>Write your response (120–130 words):`;
     wrap.innerHTML = `
       <div class="compose">
         ${timerBadgeHtml(item.type)}
         <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this task would end now. Moving to the next exercise…</div>
-        <div class="ex-body" style="margin-bottom:.8rem">${prompt}</div>
+        ${item.type==='email' ? emailPromptHtml(item.data) : discussionPromptHtml(item.data)}
         <textarea id="response" rows="6" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
         <div class="wordcount" id="wordcount">0 words</div>
         <div class="ex-actions"><button class="btn" onclick="checkWriting()">Check draft</button></div>
@@ -4676,6 +4958,43 @@ function checkSentence(){
   const ok = attempt.toLowerCase() === item.data.target.toLowerCase();
   document.getElementById('sentence-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! (exact word order — matches the real all-or-nothing scoring)' : '✕ Not correct yet — even one word out of place counts as incorrect on the real test. Keep trying, or tap Reset.'}</div>`;
   logUsage('sentence', item.theme, ok ? 1 : 0);
+}
+
+// The real Write an Email task shows the scenario, then the instruction
+// with its three bullets, then a pre-filled To: and Subject: line — the
+// student writes the body only. Older saved batches (generated before
+// this bank was rebuilt) have just `prompt`, so fall back to that rather
+// than rendering an empty task.
+function emailPromptHtml(d){
+  if(!d.bullets) return `<div class="ex-body" style="margin-bottom:.8rem">${escapeHtml(d.prompt || '')}</div>`;
+  return `
+    <div class="ex-body" style="margin-bottom:.6rem">${escapeHtml(d.situation)}</div>
+    <div class="ex-body" style="margin-bottom:.4rem">Write an email to <b>${escapeHtml(d.to)}</b>. In your email, do the following.</div>
+    <ul class="task-bullets">${d.bullets.map(b=>`<li>${escapeHtml(b)}</li>`).join('')}</ul>
+    <p class="small-note">Write as much as you can and in complete sentences. For this class, aim for 80–120 words.</p>
+    <div class="email-head">
+      <div><span class="email-field">To:</span> ${escapeHtml(d.to)}</div>
+      <div><span class="email-field">Subject:</span> ${escapeHtml(d.subject)}</div>
+    </div>`;
+}
+// The real Write for an Academic Discussion task names the course, shows
+// the professor's framing post, then two classmates' replies — the second
+// of which usually pushes back on the first. ETS states the response
+// should be "at least 100 words"; it is a floor, not a range.
+function discussionPromptHtml(d){
+  const head = d.course ? `<p class="small-note" style="margin:0 0 .5rem">Your professor is teaching ${escapeHtml(d.course)}. Write a post responding to the professor's question.</p>` : '';
+  return `
+    ${head}
+    <div class="forum-post forum-prof">
+      <span class="forum-name">${escapeHtml(d.professorName || 'Professor')}</span>
+      ${escapeHtml(d.professor)}
+    </div>
+    ${d.posts.map(p=>`
+      <div class="forum-post">
+        <span class="forum-name">${escapeHtml(p.name)}</span>
+        ${escapeHtml(p.text)}
+      </div>`).join('')}
+    <p class="small-note">Express and support your opinion, and contribute to the discussion in your own words. An effective response contains <b>at least 100 words</b>.</p>`;
 }
 
 // Split out of renderPractice() as its own function (not just inlined) so
@@ -5048,8 +5367,12 @@ function updateWordcount(){
 //                             Syntactic Variety, Lexical & Grammatical Control
 function checkWriting(){
   const item = currentItem();
-  // Real ETS targets: Email 80–120 words; Academic Discussion needs at
-  // least 100, with 120–130 as the ideal ("goal") length shown in the UI.
+  // ETS states one number only: an Academic Discussion response should be
+  // "at least 100 words". It gives no word count at all for the Email
+  // ("Write as much as you can and in complete sentences") — the 80–120
+  // range there is this class's own target, set by the teacher. The upper
+  // bounds below are practice guidance for the 7- and 10-minute limits,
+  // not ETS rules.
   const target = item.type==='discussion' ? [100,130] : [80,120];
   const text = document.getElementById('response').value.trim();
   const n = text ? text.split(/\s+/).length : 0;
@@ -5276,7 +5599,7 @@ function guideContent(role){
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
       <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
       <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
-      <li><b>Academic Discussion</b> — join a discussion thread, 120–130 words.</li>
+      <li><b>Academic Discussion</b> — join a class discussion thread, at least 100 words.</li>
       <li><b>Listen and Repeat</b> — hear a sentence once, repeat it back.</li>
       <li><b>Take an Interview</b> — answer a spontaneous spoken question.</li>
     </ul>
