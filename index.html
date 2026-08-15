@@ -102,12 +102,13 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .cw-passage .blank{ font-weight:700; color:var(--accent); }
 .cw-passage .blank-marks{ letter-spacing:3px; }
 .cw-inputs{ display:grid; gap:.5rem; }
-.cw-input-row{ display:flex; align-items:center; gap:.6rem; }
+.cw-input-row{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
 .cw-input-num{ font-size:.76rem; font-weight:700; color:var(--text-dim); min-width:1.1em; }
 .cw-input-hint{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.82rem; color:var(--text-dim); min-width:5ch; }
 .cw-blank-input{ flex:1; }
 .cw-blank-input.cw-ok{ border-color:var(--green); background:var(--green-soft); color:var(--green); }
 .cw-blank-input.cw-no{ border-color:var(--red); background:var(--red-soft); color:var(--red); }
+.cw-answer-reveal{ flex-basis:100%; margin-left:1.7em; font-size:.78rem; font-weight:700; color:var(--red); }
 .ex-actions{ display:flex; gap:.5rem; margin-top:.8rem; flex-wrap:wrap; }
 .ex-card.discarded .ex-body{ opacity:.45; }
 .chip-row{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
@@ -4472,6 +4473,7 @@ function completeWordsHtml(item){
       <span class="cw-input-num">${i+1}</span>
       <span class="cw-input-hint">${shown}${'_'.repeat(hiddenCount)}</span>
       <input type="text" id="cw-blank-${i}" class="cw-blank-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the word">
+      <span id="cw-answer-${i}" class="cw-answer-reveal"></span>
     </div>`;
   }).join('');
   return `
@@ -4499,10 +4501,15 @@ function checkCompleteWords(){
   let correctCount = 0;
   words.forEach((w,i) => {
     const el = document.getElementById('cw-blank-'+i);
+    const answerEl = document.getElementById('cw-answer-'+i);
     const isOk = normWord(el.value) === normWord(w);
     if(isOk) correctCount++;
     el.classList.toggle('cw-ok', isOk);
     el.classList.toggle('cw-no', !isOk);
+    // Wrong AND empty both count as "not correct" here, so the student
+    // always sees the answer they missed instead of just a red box with
+    // no way to find out what the right word actually was.
+    if(answerEl) answerEl.textContent = isOk ? '' : `was: ${w}`;
   });
   const ok = correctCount === words.length;
   document.getElementById('cw-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! All missing words matched.' : `${correctCount}/${words.length} correct — the highlighted words need another look.`}</div>`;
@@ -5191,14 +5198,24 @@ if('serviceWorker' in navigator){
 // kind of QR flips to their view immediately (no flash of the teacher
 // screen) even though the real content loads in moments later, once the
 // async Firestore fetch (or legacy hash decode) resolves.
+//
+// setView() runs FIRST, before any of the heavier teacher-side rendering
+// below -- a real bug the teacher found: on a returning device (one that
+// already has a name/history saved), setView('student') used to run LAST,
+// after renderTeacher()/renderStudent() had already rendered once for
+// nothing. If anything in that unrelated teacher-side rendering ever
+// threw, the page was left stuck on the Teacher tab even though the URL
+// was a share link. setView() itself flips the visible Teacher/Student
+// toggle classes before it renders anything, so running it first means
+// the correct tab is showing no matter what happens afterward.
 const sharedParams = new URLSearchParams(location.search);
 const openedFromSharedLink = sharedParams.get('s') === '1' || !!sharedParams.get('ex');
+if(openedFromSharedLink) setView('student');
 renderTypeTabs();
 renderIndividualControls();
 renderTeacher();
 renderStudent();
 renderWhoAmI();
-if(openedFromSharedLink) setView('student');
 loadSharedClassroomContent().then(()=>{
   renderStudent();
   if(!openedFromSharedLink && !localStorage.getItem('cse_guide_seen_teacher')) showGuide('teacher');
