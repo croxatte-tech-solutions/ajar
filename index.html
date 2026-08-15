@@ -3810,14 +3810,40 @@ function speakWithTTS(text, onEnd){
 function supportsSTT(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
 function listenOnce(onResult, onError){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ onError('Speech-to-text is not supported in this browser — please type your answer instead.'); return; }
+  if(!SR){ onError('This browser cannot record speech. On iPhone, Safari needs Dictation switched on in Settings → General → Keyboard. You can still practise — the sentence plays normally.'); return; }
+  let settled = false;
   try{
     const rec = new SR();
     rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
-    rec.onresult = e => onResult(e.results[0][0].transcript);
-    rec.onerror = e => onError('Microphone unavailable in this preview (' + e.error + '). Please type your answer instead.');
+    rec.onresult = e => { settled = true; onResult(e.results[0][0].transcript); };
+    rec.onerror = e => {
+      if(settled) return;
+      settled = true;
+      // Report what actually went wrong. The generic message this used to
+      // show ("unavailable in this preview") was misleading in class: the
+      // usual causes are a denied microphone permission or simply silence.
+      const msg = e.error === 'not-allowed' || e.error === 'service-not-allowed'
+        ? 'Microphone permission was refused. Allow the microphone for this site, then tap "Restart recording".'
+        : e.error === 'no-speech'
+        ? "I didn't hear anything. Speak a little louder, closer to the phone, then tap \"Restart recording\"."
+        : e.error === 'audio-capture'
+        ? 'No microphone was found on this device.'
+        : e.error === 'network'
+        ? 'Speech recognition needs an internet connection and could not reach it just now.'
+        : 'Recording could not start (' + e.error + '). Tap "Restart recording" to try again.';
+      onError(msg);
+    };
+    // Without this, recognition that ends WITHOUT producing a result --
+    // the student was too quiet, or stopped early -- left the screen
+    // sitting silently with the timer running out and no explanation,
+    // which reads as "the record button does nothing".
+    rec.onend = () => {
+      if(settled) return;
+      settled = true;
+      onError("I didn't catch that. Tap \"Restart recording\" and repeat the sentence out loud.");
+    };
     rec.start();
-  }catch(err){ onError('Could not start the microphone here. Please type your answer instead.'); }
+  }catch(err){ if(!settled){ settled = true; onError('Could not start the microphone. Tap "Restart recording" to try again.'); } }
 }
 
 /* =========================================================
@@ -5250,24 +5276,28 @@ function renderListenRepeatStep(item){
         ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
         : `<p class="small-note">⏳ This round: ${escapeHtml(turnList.join(', '))}. Not your name? Follow along quietly — your teacher will call on you soon.</p>`)
     : '';
-  const listenControls = !myTurn ? '' : (classroom
-    ? `<button class="btn ok" onclick="lrHeardItLive()">✅ I heard it — start recording</button>
-       <button class="btn ghost sm" onclick="lrPlay('${s.text.replace(/'/g,"\\'")}')">🔈 Missed it? Play on my phone</button>`
-    : `<button class="btn sound" id="lr-play" onclick="lrPlay('${s.text.replace(/'/g,"\\'")}')">🔊 Listen ${st.played ? '(played)' : '(once)'}</button>
-       ${st.played ? `<button class="btn ghost sm" onclick="lrPlay('${s.text.replace(/'/g,"\\'")}')">↻ Replay (practice only — the real test plays it once)</button>` : ''}`);
+  // One play button for everyone — student on their own phone, or the
+  // teacher on the classroom screen. The old version had a separate
+  // "teacher plays it once for the whole room, tap when you hear it"
+  // flow, which existed because browser text-to-speech sounded different
+  // on every device and 13 phones firing at once was a mess. Now that
+  // every device plays the same pre-rendered clip, that whole special
+  // case is unnecessary: whoever wants to play it, presses play.
+  const esc = s.text.replace(/'/g,"\\'");
+  const listenControls = !myTurn ? '' : `
+    <button class="btn sound" id="lr-play" onclick="lrPlay('${esc}')">🔊 Play${st.played ? ' again' : ''}</button>
+    ${st.played ? `<button class="btn ghost sm" onclick="lrRecord('${esc}', ${s.seconds})" ${supportsSTT()?'':'disabled'}>🎙️ Restart recording</button>` : ''}`;
   wrap.innerHTML = `
     <div class="compose">
       <div class="wordcount">Sentence ${s.index} of 7 &middot; recording window: ${s.seconds}s (official ${RECORD_SECONDS_OFFICIAL[s.index-1]}s + ${PRACTICE_BUFFER_SECONDS}s buffer for natural speaking pace)</div>
       ${turnBanner}
-      ${(classroom && myTurn) ? '<p class="small-note">🔊 Your teacher plays this once for the whole class through the room speakers — listen for it, then tap "I heard it."</p>' : ''}
       <div class="scene-thumb" style="max-width:280px">${getScene(s.scene)}</div>
       <div class="ex-actions" style="margin-top:.7rem">
         ${listenControls}
-        ${(myTurn && st.played) ? `<button class="btn ${supportsSTT()?'ghost':'ghost'} sm" onclick="lrRecord('${s.text.replace(/'/g,"\\'")}', ${s.seconds})" ${supportsSTT()?'':'disabled'}>🎙️ Restart recording</button>` : ''}
       </div>
       ${!myTurn ? '' : (supportsSTT()
-        ? (st.played ? '<p class="small-note">Recording starts automatically the instant the sentence finishes — no prep time, matching the real test. Didn\'t catch it in time? Use "Restart recording" above.</p>' : `<p class="small-note">${classroom ? 'Tap "I heard it" the moment your teacher plays the sentence' : 'Tap Listen'} — recording starts automatically as soon as it finishes, with no extra click.</p>`)
-        : '<p class="small-note">Voice input isn\'t available in this browser/preview — use "Mark as practiced" to move on.</p>')}
+        ? '<p class="small-note">Press play, then repeat the sentence out loud — recording starts by itself the moment the sentence ends, with no extra tap, exactly like the real test.</p>'
+        : '<p class="small-note">This browser cannot record your voice, so your repetition will not be scored — you can still play each sentence and practise out loud, then use "Mark as practiced" to move on.</p>')}
       <div id="lr-timer" class="wordcount"></div>
       <div id="lr-result"></div>
       <div class="ex-actions" style="margin-top:.8rem">
@@ -5275,19 +5305,9 @@ function renderListenRepeatStep(item){
       </div>
     </div>`;
 }
-// Both "heard it live" and "play on my phone" now auto-start the response
-// countdown the instant the sentence is done (no manual second click) —
-// matches the real test's zero-prep-time design, and because the trigger
-// is the actual audio ending (not a server signal), everyone in the room
-// starts and finishes within a second or two of each other for free.
-function lrHeardItLive(){
-  const st = window._lrState;
-  const item = currentItem();
-  const s = item.data.set[st.step];
-  st.played = true;
-  renderListenRepeatStep(item);
-  lrRecord(s.text, s.seconds);
-}
+// Playing the sentence auto-starts the response countdown the instant the
+// audio ends — no second click — which matches the real test's
+// zero-prep-time design.
 function lrPlay(text){
   const st = window._lrState;
   const item = currentItem();

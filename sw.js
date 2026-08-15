@@ -3,7 +3,12 @@
 // break CDN version pinning, and they already fail gracefully offline.
 // ponytail: app-shell-only cache, no runtime asset versioning strategy —
 // bump CACHE_NAME by hand when index.html changes meaningfully.
-const CACHE_NAME = 'rle-shell-v2';
+const CACHE_NAME = 'rle-shell-v3';
+// Audio lives in its own cache that is NOT wiped when the shell version
+// changes. Clips are content-addressed, so a shipped app update never
+// invalidates them -- a student should not lose audio they already have
+// just because index.html was fixed.
+const AUDIO_CACHE = 'rle-audio-v1';
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
@@ -22,8 +27,11 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil(
+    // Drop superseded SHELL caches only. The audio cache must survive an
+    // app update, or every student would silently re-download all their
+    // clips the first time they opened the app after any code change.
     caches.keys().then(names =>
-      Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)))
+      Promise.all(names.filter(n => n !== CACHE_NAME && n !== AUDIO_CACHE).map(n => caches.delete(n)))
     )
   );
   self.clients.claim();
@@ -36,12 +44,32 @@ self.addEventListener('fetch', event => {
   // to the network, untouched.
   if (url.origin !== self.location.origin) return;
 
+  // Pre-rendered audio clips are CACHE-FIRST. Their filenames are a hash
+  // of the sentence they contain, so a given file's contents can never
+  // change -- once a student has a clip there is no reason to ever fetch
+  // it again. Serving these network-first (as everything else is) would
+  // re-download the audio on every single play and burn the student's
+  // mobile data for nothing.
+  if (url.pathname.includes('/audio/')) {
+    event.respondWith(
+      caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(AUDIO_CACHE).then(cache => cache.put(event.request, copy));
+        }
+        return response;
+      }))
+    );
+    return;
+  }
+
   event.respondWith(
-    // Same reasoning as the install-time fetch above: never let GitHub
-    // Pages' 10-minute HTTP cache decide what "latest" means. Offline
-    // support is untouched -- the .catch() below still falls back to this
-    // service worker's OWN cache (a separate mechanism from HTTP cache),
-    // so a real network outage still serves the last-cached shell.
+    // The app shell stays network-first with no-store: never let GitHub
+    // Pages' 10-minute HTTP cache decide what "latest" means, so a fix
+    // reaches students immediately. Offline support is untouched -- the
+    // .catch() below still falls back to this service worker's OWN cache
+    // (a separate mechanism from the HTTP cache), so a real network
+    // outage still serves the last-cached shell.
     fetch(event.request, { cache: 'no-store' })
       .then(response => {
         const copy = response.clone();
