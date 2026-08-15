@@ -111,6 +111,9 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .cw-answer-reveal{ flex-basis:100%; margin-left:1.7em; font-size:.78rem; font-weight:700; color:var(--red); }
 .interview-scenario{ background:var(--accent-soft); border-radius:10px; padding:.7rem .85rem; margin-bottom:.7rem; font-size:.84rem; line-height:1.5; }
 .interview-scenario-label{ display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:.25rem; }
+.interview-figure{ width:100%; max-width:260px; margin:.2rem 0 .8rem; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.interview-reveal{ background:var(--surface-alt); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:.75rem .9rem; margin-top:.7rem; font-size:.88rem; line-height:1.55; }
+.interview-reveal-label{ display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:.3rem; }
 .ex-actions{ display:flex; gap:.5rem; margin-top:.8rem; flex-wrap:wrap; }
 .ex-card.discarded .ex-body{ opacity:.45; }
 .chip-row{ display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.5rem; }
@@ -3391,6 +3394,57 @@ function getScene(name){
   return `<svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${name} scene"><rect width="200" height="140" fill="${bg}"/>${shapes[name]||''}</svg>`;
 }
 
+/* Take an Interview illustrations — one per theme.
+   The real test pairs its spoken tasks with a visual of the setting (ETS
+   describes this explicitly for Listen and Repeat: "Each series of
+   sentences is associated with a visual representation of the setting").
+   Here the picture does a specific job: it primes the topic's vocabulary
+   and context BEFORE the audio plays, so the student spends their one or
+   two listens decoding the actual question instead of working out what
+   the subject even is. Same flat hand-authored SVG approach as the
+   scenes above — no external image service, works offline. */
+const INTERVIEW_SCENE_COLORS = {
+  campus:'#e1f5ee', register:'#ece5f5', current:'#e6eef5', grammar:'#f6ecd8',
+  social:'#e6efe6', career:'#eae7f2', health:'#f5e6e1', environment:'#e3f2e3',
+  daily:'#f2eee4', money:'#eef3e6', housing:'#f5ece1', travel:'#e4eff5',
+  media:'#f0e6f0', innovation:'#e6f0f2',
+};
+function interviewScene(theme){
+  const bg = INTERVIEW_SCENE_COLORS[theme] || '#eef1f4';
+  const art = {
+    // building + student
+    campus: '<rect x="24" y="46" width="72" height="66" fill="#fff" stroke="#3c6e4a" stroke-width="2"/><rect x="36" y="58" width="16" height="16" fill="#cfe6dc"/><rect x="60" y="58" width="16" height="16" fill="#cfe6dc"/><rect x="36" y="84" width="16" height="16" fill="#cfe6dc"/><rect x="60" y="84" width="16" height="28" fill="#3c6e4a"/><polygon points="60,26 24,46 96,46" fill="#3c6e4a"/><circle cx="140" cy="62" r="14" fill="#0f6e56"/><rect x="126" y="80" width="28" height="32" rx="4" fill="#0f6e56"/>',
+    // two speech bubbles
+    register: '<rect x="22" y="34" width="86" height="46" rx="10" fill="#fff" stroke="#6b4fa0" stroke-width="2"/><polygon points="40,80 40,96 56,80" fill="#fff" stroke="#6b4fa0" stroke-width="2"/><rect x="34" y="48" width="52" height="5" rx="2" fill="#cdbde6"/><rect x="34" y="60" width="38" height="5" rx="2" fill="#cdbde6"/><rect x="96" y="66" width="82" height="44" rx="10" fill="#6b4fa0"/><polygon points="160,110 160,124 144,110" fill="#6b4fa0"/><rect x="108" y="80" width="48" height="5" rx="2" fill="#fff" opacity=".85"/><rect x="108" y="92" width="32" height="5" rx="2" fill="#fff" opacity=".85"/>',
+    // phone + wifi
+    current: '<rect x="62" y="26" width="60" height="98" rx="10" fill="#fff" stroke="#2f5d8a" stroke-width="2"/><rect x="70" y="40" width="44" height="66" fill="#dbe8f3"/><circle cx="92" cy="115" r="5" fill="#2f5d8a"/><path d="M150 52a26 26 0 0 1 0 36" stroke="#2f5d8a" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M140 62a13 13 0 0 1 0 16" stroke="#2f5d8a" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="132" cy="70" r="4" fill="#2f5d8a"/>',
+    // open book + pencil
+    grammar: '<path d="M28 46h64v66H28z" fill="#fff" stroke="#8a5c0f" stroke-width="2"/><path d="M92 46h64v66H92z" fill="#fff" stroke="#8a5c0f" stroke-width="2"/><rect x="88" y="42" width="8" height="74" rx="2" fill="#8a5c0f"/><rect x="38" y="60" width="42" height="4" rx="2" fill="#e0cba5"/><rect x="38" y="72" width="42" height="4" rx="2" fill="#e0cba5"/><rect x="104" y="60" width="42" height="4" rx="2" fill="#e0cba5"/><rect x="104" y="72" width="30" height="4" rx="2" fill="#e0cba5"/><rect x="160" y="34" width="9" height="58" rx="2" fill="#b5720f" transform="rotate(16 164 63)"/><polygon points="176,96 170,78 182,82" fill="#5b4a2a"/>',
+    // globe + people
+    social: '<circle cx="76" cy="70" r="40" fill="#fff" stroke="#3c6e4a" stroke-width="2"/><path d="M36 70h80M76 30c16 16 16 64 0 80M76 30c-16 16-16 64 0 80" stroke="#3c6e4a" stroke-width="2" fill="none"/><circle cx="140" cy="52" r="11" fill="#0f6e56"/><rect x="129" y="66" width="22" height="26" rx="4" fill="#0f6e56"/><circle cx="166" cy="72" r="9" fill="#7aa88f"/><rect x="157" y="84" width="18" height="22" rx="4" fill="#7aa88f"/>',
+    // briefcase
+    career: '<rect x="40" y="52" width="120" height="66" rx="8" fill="#fff" stroke="#4a3f7a" stroke-width="2"/><path d="M78 52V38h44v14" stroke="#4a3f7a" stroke-width="4" fill="none"/><rect x="40" y="76" width="120" height="8" fill="#4a3f7a"/><rect x="88" y="70" width="24" height="20" rx="3" fill="#4a3f7a"/>',
+    // heart + leaf
+    health: '<path d="M92 112S44 84 44 60a24 24 0 0 1 48-8 24 24 0 0 1 48 8c0 24-48 52-48 52z" fill="#c96a58"/><path d="M150 34c14 10 16 34 2 44-10 7-22 2-24-10-2-14 10-28 22-34z" fill="#3c6e4a"/>',
+    // tree
+    environment: '<rect x="88" y="82" width="12" height="34" fill="#8a5c0f"/><circle cx="94" cy="62" r="30" fill="#3c6e4a"/><circle cx="66" cy="76" r="20" fill="#4e8a5e"/><circle cx="122" cy="76" r="20" fill="#4e8a5e"/><rect x="30" y="114" width="140" height="6" rx="3" fill="#c3d6bf"/>',
+    // clock + checklist
+    daily: '<circle cx="70" cy="70" r="38" fill="#fff" stroke="#8a7a5c" stroke-width="2"/><path d="M70 46v26l18 10" stroke="#8a7a5c" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="122" y="38" width="52" height="66" rx="6" fill="#fff" stroke="#8a7a5c" stroke-width="2"/><path d="M130 56l6 6 10-12M130 76l6 6 10-12M130 96l6 6 10-12" stroke="#3c6e4a" stroke-width="3" fill="none" stroke-linecap="round"/>',
+    // coins + wallet
+    money: '<rect x="26" y="58" width="86" height="56" rx="8" fill="#fff" stroke="#4e7a3a" stroke-width="2"/><rect x="26" y="76" width="86" height="10" fill="#4e7a3a" opacity=".25"/><circle cx="94" cy="86" r="8" fill="#4e7a3a"/><ellipse cx="146" cy="52" rx="26" ry="9" fill="#c9a227"/><ellipse cx="146" cy="66" rx="26" ry="9" fill="#dcb63a"/><ellipse cx="146" cy="80" rx="26" ry="9" fill="#c9a227"/>',
+    // house + key
+    housing: '<polygon points="80,28 26,72 134,72" fill="#9c3b2e"/><rect x="40" y="72" width="80" height="44" fill="#fff" stroke="#9c3b2e" stroke-width="2"/><rect x="54" y="86" width="20" height="20" fill="#f0d6cf"/><rect x="88" y="86" width="18" height="30" fill="#9c3b2e"/><circle cx="160" cy="60" r="13" fill="none" stroke="#8a7a5c" stroke-width="5"/><rect x="157" y="70" width="6" height="34" fill="#8a7a5c"/><rect x="163" y="88" width="10" height="5" fill="#8a7a5c"/>',
+    // suitcase + plane
+    travel: '<rect x="30" y="62" width="86" height="56" rx="8" fill="#fff" stroke="#2f5d8a" stroke-width="2"/><path d="M60 62V48h26v14" stroke="#2f5d8a" stroke-width="4" fill="none"/><rect x="30" y="82" width="86" height="7" fill="#2f5d8a" opacity=".3"/><path d="M126 56l46 14-46 14 8-14z" fill="#2f5d8a"/><path d="M118 88q28-8 54-18" stroke="#9dbdd8" stroke-width="3" fill="none" stroke-dasharray="5 5"/>',
+    // screen + play
+    media: '<rect x="34" y="34" width="132" height="76" rx="8" fill="#fff" stroke="#6b4fa0" stroke-width="2"/><polygon points="88,58 88,88 116,73" fill="#6b4fa0"/><rect x="80" y="114" width="40" height="6" rx="3" fill="#6b4fa0"/>',
+    // lightbulb + circuit
+    innovation: '<circle cx="86" cy="62" r="30" fill="#f5e08a" stroke="#8a7a2c" stroke-width="2"/><rect x="74" y="92" width="24" height="8" fill="#8a7a2c"/><rect x="78" y="102" width="16" height="7" fill="#8a7a2c"/><path d="M86 46v26" stroke="#8a7a2c" stroke-width="3"/><circle cx="150" cy="44" r="6" fill="#2f7d7d"/><circle cx="170" cy="76" r="6" fill="#2f7d7d"/><circle cx="146" cy="102" r="6" fill="#2f7d7d"/><path d="M150 50v20h20M150 70h-4v26" stroke="#2f7d7d" stroke-width="3" fill="none"/>',
+  };
+  const label = (THEME_LABELS[theme] || theme) + ' — interview topic illustration';
+  return `<svg viewBox="0 0 200 140" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}"><rect width="200" height="140" fill="${bg}"/>${art[theme]||art.campus}</svg>`;
+}
+
 /* =========================================================
    SPEECH — native browser APIs, free, no server round-trip.
    TTS is reliable across modern browsers. STT (mic) support
@@ -4294,6 +4348,7 @@ const AUTO_ADVANCE_DELAY_MS = 2500;
 function clearPracticeTimer(){
   if(window._practiceTimer){ clearInterval(window._practiceTimer); window._practiceTimer = null; }
   if(window._autoAdvanceTimer){ clearTimeout(window._autoAdvanceTimer); window._autoAdvanceTimer = null; }
+  window._timerState = null;
 }
 function timerBadgeHtml(type){
   const total = TASK_TIME_LIMITS[type];
@@ -4305,31 +4360,49 @@ function timerBadgeHtml(type){
 // Take an Interview instead needs to move to its next internal question
 // and only leave the item once all 4 are done.
 function startTaskTimer(type, onExpire){
-  onExpire = onExpire || goToNextExercise;
   clearPracticeTimer();
-  let left = TASK_TIME_LIMITS[type];
-  const badge = document.getElementById('task-timer');
-  const render = () => {
-    const el = document.getElementById('task-timer');
-    if(!el) return;
-    el.textContent = '⏱ ' + formatTime(left);
-    el.classList.toggle('warn', left <= Math.max(10, Math.floor(TASK_TIME_LIMITS[type]*0.15)));
-  };
-  render();
+  // Timer state lives on window (not in a closure) so the countdown can be
+  // paused and resumed mid-task. Take an Interview needs this: replaying
+  // the question must not eat the student's 45 seconds of answer time, or
+  // nobody would ever use the replay even when they genuinely need it.
+  window._timerState = { type, left: TASK_TIME_LIMITS[type], onExpire: onExpire || goToNextExercise };
+  renderTaskTimer();
+  runTaskTimer();
+}
+function renderTaskTimer(){
+  const st = window._timerState;
+  const el = document.getElementById('task-timer');
+  if(!st || !el) return;
+  el.textContent = '⏱ ' + formatTime(st.left);
+  el.classList.toggle('warn', st.left <= Math.max(10, Math.floor(TASK_TIME_LIMITS[st.type]*0.15)));
+}
+function runTaskTimer(){
+  if(window._practiceTimer || !window._timerState) return;
   window._practiceTimer = setInterval(()=>{
-    left--;
-    if(left <= 0){
+    const st = window._timerState;
+    if(!st){ clearInterval(window._practiceTimer); window._practiceTimer = null; return; }
+    st.left--;
+    if(st.left <= 0){
       clearInterval(window._practiceTimer);
       window._practiceTimer = null;
       const el = document.getElementById('task-timer');
       if(el){ el.textContent = "⏰ Time's up"; el.classList.add('warn'); }
       const flag = document.getElementById('time-up-note');
       if(flag) flag.style.display = 'block';
-      window._autoAdvanceTimer = setTimeout(onExpire, AUTO_ADVANCE_DELAY_MS);
+      window._autoAdvanceTimer = setTimeout(st.onExpire, AUTO_ADVANCE_DELAY_MS);
       return;
     }
-    render();
+    renderTaskTimer();
   }, 1000);
+}
+// Pause/resume only stop and restart the ticking interval — the remaining
+// seconds stay in window._timerState, so the clock picks up exactly where
+// it left off.
+function pausePracticeTimer(){
+  if(window._practiceTimer){ clearInterval(window._practiceTimer); window._practiceTimer = null; }
+}
+function resumePracticeTimer(){
+  if(window._timerState && window._timerState.left > 0) runTaskTimer();
 }
 // Moves the student to the next item in today's batch (or draws a fresh
 // self-practice item, in that mode) once a task's timer runs out. Stays
@@ -4358,6 +4431,13 @@ function advanceInterviewQuestion(){
   if(!st){ goToNextExercise(); return; }
   if(st.step < 3){
     st.step++;
+    // Each question is heard fresh: reset the listen budget and drop back
+    // to the "nothing heard yet" phase so the next one also stays hidden
+    // until the student chooses to play it.
+    st.listens = 0;
+    st.phase = 'intro';
+    st.assisted = false;
+    st.draft = '';
     renderPractice();
   } else {
     goToNextExercise();
@@ -4426,15 +4506,35 @@ function renderPractice(){
 
   if(item.type==='interview'){
     if(!window._interviewState || window._interviewState.itemId !== item.id){
-      window._interviewState = { itemId:item.id, step:0 };
+      window._interviewState = { itemId:item.id, step:0, listens:0, phase:'intro' };
     }
     renderInterviewStep(item);
     return;
   }
 }
 // Real TOEFL 2026 "Take an Interview": 4 questions on one topic, asked
-// back-to-back, 45s each, no prep time. window._interviewState.step
-// tracks which of the 4 is currently showing.
+// back-to-back, 45s each, no prep time. Two things about the real task
+// drive this whole screen, and neither was modelled before:
+//
+//   1. The question is HEARD, never read. Showing the text while the
+//      student answers turns a listening task into a reading task, so
+//      the text stays hidden until the attempt is over.
+//   2. The 45s clock starts when the QUESTION AUDIO ENDS. Our questions
+//      are now several sentences long, so starting the clock at the same
+//      moment as the audio (what the old code did) silently ate a third
+//      of the student's answer time.
+//
+// Deliberate difference from the real test: the real test plays each
+// question exactly once. Here a student gets up to two listens, because
+// this is practice, not assessment — and the replay PAUSES the clock, so
+// needing a second listen never costs answer time. If it did, students
+// would avoid the replay precisely when they need it most.
+//
+// _interviewState.phase: 'intro' (nothing heard yet) -> 'answering'
+// (clock running, question still hidden) -> 'review' (question revealed
+// next to their answer, which is where the real learning happens: seeing
+// whether you actually understood what was asked).
+const INTERVIEW_MAX_LISTENS = 2;
 function renderInterviewStep(item){
   const wrap = document.getElementById('practice-wrap');
   const st = window._interviewState;
@@ -4448,33 +4548,103 @@ function renderInterviewStep(item){
         ? '<p class="small-note" style="color:var(--accent);font-weight:700">🎤 It\'s your turn — go ahead!</p>'
         : `<p class="small-note">⏳ This round: ${escapeHtml(turnList.join(', '))}. Not your name? No mic needed — just type your answer below.</p>`)
     : '';
+  const head = `
+    <div class="wordcount">Question ${st.step+1} of 4 &middot; ${item.data.topic}</div>
+    <div class="interview-figure">${interviewScene(item.theme)}</div>`;
+
+  if(st.phase === 'intro'){
+    wrap.innerHTML = `
+      <div class="compose">
+        ${head}
+        ${item.data.scenario ? `<div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>${escapeHtml(item.data.scenario)}</div>` : ''}
+        <p class="small-note">Just like the real test, you will only <b>hear</b> this question — you won't see it written while you answer. Here you get up to ${INTERVIEW_MAX_LISTENS} listens instead of 1, and replaying pauses the clock. Your 45 seconds start the moment the question finishes.</p>
+        ${turnBanner}
+        <div class="ex-actions" style="margin-top:.8rem">
+          <button class="btn sound" onclick="playInterviewQuestion()">▶ Listen to the question (1 of ${INTERVIEW_MAX_LISTENS})</button>
+        </div>
+      </div>`;
+    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    return;
+  }
+
+  const listensLeft = INTERVIEW_MAX_LISTENS - st.listens;
   wrap.innerHTML = `
     <div class="compose">
-      <div class="wordcount">Question ${st.step+1} of 4 &middot; ${item.data.topic}</div>
-      ${item.data.scenario ? `<div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>${escapeHtml(item.data.scenario)}</div>` : ''}
-      <div id="interview-pretimer" class="small-note" style="margin-bottom:.6rem">⏱ No prep time on the real test — the 45s answer clock starts the moment you hear the question. Aim for about 150 words in 4–6 sentences.</div>
-      ${turnBanner}
+      ${head}
+      ${timerBadgeHtml('interview')}
       <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test the recording would stop now. Moving to the next question…</div>
-      <div class="ex-body">${q.text}</div>
+      ${turnBanner}
+      <div id="interview-question-reveal"></div>
       <div class="ex-actions" style="margin-top:.7rem">
-        <button class="btn sound" onclick="hearInterviewQuestion('${q.text.replace(/'/g,"\\'")}')">🔊 Hear the question</button>
+        ${listensLeft > 0 ? `<button class="btn sound" onclick="playInterviewQuestion()">🔊 Listen again (last time — pauses the clock)</button>` : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
         ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
       </div>
       ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
-      <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null"></textarea>
+      <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null; window._interviewState.draft = this.value">${escapeHtml(st.draft || '')}</textarea>
       <div class="ex-actions" style="margin-top:.6rem">
         <button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button>
+        <button class="btn ghost sm" onclick="revealInterviewQuestion(true)">I didn't catch it — show the question</button>
         <button class="btn ghost sm" onclick="advanceInterviewQuestion()">${st.step<3 ? 'Next question →' : 'Finish this interview →'}</button>
       </div>
       <div id="interview-feedback"></div>
     </div>`;
   wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  if(st.phase === 'review') revealInterviewQuestion(false);
 }
-function hearInterviewQuestion(text){
-  speak(text);
-  const pre = document.getElementById('interview-pretimer');
-  if(pre) pre.outerHTML = timerBadgeHtml('interview');
-  startTaskTimer('interview', advanceInterviewQuestion);
+// Plays the current question. The clock only starts (or resumes) when the
+// audio actually finishes — speak() fires onEnd for us. Browsers without
+// speech synthesis fall back to starting the clock immediately, and the
+// student can still use the "show the question" escape hatch.
+function playInterviewQuestion(){
+  const st = window._interviewState;
+  const item = currentItem();
+  if(!st || !item) return;
+  const q = item.data.questions[st.step];
+  const firstListen = st.listens === 0;
+  st.listens++;
+  if(firstListen){
+    st.phase = 'answering';
+    renderInterviewStep(item);
+  } else {
+    pausePracticeTimer();
+    const el = document.getElementById('task-timer');
+    if(el) el.textContent = '⏸ Replaying…';
+  }
+  const begin = () => {
+    if(firstListen){
+      startTaskTimer('interview', () => { revealInterviewQuestion(false); advanceInterviewQuestion(); });
+    } else {
+      // Re-render so the now-used-up replay button is replaced by the
+      // "both listens used" note. Safe to re-render mid-answer because
+      // the typed draft is kept in _interviewState.draft; the countdown
+      // itself lives in _timerState, so it survives untouched and just
+      // needs repainting at its real remaining value.
+      renderInterviewStep(item);
+      renderTaskTimer();
+      resumePracticeTimer();
+    }
+  };
+  speak(q.text, begin);
+  if(!('speechSynthesis' in window)) begin();
+}
+// Shows the question text. Called when the attempt is over (timer expired
+// or answer checked) or when the student explicitly gives up on hearing
+// it. `assisted` marks the give-up path so the note is honest about it.
+function revealInterviewQuestion(assisted){
+  const st = window._interviewState;
+  const item = currentItem();
+  const box = document.getElementById('interview-question-reveal');
+  if(!st || !item || !box) return;
+  st.phase = 'review';
+  if(assisted) st.assisted = true;
+  const q = item.data.questions[st.step];
+  const usedNote = `You used ${st.listens} of ${INTERVIEW_MAX_LISTENS} listen${st.listens===1?'':'s'}.`;
+  box.innerHTML = `
+    <div class="interview-reveal">
+      <span class="interview-reveal-label">📝 What the interviewer asked${st.assisted ? ' (you asked to see it)' : ''}</span>
+      ${escapeHtml(q.text)}
+      <p class="small-note" style="margin-top:.5rem">${usedNote} Compare this with what you answered — misunderstanding the question is the most common way to lose points on this task, and you can only catch it by checking.</p>
+    </div>`;
 }
 
 // -- Build a Sentence interaction --
@@ -4689,6 +4859,11 @@ function checkInterviewAnswer(){
   const text = (document.getElementById('interview-answer').value || '').trim();
   const box = document.getElementById('interview-feedback');
   if(!text){ box.innerHTML = '<p class="small-note">Answer the question first — by voice or typed — then check.</p>'; return; }
+  // The attempt is committed once they check it, so the question text can
+  // safely come out now — this is the moment the student finds out whether
+  // they understood what was actually asked.
+  clearPracticeTimer();
+  revealInterviewQuestion(false);
   const words = text.split(/\s+/).filter(Boolean);
   const wordCount = words.length;
   const sentenceCount = Math.max(1, (text.match(/[.!?]+/g) || []).length);
