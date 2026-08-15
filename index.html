@@ -2705,6 +2705,8 @@ function genEmail(theme){
   return { prompt: pick(bank) };
 }
 
+</script>
+<script>
 // ---- Write for an Academic Discussion ----
 const DISCUSSION_BANK = {
   campus: [
@@ -2974,6 +2976,8 @@ const PRACTICE_BUFFER_SECONDS = 3;
 const RECORD_SECONDS = RECORD_SECONDS_OFFICIAL.map(s => s + PRACTICE_BUFFER_SECONDS);
 // Every set is calibrated to the real TOEFL 2026 syllable curve (verified
 // programmatically): sentences 1-2 = 9-11 syllables, 3-5 = 14-16, 6-7 = 19-23.
+</script>
+<script>
 const LISTEN_SETS = {
   campus: [
     {text:'The library closes early on Fridays.', scene:'library'},
@@ -3318,6 +3322,8 @@ function genInterview(theme){
   return { topic: set.topic, questions: set.questions };
 }
 
+</script>
+<script>
 /* =========================================================
    SCENES — original SVG illustrations (free, no external
    image service; CSP-safe). Swappable later for a locally
@@ -3774,6 +3780,8 @@ function generateBatch(){
   renderTeacher();
 }
 
+</script>
+<script>
 /* =========================================================
    PROGRESS TRACKER — a calendar, not a script. Shows where the class
    is (week + weekday) and the AREA OF STUDY for that week — never a
@@ -4203,6 +4211,8 @@ function practiceAgain(){
 
 const PRACTICE_AGAIN_BTN = `<div class="ex-actions" style="margin-top:.6rem"><button class="btn ghost sm" onclick="practiceAgain()">🔄 Try another one like this</button></div>`;
 
+</script>
+<script>
 /* =========================================================
    COUNTDOWN TIMERS — matches real TOEFL 2026 per-task timing
    so practice trains the actual pace, not just the content.
@@ -4647,6 +4657,8 @@ function checkWriting(){
 const TEACHER_NAME = "Teacher";
 function getStudentName(){ return localStorage.getItem('cse_student_name') || ''; }
 
+</script>
+<script>
 /* =========================================================
    USAGE LOG — "does the app learn from use and flag what
    needs to change?" Honest scope: each device (student's
@@ -4731,6 +4743,18 @@ async function hydrateFromCloud(name){
 window.__onCloudSyncReady = function(){
   const existing = getStudentName();
   if(existing) hydrateFromCloud(existing).then(()=>{ if(currentView==='student') renderStudent(); });
+  // Module scripts load AFTER classic scripts (deferred by spec), so on a
+  // brand new device with no cached Firebase session, the very first
+  // loadSharedClassroomContent() call in the init tail can run BEFORE
+  // window.CloudSync even exists yet — that call silently no-ops (no
+  // CloudSync = nothing to pull) and, since it only ever ran once, a
+  // shared "?ex=" or "?s=1" link would come up permanently empty even
+  // though the content was there in Firestore the whole time. Retry now
+  // that CloudSync is actually ready, but only if nothing loaded yet, so
+  // this never clobbers content that already loaded successfully.
+  if(!loadBatch().length){
+    loadSharedClassroomContent().then(()=>{ renderStudent(); });
+  }
 };
 // Generic, per-skill tips (not per-theme — the theme is just the content,
 // the tip is about the task itself) shown next to a flagged weak spot.
