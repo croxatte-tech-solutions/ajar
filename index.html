@@ -112,6 +112,13 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .interview-scenario{ background:var(--accent-soft); border-radius:10px; padding:.7rem .85rem; margin-bottom:.7rem; font-size:.84rem; line-height:1.5; }
 .interview-scenario-label{ display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:.25rem; }
 .interview-figure{ width:100%; max-width:260px; margin:.2rem 0 .8rem; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+.lr-diff{ font-size:.95rem; line-height:2; margin:.5rem 0; }
+.lr-diff span{ padding:.1rem .3rem; border-radius:5px; }
+.lr-ok{ color:var(--green); font-weight:600; }
+.lr-marker{ color:var(--amber); background:var(--amber-soft); font-weight:700; border-bottom:2px dotted var(--amber); }
+.lr-sub{ color:var(--red); background:var(--red-soft); font-weight:700; text-decoration:line-through; }
+.lr-missing{ color:var(--red); background:var(--red-soft); font-weight:700; opacity:.85; }
+.lr-extra{ color:var(--text-dim); background:var(--surface-alt); font-style:italic; }
 .interview-reveal{ background:var(--surface-alt); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:10px; padding:.75rem .9rem; margin-top:.7rem; font-size:.88rem; line-height:1.55; }
 .interview-reveal-label{ display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:.3rem; }
 .ex-actions{ display:flex; gap:.5rem; margin-top:.8rem; flex-wrap:wrap; }
@@ -4734,13 +4741,144 @@ function checkCompleteWords(){
 // a free, offline, text-based prototype can approximate — the other four
 // need real audio/prosody analysis, which requires a hosted speech model
 // (a good candidate for the local-server upgrade discussed for the pilot).
+// English closed-class words. The real ETS rubric treats these very
+// differently from content words: dropping "the" is a minor slip (still a
+// 4), dropping "wildlife" changes the meaning (a 3 or worse). The old
+// scorer had no idea which was which.
+const FUNCTION_WORDS = new Set(('a an the and or but so because if when while although though than as ' +
+  'in on at to for of with from by about into over under above after before between through during ' +
+  'without within across behind near up down out off again once here there ' +
+  'i you he she it we they me him her us them my your his its our their mine yours theirs ' +
+  'this that these those who whom whose which what where why how ' +
+  'is am are was were be been being do does did done have has had ' +
+  'will would can could shall should may might must not no nor only just also too then now very ' +
+  'some any all each every both few more most other such own same s t').split(' '));
+
+// Apostrophes are dropped, not kept: speech-to-text does not reliably
+// produce them, so "visitor's" comes back as "visitors". Keeping them
+// would score a perfect repetition as an error caused purely by the
+// transcriber, which is the student being punished for our tooling.
+function lrNormWords(s){
+  return (s||'').toLowerCase().replace(/['’]/g,'').replace(/[^a-z0-9\s]/g,' ').split(/\s+/).filter(Boolean);
+}
+// True when two different words differ only by a tense/aspect/number
+// marker ("cat"/"cats", "walk"/"walked"). The rubric explicitly calls
+// these out as a level-4 slip, not a wrong word.
+function lrSameStem(a, b){
+  if(a === b) return false;
+  const stem = w => w.replace(/(ies|es|ed|ing|s|d)$/, '');
+  const sa = stem(a), sb = stem(b);
+  return sa.length >= 3 && sa === sb;
+}
+// Word-level alignment (edit distance + backtrace). This is the core fix:
+// the previous scorer just counted how many target words appeared ANYWHERE
+// in the transcript, so a student could say the right words in a scrambled
+// order and still score full marks. Alignment respects order and tells us
+// exactly which words were kept, missed, swapped or added.
+// Costs are integers (scaled x100) so the backtrace compares exactly, with
+// no floating-point drift. A true match scores -1 rather than 0 — it is a
+// REWARD, which breaks ties in favour of readings that keep genuine
+// matches. Without it, "…feed the animals" vs "…feed animals right now"
+// tied between two equal-cost paths, and the aligner picked "animals is
+// missing plus two wrong words" over the obviously correct "the is
+// missing, animals matched, two extra words" — i.e. it told the student
+// they dropped a word they had actually said.
+const ALIGN_MATCH = -1, ALIGN_MARKER = 50, ALIGN_SUB = 100, ALIGN_GAP = 100;
+function alignCost(a, b){
+  if(a === b) return ALIGN_MATCH;
+  return lrSameStem(a, b) ? ALIGN_MARKER : ALIGN_SUB;
+}
+function alignWords(t, s){
+  const n = t.length, m = s.length;
+  const d = Array.from({length:n+1}, (_,i) => Array.from({length:m+1}, (_,j) => i===0 ? j*ALIGN_GAP : (j===0 ? i*ALIGN_GAP : 0)));
+  for(let i=1;i<=n;i++){
+    for(let j=1;j<=m;j++){
+      d[i][j] = Math.min(d[i-1][j-1] + alignCost(t[i-1], s[j-1]), d[i-1][j] + ALIGN_GAP, d[i][j-1] + ALIGN_GAP);
+    }
+  }
+  const ops = [];
+  let i = n, j = m;
+  while(i > 0 || j > 0){
+    if(i > 0 && j > 0){
+      const c = alignCost(t[i-1], s[j-1]);
+      if(d[i][j] === d[i-1][j-1] + c){
+        ops.push(c === ALIGN_MATCH ? {op:'match', t:t[i-1], s:s[j-1]}
+              : c === ALIGN_MARKER ? {op:'marker', t:t[i-1], s:s[j-1]}
+              : {op:'sub', t:t[i-1], s:s[j-1]});
+        i--; j--; continue;
+      }
+    }
+    if(i > 0 && d[i][j] === d[i-1][j] + ALIGN_GAP){ ops.push({op:'del', t:t[i-1]}); i--; continue; }
+    ops.push({op:'ins', s:s[j-1]}); j--;
+  }
+  return ops.reverse();
+}
+// Scores a repetition against ETS's published Listen and Repeat rubric
+// (speaking-rubrics.pdf). Returns the score plus the alignment, so the
+// student can be shown exactly which words they missed rather than just a
+// number. Deliberately does NOT claim to judge pronunciation — that needs
+// real audio analysis, and the UI says so.
 function repeatAccuracy(target, said){
-  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(Boolean);
-  const t = norm(target), rest = norm(said);
-  if(t.length===0) return 0;
-  let matches = 0;
-  t.forEach(w=>{ const idx=rest.indexOf(w); if(idx>-1){ matches++; rest.splice(idx,1);} });
-  return Math.round((matches/t.length)*5*10)/10;
+  const t = lrNormWords(target), s = lrNormWords(said);
+  if(t.length === 0) return { score:0, ops:[], coverage:0 };
+  if(s.length === 0) return { score:0, ops:t.map(w=>({op:'del', t:w})), coverage:0 };
+
+  const ops = alignWords(t, s);
+  const matched = ops.filter(o => o.op === 'match').length;
+  const coverage = matched / t.length;
+
+  // "two words may be transposed" is an explicit level-4 example: it shows
+  // up in the alignment as two adjacent substitutions that swap places.
+  let transposed = 0;
+  for(let k = 0; k < ops.length - 1; k++){
+    const a = ops[k], b = ops[k+1];
+    if(a.op === 'sub' && b.op === 'sub' && a.t === b.s && b.t === a.s){ transposed++; k++; }
+  }
+  const isFn = w => FUNCTION_WORDS.has(w);
+  let contentErr = 0, funcErr = 0, markerErr = 0;
+  ops.forEach(o => {
+    if(o.op === 'marker'){ markerErr++; return; }
+    if(o.op === 'sub' || o.op === 'del'){
+      if(isFn(o.t)) funcErr++; else contentErr++;
+    }
+  });
+  // Substitutions counted inside a transposed pair are a reordering, not
+  // two wrong words -- don't punish them twice.
+  contentErr = Math.max(0, contentErr - transposed * 2);
+
+  // Did they attempt the whole sentence, or trail off? The rubric separates
+  // "essentially full" (3) from "a large portion is missing" (2).
+  const attemptedFull = s.length >= t.length * 0.6;
+  const extra = ops.filter(o => o.op === 'ins').length;
+
+  // Level 4 is defined by the KIND of error, not by a raw percentage: the
+  // rubric's own examples are "one or two function words", "a content word
+  // replaced with a related word", "markers of tense/number", "two words
+  // transposed". A short sentence can hit 3 such slips and still be a 4,
+  // so gate on the error counts plus a genuine attempt at the whole
+  // sentence, rather than on a coverage threshold that quietly demotes
+  // short sentences.
+  let score;
+  if(ops.every(o => o.op === 'match')) score = 5;
+  else if(attemptedFull && contentErr <= 1 && funcErr <= 2 && transposed <= 1 && extra <= 2) score = 4;
+  else if(attemptedFull && coverage >= 0.6) score = 3;
+  else if(coverage >= 0.3) score = 2;
+  else if(matched > 0) score = 1;
+  else score = 0;
+
+  return { score, ops, coverage, contentErr, funcErr, markerErr, transposed, extra };
+}
+// Word-by-word diff of what the student said against the target. This is
+// the part that actually teaches: a bare number never tells you WHICH word
+// you dropped.
+function repeatDiffHtml(res){
+  return '<div class="lr-diff">' + res.ops.map(o => {
+    if(o.op === 'match')  return `<span class="lr-ok">${escapeHtml(o.t)}</span>`;
+    if(o.op === 'marker') return `<span class="lr-marker" title="Right word, wrong ending — you said &quot;${escapeHtml(o.s)}&quot;">${escapeHtml(o.t)}</span>`;
+    if(o.op === 'sub')    return `<span class="lr-sub" title="You said &quot;${escapeHtml(o.s)}&quot;">${escapeHtml(o.t)}</span>`;
+    if(o.op === 'del')    return `<span class="lr-missing" title="Missing">${escapeHtml(o.t)}</span>`;
+    return `<span class="lr-extra" title="Extra word you added">+${escapeHtml(o.s)}</span>`;
+  }).join(' ') + '</div>';
 }
 
 function renderListenRepeatStep(item){
@@ -4810,9 +4948,20 @@ function lrRecord(target, seconds){
   listenOnce(
     transcript => {
       clearInterval(tick); timerEl.textContent='';
-      const score = repeatAccuracy(target, transcript);
+      const res = repeatAccuracy(target, transcript);
+      const score = res.score;
       window._lrState.results.push({ index: currentItem().data.set[window._lrState.step].index, score, transcript });
-      document.getElementById('lr-result').innerHTML = `<p>You said: <i>"${transcript}"</i></p><div class="result-msg ${score>=3.5?'ok':'no'}">Repeat Accuracy (approx.): ${score} / 5</div>`;
+      const bits = [];
+      if(res.contentErr) bits.push(`${res.contentErr} key word${res.contentErr>1?'s':''} missing or wrong`);
+      if(res.funcErr) bits.push(`${res.funcErr} small word${res.funcErr>1?'s':''} (like "the", "of") off`);
+      if(res.markerErr) bits.push(`${res.markerErr} word ending${res.markerErr>1?'s':''} off (e.g. plural or past tense)`);
+      if(res.transposed) bits.push(`${res.transposed} pair of words swapped`);
+      if(res.extra) bits.push(`${res.extra} extra word${res.extra>1?'s':''} added`);
+      document.getElementById('lr-result').innerHTML = `
+        <p class="small-note" style="margin-bottom:.3rem">You said: <i>"${escapeHtml(transcript)}"</i></p>
+        ${repeatDiffHtml(res)}
+        <div class="result-msg ${score>=4?'ok':'no'}">Repeat Accuracy: ${score} / 5${bits.length ? ' — ' + bits.join(', ') : ' — exact repetition'}</div>
+        <p class="small-note">Scored against the real ETS rubric for word accuracy only. Pronunciation, rhythm and intonation are <b>not</b> measured here — that needs your teacher's ear.</p>`;
     },
     err => { clearInterval(tick); timerEl.textContent=''; document.getElementById('lr-result').innerHTML = `<p class="small-note">${err}</p>`; }
   );
