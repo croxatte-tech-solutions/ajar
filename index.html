@@ -200,7 +200,10 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
         <span>Prototype for a language school &middot; fictional data &middot; not connected to the school's own system</span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:.6rem">
+    <!-- wrap: on a phone these five controls overflow the viewport, which
+         pushed the Teacher/Student switcher off the right edge entirely —
+         a student had no way back to her own view. -->
+    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
       <button class="guide-btn" onclick="showGuide(currentView)">❓ How this works</button>
       <button class="guide-btn" onclick="showInsights()">📈 My patterns</button>
       <button class="guide-btn" onclick="showFeedback()">💬 Feedback</button>
@@ -6344,7 +6347,7 @@ function guideContent(role){
       <div class="rule">🛡️ Our one non-negotiable rule: you always have the final word. Nothing generated here reaches a student, and nothing a student does here becomes a grade, until you approve it. This tool suggests — you decide.</div>
       <h3>How to use it, step by step</h3>
       <ol>
-        <li>Pick one of the 6 real TOEFL task types and a real-life theme.</li>
+        <li>Pick one of the ${TASK_TYPES.length} real TOEFL task types and a real-life theme.</li>
         <li>Click "Generate batch" — you'll get a fresh set of practice items.</li>
         <li>Review each card: <b>Approve</b>, <b>Discard</b>, or leave it pending.</li>
         <li>Only what you approve becomes visible to students, in the Student view.</li>
@@ -6359,9 +6362,12 @@ function guideContent(role){
     <div class="rule">🛡️ Your teacher reviews everything first. You will only ever see exercises your teacher has already approved — nothing appears here without her checking it.</div>
     <h3>Does this affect my grade?</h3>
     <p>No. Practicing here never changes your official grade in the school's own system. Any feedback you see is a draft, meant to help you improve — your teacher decides what actually counts.</p>
-    <h3>The 6 task types, matching the real exam</h3>
+    <!-- Count comes from TASK_TYPES so adding a task type can't leave this
+         text claiming a number that is no longer true. -->
+    <h3>The ${TASK_TYPES.length} task types, matching the real exam</h3>
     <ul>
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
+      <li><b>Listen and Choose a Response</b> — hear a short question, pick the best reply.</li>
       <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
       <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
       <li><b>Academic Discussion</b> — join a class discussion thread, at least 100 words.</li>
