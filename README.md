@@ -57,7 +57,7 @@ Early pilot. No official grades or scores are ever recorded here — this is a p
 
 Static HTML/CSS/JS, no build step, no framework — one `index.html`. Data sync is Firebase (Firestore + anonymous auth), configured for a free-tier pilot at classroom scale. Deployed via GitHub Pages.
 
-Some identifiers deliberately keep the pre-rebrand string because they are infrastructure rather than brand: the Firebase project id (`real-life-english`, which cannot be renamed without losing every student's synced history) and the service-worker cache keys (`rle-*`, which would orphan ~28 MB of cached audio and force a re-download on a school connection).
+One identifier deliberately keeps the pre-rebrand string because it is infrastructure rather than brand: the Firebase project id (`real-life-english`). Renaming it means creating a new Firebase project, so it stays until there is a reason to migrate. Everything else — including the service-worker cache keys — now uses the `ajar` prefix.
 
 `scripts/` holds the content pipeline and the regression suites — audio generation, the ETS copyright audit, difficulty calibration, and a per-task-type checker for every exercise type.
 
