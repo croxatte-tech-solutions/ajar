@@ -2820,7 +2820,7 @@ const EMAIL_BANK = {
       bullets: ['Say when you cancelled and how.', 'Describe the charge you received.', 'Ask for a refund and confirmation that the account is closed.'] },
     { situation: `A new magazine invited readers to submit writing, and you sent in two short pieces. The submission page froze while uploading, and you are not certain your work was received.`,
       to: 'editor@northlightreview.com', subject: 'Problem using the submission form',
-      bullets: ['Say what you like about the new magazine.', 'Describe the problem you had with the form.', 'Ask whether your submissions arrived.'] },
+      bullets: ['Mention one thing about the publication that appealed to you.', 'Describe the problem you had with the form.', 'Ask whether your submissions arrived.'] },
     { situation: `You run a small student podcast. A local bookshop offered to sponsor an episode, but they have not said what they expect in return or how the arrangement would work.`,
       to: 'Ms. Nakamura (Corner Books)', subject: 'Details of the sponsorship offer',
       bullets: ['Thank her and say what your podcast is about.', 'Ask what the bookshop would expect from the sponsorship.', 'Propose a short call or meeting to agree the details.'] },
@@ -2933,7 +2933,7 @@ const DISCUSSION_BANK = {
     { course: 'a course on sociology',
       professor: { name: 'Dr. Achebe', post: `Volunteering refers to offering your time without payment for the benefit of a community or cause. While most people volunteer by choice, some institutions have made it compulsory — many secondary schools, for example, require a set number of volunteer hours before graduation. Supporters say this builds civic responsibility; critics say compulsory volunteering is a contradiction. Should schools require students to volunteer?` },
       posts: [
-        { name: 'Claire', text: `Yes, schools should require it. Many teenagers never encounter volunteering at home and would not seek it out on their own. A requirement introduces them to the idea that their time can matter to someone else, and plenty continue voluntarily afterwards.` },
+        { name: 'Claire', text: `I would make it a requirement. Plenty of teenagers never come across volunteering at home and would never go looking for it. Being obliged to try it once shows them their hours are worth something to somebody, and a fair number carry on by choice.` },
         { name: 'Andrew', text: `I disagree with Claire on this. Many students already have part-time jobs or care for younger siblings after school. Adding a compulsory requirement penalises exactly those students, whose lives already involve far more responsibility than the requirement is meant to teach.` },
       ] },
     { course: 'a course on cultural studies',
@@ -2945,10 +2945,10 @@ const DISCUSSION_BANK = {
   ],
   career: [
     { course: 'a course on labor studies',
-      professor: { name: 'Dr. Ferreira', post: `More people can now work remotely from portable devices rather than a fixed office. These workers often choose when and where they work, and some become "digital nomads" — travelling regularly while working from different locations, both inside and outside their own countries. Do you think digital nomadism is likely to keep increasing? Why or why not?` },
+      professor: { name: 'Dr. Ferreira', post: `Laptops and fast connections have untied a great deal of work from any fixed address. A small but visible group has taken this to its conclusion, moving between countries while holding down ordinary jobs. Some economists expect this to become unremarkable within a decade; others think it will stay a niche for a narrow set of professions. Which do you find more convincing, and why?` },
       posts: [
         { name: 'Claire', text: `Digital nomadism offers real freedom, but it depends completely on reliable internet. That requirement limits which places are actually workable far more than people admit, so I do not expect it to grow as much globally as the enthusiasm suggests.` },
-        { name: 'Marcus', text: `While Claire makes a good point about connectivity, network speed and coverage improve every year. Why work in a city office simply to afford two weeks somewhere beautiful, when you could work from such places for much of the year? I expect it to keep growing.` },
+        { name: 'Marcus', text: `Claire is right that connections matter, but speed and coverage get better year on year. Saving all year for a fortnight somewhere pleasant makes little sense once the same laptop works from there in March. I expect the numbers to climb.` },
       ] },
     { course: 'a course on career development',
       professor: { name: 'Dr. Nakamura', post: `Students are often advised to work part-time while studying, on the grounds that it develops time management, communication and workplace awareness that classes cannot teach. Others point to research suggesting that beyond a certain number of hours, employment measurably harms academic results. Should students be encouraged to work part-time during their studies?` },
@@ -3376,7 +3376,7 @@ const LISTEN_SETS = {
       {text:'The new streaming app launched last month and it already has millions of users.', scene:'dorm'},
       {text:'Researchers study how constant phone notifications affect focus, memory, and grades.', scene:'library'},
     ]},
-    { label:'A technology help desk', situation:'You are learning to work at a technology help desk.', items:[
+    { label:'A technology help desk', situation:'You have just started on the technology help desk, and today is your training shift.', items:[
       {text:'Welcome to the technology help desk.', scene:'classroom'},
       {text:'Please tell me what device you are using.', scene:'classroom'},
       {text:'I will need your student number to open a support ticket.', scene:'classroom'},
@@ -3747,7 +3747,7 @@ const LISTEN_SETS = {
     ]},
   ],
   media: [
-    { label:'A book shop', situation:'You are learning to work at a book shop.', items:[
+    { label:'A book shop', situation:'You have started a weekend job in a book shop and are being shown the ropes.', items:[
       {text:'This popular show just dropped a new season.', scene:'dorm'},
       {text:'Many students listen to podcasts daily.', scene:'bus'},
       {text:'Streaming services keep adding new original content monthly.', scene:'dorm'},
@@ -3886,13 +3886,13 @@ function genListenRepeatSet(theme, topicIndex){
 //      Q4 'policy'  — should an institution/society do X? why?
 const INTERVIEW_BANK = {
   campus: [
-    { topic:'Campus Life', scenario:'You have agreed to take part in a research study about student life. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
-      {style:'recall', text:'Thank you for speaking with me today. To begin, I’d like you to think back to your very first week at this school. What was the hardest part of settling in? What helped you the most at that time?'},
+    { topic:'Campus Life', scenario:'A researcher is collecting opinions on student life for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
+      {style:'recall', text:'Thanks for joining me. Let’s start right at the beginning — cast your mind back to your very first week at this school. What was the hardest part of settling in? What helped you the most at that time?'},
       {style:'aspect', text:'That’s interesting. Students adjust to a new campus in very different ways. Some throw themselves into activities right away, while others prefer to observe quietly for a while first. Which describes you better? Why do you think you responded that way?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe schools should require all new international students to attend an orientation program. They would argue, for example, that students who skip it miss practical information they never recover. Do you agree? Why or why not?'},
       {style:'policy', text:'Good points. One final question. Some schools now pair every new international student with a current student as a mentor for their first semester. Do you think schools should invest in programs like this? Why or why not?'},
     ]},
-    { topic:'Studying and Classes', scenario:'You have agreed to take part in a research study about how students learn. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Studying and Classes', scenario:'A researcher is collecting opinions on how students learn for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for joining me. First, think back to a class where you had to speak English much more than you expected. What was the situation? How did you handle it?'},
       {style:'aspect', text:'I see. Let’s talk about your usual routine. When you need to prepare for a difficult class, what do you actually do? For example, where do you study, and how far in advance do you start?'},
       {style:'opinion', text:'Now I’d like to hear your opinion. Some people argue that class participation should count toward a student’s final grade. They say it pushes quiet students to practice speaking. Others say it unfairly punishes people who are naturally reserved. What’s your view? Why?'},
@@ -3900,13 +3900,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   register: [
-    { topic:'Formal and Informal Communication', scenario:'You have agreed to take part in a research study about how people communicate. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Formal and Informal Communication', scenario:'A researcher is collecting opinions on how people communicate for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for your time today. Let’s start with a specific memory. Think back to a time when you had to write or say something very formal in English — to a professor, an official, or an employer. What was the situation? How did you decide what words to use?'},
       {style:'aspect', text:'Thanks for sharing that. Now, about your everyday life: how much does the way you speak change depending on who you’re talking to? For instance, is your English with a close friend noticeably different from your English with a teacher?'},
       {style:'opinion', text:'Let me ask your opinion now. Some people believe that texting and social media have made everyone less formal, even in serious situations like job applications. They’d point to job emails written like text messages. Do you agree that this is a problem? Why or why not?'},
       {style:'policy', text:'Good. One last question. Should schools spend class time explicitly teaching students how to write professional emails, rather than assuming they’ll pick it up on their own? Why do you think so?'},
     ]},
-    { topic:'Building Relationships', scenario:'You have agreed to take part in a research study about friendships and social connections. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Building Relationships', scenario:'A researcher is collecting opinions on friendships and social connections for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for speaking with me. To start, can you describe a time when you made a new friend in a place where you didn’t know anyone? What happened, and what made that connection work?'},
       {style:'aspect', text:'That’s a nice example. Now think about your life in general. Do you usually prefer a small circle of close friends, or a wide group of acquaintances? Why do you think you lean that way?'},
       {style:'opinion', text:'Now for your opinion. Some people say that friendships formed online can be just as meaningful as friendships formed in person. Others insist that something essential is lost without face-to-face contact. Where do you stand? Why?'},
@@ -3914,13 +3914,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   current: [
-    { topic:'Technology in Daily Life', scenario:'You have agreed to take part in a research study about technology use. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
-      {style:'recall', text:'Thank you for speaking with me today. Please think back to the last time you relied on your phone for something genuinely important — finding your way, making a payment, translating something, or reaching someone urgently. What was the situation? How well did it work for you?'},
+    { topic:'Technology in Daily Life', scenario:'A researcher is collecting opinions on technology use for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
+      {style:'recall', text:'Thanks for joining me. Cast your mind back to the last time your phone really had to come through for you — finding your way, making a payment, translating something, or reaching someone urgently. What was the situation? How well did it work for you?'},
       {style:'aspect', text:'Good. People feel very differently about their devices. Some say phones make them more connected and efficient; others feel constantly distracted and drained. How do you usually feel about yours in daily life? Why do you think you react that way?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that smartphones have clearly made modern life better overall. They’d argue, for instance, that we have instant access to information and to the people we care about. Do you agree with that? Why or why not?'},
       {style:'policy', text:'Good points. One final question. Do you think schools and workplaces should actively encourage healthier phone habits — for example, asking people to put phones away during meals or after a certain hour? Why or why not?'},
     ]},
-    { topic:'Staying Informed', scenario:'You have agreed to take part in a research study about how people follow the news. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Staying Informed', scenario:'A researcher is collecting opinions on how people follow the news for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for taking part. To begin, think back to a recent news story that genuinely caught your attention. What was it about? Why did it stay with you?'},
       {style:'aspect', text:'I see. Now tell me about your routine. Where do you usually get your news — and roughly how much time would you say you spend on it in a normal day?'},
       {style:'opinion', text:'Let me ask your opinion. Some people argue that reading the news constantly does more harm than good, because it raises anxiety without changing anything. Others say staying informed is a basic responsibility. What do you think? Why?'},
@@ -3928,13 +3928,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   grammar: [
-    { topic:'Learning a Language', scenario:'You have agreed to take part in a research study about language learning. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Learning a Language', scenario:'A researcher is collecting opinions on language learning for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for joining me. Let’s start with your own experience. Think back to a moment when you realized your English had genuinely improved. What happened? How did that feel?'},
       {style:'aspect', text:'That’s great to hear. Now, about your habits: what do you actually do to practice English outside of class? For example, do you read, watch things, or speak with people — and how regularly?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe the fastest way to learn a language is to live in a country where it’s spoken. Others argue that disciplined study at home works just as well. What’s your view? Why?'},
       {style:'policy', text:'Interesting. One final question. Do you think schools should require every student to become fluent in a second language before graduating? Why or why not?'},
     ]},
-    { topic:'How People Learn Best', scenario:'You have agreed to take part in a research study about study methods. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'How People Learn Best', scenario:'A researcher is collecting opinions on study methods for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for your time. To begin, describe a time when a teacher explained something in a way that finally made it click for you. What did they do differently?'},
       {style:'aspect', text:'Good example. Now think about yourself. When you need to memorize something difficult, what method do you personally use? Why does that one work for you?'},
       {style:'opinion', text:'Let me ask your opinion now. Some people say that learning through mistakes is more effective than being told the right answer immediately. They’d argue that struggling with a problem makes it stick. Do you agree? Why or why not?'},
@@ -3942,13 +3942,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   social: [
-    { topic:'Living Between Cultures', scenario:'You have agreed to take part in a research study about cultural adjustment. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Living Between Cultures', scenario:'A researcher is collecting opinions on cultural adjustment for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for speaking with me. To start, think back to something that genuinely surprised you about daily life in a new country — something you didn’t expect at all. What was it? How did you react?'},
       {style:'aspect', text:'That’s a good example. Now, in your ordinary life, how do you stay connected to your own culture while living somewhere new? For instance, through food, language, holidays, or people?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that living abroad changes a person permanently — that you never see your home country the same way again. Do you agree with that idea? Why or why not?'},
       {style:'policy', text:'Good points. One last question. Do you think communities should do more to help newcomers adapt, or is adapting mainly the newcomer’s own responsibility? Why?'},
     ]},
-    { topic:'A Connected World', scenario:'You have agreed to take part in a research study about globalization. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'A Connected World', scenario:'A researcher is collecting opinions on globalization for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for joining me today. First, describe a time when you interacted with someone from a very different background — in person or online. What did you learn from it?'},
       {style:'aspect', text:'Interesting. Now think about your daily life. How much of what you consume — music, food, films, products — comes from outside your own country? Does that matter to you?'},
       {style:'opinion', text:'Let me ask your opinion. Some people argue that globalization is making cultures around the world too similar to each other. They’d point to the same shops and brands appearing in every city. Do you agree this is a loss? Why or why not?'},
@@ -3956,13 +3956,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   career: [
-    { topic:'Work Experience', scenario:'You have agreed to take part in a research study about work and employment. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Work Experience', scenario:'A researcher is collecting opinions on work and employment for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for speaking with me. Let’s begin with your experience. Think back to a job, internship, or volunteer role you’ve had. What did you actually do, and what did you take away from it?'},
       {style:'aspect', text:'Thanks for that. Now, about you personally: what kind of working environment suits you best? For example, do you prefer working alone or on a team, and why?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe students should work part-time while studying. They’d argue it builds real-world skills that classes can’t teach. Others say it damages academic performance. What’s your view? Why?'},
       {style:'policy', text:'Good. One final question. Do you think employers should be required to offer paid internships rather than unpaid ones? Why or why not?'},
     ]},
-    { topic:'Careers and the Future', scenario:'You have agreed to take part in a research study about career planning. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Careers and the Future', scenario:'A researcher is collecting opinions on career planning for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for your time today. To start, tell me about a moment when you changed your mind about what you wanted to do professionally. What caused that shift?'},
       {style:'aspect', text:'I see. Now, in your own life, how much time do you actually spend planning your future career? Would you say you plan carefully, or take opportunities as they come?'},
       {style:'opinion', text:'Let me ask for your opinion. Some people say it’s more important to choose a career you love than one that pays well. Others argue that financial security has to come first. Where do you stand? Why?'},
@@ -3970,41 +3970,41 @@ const INTERVIEW_BANK = {
     ]},
   ],
   health: [
-    { topic:'Health and Daily Habits', scenario:'You have agreed to take part in a research study about health and wellbeing. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Health and Daily Habits', scenario:'A researcher is collecting opinions on health and wellbeing for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for taking part. To begin, think back to a time when you deliberately tried to change a habit — sleeping, eating, or exercising differently. What did you try, and how did it go?'},
       {style:'aspect', text:'That’s useful to hear. Now about your normal routine: what do you do to stay healthy during a busy week? For instance, how do you handle meals and sleep when you’re under pressure?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that stress is simply an unavoidable part of student life. Others argue that it’s a sign something is badly designed about how we study. What do you think? Why?'},
       {style:'policy', text:'Good points. One final question. Do you think schools should provide free mental health counseling to all students? Why or why not?'},
     ]},
-    { topic:'Exercise and Wellbeing', scenario:'You have agreed to take part in a research study about physical activity. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Exercise and Wellbeing', scenario:'A researcher is collecting opinions on physical activity for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for joining me. First, describe the last time you did something physically active that you actually enjoyed. What was it, and what made it enjoyable?'},
       {style:'aspect', text:'Good. Now, about your habits: how does physical activity fit into your normal week — or if it doesn’t, what tends to get in the way?'},
-      {style:'opinion', text:'Let me ask your opinion. Some people believe that regular exercise matters more for mental health than for physical health. Do you agree with that? Why or why not?'},
+      {style:'opinion', text:'Here is a claim I would like your view on. It is often argued that exercise does more for the mind than it does for the body. Would you go along with that?'},
       {style:'policy', text:'Thank you. Finally, do you think universities should require students to take a physical education course? Why?'},
     ]},
   ],
   environment: [
-    { topic:'Everyday Environmental Choices', scenario:'You have agreed to take part in a research study about environmental habits. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Everyday Environmental Choices', scenario:'A researcher is collecting opinions on environmental habits for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for speaking with me. To begin, think back to a time when you changed something you do because of an environmental concern. What did you change, and what prompted it?'},
       {style:'aspect', text:'Thanks. Now, in your ordinary daily life, which environmental habits do you actually keep up — and which ones do you find genuinely difficult to maintain? Why?'},
       {style:'opinion', text:'Now for your opinion. Some people argue that individual actions like recycling are almost meaningless compared to what large companies do. They’d say focusing on personal habits is a distraction. Do you agree? Why or why not?'},
       {style:'policy', text:'Good. One last question. Do you think cities should make public transport free in order to reduce car use? Why or why not?'},
     ]},
-    { topic:'Cities and the Environment', scenario:'You have agreed to take part in a research study about urban life. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
-      {style:'recall', text:'Thanks for your time. First, think back to the last time you visited a city you didn’t live in. Why did you travel there? What did you like about it?'},
-      {style:'aspect', text:'Interesting. Cities affect people in different ways. Some find them dynamic and exciting; others find them overwhelming and draining. What kind of reaction do you have to cities? Why do you think you react that way?'},
-      {style:'opinion', text:'Now I’d like your opinion. Some people believe that those who live in cities lead more interesting lives. They would argue, for example, that city residents have more access to professional opportunities and cultural activities. Do you agree? Why or why not?'},
-      {style:'policy', text:'Good points. Let me ask one final question. Researchers have long been interested in whether green spaces such as parks make city residents happier. Do you think city governments should create more parks to improve general wellbeing? Why or why not?'},
+    { topic:'Cities and the Environment', scenario:'A researcher is collecting opinions on urban life for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
+      {style:'recall', text:'Thanks for joining me. Let’s begin with somewhere you have travelled to but never lived. What took you there, and what stayed with you afterwards?'},
+      {style:'aspect', text:'Right. Large cities seem to divide people — some are energised by the pace, others find it wears them down. Which describes you better, and what do you put that down to?'},
+      {style:'opinion', text:'Let me put a claim to you. It is sometimes said that city dwellers simply live richer lives, with more work opportunities and more to do in the evenings. Would you go along with that, or not?'},
+      {style:'policy', text:'Thank you. One last thing before we finish. A good deal of work has looked at whether parks and open green areas lift how city dwellers feel. Should councils be building more of them for that reason alone?'},
     ]},
   ],
   daily: [
-    { topic:'Everyday Logistics', scenario:'You have agreed to take part in a research study about daily routines. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Everyday Logistics', scenario:'A researcher is collecting opinions on daily routines for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for taking part. To start, think back to a time when something practical went wrong in your day — a missed appointment, a delivery problem, a bureaucratic hurdle. What happened? How did you sort it out?'},
       {style:'aspect', text:'That sounds familiar. Now about your routine: how do you keep track of appointments, deadlines, and errands? For example, do you use an app, a paper list, or just memory?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that having a strict daily routine makes life easier and less stressful. Others feel it makes life rigid and dull. What’s your view? Why?'},
       {style:'policy', text:'Thank you. Finally, do you think public offices and services should be required to offer everything online, rather than in person? Why or why not?'},
     ]},
-    { topic:'Making Plans', scenario:'You have agreed to take part in a research study about how people make plans. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Making Plans', scenario:'A researcher is collecting opinions on how people make plans for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for joining me. First, describe a time when a plan you made had to change at the last minute. What happened, and how did you deal with it?'},
       {style:'aspect', text:'I see. Now, in general, how far in advance do you like to plan things? For instance, do you organize your weekends ahead of time, or decide spontaneously?'},
       {style:'opinion', text:'Let me ask your opinion. Some people say the best experiences happen when you don’t plan at all. Others insist that careful planning is what makes things go well. Where do you stand? Why?'},
@@ -4012,27 +4012,27 @@ const INTERVIEW_BANK = {
     ]},
   ],
   money: [
-    { topic:'Personal Finances', scenario:'You have agreed to take part in a research study about personal finances. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
-      {style:'recall', text:'Thank you for speaking with me today. To begin with, I’d like you to think back to a time when you spent a large amount of money on something. What did you buy? How did you feel about spending that much?'},
+    { topic:'Personal Finances', scenario:'A researcher is collecting opinions on personal finances for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
+      {style:'recall', text:'Thanks for joining me. To open, picture an occasion when you parted with a large sum of money on a single purchase. What did you buy? How did you feel about spending that much?'},
       {style:'aspect', text:'Hmm, that’s interesting. As you probably know, some people prefer to save most of their money for the future, while others prefer to spend it now. Which are you closer to? Why do you think that is?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that it’s worth spending money on experiences like travel rather than on physical things. They’d argue the memories last longer than the objects. Do you agree? Why or why not?'},
       {style:'policy', text:'Good points. Finally, I’d like your opinion on required personal finance classes for high school students. Some people believe this is the best way to set young people up for financial stability. What do you think? Why?'},
     ]},
-    { topic:'Spending and Shopping', scenario:'You have agreed to take part in a research study about shopping habits. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
-      {style:'recall', text:'Thanks for your time. First, think back to the last time you bought something you were genuinely excited about. What was it? What made you decide to buy it?'},
+    { topic:'Spending and Shopping', scenario:'A researcher is collecting opinions on shopping habits for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
+      {style:'recall', text:'Thanks for joining me. Let us start with a purchase you were genuinely excited about. What was it? What made you decide to buy it?'},
       {style:'aspect', text:'Good. Now, about your habits: do you usually shop online or in physical stores? What makes you prefer that way of shopping?'},
       {style:'opinion', text:'Let me ask your opinion. Some people argue that online shopping has made people buy far more than they need. Others say it simply makes life more convenient. What’s your view? Why?'},
       {style:'policy', text:'Thank you. One final question. Do you think stores should be required to clearly label where each product was made? Why or why not?'},
     ]},
   ],
   housing: [
-    { topic:'Where You Live', scenario:'You have agreed to take part in a research study about housing. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Where You Live', scenario:'A researcher is collecting opinions on housing for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for joining me. To start, think back to when you last moved to a new place to live. What was the hardest part of that move? How did you handle it?'},
       {style:'aspect', text:'That’s helpful. Now, in your daily life, what matters most to you about where you live — for example, the cost, the location, the space, or the people around you? Why that one?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe students learn important life skills by living with roommates. Others argue that shared living creates constant conflict and stress. What do you think? Why?'},
       {style:'policy', text:'Good. One last question. Do you think universities should guarantee affordable housing for every student? Why or why not?'},
     ]},
-    { topic:'Sharing a Home', scenario:'You have agreed to take part in a research study about shared living. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Sharing a Home', scenario:'A researcher is collecting opinions on shared living for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for taking part. First, describe a time when you had to resolve a disagreement with someone you lived with. What was it about, and how did it end?'},
       {style:'aspect', text:'I see. Now, about your own habits: how do you handle household tasks like cleaning and cooking? Do you follow a system, or deal with things as they come up?'},
       {style:'opinion', text:'Let me ask your opinion. Some people say that clear written rules are essential for people sharing a home. Others feel rules make a home feel cold and formal. Where do you stand? Why?'},
@@ -4040,13 +4040,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   travel: [
-    { topic:'Travel Experiences', scenario:'You have agreed to take part in a research study about travel. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Travel Experiences', scenario:'A researcher is collecting opinions on travel for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for speaking with me. To begin, think back to the most memorable trip you’ve taken. Where did you go, and what made it stand out?'},
       {style:'aspect', text:'That sounds good. Now, about how you travel: do you prefer to plan every detail in advance, or to decide things as you go? Why does that suit you?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that travel is the single best form of education. They’d argue you learn more in a week abroad than in a month of classes. Do you agree? Why or why not?'},
       {style:'policy', text:'Good points. One final question. Do you think countries should limit the number of tourists allowed at popular sites in order to protect them? Why or why not?'},
     ]},
-    { topic:'Getting Around', scenario:'You have agreed to take part in a research study about transportation. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Getting Around', scenario:'A researcher is collecting opinions on transportation for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for your time today. First, think back to a journey that went badly — a delay, a breakdown, a missed connection. What happened? What did you do?'},
       {style:'aspect', text:'I see. Now, in your normal week, how do you usually get around? What made you choose that way of travelling over the alternatives?'},
       {style:'opinion', text:'Let me ask your opinion. Some people argue that cities should discourage private cars entirely and invest only in public transport. Others say people need the freedom a car provides. What’s your view? Why?'},
@@ -4054,13 +4054,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   media: [
-    { topic:'Entertainment and Media', scenario:'You have agreed to take part in a research study about entertainment. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Entertainment and Media', scenario:'A researcher is collecting opinions on entertainment for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thank you for joining me. To start, tell me about a film, show, or book that genuinely stayed with you. What was it about, and why did it affect you?'},
       {style:'aspect', text:'Interesting. Now, about your routine: when and how do you usually watch or read things for enjoyment? Has that changed much in the last few years?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe that streaming services have made people watch far more than is good for them. Others say they simply give people more choice. What do you think? Why?'},
       {style:'policy', text:'Good. One final question. Do you think governments should require streaming platforms to include a certain amount of locally made content? Why or why not?'},
     ]},
-    { topic:'Social Media', scenario:'You have agreed to take part in a research study about your social media usage. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'Social Media', scenario:'A researcher is collecting opinions on your social media usage for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for speaking with me. First, please think about a specific occasion when something you saw or shared on social media had a strong effect on you. What happened, and why did it stand out?'},
       {style:'aspect', text:'I see. Now I’d like to ask about your daily life. How does social media fit into your usual routine? For example, when do you tend to use it, and what do you mainly use it for?'},
       {style:'opinion', text:'Let me ask your opinion. Some people think social media helps us stay informed and connected, while others believe it mainly creates stress and distraction. Overall, do you think its effect on people’s lives is mostly positive or mostly negative? Why?'},
@@ -4068,13 +4068,13 @@ const INTERVIEW_BANK = {
     ]},
   ],
   innovation: [
-    { topic:'Artificial Intelligence', scenario:'You have agreed to take part in a research study about new technology. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
-      {style:'recall', text:'Thank you for speaking with me today. To begin, think back to the first time you used an AI tool for something real — studying, writing, translating, or work. What did you use it for? What did you think of the result?'},
+    { topic:'Artificial Intelligence', scenario:'A researcher is collecting opinions on new technology for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
+      {style:'recall', text:'Thanks for joining me. Start with the first occasion you put an AI tool to real use — studying, writing, translating, or work. What did you use it for? What did you think of the result?'},
       {style:'aspect', text:'That’s useful. Now, in your own life, how much do you rely on tools like these week to week? And how do you decide when to trust what they tell you?'},
       {style:'opinion', text:'Now I’d like your opinion. Some people believe AI will ultimately create more jobs than it eliminates. They’d point to past technologies that people feared but which ended up expanding employment. Do you agree? Why or why not?'},
       {style:'policy', text:'Good points. One final question. Do you think schools should allow students to use AI tools for their assignments, as long as they say they used them? Why or why not?'},
     ]},
-    { topic:'The Future', scenario:'You have agreed to take part in a research study about innovation and the future. You will have a short online interview with a researcher. The researcher will ask you some questions.', questions:[
+    { topic:'The Future', scenario:'A researcher is collecting opinions on innovation and the future for a university project. You have joined a short online session, and she will put a few questions to you about your own experience.', questions:[
       {style:'recall', text:'Thanks for your time. First, describe a technological change you’ve personally lived through that genuinely changed how you do something. What was it, and how did you adapt?'},
       {style:'aspect', text:'Interesting. Now think about yourself. When a new technology appears, are you usually among the first to try it, or do you prefer to wait? Why do you think that is?'},
       {style:'opinion', text:'Let me ask your opinion. Some people argue that governments should spend money on space exploration. Others say that money is urgently needed for problems here on Earth. What’s your view? Why?'},
@@ -5797,7 +5797,7 @@ function lrRecord(target, seconds){
         <p class="small-note" style="margin-bottom:.3rem">You said: <i>"${escapeHtml(transcript)}"</i></p>
         ${repeatDiffHtml(res)}
         <div class="result-msg ${score>=4?'ok':'no'}">Repeat Accuracy: ${score} / 5${bits.length ? ' — ' + bits.join(', ') : ' — exact repetition'}</div>
-        <p class="small-note">Scored against the real ETS rubric for word accuracy only. Pronunciation, rhythm and intonation are <b>not</b> measured here — that needs your teacher's ear.</p>`;
+        <p class="small-note">This checks word accuracy only, using our own scoring modelled on the published criteria. Pronunciation, rhythm and intonation are <b>not</b> measured here — that needs your teacher's ear.</p>`;
     },
     err => { clearInterval(tick); timerEl.textContent=''; document.getElementById('lr-result').innerHTML = `<p class="small-note">${err}</p>`; }
   );
@@ -5814,7 +5814,7 @@ function lrSkip(){
     document.getElementById('practice-wrap').innerHTML = `
       <div class="compose">
         <div class="ex-body"><b>Set complete.</b> Average Repeat Accuracy (approx.): ${avg} / 5 across ${st.results.length} scored sentence(s).</div>
-        <p class="small-note">This score only reflects word-for-word match — Fluency, Intelligibility, Language Use, and Organization (the other 4 real ETS dimensions) need audio analysis this free prototype can't do yet.</p>
+        <p class="small-note">This score reflects word-for-word match only. The official exam also judges fluency, clarity of speech, language use and organisation — all of which need audio analysis this free prototype cannot do yet.</p>
         <div class="ex-actions"><button class="btn ghost sm" onclick="practiceAgain()">🔄 New set of 7 sentences</button></div>
       </div>`;
   }
@@ -5865,7 +5865,7 @@ function checkInterviewAnswer(){
   }
   notes.push(`<b>Intelligibility (pronunciation):</b> not measured in this free prototype — genuinely needs real audio analysis, planned for the hosted/local upgrade.`);
 
-  box.innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback, mapped to the 4 real ETS Speaking dimensions — your teacher's judgment is what actually counts</span><ul>${notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
+  box.innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback, written against our own criteria and informed by the published exam dimensions — your teacher's judgment is what actually counts</span><ul>${notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
   const wellFormed = wordCount>=80 && wordCount<=220 && sentenceCount>=3;
   logUsage('interview', currentItem()?.theme, wellFormed ? 1 : 0);
 }
@@ -5905,7 +5905,7 @@ function checkWriting(){
     notes.push(`<b>Elaboration & Support:</b> ${n>=target[0] && n<=target[1] ? `length is on target (${n} words) — likely enough room to support your point.` : n<target[0] ? `a bit short (${n} words, target ${target[0]}–${target[1]}) — add a reason or example to support your view.` : `a bit long (${n} words, target ${target[0]}–${target[1]}) — tighten your explanation.`}`);
   }
   notes.push('<b>Grammar & Vocabulary / Syntactic Variety:</b> not checked by this free prototype yet — needs real language analysis, planned for the hosted upgrade.');
-  document.getElementById('feedback').innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback (approximates 2 of the 4 real ETS rubric dimensions) — your teacher reviews this before it counts as a grade</span><ul>${notes.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  document.getElementById('feedback').innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback (our own criteria, covering roughly half of what the official exam judges) — your teacher reviews this before it counts as a grade</span><ul>${notes.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
   logUsage(item.type, item.theme, (n>=target[0] && n<=target[1]) ? 1 : 0);
 }
 
