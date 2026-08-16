@@ -16,7 +16,7 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
   URLSearchParams,console,Date,Math,JSON,Array,Object,String,Number,Intl,Set,Promise,setInterval,clearInterval,setTimeout,clearTimeout};
 sb.self=sb.window; sb.globalThis=sb; vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`
-globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, ann: ANNOUNCEMENT_BANK, hash: hashStr };
+globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, ann: ANNOUNCEMENT_BANK, conv: CONVERSATION_BANK, convText: conversationText, hash: hashStr };
 `, sb);
 const d=sb.__dump, out=[];
 for(const th of d.themes){
@@ -32,8 +32,15 @@ for(const th of d.themes){
   // Each announcement is its own exercise for voice purposes -- one
   // speaker delivering one notice, as in the real recordings.
   (d.ann[th]||[]).forEach((a,ai)=>out.push({kind:'an', theme:th, set:ai, idx:0, text:a.text}));
+  // A conversation is TWO speakers in one clip, so it carries its turns
+  // along and the generator renders each turn with its own voice before
+  // stitching them. The hash still comes from the joined text alone, which
+  // is exactly what the app asks for at play time.
+  (d.conv[th]||[]).forEach((c,ci)=>out.push({kind:'cv', theme:th, set:ci, idx:0,
+    text:d.convText(c.turns), turns:c.turns.map(t=>({s:t[0], t:t[1]}))}));
 }
 out.forEach(o=>o.hash=d.hash(o.text));
 fs.writeFileSync(process.argv[3], JSON.stringify(out,null,1));
 console.log('themes:',d.themes.length,'| clips:',out.length,
-  '| lr:',out.filter(o=>o.kind==='lr').length,'| iv:',out.filter(o=>o.kind==='iv').length);
+  '| lr:',out.filter(o=>o.kind==='lr').length,'| iv:',out.filter(o=>o.kind==='iv').length,
+  '| cv:',out.filter(o=>o.kind==='cv').length);

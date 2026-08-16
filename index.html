@@ -2623,6 +2623,7 @@ const TASK_TYPES = [
   { id:'complete-words', tag:'Complete the Words', section:'Reading' },
   { id:'choose-response', tag:'Listen and Choose a Response', section:'Listening' },
   { id:'announcement',     tag:'Listen to an Announcement',    section:'Listening' },
+  { id:'conversation',     tag:'Listen to a Conversation',     section:'Listening' },
   { id:'sentence',       tag:'Build a Sentence',    section:'Writing' },
   { id:'email',          tag:'Write an Email',      section:'Writing' },
   { id:'discussion',     tag:'Academic Discussion', section:'Writing' },
@@ -4156,6 +4157,429 @@ function genAnnouncement(theme){
   })) };
 }
 
+// ---- Listen to a Conversation ----
+// The one Listening task with two speakers. Real ETS conversation clips
+// run 17-30s (median 27s) over roughly 8-10 short turns, so these are
+// written to that shape rather than as a passage cut into lines: people
+// interrupt, correct each other, and the answer to a question is often
+// in the reply rather than in the statement that prompted it.
+//
+// Speakers strictly alternate M/W, which is what lets scripts/gen_dialogue.py
+// render each turn with a different Piper voice and stitch them into one
+// clip. The clip is looked up by the same content hash every other line
+// uses, over conversationText() below -- so if a turn is ever edited the
+// clip is simply not found and playback falls back to browser speech.
+const CONVERSATION_BANK = {
+  campus: [
+    { context:"a conversation between two students", turns:[
+      ["W", "Have you picked your elective for next term yet?"],
+      ["M", "Not yet. I was going to take the film one, but it clashes with my Thursday lab."],
+      ["W", "Does it? I thought they moved the lab to Friday afternoons."],
+      ["M", "Did they? Nobody told me that."],
+      ["W", "It went out by email about a fortnight ago. Check your junk folder."],
+      ["M", "That would explain a lot. I have not seen anything from the department in weeks."],
+      ["W", "You should probably fix that before the deadline paperwork goes out."],
+      ["M", "I will do it tonight. And then sign up for the film course, apparently."],
+    ], questions:[
+      { q:"Where does the woman tell him to start?", options:["Check his email settings", "Change his elective choice", "Speak to the department", "Attend the Friday lab"], answer:0 },
+      { q:"What will the man probably do next term?", options:["Take the film course", "Repeat the same lab", "Drop one of his subjects", "Change his degree"], answer:0 },
+    ]},
+    { context:"a conversation in a library", turns:[
+      ["M", "Excuse me, do you know if these study rooms need booking?"],
+      ["W", "They do at this time of year. There is a link on the library page."],
+      ["M", "Ah. I was hoping to use one for an hour this afternoon."],
+      ["W", "You might be lucky. People book them and then do not turn up."],
+      ["M", "How long do you have to wait before it counts as free?"],
+      ["W", "Fifteen minutes, I think. After that you can just go in."],
+      ["M", "That is worth knowing. Thanks."],
+      ["W", "No trouble. The ones on the top floor are almost always empty."],
+    ], questions:[
+      { q:"What does the woman say about the rooms?", options:["They are usually booked ahead", "They are free to everyone", "They close in the afternoon", "They are being repaired"], answer:0 },
+      { q:"What does the woman recommend?", options:["Trying the top floor", "Booking a week early", "Asking at the desk", "Coming back tomorrow"], answer:0 },
+    ]},
+  ],
+  register: [
+    { context:"a conversation between colleagues", turns:[
+      ["W", "Did you manage to speak to the supplier this morning?"],
+      ["M", "I left two messages. Nobody has rung back."],
+      ["W", "That is becoming a pattern with them."],
+      ["M", "It is. I was going to send an email instead this afternoon."],
+      ["W", "Copy me in, would you? If they ignore that as well we should escalate it."],
+      ["M", "Fair enough. Do you want me to mention the delivery from last month?"],
+      ["W", "Better not, not yet. Keep it to the one issue for now."],
+      ["M", "Understood. I will keep it short."],
+    ], questions:[
+      { q:"Why does the woman want to be copied in?", options:["To track the response", "To write the email herself", "To approve the wording", "To contact a new supplier"], answer:0 },
+      { q:"What does the woman advise about last month?", options:["Leaving it out for now", "Mentioning it very briefly", "Putting it first instead", "Raising it by telephone later"], answer:0 },
+    ]},
+    { context:"a conversation at a reception desk", turns:[
+      ["M", "Good morning. I have an appointment with Ms. Fraser at eleven."],
+      ["W", "Let me check. I am afraid she is running about twenty minutes behind."],
+      ["M", "That is alright. Is there somewhere I can wait?"],
+      ["W", "Just through there. There is coffee if you would like some."],
+      ["M", "Thank you. Should I sign in anywhere?"],
+      ["W", "Yes, on the sheet in front of you. And take one of these badges."],
+      ["M", "Do I hand it back afterwards?"],
+      ["W", "Please. There is a box by the door on your way out."],
+    ], questions:[
+      { q:"Why must the man wait?", options:["The meeting is delayed", "The room is occupied", "He arrived too early", "The badge is missing"], answer:0 },
+      { q:"What should the man do with the badge?", options:["Return it when leaving", "Keep it for next time", "Show it at the door", "Sign it and hand it in"], answer:0 },
+    ]},
+  ],
+  current: [
+    { context:"a conversation about a device", turns:[
+      ["W", "My laptop has started shutting down for no reason."],
+      ["M", "Does it happen when it is plugged in, or only on battery?"],
+      ["W", "Now that you mention it, only on battery."],
+      ["M", "Then it is probably the battery rather than the machine itself."],
+      ["W", "Is that expensive to sort out?"],
+      ["M", "Less than you would think. The campus shop replaces them cheaply."],
+      ["W", "I assumed I would have to buy a whole new laptop."],
+      ["M", "Take it in before you spend anything. They look at it for free."],
+    ], questions:[
+      { q:"What does the man think is causing the problem?", options:["The battery itself", "The charging cable", "A software update", "The machine overheating"], answer:0 },
+      { q:"What had the woman assumed?", options:["A new laptop was needed", "The repair would be free", "The shop had closed", "The problem was software"], answer:0 },
+    ]},
+    { context:"a conversation about an application", turns:[
+      ["M", "Have you used the new timetable app they rolled out?"],
+      ["W", "Briefly. It kept signing me out every few minutes."],
+      ["M", "Mine does that too. I assumed I had done something wrong."],
+      ["W", "Apparently it is happening to everybody. There is a fix coming."],
+      ["M", "Do you know when?"],
+      ["W", "Next week, supposedly. Until then the website works properly."],
+      ["M", "I did not realise there was still a website."],
+      ["W", "There is, and it is honestly faster. I would just use that."],
+    ], questions:[
+      { q:"What problem do both speakers have?", options:["Being signed out repeatedly", "Losing their saved timetable", "Forgetting their own password", "Missing important notifications entirely"], answer:0 },
+      { q:"What does the woman recommend for now?", options:["Using the website instead", "Waiting for the update", "Reporting it to support", "Reinstalling the application"], answer:0 },
+    ]},
+  ],
+  grammar: [
+    { context:"a conversation about an assignment", turns:[
+      ["W", "Did you understand what she wants for the essay?"],
+      ["M", "I think so. Two sources minimum, and the argument has to be our own."],
+      ["W", "That is the part I am stuck on. Mine reads like a summary."],
+      ["M", "Try writing your conclusion first. It forces you to have a position."],
+      ["W", "That seems backwards."],
+      ["M", "It is, but it works. A tutor at the writing centre suggested it to me."],
+      ["W", "Maybe I should book a session there."],
+      ["M", "Do it before Friday. They fill up completely in deadline week."],
+    ], questions:[
+      { q:"What is the woman's difficulty?", options:["Making her own argument", "Finding enough sources", "Understanding the topic", "Meeting the word count"], answer:0 },
+      { q:"Why should she book before Friday?", options:["Places run out later", "The centre closes then", "The deadline is Friday", "Her tutor is away"], answer:0 },
+    ]},
+    { context:"a conversation after a class", turns:[
+      ["M", "I still cannot hear the difference between those two past forms."],
+      ["W", "Nor could I at first. It took a lot of listening rather than studying."],
+      ["M", "Listening to what, though? Anything in particular?"],
+      ["W", "The lab recordings, mostly. You can slow them down."],
+      ["M", "I did not know that was possible."],
+      ["W", "There is a control at the bottom. Most people never notice it."],
+      ["M", "That might actually help. Thanks."],
+      ["W", "Give it a fortnight before you decide it is not working."],
+    ], questions:[
+      { q:"What does the woman say helped her?", options:["Listening rather than studying", "Repeating after the teacher", "Writing the forms out", "Reading them aloud"], answer:0 },
+      { q:"What does the woman say about the recordings?", options:["The speed can be changed", "They are hard to find", "They are only for classes", "They cannot be repeated"], answer:0 },
+    ]},
+  ],
+  social: [
+    { context:"a conversation about an event", turns:[
+      ["W", "Are you going to the international evening on Friday?"],
+      ["M", "I said I would, but I have not signed up for anything."],
+      ["W", "You do not have to bring food. Plenty of people just turn up."],
+      ["M", "Really? The message made it sound compulsory."],
+      ["W", "It is not. Last year about half of us brought nothing at all."],
+      ["M", "That is a relief. I am a genuinely bad cook."],
+      ["W", "Then come and help set up instead. They always need people at five."],
+      ["M", "I could manage that. Better than poisoning anybody."],
+    ], questions:[
+      { q:"What had the man misunderstood?", options:["That food was required", "That the event was cancelled", "That it started at five", "That he had signed up"], answer:0 },
+      { q:"What will the man probably do?", options:["Help with setting up", "Bring a dish after all", "Miss the event entirely", "Invite some friends"], answer:0 },
+    ]},
+    { context:"a conversation between neighbours", turns:[
+      ["M", "Did you get the note about the building meeting?"],
+      ["W", "I did. Wednesday at seven, was it not?"],
+      ["M", "Thursday, actually. They corrected it in a second note."],
+      ["W", "I have clearly thrown that one away."],
+      ["M", "It is only about the bin collection and the front door lock."],
+      ["W", "The lock has been bothering me for months, so I will come."],
+      ["M", "Bring it up then. Nothing changes unless somebody says it out loud."],
+      ["W", "Fair point. I will make a note before I forget again."],
+    ], questions:[
+      { q:"What has the woman got wrong?", options:["The day of the meeting", "The time it starts", "The place it is held", "The topics discussed"], answer:0 },
+      { q:"Why does the man encourage her to attend?", options:["So she can raise the lock", "So the meeting has enough people", "So she meets the neighbours", "So she hears about the bins"], answer:0 },
+    ]},
+  ],
+  career: [
+    { context:"a conversation about a job", turns:[
+      ["W", "How did the second interview go?"],
+      ["M", "Better than the first, though they asked about salary and I froze."],
+      ["W", "What did you say in the end?"],
+      ["M", "That I was flexible. Which probably was not the right answer."],
+      ["W", "It is not a terrible one. It just means they will name a figure first."],
+      ["M", "Is that good or bad?"],
+      ["W", "Usually fine, as long as you are willing to negotiate afterwards."],
+      ["M", "I had not thought of it as a negotiation at all."],
+    ], questions:[
+      { q:"What went wrong for the man?", options:["He hesitated over pay", "He arrived late", "He forgot a document", "He misread the role"], answer:0 },
+      { q:"What does the woman imply?", options:["He can still negotiate", "He answered perfectly", "He should withdraw", "He will not be offered it"], answer:0 },
+    ]},
+    { context:"a conversation at work", turns:[
+      ["M", "Have you got a moment about the Thursday report?"],
+      ["W", "Go ahead, though I am in a meeting in ten minutes."],
+      ["M", "It will not take that long. Do you want the figures weekly or monthly?"],
+      ["W", "Weekly, but only the summary. The full tables are too much."],
+      ["M", "That is easier, actually. The tables take me most of an afternoon."],
+      ["W", "Then stop producing them. Nobody has opened one in months."],
+      ["M", "I wish somebody had told me that in March."],
+      ["W", "So do I. Send me the summary and we will call it settled."],
+    ], questions:[
+      { q:"What does the woman ask the man to stop doing?", options:["Producing the full tables", "Sending the weekly reports", "Attending the Thursday meeting", "Summarising the weekly figures"], answer:0 },
+      { q:"How does the man feel about this?", options:["He wishes he had known", "He disagrees with her", "He is worried about it", "He finds it more work"], answer:0 },
+    ]},
+  ],
+  health: [
+    { context:"a conversation about sleep", turns:[
+      ["W", "You look shattered. Are you still not sleeping?"],
+      ["M", "Barely. I lie awake for hours and then wake up early anyway."],
+      ["W", "Have you spoken to anybody at the health centre?"],
+      ["M", "I tried. The first appointment they offered was in two months."],
+      ["W", "Ask about the telephone consultations. They are much quicker."],
+      ["M", "I did not know those existed."],
+      ["W", "Most people do not. A friend of mine got one within a week."],
+      ["M", "I will ring them tomorrow morning, then."],
+    ], questions:[
+      { q:"Why has the man not seen anyone yet?", options:["The wait was too long", "He did not try to book", "The centre was closed", "He forgot the appointment"], answer:0 },
+      { q:"What does the woman suggest?", options:["Asking about phone consultations", "Going to a different clinic", "Waiting the two months", "Speaking to her friend"], answer:0 },
+    ]},
+    { context:"a conversation at a sports centre", turns:[
+      ["M", "Is the pool open this evening? The sign says something about cleaning."],
+      ["W", "It closes at six tonight and reopens on Saturday."],
+      ["M", "That is annoying. I only swim on Fridays."],
+      ["W", "There is a pool at the community centre about ten minutes away."],
+      ["M", "Do I need to be a member there?"],
+      ["W", "Not for a single visit. It costs a few pounds at the door."],
+      ["M", "That will do for one week. Thanks for telling me."],
+      ["W", "They are quieter than here, too, if you go before seven."],
+    ], questions:[
+      { q:"What is the man's problem?", options:["The pool is shut on Friday", "He has lost his membership card", "The centre is much too far", "He cannot afford another visit"], answer:0 },
+      { q:"What does the woman say about the other pool?", options:["A single visit is possible", "Membership is required", "It is more expensive", "It closes at six as well"], answer:0 },
+    ]},
+  ],
+  environment: [
+    { context:"a conversation about recycling", turns:[
+      ["M", "Do you know why they took the bins off our floor?"],
+      ["W", "Something about the corridor being blocked. It was in the newsletter."],
+      ["M", "I never read that. So where are we supposed to take things now?"],
+      ["W", "Down by the back door. It is only one flight of stairs."],
+      ["M", "That explains why the general waste is overflowing every week."],
+      ["W", "Exactly. Most people just gave up rather than walk down."],
+      ["M", "Has anybody actually complained about it?"],
+      ["W", "Two of us have. They said they would review it next term."],
+    ], questions:[
+      { q:"Why were the bins removed?", options:["They blocked the corridor", "They were rarely used", "They were being replaced", "They were often damaged"], answer:0 },
+      { q:"What does the woman suggest has happened?", options:["People stopped recycling entirely", "The bins were moved again", "Complaints were ignored", "The newsletter was wrong"], answer:0 },
+    ]},
+    { context:"a conversation before a volunteer day", turns:[
+      ["W", "Are you still coming to the park on Saturday?"],
+      ["M", "I am. Do I need to bring anything?"],
+      ["W", "Gloves and bags are provided. Just wear old clothes."],
+      ["M", "And we meet at the centre, is that right?"],
+      ["W", "At the gates, actually. The poster was printed before they changed it."],
+      ["M", "Good thing I asked. I would have waited there for an hour."],
+      ["W", "You would not have been the first. Bring water as well."],
+      ["M", "Is there nowhere to fill up?"],
+    ], questions:[
+      { q:"What has the man misunderstood?", options:["Where the group meets", "What time it begins", "What he should wear", "Which day it is on"], answer:0 },
+      { q:"Why does the woman mention water?", options:["None is available nearby", "The weather will be hot", "It is not provided free", "The walk is very long"], answer:0 },
+    ]},
+  ],
+  daily: [
+    { context:"a conversation about a delivery", turns:[
+      ["M", "Has anything arrived for me this week?"],
+      ["W", "A parcel came on Tuesday. I signed for it and put it in your room."],
+      ["M", "That is a relief. The tracking said it was left at number twelve."],
+      ["W", "It was, and number twelve brought it round the same evening."],
+      ["M", "I had already started writing a complaint to the company."],
+      ["W", "I would send it anyway. That is the third one this month."],
+      ["M", "Is it really? I had not noticed a pattern."],
+      ["W", "It is always the same driver, apparently."],
+    ], questions:[
+      { q:"What happened to the parcel?", options:["A neighbour passed it on", "It was never delivered", "It went back to the depot", "It arrived on Wednesday"], answer:0 },
+      { q:"Why does the woman say to complain anyway?", options:["The problem keeps repeating", "The parcel was damaged", "The company owes a refund", "The driver was rude"], answer:0 },
+    ]},
+    { context:"a conversation about a bus", turns:[
+      ["W", "Do you know if the number eleven is running today?"],
+      ["M", "It is, but they have changed the route because of the roadworks."],
+      ["W", "Does it still stop outside the chemist?"],
+      ["M", "Not this month. The nearest stop is by the library instead."],
+      ["W", "That adds ten minutes to my morning."],
+      ["M", "There is a smaller bus that goes the old way, but only hourly."],
+      ["W", "Hourly is no use to me. I will walk the extra bit."],
+      ["M", "It should be back to normal by the end of the month."],
+    ], questions:[
+      { q:"Why has the route changed?", options:["There are roadworks", "The bus was cancelled", "The stop was removed", "A new route opened"], answer:0 },
+      { q:"What will the woman probably do?", options:["Walk to the library stop", "Take the hourly bus", "Wait until next month", "Find a different route"], answer:0 },
+    ]},
+  ],
+  money: [
+    { context:"a conversation about bills", turns:[
+      ["M", "Did the electricity bill come yet?"],
+      ["W", "It did, and it is nearly double what we paid last quarter."],
+      ["M", "Double? We have not been using any more than usual."],
+      ["W", "I think it is an estimate rather than a real reading."],
+      ["M", "Can we do anything about that?"],
+      ["W", "We send them the actual meter reading and they correct it."],
+      ["M", "Where is the meter? I have never even seen it."],
+      ["W", "Under the stairs, behind that cupboard door nobody opens."],
+    ], questions:[
+      { q:"Why does the woman think the bill is high?", options:["It is based on an estimate", "Prices have gone up", "They used more heating", "A payment was missed"], answer:0 },
+      { q:"What do they plan to do?", options:["Send a real meter reading", "Complain to the supplier", "Change to another company", "Pay it and move on"], answer:0 },
+    ]},
+    { context:"a conversation about a bank account", turns:[
+      ["W", "Did you sort out that charge on your account?"],
+      ["M", "Not yet. Every time I ring, the queue is about forty minutes."],
+      ["W", "Have you tried the messaging thing in the app?"],
+      ["M", "Is that any faster?"],
+      ["W", "Much. I had something refunded in a day using it."],
+      ["M", "I did not even know the app could do that."],
+      ["W", "It is buried under help, which is not exactly obvious."],
+      ["M", "Nothing about that app is obvious. But I will look tonight."],
+    ], questions:[
+      { q:"Why has the man not resolved it?", options:["The wait is too long", "He forgot to call", "The bank refused him", "He lost the details"], answer:0 },
+      { q:"What does the woman recommend?", options:["Messaging through the app", "Visiting a branch instead", "Writing a formal letter", "Waiting a few more days"], answer:0 },
+    ]},
+  ],
+  housing: [
+    { context:"a conversation about a flat", turns:[
+      ["M", "How is the new place working out?"],
+      ["W", "Quieter than the last one, though the heating is temperamental."],
+      ["M", "Have you told the landlord?"],
+      ["W", "Twice. He says he will come and look, and then does not."],
+      ["M", "Put it in writing if you have not already."],
+      ["W", "Does that actually make a difference?"],
+      ["M", "It does if it ever goes further. A text message counts as well."],
+      ["W", "I have been ringing him, which I suppose leaves no record at all."],
+    ], questions:[
+      { q:"What is the problem with the flat?", options:["The heating is unreliable", "The neighbours are noisy", "The rent has increased", "The rooms are too small"], answer:0 },
+      { q:"Why does the man suggest writing?", options:["It creates a record", "It is faster than calling", "The landlord prefers it", "It is legally required"], answer:0 },
+    ]},
+    { context:"a conversation between flatmates", turns:[
+      ["W", "Can we talk about the kitchen for a minute?"],
+      ["M", "Let me guess. The washing-up again."],
+      ["W", "Partly. But mostly that we all buy the same things separately."],
+      ["M", "That is true. There are four bottles of oil in there."],
+      ["W", "And three of us throw away half of what we buy."],
+      ["M", "So a shared list for the basics, and split it?"],
+      ["W", "That was going to be my suggestion, yes."],
+      ["M", "Fine by me. It is cheaper for everyone anyway."],
+    ], questions:[
+      { q:"What is the woman's main concern?", options:["Buying the same things twice", "The washing-up not done", "The kitchen being dirty", "Food being taken"], answer:0 },
+      { q:"What do they agree to do?", options:["Share a shopping list", "Clean on a rota", "Buy less food overall", "Label their own items"], answer:0 },
+    ]},
+  ],
+  travel: [
+    { context:"a conversation about a trip", turns:[
+      ["M", "Have you booked anything for the trip yet?"],
+      ["W", "Only the flights. I am waiting on the accommodation."],
+      ["M", "Do not leave it too long. Everything goes in the last fortnight."],
+      ["W", "I know, but the prices keep dropping so I keep waiting."],
+      ["M", "They drop until about three weeks out, then they climb sharply."],
+      ["W", "Is that a rule, or just what happened to you?"],
+      ["M", "Both, honestly. I have been caught out twice now."],
+      ["W", "Then I will book something this weekend and stop watching."],
+    ], questions:[
+      { q:"Why has the woman not booked?", options:["She is waiting for lower prices", "She has changed the dates", "She cannot decide where", "She is short of money"], answer:0 },
+      { q:"What does the man warn her about?", options:["Prices rise close to the date", "Rooms are already full", "The flights may change", "The area gets busy"], answer:0 },
+    ]},
+    { context:"a conversation at a station", turns:[
+      ["W", "Excuse me, is this the platform for the city train?"],
+      ["M", "It was, but they moved it to platform four this morning."],
+      ["W", "Of course they did. Is there time to get across?"],
+      ["M", "If you use the footbridge now, yes. Do not cross the line."],
+      ["W", "I would not dare. Thank you."],
+      ["M", "It is running about ten minutes late anyway, so you are fine."],
+      ["W", "That is the first useful delay I have had all week."],
+      ["M", "Take it while you can. Mine was cancelled outright."],
+    ], questions:[
+      { q:"What has changed this morning?", options:["The departure platform", "The train's destination", "The ticket arrangement", "The departure time"], answer:0 },
+      { q:"Why is the woman not worried?", options:["The train is running late", "She has another ticket", "There is a later train", "The bridge is quick"], answer:0 },
+    ]},
+  ],
+  media: [
+    { context:"a conversation about a series", turns:[
+      ["M", "Have you got to the end of that series yet?"],
+      ["W", "Two episodes left. Do not say a word."],
+      ["M", "I was not going to. I only wanted to know if it is worth finishing."],
+      ["W", "It is, though the middle drags a bit."],
+      ["M", "That is what everybody says. I gave up around episode four."],
+      ["W", "Push through. It picks up considerably after that."],
+      ["M", "How many are there altogether?"],
+      ["W", "Eight. So you stopped almost exactly at the worst point."],
+    ], questions:[
+      { q:"What does the woman ask the man not to do?", options:["Reveal the ending", "Watch it without her", "Recommend it to others", "Start it again"], answer:0 },
+      { q:"What does the woman advise?", options:["Continuing past episode four", "Skipping the middle entirely", "Waiting for the next series", "Reading about it first"], answer:0 },
+    ]},
+    { context:"a conversation about the news", turns:[
+      ["W", "Where do you actually get your news these days?"],
+      ["M", "Mostly whatever appears on my phone, if I am honest."],
+      ["W", "Does that not worry you? You never choose any of it."],
+      ["M", "It did not until you said it out loud."],
+      ["W", "I follow a few specific journalists instead. It is a bit more work."],
+      ["M", "Does it take long?"],
+      ["W", "Ten minutes in the morning. Less than I used to spend scrolling."],
+      ["M", "Then it is not really more work at all, is it."],
+    ], questions:[
+      { q:"What is the woman's concern about the man's habit?", options:["He does not choose his news", "He reads too little of it", "He trusts a single source", "He spends too much time"], answer:0 },
+      { q:"What does the man realise at the end?", options:["Her method saves time", "She reads far more", "His phone is unreliable", "He should read less"], answer:0 },
+    ]},
+  ],
+  innovation: [
+    { context:"a conversation about a new tool", turns:[
+      ["M", "Have you tried that writing assistant everybody keeps mentioning?"],
+      ["W", "A little. It is useful for tidying sentences, less so for ideas."],
+      ["M", "That matches what my tutor said, oddly enough."],
+      ["W", "She is right. It writes something plausible whether it knows or not."],
+      ["M", "So how do you tell when it is wrong?"],
+      ["W", "You check anything factual. If you cannot check it, do not use it."],
+      ["M", "That sounds like more work than writing it myself."],
+      ["W", "Sometimes it is. That is rather the point."],
+    ], questions:[
+      { q:"What does the woman say the tool is good for?", options:["Improving existing sentences", "Generating new ideas", "Checking factual claims", "Structuring an argument"], answer:0 },
+      { q:"What is the woman's rule?", options:["Verify anything factual", "Use it only for drafts", "Avoid it for coursework", "Declare it every time"], answer:0 },
+    ]},
+    { context:"a conversation at an exhibition", turns:[
+      ["W", "Did you see the robotics demonstration upstairs?"],
+      ["M", "I missed it. The room was full when I got there."],
+      ["W", "They run it every hour, so you have not lost your chance."],
+      ["M", "Is it worth waiting for?"],
+      ["W", "The first half is. The second half is mostly the same thing again."],
+      ["M", "Then I will go for the next one and slip out halfway."],
+      ["W", "Sensible. The rest of the gallery is better anyway."],
+      ["M", "And you can touch most of it, which the sign did not make clear."],
+    ], questions:[
+      { q:"Why did the man miss the demonstration?", options:["The room was already full", "It had already finished", "He arrived on the wrong day", "He could not find it"], answer:0 },
+      { q:"What does the woman say about the second half?", options:["It largely repeats the first", "It is the best part", "It is much shorter", "It is often cancelled"], answer:0 },
+    ]},
+  ],
+};
+// The clip for a conversation is content-addressed over the turn text
+// alone -- the speaker letters are layout, not sound, and leaving them
+// out means the browser-speech fallback reads something sensible instead
+// of announcing "M" and "W" before every line.
+function conversationText(turns){ return turns.map(t => t[1]).join(' '); }
+// One conversation per exercise with its two questions, matching the real
+// task. Options are reshuffled on every draw.
+function genConversation(theme, topicIndex){
+  const bank = CONVERSATION_BANK[theme] || CONVERSATION_BANK.campus;
+  const c = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  return { context: c.context, turns: c.turns, questions: c.questions.map(q => {
+    const correct = q.options[q.answer];
+    const options = shuffle(q.options);
+    return { q: q.q, options, answer: options.indexOf(correct) };
+  }) };
+}
+
 // ---- Take an Interview ----
 // Real TOEFL 2026 "Take an Interview": 4 questions on ONE topic, asked
 // back-to-back, 45s each, no prep time. Each set below is a self-contained
@@ -4903,6 +5327,7 @@ function generateOne(type, theme, topicIndex){
     case 'interview': return { type, data: genInterview(theme, topicIndex) };
     case 'choose-response': return { type, data: genChooseResponse(theme) };
     case 'announcement': return { type, data: genAnnouncement(theme) };
+    case 'conversation': return { type, data: genConversation(theme, topicIndex) };
   }
 }
 // The named situations/topics a given type+theme offers, for the teacher's
@@ -4910,6 +5335,7 @@ function generateOne(type, theme, topicIndex){
 function topicsFor(type, theme){
   if(type === 'listen-repeat') return (LISTEN_SETS[theme] || []).map(s => s.label);
   if(type === 'interview') return (INTERVIEW_BANK[theme] || []).map(s => s.topic);
+  if(type === 'conversation') return (CONVERSATION_BANK[theme] || []).map(c => c.context.replace(/^a conversation /, '').replace(/^a /, ''));
   return [];
 }
 function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
@@ -4920,7 +5346,7 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // consistent.
 function generateBatchItems(type, theme, topicIndex){
   const items = [];
-  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement'){
+  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement' || type === 'conversation'){
     // Real TOEFL structure: both Speaking tasks are ONE connected unit —
     // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
     // on a single topic — approved/discarded as a set, not as 4 separate
@@ -5189,6 +5615,16 @@ function renderTypeTabs(){
 
 function cardBody(item){
   const d = item.data;
+  if(item.type==='conversation') return `
+    <div class="ex-body">A two-speaker conversation, ${d.questions.length} questions. The student hears it and answers from listening — the transcript is never shown to them.</div>
+    <div style="margin-top:.7rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span class="small-note" style="flex:1">Listen to ${escapeHtml(d.context)}</span>
+        <button class="btn sound sm" onclick="speak('${conversationText(d.turns).replace(/'/g,"\\'")}')">🔊</button>
+      </div>
+      <div class="small-note" style="margin:.3rem 0 0 0">${d.turns.map(t=>`<b>${t[0]==='M'?'Man':'Woman'}:</b> ${escapeHtml(t[1])}`).join('<br>')}</div>
+      ${d.questions.map(q=>`<div class="small-note" style="margin-top:.4rem">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}
+    </div>`;
   if(item.type==='announcement') return `
     <div class="ex-body">${d.set.length} announcements, ${d.set.reduce((n,a)=>n+a.questions.length,0)} questions. The student hears each one and answers from listening — the text is never shown to them.</div>
     ${d.set.map((a,i)=>`<div style="margin-top:.7rem">
@@ -5440,6 +5876,7 @@ function renderStudent(){
       : item.type==='complete-words' ? 'Fill in the missing letters'
       : item.type==='choose-response' ? `${item.data.set.length} exchanges · pick the best reply`
       : item.type==='announcement' ? `${item.data.set.length} announcements · answer questions`
+      : item.type==='conversation' ? `A conversation · ${item.data.questions.length} questions`
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
       : `${item.data.topic} · 4 questions`;
     const b = document.createElement('button');
@@ -5680,6 +6117,14 @@ function renderPractice(){
     renderAnnouncementStep(item);
     return;
   }
+
+  if(item.type==='conversation'){
+    if(!window._cvState || window._cvState.itemId !== item.id){
+      window._cvState = { itemId:item.id, q:0, listens:0, results:[], chosen:null };
+    }
+    renderConversationStep(item);
+    return;
+  }
 }
 // Listen to an Announcement. Same rule as every other Listening task: the
 // announcement is heard, never written. It stays hidden even while the
@@ -5771,6 +6216,93 @@ function advanceAnnouncement(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">Announcements carry one or two facts that matter and a good deal that does not. If you missed one, it is usually worth checking whether the answer was stated outright or only implied.</p>
+    </div>` + PRACTICE_AGAIN_BTN;
+}
+// Listen to a Conversation. Two speakers, heard once through, then two
+// questions about it. The transcript stays hidden while the questions are
+// on screen for the same reason as every other Listening task -- showing
+// it turns listening into reading -- and appears only in the review.
+const CONV_MAX_LISTENS = 2;
+function renderConversationStep(item){
+  const st = window._cvState;
+  const d = item.data;
+  const q = d.questions[st.q];
+  const wrap = document.getElementById('practice-wrap');
+  const answered = st.chosen !== null;
+  const listensLeft = CONV_MAX_LISTENS - st.listens;
+
+  const options = q.options.map((o,i)=>{
+    let cls = 'mc-option';
+    if(answered){
+      if(i === q.answer) cls += ' mc-correct';
+      else if(i === st.chosen) cls += ' mc-wrong';
+    }
+    return `<button class="${cls}" ${answered?'disabled':''} onclick="answerConversation(${i})">
+      <span class="mc-letter">${'ABCD'[i]}</span><span>${escapeHtml(o)}</span></button>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
+      <div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>Listen to ${escapeHtml(d.context)}${/\bbetween\b/.test(d.context) ? '' : ' between a man and a woman'}.</div>
+      <div class="ex-actions" style="margin-top:.6rem">
+        ${listensLeft > 0
+          ? `<button class="btn sound" onclick="playConversation()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
+          : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+      </div>
+      ${st.listens ? `
+        <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
+        <div class="mc-options">${options}</div>`
+        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin. You will hear it at most twice.</p>'}
+      <div id="cv-result"></div>
+      ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
+        <button class="btn" onclick="advanceConversation()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
+      </div>` : ''}
+    </div>`;
+  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+}
+function playConversation(){
+  const st = window._cvState, item = currentItem();
+  if(!st || !item) return;
+  st.listens++;
+  renderConversationStep(item);
+  speak(conversationText(item.data.turns));
+}
+function conversationTranscriptHtml(turns){
+  return turns.map(t => `<b>${t[0]==='M'?'Man':'Woman'}:</b> ${escapeHtml(t[1])}`).join('<br>');
+}
+function answerConversation(i){
+  const st = window._cvState, item = currentItem();
+  if(!st || st.chosen !== null) return;
+  const q = item.data.questions[st.q];
+  st.chosen = i;
+  const ok = i === q.answer;
+  st.results.push(ok ? 1 : 0);
+  renderConversationStep(item);
+  document.getElementById('cv-result').innerHTML = `
+    <div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct' : '✕ Not quite'}</div>
+    ${ok ? '' : `<p class="small-note">The answer was <b>${'ABCD'[q.answer]}</b>. The conversation is below — find the line that settles it.</p>`}
+    <div class="interview-reveal">
+      <span class="interview-reveal-label">📝 What you heard</span>${conversationTranscriptHtml(item.data.turns)}
+    </div>`;
+}
+function advanceConversation(){
+  const st = window._cvState, item = currentItem();
+  if(!st || !item) return;
+  st.chosen = null;
+  if(st.q < item.data.questions.length - 1){
+    // Same conversation, next question -- no fresh listen, they are still
+    // answering about what they just heard.
+    st.q++;
+    renderConversationStep(item);
+    return;
+  }
+  const score = st.results.reduce((x,y)=>x+y,0);
+  logUsage('conversation', item.theme, score / st.results.length);
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
+      <p class="small-note">In a conversation the answer is very often in the <i>reply</i>, not in the line that prompted it. When you miss one, look at who said what after the question was asked.</p>
     </div>` + PRACTICE_AGAIN_BTN;
 }
 // Listen and Choose a Response. The defining rule of the real task is that
@@ -6650,6 +7182,7 @@ function guideContent(role){
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
       <li><b>Listen and Choose a Response</b> — hear a short question, pick the best reply.</li>
       <li><b>Listen to an Announcement</b> — hear a notice, answer questions about it.</li>
+      <li><b>Listen to a Conversation</b> — hear two people talking, answer questions about it.</li>
       <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
       <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
       <li><b>Academic Discussion</b> — join a class discussion thread, at least 100 words.</li>

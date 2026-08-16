@@ -19,6 +19,7 @@ Each exercise therefore picks its voice deterministically from its own
 identity, so regenerating always produces the same assignment.
 """
 import json, os, subprocess, sys, collections
+from gen_dialogue import render_dialogue
 
 MODELS = '/tmp/pipertest'
 # A roster wide enough that neighbouring exercises rarely repeat a voice.
@@ -40,6 +41,22 @@ IV_VOICES = [            # the "interviewer" running the research study
     ('en_US-kusal-medium.onnx',  'M/US'),
 ]
 
+# Listen to a Conversation is the one task with two people in a single
+# clip, so it needs a voice per SPEAKER rather than a voice per exercise.
+# Piper has no way to switch voice mid-utterance: each turn is rendered
+# with its own model and the turns are joined afterwards.
+CONV_M = ['en_US-ryan-high.onnx', 'en_US-joe-medium.onnx',
+          'en_US-kusal-medium.onnx', 'en_GB-northern_english_male-medium.onnx']
+CONV_W = ['en_US-lessac-high.onnx', 'en_US-amy-medium.onnx',
+          'en_US-hfc_female-medium.onnx', 'en_GB-cori-high.onnx', 'en_GB-alba-medium.onnx']
+
+def render_conversation(item, outdir, bitrate='32000'):
+    name = str(item['hash']); m4a = os.path.join(outdir, name + '.m4a')
+    if os.path.exists(m4a):
+        return os.path.getsize(m4a), True
+    render_dialogue(item['turns'], {'M': item['voice_m'], 'W': item['voice_w']}, m4a, bitrate)
+    return os.path.getsize(m4a), False
+
 def render(text, model, outdir, bitrate='32000'):
     name = str(text['hash']); m4a = os.path.join(outdir, name + '.m4a')
     if os.path.exists(m4a):
@@ -59,6 +76,15 @@ def main(texts_json, outdir):
     assign, used = {}, collections.Counter()
     for i in items:
         key = (i['kind'], i['theme'], i['set'])
+        if i['kind'] == 'cv':
+            # Pair the two speakers off the theme+set index so the same
+            # conversation always sounds like the same two people, and
+            # neighbouring conversations rarely reuse a pair.
+            n = themes.index(i['theme']) + i['set'] * 5
+            i['voice_m'] = CONV_M[n % len(CONV_M)]
+            i['voice_w'] = CONV_W[n % len(CONV_W)]
+            used['M+W'] += 1
+            continue
         if key not in assign:
             roster = LR_VOICES if i['kind'] == 'lr' else IV_VOICES
             if i['kind'] == 'cr':
@@ -72,7 +98,10 @@ def main(texts_json, outdir):
 
     total = made = 0
     for n, i in enumerate(items, 1):
-        size, cached = render(i, i['voice'][0], outdir)
+        if i['kind'] == 'cv':
+            size, cached = render_conversation(i, outdir)
+        else:
+            size, cached = render(i, i['voice'][0], outdir)
         total += size; made += 0 if cached else 1
         if n % 25 == 0 or n == len(items):
             print(f'  {n}/{len(items)} clips  ({total//1024} KB so far)', flush=True)
