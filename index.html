@@ -238,6 +238,10 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
             <option value="daily">Daily Life &amp; Practical Logistics</option>
           </select>
         </div>
+        <div class="field" id="topic-field" style="display:none">
+          <label for="subtopic">Situation</label>
+          <select id="subtopic"></select>
+        </div>
         <button class="btn ghost" onclick="randomizeTheme()" title="Pick a random theme from all 14">🎲 Random</button>
         <button class="btn" onclick="generateBatch()">✨ Generate for the whole class</button>
       </div>
@@ -3287,7 +3291,7 @@ const RECORD_SECONDS = RECORD_SECONDS_OFFICIAL.map(s => s + PRACTICE_BUFFER_SECO
 <script>
 const LISTEN_SETS = {
   campus: [
-    [
+    { label:'A campus information desk', situation:'You are being trained to answer questions at a campus information desk.', items:[
       {text:'The library closes early on Fridays.', scene:'library'},
       {text:'Most new students eat lunch before class.', scene:'cafeteria'},
       {text:'The office asked students to update their contact details.', scene:'classroom'},
@@ -3295,8 +3299,8 @@ const LISTEN_SETS = {
       {text:'Students who miss orientation should schedule a meeting.', scene:'library'},
       {text:'Even though the schedule changed twice this month, most students still attended class on time.', scene:'classroom'},
       {text:'The advisor suggested each new student meet before picking a final schedule.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A student orientation desk', situation:'You are learning to welcome new students at an orientation desk.', items:[
       {text:'Welcome to the student orientation desk.', scene:'classroom'},
       {text:'Your visitor badge is on the front table.', scene:'classroom'},
       {text:'The morning session begins in the main auditorium at nine.', scene:'classroom'},
@@ -3304,8 +3308,8 @@ const LISTEN_SETS = {
       {text:'Campus maps are available in print and inside the mobile app.', scene:'library'},
       {text:'If you cannot find the room listed on your schedule, ask any member of staff wearing a green badge.', scene:'classroom'},
       {text:'Students who arrive after the session has started should enter quietly through the side door at the back.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A campus tour', situation:'You are learning to guide visitors on a campus tour.', items:[
       {text:'The campus tour leaves from this entrance.', scene:'library'},
       {text:'Please stay together as we cross the courtyard.', scene:'library'},
       {text:'On your right you can see the science building and the main library.', scene:'library'},
@@ -3313,8 +3317,8 @@ const LISTEN_SETS = {
       {text:'Free printing is included with your enrolment up to a monthly limit.', scene:'classroom'},
       {text:'Sign-up tables for student clubs are in the hall every Wednesday.', scene:'cafeteria'},
       {text:'Anyone needing help with housing or visas should visit the office upstairs.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A student services counter', situation:'You are being trained to help students at a student services counter.', items:[
       {text:'Student services is open until five today.', scene:'classroom'},
       {text:'You will need one form of photo identification.', scene:'classroom'},
       {text:'Appointments can be booked online or at the desk behind me.', scene:'library'},
@@ -3322,10 +3326,10 @@ const LISTEN_SETS = {
       {text:'We will send a confirmation to the email address on your record.', scene:'classroom'},
       {text:'If your document is urgent, please tell the adviser at the start.', scene:'classroom'},
       {text:'Students who miss an appointment may wait several weeks for another slot.', scene:'library'},
-    ],
+    ]},
   ],
   register: [
-    [
+    { label:'A shared office', situation:'You are learning to make polite requests in a shared office.', items:[
       {text:'Could you kindly close the door right now?', scene:'classroom'},
       {text:'I would like to schedule a meeting.', scene:'classroom'},
       {text:'Please let me know as soon as possible if that time still works.', scene:'library'},
@@ -3333,8 +3337,8 @@ const LISTEN_SETS = {
       {text:'I wanted to follow up nicely about the message I sent.', scene:'classroom'},
       {text:'Before we begin the meeting, I would like to review what we agreed on last time.', scene:'dorm'},
       {text:'Whenever you have a free moment, could you let me know if the plan still works?', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A reception telephone', situation:'You are being trained to answer the telephone at a reception desk.', items:[
       {text:'Good morning, thank you for calling reception.', scene:'classroom'},
       {text:'May I ask who is calling, please?', scene:'classroom'},
       {text:'I am afraid she is in a meeting until eleven o\'clock.', scene:'classroom'},
@@ -3342,8 +3346,8 @@ const LISTEN_SETS = {
       {text:'Could you kindly spell your full surname for me?', scene:'classroom'},
       {text:'If you would prefer, I can ask her to return your call as soon as the meeting has finished.', scene:'classroom'},
       {text:'Please tell me whether you would prefer a telephone call or an email.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A reception desk', situation:'You are learning to greet visitors at a reception desk.', items:[
       {text:'Please take a seat and I will be right with you.', scene:'library'},
       {text:'Do you have an appointment with us today?', scene:'library'},
       {text:'I will just need to check a few details before we begin.', scene:'library'},
@@ -3351,8 +3355,8 @@ const LISTEN_SETS = {
       {text:'There is water and coffee available in the waiting area.', scene:'cafeteria'},
       {text:'Please keep any supporting documents ready for the adviser to see.', scene:'library'},
       {text:'If you must leave before you are seen, tell us so we can offer your slot.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'An evening event', situation:'You are learning to host guests at an evening event.', items:[
       {text:'Thank you all for coming this evening.', scene:'cafeteria'},
       {text:'Dinner will be served in about ten minutes.', scene:'cafeteria'},
       {text:'Please switch your phones to silent before the talks begin.', scene:'classroom'},
@@ -3360,10 +3364,10 @@ const LISTEN_SETS = {
       {text:'Questions will be taken at the end of each presentation.', scene:'classroom'},
       {text:'Tonight\'s guests will be staying for refreshments in the room next door afterwards.', scene:'cafeteria'},
       {text:'We would be grateful if you could complete the feedback form on your seat.', scene:'classroom'},
-    ],
+    ]},
   ],
   current: [
-    [
+    { label:'A phone shop', situation:'You are being trained to explain apps and devices to customers at a phone shop.', items:[
       {text:'This app updates automatically.', scene:'classroom'},
       {text:'Most students trust cloud storage completely.', scene:'classroom'},
       {text:'The software update improved battery life a whole lot.', scene:'bus'},
@@ -3371,8 +3375,8 @@ const LISTEN_SETS = {
       {text:'Most students check their phones just minutes after waking up.', scene:'classroom'},
       {text:'The new streaming app launched last month and it already has millions of users.', scene:'dorm'},
       {text:'Researchers study how constant phone notifications affect focus, memory, and grades.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A technology help desk', situation:'You are learning to work at a technology help desk.', items:[
       {text:'Welcome to the technology help desk.', scene:'classroom'},
       {text:'Please tell me what device you are using.', scene:'classroom'},
       {text:'I will need your student number to open a support ticket.', scene:'classroom'},
@@ -3380,8 +3384,8 @@ const LISTEN_SETS = {
       {text:'Most connection issues are resolved by resetting the network settings.', scene:'library'},
       {text:'If the fault continues, bring the device here and we will look at it.', scene:'classroom'},
       {text:'Please back up your files first, because some repairs erase the storage.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'An account sign-up desk', situation:'You are being trained to help people set up new accounts.', items:[
       {text:'Your new account is now ready to use.', scene:'library'},
       {text:'Please choose a password you have not used before.', scene:'library'},
       {text:'You will be asked to confirm your identity on a second device.', scene:'classroom'},
@@ -3389,8 +3393,8 @@ const LISTEN_SETS = {
       {text:'Do not share your login details with anyone, including staff.', scene:'classroom'},
       {text:'You can reset your own password using your recovery email address.', scene:'library'},
       {text:'Report any message asking for your password, because we never request it.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A library print room', situation:'You are learning to explain the printers in a library print room.', items:[
       {text:'The printer is located just behind you.', scene:'library'},
       {text:'Send your document from any campus computer.', scene:'library'},
       {text:'Then tap your student card on the reader to release it.', scene:'library'},
@@ -3398,10 +3402,10 @@ const LISTEN_SETS = {
       {text:'Jobs are deleted from the queue after twenty-four hours.', scene:'library'},
       {text:'If the paper runs out, spare packs are in the cupboard underneath.', scene:'library'},
       {text:'Please collect your printing promptly, since we recycle it each evening.', scene:'library'},
-    ],
+    ]},
   ],
   grammar: [
-    [
+    { label:'A language classroom', situation:'You are learning to assist a teacher in a language classroom.', items:[
       {text:'She explained the grammar rule twice.', scene:'classroom'},
       {text:'He quickly asked if the deadline had changed.', scene:'classroom'},
       {text:'The teacher reviewed irregular verbs carefully.', scene:'classroom'},
@@ -3409,8 +3413,8 @@ const LISTEN_SETS = {
       {text:'Learners confuse conditionals until seeing examples.', scene:'cafeteria'},
       {text:'The teacher explained that relative clauses take longer than most students expect.', scene:'library'},
       {text:'Students who practice grammar in real talk improve faster than those who just read rules.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A writing centre', situation:'You are being trained to work at a university writing centre.', items:[
       {text:'Welcome to the writing centre.', scene:'library'},
       {text:'Our tutors work with students at every level.', scene:'library'},
       {text:'Sessions last fifty minutes and are completely free of charge.', scene:'library'},
@@ -3418,8 +3422,8 @@ const LISTEN_SETS = {
       {text:'We help you improve your writing rather than correct it for you.', scene:'classroom'},
       {text:'Book a session before deadline week and you will find far more times free.', scene:'library'},
       {text:'Students who come regularly make much greater progress than occasional visitors.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A language laboratory', situation:'You are learning to help students in a language laboratory.', items:[
       {text:'The language lab is on this floor.', scene:'classroom'},
       {text:'Each booth has a headset and a microphone.', scene:'classroom'},
       {text:'Recordings are saved automatically to your student account.', scene:'classroom'},
@@ -3427,8 +3431,8 @@ const LISTEN_SETS = {
       {text:'Please wipe the headset with the cloth provided afterwards.', scene:'classroom'},
       {text:'You may share a recording with your teacher from inside the software.', scene:'classroom'},
       {text:'The lab is busy before speaking assessments, so book a booth in advance.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A study skills session', situation:'You are being trained to run a study skills session.', items:[
       {text:'This session is about study skills.', scene:'classroom'},
       {text:'We will look at how to take better notes.', scene:'classroom'},
       {text:'Most students write far more than they will ever reread.', scene:'classroom'},
@@ -3436,10 +3440,10 @@ const LISTEN_SETS = {
       {text:'Reviewing briefly every day beats one long session before a test.', scene:'library'},
       {text:'After every lecture, try writing the main point down in your own words immediately.', scene:'classroom'},
       {text:'Short daily practice usually produces better results than one long session.', scene:'library'},
-    ],
+    ]},
   ],
   social: [
-    [
+    { label:'A student club', situation:'You are learning to welcome members at a student club.', items:[
       {text:'Cultural exchange truly builds friendships.', scene:'classroom'},
       {text:'Many clubs welcome new members warmly.', scene:'classroom'},
       {text:'The multicultural fair attracted students from many countries.', scene:'library'},
@@ -3447,8 +3451,8 @@ const LISTEN_SETS = {
       {text:'This year\'s festival drew a much bigger crowd than usual.', scene:'cafeteria'},
       {text:'Students who join a club early often feel more confident and connected sooner.', scene:'dorm'},
       {text:'The student group announced next month\'s fair will feature food from many different countries.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A community centre', situation:'You are being trained to work at a community centre.', items:[
       {text:'Welcome to the community centre.', scene:'cafeteria'},
       {text:'Our language exchange meets every Thursday evening.', scene:'cafeteria'},
       {text:'Anyone is welcome, whatever level of English they have.', scene:'cafeteria'},
@@ -3456,8 +3460,8 @@ const LISTEN_SETS = {
       {text:'There is no charge, but we do ask you to register once.', scene:'cafeteria'},
       {text:'If it is your first time, arrive early so somebody can introduce you.', scene:'cafeteria'},
       {text:'Members organise weekend outings, and details appear on the noticeboard.', scene:'cafeteria'},
-    ],
-    [
+    ]},
+    { label:'A welcome event', situation:'You are learning to host a welcome event for new arrivals.', items:[
       {text:'Thank you for coming to our welcome event.', scene:'cafeteria'},
       {text:'Please help yourself to food and drink.', scene:'cafeteria'},
       {text:'Name badges are on the table by the door.', scene:'cafeteria'},
@@ -3465,8 +3469,8 @@ const LISTEN_SETS = {
       {text:'Try to speak with somebody you have not met before.', scene:'cafeteria'},
       {text:'At seven o\'clock we will move into the hall for a short talk about the activities running this term.', scene:'classroom'},
       {text:'To help organise future events, speak to a volunteer wearing a blue lanyard.', scene:'cafeteria'},
-    ],
-    [
+    ]},
+    { label:'A cultural fair', situation:'You are being trained to organise stands at a cultural fair.', items:[
       {text:'The cultural fair opens at ten tomorrow.', scene:'cafeteria'},
       {text:'Each stand represents a different country.', scene:'cafeteria'},
       {text:'Volunteers are needed to help set up from eight.', scene:'cafeteria'},
@@ -3474,10 +3478,10 @@ const LISTEN_SETS = {
       {text:'Cooking is allowed only in the kitchen at the back.', scene:'cafeteria'},
       {text:'If you plan to cook, tell us early so we can list the ingredients.', scene:'cafeteria'},
       {text:'Four hundred people came last year, so arrive early for a good position.', scene:'cafeteria'},
-    ],
+    ]},
   ],
   career: [
-    [
+    { label:'A careers office', situation:'You are learning to advise students at a careers office.', items:[
       {text:'She proudly updated her resume today.', scene:'dorm'},
       {text:'He practiced interview questions aloud.', scene:'classroom'},
       {text:'The career center offers free mock interviews every week.', scene:'classroom'},
@@ -3485,8 +3489,8 @@ const LISTEN_SETS = {
       {text:'Most employers value communication as much as skill.', scene:'classroom'},
       {text:'A short introduction in advance makes networking events feel far less scary.', scene:'cafeteria'},
       {text:'Students who research a company in advance often impress recruiters more.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A careers fair', situation:'You are being trained to work at a careers fair.', items:[
       {text:'Welcome to the careers fair.', scene:'classroom'},
       {text:'Employers are arranged by sector around the hall.', scene:'classroom'},
       {text:'Bring several printed copies of your curriculum vitae.', scene:'classroom'},
@@ -3494,8 +3498,8 @@ const LISTEN_SETS = {
       {text:'Please do not take photographs of other people\'s documents.', scene:'classroom'},
       {text:'If a company interests you, ask what the first year actually involves.', scene:'classroom'},
       {text:'Many employers recruit all year, so today\'s contacts may still help later.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'An internship briefing', situation:'You are learning to brief students about internships.', items:[
       {text:'Thank you for joining our internship briefing.', scene:'classroom'},
       {text:'Placements run for twelve weeks over the summer.', scene:'classroom'},
       {text:'You must be enrolled full time to be eligible.', scene:'classroom'},
@@ -3503,8 +3507,8 @@ const LISTEN_SETS = {
       {text:'We look at motivation as much as at experience.', scene:'classroom'},
       {text:'If your visa limits your hours, tell us early so we can find a good fit.', scene:'classroom'},
       {text:'Students who finish a placement are often invited to apply for a job here.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A new employee\'s first day', situation:'You are being trained to welcome new staff on their first day.', items:[
       {text:'Welcome to your first day with the team.', scene:'classroom'},
       {text:'Your desk is the one beside the window.', scene:'classroom'},
       {text:'Please read the safety notices before you begin work.', scene:'classroom'},
@@ -3512,10 +3516,10 @@ const LISTEN_SETS = {
       {text:'Ask questions freely; nobody expects you to know everything.', scene:'classroom'},
       {text:'At the end of the week we will sit down together and go through what you have learned and what you still need.', scene:'classroom'},
       {text:'If the role or the workload worries you, please raise it early with us.', scene:'classroom'},
-    ],
+    ]},
   ],
   health: [
-    [
+    { label:'A campus gym', situation:'You are being trained to advise members at a campus gym.', items:[
       {text:'Good sleep truly improves daily focus.', scene:'dorm'},
       {text:'Exercise can reduce stress before exams.', scene:'dorm'},
       {text:'The student health center offers free counseling each week.', scene:'classroom'},
@@ -3523,8 +3527,8 @@ const LISTEN_SETS = {
       {text:'Most students really underestimate how much sleep they need.', scene:'cafeteria'},
       {text:'Building a few healthy habits early in the term prevents bigger problems later.', scene:'bus'},
       {text:'Students who exercise during stressful weeks tend to report better focus and mood.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A health centre', situation:'You are being trained to work at a health centre reception.', items:[
       {text:'Good morning, welcome to the health centre.', scene:'classroom'},
       {text:'Do you have an appointment booked with us?', scene:'classroom'},
       {text:'Please complete this form while you are waiting.', scene:'classroom'},
@@ -3532,8 +3536,8 @@ const LISTEN_SETS = {
       {text:'Bring your insurance card to every appointment.', scene:'classroom'},
       {text:'If your symptoms worsen tonight, call the number printed on this form.', scene:'classroom'},
       {text:'You can also book a telephone consultation, which is often much quicker.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A wellbeing centre', situation:'You are learning to welcome students at a wellbeing centre.', items:[
       {text:'The wellbeing centre is open every weekday.', scene:'library'},
       {text:'You can drop in without booking anything first.', scene:'library'},
       {text:'All conversations here are completely confidential.', scene:'library'},
@@ -3541,8 +3545,8 @@ const LISTEN_SETS = {
       {text:'Nothing you tell us is shared with your teachers.', scene:'library'},
       {text:'If the workload feels difficult, speaking to somebody early really helps.', scene:'library'},
       {text:'Many students wait far longer than they need to, so please do not wait.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A pharmacy counter', situation:'You are being trained to serve customers at a pharmacy counter.', items:[
       {text:'The pharmacy counter closes at six.', scene:'cafeteria'},
       {text:'Please take a ticket and wait to be called.', scene:'cafeteria'},
       {text:'Some medicines require a prescription from a doctor.', scene:'classroom'},
@@ -3550,10 +3554,10 @@ const LISTEN_SETS = {
       {text:'Tell the pharmacist about any allergies you may have.', scene:'classroom'},
       {text:'Mention any other medication, because some combinations are not safe.', scene:'classroom'},
       {text:'Repeat prescriptions can be ordered in the app, and we message you.', scene:'classroom'},
-    ],
+    ]},
   ],
   environment: [
-    [
+    { label:'A recycling point', situation:'You are learning to explain recycling to residents at a recycling point.', items:[
       {text:'Campuses now offer more recycling bins.', scene:'dorm'},
       {text:'Many students carry water bottles now.', scene:'cafeteria'},
       {text:'Buses produce far less pollution than individual cars.', scene:'classroom'},
@@ -3561,8 +3565,8 @@ const LISTEN_SETS = {
       {text:'Small daily habits can lower a campus\'s energy use.', scene:'dorm'},
       {text:'Schools that invest early in solar panels often save real money within years.', scene:'classroom'},
       {text:'The report found that less plastic in dining halls could lower total waste yearly.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A building recycling programme', situation:'You are being trained to run a building\'s recycling programme.', items:[
       {text:'Welcome to the campus recycling programme.', scene:'dorm'},
       {text:'Blue bins are for paper and cardboard only.', scene:'dorm'},
       {text:'Please rinse containers before putting them in the bin.', scene:'dorm'},
@@ -3570,8 +3574,8 @@ const LISTEN_SETS = {
       {text:'Batteries must never be placed in the general waste.', scene:'dorm'},
       {text:'If you are unsure which bin something belongs in, there is a chart on the wall above each collection point.', scene:'dorm'},
       {text:'The building recycling the most each term wins a prize from the union.', scene:'dorm'},
-    ],
-    [
+    ]},
+    { label:'A park clean-up', situation:'You are learning to supervise volunteers at a park clean-up.', items:[
       {text:'Thank you for volunteering in the park today.', scene:'bus'},
       {text:'Gloves and tools are in the van behind me.', scene:'bus'},
       {text:'Please work in pairs and stay within the marked area.', scene:'bus'},
@@ -3579,8 +3583,8 @@ const LISTEN_SETS = {
       {text:'We will stop for a break at around eleven o\'clock.', scene:'bus'},
       {text:'If you find something you are not sure about, please leave it where it is and tell one of the supervisors.', scene:'bus'},
       {text:'Groups like this remove tonnes of rubbish and really help the wildlife.', scene:'bus'},
-    ],
-    [
+    ]},
+    { label:'An energy audit', situation:'You are being trained to carry out an energy audit.', items:[
       {text:'Today we are carrying out an energy audit.', scene:'classroom'},
       {text:'We will check the lighting in every room.', scene:'classroom'},
       {text:'Please tell us if a radiator never seems to work.', scene:'dorm'},
@@ -3588,10 +3592,10 @@ const LISTEN_SETS = {
       {text:'Switching off screens overnight saves more than people expect.', scene:'classroom'},
       {text:'If a corridor light stays on all night, note the room number for us.', scene:'classroom'},
       {text:'We will share the results with residents, along with practical suggestions.', scene:'dorm'},
-    ],
+    ]},
   ],
   daily: [
-    [
+    { label:'A visitor information point', situation:'You are learning to give directions and times at a visitor information point.', items:[
       {text:'The campus bank usually opens at nine.', scene:'classroom'},
       {text:'She always pays her rent on the first.', scene:'dorm'},
       {text:'The downtown bus usually leaves every twenty minutes.', scene:'bus'},
@@ -3599,8 +3603,8 @@ const LISTEN_SETS = {
       {text:'A local bank account usually needs a passport and address.', scene:'library'},
       {text:'Most new international students find a suitable apartment within their first two weeks.', scene:'classroom'},
       {text:'He compared three apartments before choosing the one closest to the library.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A post office counter', situation:'You are being trained to serve customers at a post office counter.', items:[
       {text:'Welcome to the post office counter.', scene:'cafeteria'},
       {text:'Please place your parcel on the scales.', scene:'cafeteria'},
       {text:'Standard delivery usually takes three working days.', scene:'cafeteria'},
@@ -3608,8 +3612,8 @@ const LISTEN_SETS = {
       {text:'Anything fragile should be marked clearly on the outside.', scene:'cafeteria'},
       {text:'If you are sending something abroad, you will need to complete a short customs form describing the contents.', scene:'cafeteria'},
       {text:'Undelivered parcels are held for two weeks, then returned to the sender.', scene:'cafeteria'},
-    ],
-    [
+    ]},
+    { label:'A laundry room', situation:'You are learning to explain a laundry room to new residents.', items:[
       {text:'The laundry room is in the basement.', scene:'dorm'},
       {text:'Machines are paid for through the mobile app.', scene:'dorm'},
       {text:'A full wash cycle takes about forty minutes.', scene:'dorm'},
@@ -3617,8 +3621,8 @@ const LISTEN_SETS = {
       {text:'Report any broken machine using the code on the door.', scene:'dorm'},
       {text:'If washing is left in a machine you need, please put it in a basket.', scene:'dorm'},
       {text:'Sunday evenings are busiest, so washing earlier means far shorter queues.', scene:'dorm'},
-    ],
-    [
+    ]},
+    { label:'A waiting area', situation:'You are being trained to manage a waiting area.', items:[
       {text:'Please take a seat until your number appears.', scene:'classroom'},
       {text:'Appointments this morning are running slightly late.', scene:'classroom'},
       {text:'Have your documents ready before you approach the desk.', scene:'classroom'},
@@ -3626,10 +3630,10 @@ const LISTEN_SETS = {
       {text:'We cannot accept forms that have not been signed.', scene:'classroom'},
       {text:'If a document is missing today, you must return with it this week.', scene:'classroom'},
       {text:'Anyone needing an interpreter should say so when booking the appointment.', scene:'classroom'},
-    ],
+    ]},
   ],
   money: [
-    [
+    { label:'A bank branch', situation:'You are learning to explain banking to new customers at a bank branch.', items:[
       {text:'This app carefully tracks daily spending.', scene:'classroom'},
       {text:'She quickly opened a savings account.', scene:'classroom'},
       {text:'Most local banks now waive several fees for full-time students.', scene:'library'},
@@ -3637,8 +3641,8 @@ const LISTEN_SETS = {
       {text:'New students underestimate how quickly small costs add up.', scene:'cafeteria'},
       {text:'Comparing prices before a big purchase can save real money over a term.', scene:'cafeteria'},
       {text:'Students who track weekly expenses tend to save more than those who only check once.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A new accounts desk', situation:'You are being trained to open accounts at a bank.', items:[
       {text:'Welcome to the bank; how can I help?', scene:'classroom'},
       {text:'Opening a student account is free of charge.', scene:'classroom'},
       {text:'You will need your passport and a proof of address.', scene:'classroom'},
@@ -3646,8 +3650,8 @@ const LISTEN_SETS = {
       {text:'The mobile app lets you freeze the card instantly.', scene:'classroom'},
       {text:'If you see a payment you do not recognise, contact us immediately.', scene:'classroom'},
       {text:'Many students keep one account for spending and another for savings.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A budgeting workshop', situation:'You are learning to run a budgeting workshop.', items:[
       {text:'This workshop is about managing a budget.', scene:'classroom'},
       {text:'We will start by listing your fixed costs.', scene:'classroom'},
       {text:'Rent and bills usually take the largest share.', scene:'classroom'},
@@ -3655,8 +3659,8 @@ const LISTEN_SETS = {
       {text:'Most people are surprised by what the total shows.', scene:'classroom'},
       {text:'Once you can see where the money actually goes, deciding what to change becomes much simpler than guessing.', scene:'classroom'},
       {text:'Saving a small amount monthly turns a surprise bill into an inconvenience.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A fees desk', situation:'You are being trained to take payments at a fees desk.', items:[
       {text:'Payments can be made at this desk.', scene:'classroom'},
       {text:'We accept card, bank transfer or cash.', scene:'classroom'},
       {text:'Please quote your student number with every payment.', scene:'classroom'},
@@ -3664,10 +3668,10 @@ const LISTEN_SETS = {
       {text:'Instalment plans are available for tuition fees.', scene:'classroom'},
       {text:'If you will miss a payment date, speak to us before it happens.', scene:'classroom'},
       {text:'Students on an instalment plan usually find the year far less stressful.', scene:'classroom'},
-    ],
+    ]},
   ],
   housing: [
-    [
+    { label:'A letting agency', situation:'You are learning to advise tenants about renting at a letting agency.', items:[
       {text:'The landlord fixed the heater today.', scene:'dorm'},
       {text:'Roommates should always discuss chores early.', scene:'dorm'},
       {text:'Most leases require a security deposit upfront.', scene:'classroom'},
@@ -3675,8 +3679,8 @@ const LISTEN_SETS = {
       {text:'Most disputes start with a simple misunderstanding about chores.', scene:'dorm'},
       {text:'Taking photos of any damage before moving in protects a deposit later.', scene:'classroom'},
       {text:'Keeping a written record of requests gives a tenant real proof if a dispute happens.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A housing office', situation:'You are being trained to work at a housing office.', items:[
       {text:'Welcome to the housing office.', scene:'dorm'},
       {text:'Applications for next year open in March.', scene:'dorm'},
       {text:'Rooms are allocated in the order applications arrive.', scene:'dorm'},
@@ -3684,8 +3688,8 @@ const LISTEN_SETS = {
       {text:'A deposit is required before the contract is confirmed.', scene:'dorm'},
       {text:'If you wish to share with a particular friend, both of you must name each other on the application form.', scene:'dorm'},
       {text:'Late applicants join a waiting list and are offered rooms over the summer.', scene:'dorm'},
-    ],
-    [
+    ]},
+    { label:'Move-in day', situation:'You are learning to welcome residents on move-in day.', items:[
       {text:'Welcome, and congratulations on your new room.', scene:'dorm'},
       {text:'Your keys are in the envelope with your name.', scene:'dorm'},
       {text:'Please check the inventory before you unpack anything.', scene:'dorm'},
@@ -3693,8 +3697,8 @@ const LISTEN_SETS = {
       {text:'The kitchen on each floor is shared between eight rooms.', scene:'dorm'},
       {text:'If something is already broken, photograph it and send us the picture.', scene:'dorm'},
       {text:'Anything not reported now may be charged to you at the final inspection.', scene:'dorm'},
-    ],
-    [
+    ]},
+    { label:'A maintenance desk', situation:'You are being trained to work at a maintenance desk.', items:[
       {text:'The maintenance desk is open every morning.', scene:'dorm'},
       {text:'Urgent repairs are dealt with the same day.', scene:'dorm'},
       {text:'Please describe the problem as clearly as you can.', scene:'dorm'},
@@ -3702,10 +3706,10 @@ const LISTEN_SETS = {
       {text:'You do not have to be present during the repair.', scene:'dorm'},
       {text:'If you would rather be there while the work is carried out, say so and we will arrange a time with you.', scene:'dorm'},
       {text:'Repairs reported early are almost always cheaper and quicker to fix.', scene:'dorm'},
-    ],
+    ]},
   ],
   travel: [
-    [
+    { label:'A travel agency', situation:'You are learning to help travellers with bookings at a travel agency.', items:[
       {text:'The morning flight departs at noon today.', scene:'bus'},
       {text:'She proudly booked her hotel weeks ahead.', scene:'classroom'},
       {text:'Most airlines often charge extra money for checked baggage.', scene:'bus'},
@@ -3713,8 +3717,8 @@ const LISTEN_SETS = {
       {text:'Booking flights several weeks ahead usually saves real money.', scene:'classroom'},
       {text:'A reliable transit map makes a brand new city feel far less confusing.', scene:'bus'},
       {text:'Students who research transport in advance feel more confident during their first week abroad.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A long-distance coach', situation:'You are being trained to assist passengers on a long-distance coach.', items:[
       {text:'Welcome aboard; please find your seat.', scene:'bus'},
       {text:'Large bags go in the rack above you.', scene:'bus'},
       {text:'We will be departing in about five minutes.', scene:'bus'},
@@ -3722,8 +3726,8 @@ const LISTEN_SETS = {
       {text:'There is a short stop halfway for refreshments.', scene:'bus'},
       {text:'If you are travelling further than the final stop, please speak to the driver before we set off.', scene:'bus'},
       {text:'Please take all your belongings, as lost items are hard for us to return.', scene:'bus'},
-    ],
-    [
+    ]},
+    { label:'A railway station', situation:'You are learning to help passengers at a railway station.', items:[
       {text:'Good afternoon, may I see your ticket?', scene:'bus'},
       {text:'Platform four is straight ahead of you.', scene:'bus'},
       {text:'The next train to the city leaves at ten past.', scene:'bus'},
@@ -3731,8 +3735,8 @@ const LISTEN_SETS = {
       {text:'Your ticket is valid on any service today.', scene:'bus'},
       {text:'If your connection is cancelled, keep the ticket and claim the cost back.', scene:'bus'},
       {text:'Services are running late this afternoon because of engineering work.', scene:'bus'},
-    ],
-    [
+    ]},
+    { label:'A tour desk', situation:'You are being trained to work at a tour desk.', items:[
       {text:'Welcome to the tour desk.', scene:'library'},
       {text:'Our walking tours leave twice each day.', scene:'library'},
       {text:'The morning tour is generally the quieter one.', scene:'library'},
@@ -3740,10 +3744,10 @@ const LISTEN_SETS = {
       {text:'Tickets can be bought here or online in advance.', scene:'library'},
       {text:'If the weather looks poor, we still run the tour, so please bring something waterproof with you.', scene:'library'},
       {text:'Groups of more than ten should book ahead so we can add a second guide.', scene:'library'},
-    ],
+    ]},
   ],
   media: [
-    [
+    { label:'A book shop', situation:'You are learning to work at a book shop.', items:[
       {text:'This popular show just dropped a new season.', scene:'dorm'},
       {text:'Many students listen to podcasts daily.', scene:'bus'},
       {text:'Streaming services keep adding new original content monthly.', scene:'dorm'},
@@ -3751,8 +3755,8 @@ const LISTEN_SETS = {
       {text:'Most students get their daily news from social media now.', scene:'cafeteria'},
       {text:'Recommendation algorithms suggest content based on past viewing, which can feel unsettling.', scene:'dorm'},
       {text:'Media instructors say learning to check a source takes seconds but reduces fake news.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A library media desk', situation:'You are being trained to work at a library media desk.', items:[
       {text:'Welcome to the media desk.', scene:'library'},
       {text:'Films and documentaries can be borrowed here.', scene:'library'},
       {text:'Items are loaned for one week at a time.', scene:'library'},
@@ -3760,8 +3764,8 @@ const LISTEN_SETS = {
       {text:'Headphones are available if you prefer to watch alone.', scene:'library'},
       {text:'If a title you want is already out, you can reserve it and we will contact you when it comes back.', scene:'library'},
       {text:'The collection covers a dozen languages, and subtitles come with almost everything.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A recording studio', situation:'You are learning to assist visitors in a recording studio.', items:[
       {text:'Welcome to the studio; please come in quietly.', scene:'classroom'},
       {text:'The red light means we are recording.', scene:'classroom'},
       {text:'Do not touch the microphones on the table.', scene:'classroom'},
@@ -3769,8 +3773,8 @@ const LISTEN_SETS = {
       {text:'We are recording a short interview this morning.', scene:'classroom'},
       {text:'If you would like to ask a question, please wait until the recording light has gone out completely.', scene:'classroom'},
       {text:'Students wanting to produce their own programme can apply for training.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A cinema', situation:'You are being trained to welcome guests at a cinema.', items:[
       {text:'The film starts in about ten minutes.', scene:'cafeteria'},
       {text:'Your ticket shows the screen and row number.', scene:'cafeteria'},
       {text:'Please switch your telephone off completely before the film begins.', scene:'cafeteria'},
@@ -3778,10 +3782,10 @@ const LISTEN_SETS = {
       {text:'Latecomers will be seated at the back only.', scene:'cafeteria'},
       {text:'If you have any difficulty finding your seat in the dark, one of our staff will be happy to help you.', scene:'cafeteria'},
       {text:'The director will answer questions afterwards, and everyone may stay for that.', scene:'cafeteria'},
-    ],
+    ]},
   ],
   innovation: [
-    [
+    { label:'A technology showroom', situation:'You are learning to explain new technology to visitors at a showroom.', items:[
       {text:'This chatbot answers questions instantly.', scene:'classroom'},
       {text:'Many firms now test automation daily.', scene:'classroom'},
       {text:'Self-driving cars are tested in several major cities.', scene:'bus'},
@@ -3789,8 +3793,8 @@ const LISTEN_SETS = {
       {text:'Private companies now launch rockets more often than governments.', scene:'classroom'},
       {text:'Automation is changing the job market faster than most experts predicted years ago.', scene:'library'},
       {text:'Students who learn to work alongside AI tools now may gain a real career advantage.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A science museum', situation:'You are being trained to guide visitors at a science museum.', items:[
       {text:'Welcome to the science museum.', scene:'library'},
       {text:'Most exhibits here can be touched.', scene:'library'},
       {text:'The robotics gallery is on the upper floor.', scene:'library'},
@@ -3798,8 +3802,8 @@ const LISTEN_SETS = {
       {text:'Please do not lean on the glass display cases.', scene:'library'},
       {text:'If you would like a guided visit, groups leave from this desk at half past every hour.', scene:'library'},
       {text:'The exhibition changes twice a year, so much will be different next time.', scene:'library'},
-    ],
-    [
+    ]},
+    { label:'A maker lab', situation:'You are learning to supervise users in a maker lab.', items:[
       {text:'Welcome to the maker lab.', scene:'classroom'},
       {text:'Safety glasses must be worn at all times.', scene:'classroom'},
       {text:'Please tie back long hair before using the machines.', scene:'classroom'},
@@ -3807,8 +3811,8 @@ const LISTEN_SETS = {
       {text:'Materials are charged by weight at the front desk.', scene:'classroom'},
       {text:'If you have never used a machine before, book a short induction rather than learning as you go.', scene:'classroom'},
       {text:'Label anything left overnight with your name and your finishing date.', scene:'classroom'},
-    ],
-    [
+    ]},
+    { label:'A technology exhibition', situation:'You are being trained to host a technology exhibition.', items:[
       {text:'Welcome to the technology exhibition.', scene:'classroom'},
       {text:'Each stand demonstrates a different project.', scene:'classroom'},
       {text:'Students are presenting work from across the department.', scene:'classroom'},
@@ -3816,17 +3820,25 @@ const LISTEN_SETS = {
       {text:'Voting for the audience prize closes at three.', scene:'classroom'},
       {text:'If a demonstration is busy, the presenters repeat it every fifteen minutes.', scene:'classroom'},
       {text:'Several projects here began as ordinary coursework, which is worth remembering.', scene:'classroom'},
-    ],
+    ]},
   ],
 };
-function genListenRepeatSet(theme){
-  // Each theme now holds several complete 7-sentence scenarios rather than
-  // a single one, so a student practising the same theme repeatedly gets a
-  // different situation (orientation desk, campus tour, student services…)
-  // instead of the same seven sentences every time.
+// The real task always opens by placing the student in a job: "You are
+// learning to work at a book shop", "You are being trained to assist
+// customers at a hotel front desk", "You are learning to welcome visitors
+// to the zoo." ETS never gives these a topic NAME — the situation sentence
+// IS the framing, and it is read out before the sentences begin. Ours had
+// no framing at all, so each scenario now carries that sentence plus a
+// short label used only to let the teacher pick a specific situation.
+// topicIndex selects one deliberately; leave it undefined for a random draw.
+function genListenRepeatSet(theme, topicIndex){
   const sets = LISTEN_SETS[theme] || LISTEN_SETS.campus;
-  const items = pick(sets);
-  return { set: items.map((it,i)=>({ text:it.text, scene:it.scene, seconds:RECORD_SECONDS[i], index:i+1 })) };
+  const chosen = (typeof topicIndex === 'number' && sets[topicIndex]) ? sets[topicIndex] : pick(sets);
+  return {
+    label: chosen.label,
+    situation: chosen.situation,
+    set: chosen.items.map((it,i)=>({ text:it.text, scene:it.scene, seconds:RECORD_SECONDS[i], index:i+1 })),
+  };
 }
 
 // ---- Take an Interview ----
@@ -4070,9 +4082,9 @@ const INTERVIEW_BANK = {
     ]},
   ],
 };
-function genInterview(theme){
+function genInterview(theme, topicIndex){
   const sets = INTERVIEW_BANK[theme] || INTERVIEW_BANK.campus;
-  const set = pick(sets);
+  const set = (typeof topicIndex === 'number' && sets[topicIndex]) ? sets[topicIndex] : pick(sets);
   return { topic: set.topic, scenario: set.scenario, questions: set.questions };
 }
 
@@ -4561,15 +4573,27 @@ function copyShareLink(){
   );
 }
 
-function generateOne(type, theme){
+// topicIndex is only meaningful for the two Speaking tasks, which are the
+// ones built from named situations/topics — the teacher can target "a book
+// shop" or "Exercise and Wellbeing" rather than hoping the random draw
+// lands there. The other four types have no named sub-topics, so they
+// ignore it and keep drawing from the whole theme as before.
+function generateOne(type, theme, topicIndex){
   switch(type){
     case 'email': return { type, data: genEmail(theme) };
     case 'discussion': return { type, data: genDiscussion(theme) };
     case 'sentence': return { type, data: genSentence(theme) };
     case 'complete-words': return { type, data: genCompleteWords(theme) };
-    case 'listen-repeat': return { type, data: genListenRepeatSet(theme) };
-    case 'interview': return { type, data: genInterview(theme) };
+    case 'listen-repeat': return { type, data: genListenRepeatSet(theme, topicIndex) };
+    case 'interview': return { type, data: genInterview(theme, topicIndex) };
   }
+}
+// The named situations/topics a given type+theme offers, for the teacher's
+// topic selector. Empty array = this type has no named sub-topics.
+function topicsFor(type, theme){
+  if(type === 'listen-repeat') return (LISTEN_SETS[theme] || []).map(s => s.label);
+  if(type === 'interview') return (INTERVIEW_BANK[theme] || []).map(s => s.topic);
+  return [];
 }
 function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 
@@ -4577,14 +4601,14 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // whole-class generator, individual-student assignment, and the "practice
 // again" regeneration button, so all three ways of getting content stay
 // consistent.
-function generateBatchItems(type, theme){
+function generateBatchItems(type, theme, topicIndex){
   const items = [];
   if(type === 'listen-repeat' || type === 'interview'){
     // Real TOEFL structure: both Speaking tasks are ONE connected unit —
     // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
     // on a single topic — approved/discarded as a set, not as 4 separate
     // cards like the Reading/Writing task types.
-    const g = generateOne(type, theme);
+    const g = generateOne(type, theme, topicIndex);
     items.push({ id: uid(), type:g.type, tag: tagFor(g.type), theme, status:'pending', data: g.data });
     return items;
   }
@@ -4638,6 +4662,25 @@ function renderThemeSelect(){
     return `<option value="${t}"${done ? ' style="color:var(--text-dim);font-style:italic"' : ''}>${label}</option>`;
   }).join('');
   if(ALL_THEMES.includes(prev)) sel.value = prev;
+  sel.onchange = renderTopicSelect;
+  renderTopicSelect();
+}
+// Second dropdown: the specific situation/topic inside the chosen theme.
+// Listen and Repeat and Take an Interview each hold several named ones per
+// theme, and until now the teacher could not reach them — she picked a
+// theme and the draw chose for her. That matters in class: a student may
+// be comfortable talking about a book shop but need practice with a gym.
+// Hidden entirely for the four types that have no named sub-topics.
+function renderTopicSelect(){
+  const field = document.getElementById('topic-field');
+  const sel = document.getElementById('subtopic');
+  const themeSel = document.getElementById('topic');
+  if(!field || !sel || !themeSel) return;
+  const topics = topicsFor(activeType, themeSel.value);
+  if(!topics.length){ field.style.display = 'none'; sel.innerHTML = ''; return; }
+  field.style.display = '';
+  sel.innerHTML = '<option value="__any">🎲 Any situation in this theme</option>'
+    + topics.map((t,i)=>`<option value="${i}">${escapeHtml(t)}</option>`).join('');
 }
 // Random theme, scoped per task type — same shuffle-bag mechanism as
 // student self-practice, so it cycles through all 14 themes for this
@@ -4649,7 +4692,9 @@ function randomizeTheme(){
 
 function generateBatch(){
   const theme = document.getElementById('topic').value;
-  const items = generateBatchItems(activeType, theme);
+  const sub = document.getElementById('subtopic');
+  const topicIndex = (sub && sub.value !== '__any' && sub.value !== '') ? Number(sub.value) : undefined;
+  const items = generateBatchItems(activeType, theme, topicIndex);
   saveBatch(items);
   markThemeDone(activeType, theme);
   renderThemeSelect();
@@ -4831,8 +4876,10 @@ function cardBody(item){
   if(item.type==='discussion') return discussionPromptHtml(d);
   if(item.type==='sentence') return `<div class="ex-body">Target sentence (for teacher reference):<br><b>${d.target}</b></div><div class="chip-row">${d.scrambled.map(w=>`<span class="chip">${w}</span>`).join('')}</div>`;
   if(item.type==='complete-words') return `<div class="ex-body cw-passage">${d.display}</div>`;
-  if(item.type==='listen-repeat') return `<div class="ex-body">7 sentences, increasing difficulty (9-11 syllables → 14-16 → 19-23, matching the real ETS tiers), recording time grows 8s → 10s → 12s — matches the real TOEFL Listen and Repeat task.</div>
-    <p class="small-note">📺 In class, these 🔊 buttons are also your live playback controls — with this tab open on the classroom screen, press each one when you're ready and it plays through the room speakers. Students don't play it on their own phones (avoids 13 phones firing out of sync) — they just listen and respond.</p>
+  if(item.type==='listen-repeat') return `
+    ${d.situation ? `<div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>${escapeHtml(d.situation)}</div>` : ''}
+    <div class="ex-body">7 sentences, increasing difficulty (9-11 syllables → 14-16 → 19-23, matching the real ETS tiers), recording time grows 8s → 10s → 12s — matches the real TOEFL Listen and Repeat task.</div>
+    <p class="small-note">🔊 Press any sentence to hear it — on your own screen, or on the classroom screen for everyone.</p>
     <div style="display:flex;flex-direction:column;gap:.4rem;margin-top:.6rem">
       ${d.set.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
         <span class="chip" style="flex-shrink:0">#${s.index} · ${s.seconds}s</span>
@@ -5701,6 +5748,7 @@ function renderListenRepeatStep(item){
   wrap.innerHTML = `
     <div class="compose">
       <div class="wordcount">Sentence ${s.index} of 7 &middot; recording window: ${s.seconds}s (official ${RECORD_SECONDS_OFFICIAL[s.index-1]}s + ${PRACTICE_BUFFER_SECONDS}s buffer for natural speaking pace)</div>
+      ${item.data.situation ? `<div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>${escapeHtml(item.data.situation)} Listen and repeat what you hear.</div>` : ''}
       ${turnBanner}
       <div class="scene-thumb" style="max-width:280px">${getScene(s.scene)}</div>
       <div class="ex-actions" style="margin-top:.7rem">
