@@ -2,7 +2,7 @@
 
 **TOEFL 2026 practice, built around real student life — not textbook drills.**
 
-🔗 **Live app:** https://croxatte-tech-solutions.github.io/real-life-english/
+🔗 **Live app:** https://croxatte-tech-solutions.github.io/ajar/
 
 Built by **Croxatte Tech Solutions** for the TOEFL Preparation class at [a language school](https://example.com) (Denver, CO), and free for anyone to use.
 
