@@ -1,0 +1,32 @@
+# Cache policy — read by Cloudflare Pages (GitHub Pages ignores this file,
+# so it is safe to have here during the migration).
+#
+# This is the whole reason for moving off GitHub Pages, which forces
+# max-age=600 on everything and offers no way to override it. That single
+# rule was wrong in both directions for this app: too long for the page
+# (a fix took ten minutes to reach a student mid-class, and a freshly
+# scanned QR code could serve the previous exercise) and absurdly short
+# for the audio (~30 MB re-downloaded over school wi-fi again and again).
+
+# Audio is content-addressed: every clip is named after hashStr() of the
+# exact words spoken in it, so a file's contents can never change. Edit a
+# sentence and you get a different hash, a different filename, and a fresh
+# download. That makes these genuinely immutable, which is the one case
+# where a year-long cache with `immutable` is not a gamble — the browser
+# is told it may skip revalidation entirely.
+/audio/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The app itself must never be stale. A student scanning a QR code has to
+# get the exercise the teacher approved seconds ago, not a cached copy.
+# no-cache does not mean "do not store" — it means "always revalidate",
+# so an unchanged page still comes back as a cheap 304.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+
+# The service worker decides what every other request does. If it is
+# itself cached, a bad version stays in charge and cannot be replaced.
+/sw.js
+  Cache-Control: no-cache
