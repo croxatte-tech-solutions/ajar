@@ -2624,6 +2624,7 @@ const TASK_TYPES = [
   { id:'choose-response', tag:'Listen and Choose a Response', section:'Listening' },
   { id:'announcement',     tag:'Listen to an Announcement',    section:'Listening' },
   { id:'conversation',     tag:'Listen to a Conversation',     section:'Listening' },
+  { id:'talk',             tag:'Listen to an Academic Talk',   section:'Listening' },
   { id:'sentence',       tag:'Build a Sentence',    section:'Writing' },
   { id:'email',          tag:'Write an Email',      section:'Writing' },
   { id:'discussion',     tag:'Academic Discussion', section:'Writing' },
@@ -4568,6 +4569,17 @@ const CONVERSATION_BANK = {
 // out means the browser-speech fallback reads something sensible instead
 // of announcing "M" and "W" before every line.
 function conversationText(turns){ return turns.map(t => t[1]).join(' '); }
+// One talk per exercise with its four questions, as on the real test.
+// Options are reshuffled on every draw.
+function genTalk(theme, topicIndex){
+  const bank = TALK_BANK[theme] || TALK_BANK.campus;
+  const t = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  return { context: t.context, text: t.text, questions: t.questions.map(q => {
+    const correct = q.options[q.answer];
+    const options = shuffle(q.options);
+    return { q: q.q, options, answer: options.indexOf(correct) };
+  }) };
+}
 // One conversation per exercise with its two questions, matching the real
 // task. Options are reshuffled on every draw.
 function genConversation(theme, topicIndex){
@@ -4579,6 +4591,283 @@ function genConversation(theme, topicIndex){
     return { q: q.q, options, answer: options.indexOf(correct) };
   }) };
 }
+
+// ---- Listen to an Academic Talk ----
+// The last Listening task, and the only one that is genuinely academic.
+// ETS publishes the spec as "about 100-250 words" with four questions,
+// but measuring the 14 talks in the seven practice tests gives a much
+// tighter real range: 163-230 words, median 203. These are written to
+// the measured range, not the declared one.
+//
+// The four questions are not four detail questions. Across the real
+// items they follow a fixed shape, and each talk here does the same:
+//   1. main idea        -- what the talk is mainly about
+//   2. supporting detail -- something stated, not implied
+//   3. function          -- why the speaker mentions a particular thing
+//   4. inference or what the speaker turns to next
+// The function question is the one students find hardest and the one a
+// bank of ordinary comprehension questions never contains.
+//
+// Topics come from the fields ETS names (history, art and music, life
+// science, physical science, business and economics, social science),
+// mapped onto our own real-life themes rather than replacing them --
+// so the "money" theme gets an economics talk, "health" a life science
+// one. ETS's own rule that no background knowledge is required is the
+// binding constraint on every talk below.
+const TALK_BANK = {
+  campus: [
+    { context:"a talk in an education class",
+      text:"Ask a room of students how they revise and most will say they read their notes again. It feels productive, because the material grows familiar with every pass. But familiarity is not knowledge, and this is where a great deal of revision time quietly disappears. Picture a student who reads a chapter four times the night before an exam. The text becomes easy to move through, so confidence climbs. Then the questions arrive and there is nothing to pull the material out with. Now picture a second student, who reads the chapter once, closes it, and tries to write down what was in it. That student finds the process uncomfortable and leaves obvious gaps. Yet a week later it is the second one who remembers more, and the difference grows wider as the weeks pass. The explanation seems to be that the act of retrieving something is what strengthens it, rather than exposure to it. For your own revision the lesson is blunt: the moment a page starts to feel easy is the moment it has stopped teaching you anything at all. Next time I want to look at what happens when those attempts are spread across several days instead of crammed into one evening.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why rereading is a weak revision method", "How students should organise their notes", "Why examinations favour confident students", "How reading speed affects comprehension"], answer:0 },
+      { q:"What happens to the student who rereads?", options:["Confidence rises but recall does not", "Recall improves for about a week", "Both confidence and recall improve", "Neither confidence nor recall changes"], answer:0 },
+      { q:"Why does the speaker describe two students?", options:["To contrast two ways of revising", "To show that students differ widely", "To explain why exams feel unfair", "To criticise a common teaching method"], answer:0 },
+      { q:"What will the speaker turn to next?", options:["Spreading practice across several days", "Writing better notes in lectures", "Measuring confidence before an exam", "Choosing which chapters to revise"], answer:0 },
+    ]},
+    { context:"a talk in an education class",
+      text:"I want to talk about what happens when a lecture is recorded and put online. When universities began doing this at scale, the worry was obvious: if the lecture is available afterwards, why would anyone come? And attendance did fall, in some courses by half. What surprised people was the effect on results, which was close to nothing overall. Averages hide a great deal, though. Break the students apart and two very different stories appear. Those who were already doing well used the recordings the way you would hope, going back to the three minutes they had not followed and watching them twice. Those who were struggling tended to save the recordings for the end of term, then attempt to watch nine hours of material in two days. For that group, results fell. So the recording is not good or bad in itself. It is a tool that rewards a student who already knows how to study and punishes one who does not, which is a pattern you will meet again and again in educational technology. That is worth holding on to, because it explains why so many promising tools produce disappointing averages while quietly widening the gap underneath them.",
+      questions:[
+      { q:"What is the main point of the talk?", options:["Recordings help strong students far more", "Recordings should replace live lectures", "Attendance matters more than results", "Universities record lectures too cheaply"], answer:0 },
+      { q:"What did recorded lectures do to attendance?", options:["It fell sharply in some courses", "It stayed almost exactly the same", "It rose among struggling students", "It fell only in the first term"], answer:0 },
+      { q:"Why does the speaker mention nine hours?", options:["To show how struggling students used them", "To argue that courses are too long", "To compare two universities' policies", "To explain why recordings are expensive"], answer:0 },
+      { q:"What does the speaker suggest about averages?", options:["They can hide opposite effects underneath", "They are the fairest measure available", "They should be reported more often", "They exaggerate small differences badly"], answer:0 },
+    ]},
+  ],
+  register: [
+    { context:"a talk in a linguistics class",
+      text:"Nobody speaks one single way. You have already changed how you speak several times today, and almost certainly without noticing. Linguists call these varieties registers, and moving between them is something every competent speaker does automatically. Here is the part students find surprising. We tend to assume the formal register is the correct one and the rest is sloppiness. That is not what the evidence shows. Each register is fully rule-governed, and using the wrong one is what gets noticed. Read a wedding speech in the register of a legal contract and everybody in the room will feel that something has gone wrong, even if not one word is ungrammatical. Consider a doctor explaining a diagnosis. With a colleague she will use technical terms and drop most of the connecting words, because both of them can fill the gaps. With a patient she will slow down, name things twice, and check understanding. She has not simplified because the patient is less intelligent. She has selected the register that transfers the meaning. What learners of a second language often lack is not vocabulary or grammar but this range, and it is much harder to teach because almost nobody can explain the rules they are following.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["How speakers shift between speech varieties", "Why formal language is usually clearer", "How doctors explain diagnoses to patients", "Why second languages are hard to learn"], answer:0 },
+      { q:"What does the speaker say about registers?", options:["Each one follows its own rules", "The formal one is the correct one", "They are learned late in childhood", "They vary little between professions"], answer:0 },
+      { q:"Why does the speaker mention a wedding speech?", options:["To show a mismatched register jars", "To argue that speeches are too formal", "To give an example of technical terms", "To describe how registers are taught"], answer:0 },
+      { q:"What does the speaker imply about learners?", options:["Their difficulty is range, not grammar", "They should study formal English first", "They rarely notice their own errors", "They learn faster than young children"], answer:0 },
+    ]},
+    { context:"a talk in a linguistics class",
+      text:"Politeness is not the same thing in every language, and the differences are deeper than vocabulary. In English, a great deal of politeness is done by making a request less direct. We turn commands into questions, add words that weaken them, and apologise for asking at all. I could not open the window myself, could I. There is nothing there about the window that needed six extra words. Every one of them is doing social work. Now, a speaker of a language that handles politeness by other means, through verb endings for instance, may produce perfectly grammatical English that lands as brusque. Open the window. Nothing is wrong with that sentence, and the speaker has not been rude by their own standards. But an English listener hears a command and reacts to a command. This is why politeness is one of the last things a learner acquires, long after the grammar is secure, and why misunderstandings between fluent speakers are so often social rather than linguistic. It also explains something that puzzles many students: why the more advanced your English becomes, the more sharply people judge the moments when you get this wrong.",
+      questions:[
+      { q:"What is the talk mainly concerned with?", options:["How politeness differs across languages", "Why English grammar is often indirect", "How learners acquire new vocabulary", "Why fluent speakers misuse verb endings"], answer:0 },
+      { q:"How is politeness often marked in English?", options:["By making requests less direct", "By adding endings to the verb", "By lowering the speaker's voice", "By repeating the request twice"], answer:0 },
+      { q:"Why does the speaker mention the window?", options:["To show how much padding requests carry", "To give an example of a grammar error", "To describe a common classroom activity", "To contrast spoken and written English"], answer:0 },
+      { q:"What does the speaker say about advanced learners?", options:["Their slips are judged more harshly", "They rarely make politeness errors", "They learn politeness before grammar", "They avoid indirect requests entirely"], answer:0 },
+    ]},
+  ],
+  current: [
+    { context:"a talk in a media studies class",
+      text:"When a correction is published, does it undo the damage of the original story? The honest answer is: partly, and less than you would like. There is a well-documented pattern here. A striking claim appears, travels widely, and is corrected two days later in a paragraph almost nobody reads. That much is simply about attention. But something else is going on underneath. People often retain the claim while forgetting where it came from. A month on, they cannot tell you whether they read it in a newspaper, saw it on a screen, or heard it from a friend, yet the claim itself sits there feeling familiar. And familiarity is one of the shortcuts the mind uses to judge whether something is true. So a correction that repeats the false claim in order to deny it can, for some readers, make that claim feel more familiar still. This is why careful publications now lead with the accurate version and mention the error afterwards, rather than the other way round. The practical point for you is that being told something is false does surprisingly little work on its own. What replaces it matters far more than what denies it.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["Why corrections work less well than expected", "How newspapers decide what to publish", "Why false claims spread more quickly", "How readers choose which paper to trust"], answer:0 },
+      { q:"What do people often forget about a claim?", options:["Where they originally encountered it", "Whether it was ever corrected", "How strongly it was worded", "Who else was discussing it"], answer:0 },
+      { q:"Why does the speaker mention familiarity?", options:["It is used as a test of truth", "It fades faster than the claim itself", "It explains why corrections are short", "It varies between different readers"], answer:0 },
+      { q:"What does the speaker recommend to publications?", options:["Stating the accurate version first", "Repeating the correction several times", "Avoiding corrections on small errors", "Publishing corrections within two days"], answer:0 },
+    ]},
+    { context:"a talk in a media studies class",
+      text:"Let us look at how a photograph acquires a meaning it did not originally have. Nothing in the image needs to be altered for this to happen. A picture of a crowded street is simply a crowded street. Put it under a headline about a housing shortage and every viewer reads overcrowding. Put the identical picture under a headline about a festival and the same viewer reads celebration. The photograph did not change. The caption did the work, and the viewer will usually report that they got the impression from the image itself. This is not a modern trick, though it now happens at a speed nobody can review. An image taken in one country during one year routinely reappears elsewhere years later, attached to an unrelated event, and the people sharing it are not lying. They believe what the caption told them, and the picture confirms it, because pictures feel like evidence in a way that sentences do not. So when you assess a claim built on an image, the question is rarely whether the photograph is genuine. Almost always it is. The question is whether it shows what the words around it say it shows.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["How captions change what images mean", "Why photographs are edited before publication", "How newspapers select their front pages", "Why images travel faster than text"], answer:0 },
+      { q:"What does the speaker say viewers report?", options:["The impression came from the picture", "The caption seemed more convincing", "The image looked slightly altered", "The headline contradicted the photograph"], answer:0 },
+      { q:"Why does the speaker mention two headlines?", options:["To show one image reading two ways", "To compare two styles of journalism", "To explain how captions are written", "To argue that headlines are too short"], answer:0 },
+      { q:"What question does the speaker say matters?", options:["Whether the words match the image", "Whether the photograph has been altered", "Whether the photographer can be traced", "Whether the event was widely reported"], answer:0 },
+    ]},
+  ],
+  grammar: [
+    { context:"a talk in a linguistics class",
+      text:"Every generation is convinced the language is falling apart, and every generation is wrong in the same way. The complaints are remarkably stable. Read a letter to a newspaper from a hundred years ago and you will find someone furious about a usage that is now completely unremarkable, and often one that the writer's own grandparents had objected to as well. What is actually happening is change, and change in a language is not decay. Take the word nice. It once meant foolish, then precise, and only later pleasant. Nobody today mourns the loss of foolish. The reason we notice some changes and not others is timing. A shift completed before you were born is simply the language. A shift happening around you is an error, committed by people younger than you. That is not a linguistic judgement, it is a biographical one. None of this means anything goes. Every variety has rules, and a speaker who breaks them is immediately noticed by other speakers of that variety. The point is only that the rules answer to the community using them rather than to a book, which is why the book has to be rewritten every few decades.",
+      questions:[
+      { q:"What is the main argument of the talk?", options:["Language change is not language decay", "Older speakers use grammar more carefully", "Dictionaries should be revised less often", "Written English changes faster than spoken"], answer:0 },
+      { q:"What does the speaker say about complaints?", options:["They repeat across many generations", "They focus on written English", "They come mostly from teachers", "They have grown louder recently"], answer:0 },
+      { q:"Why does the speaker mention the word nice?", options:["To show a meaning shifting repeatedly", "To give an example of a misspelling", "To explain how dictionaries are written", "To contrast formal and informal usage"], answer:0 },
+      { q:"What does the speaker say determines the rules?", options:["The community that uses them", "The oldest surviving written records", "A committee of trained linguists", "The dictionary in widest use"], answer:0 },
+    ]},
+    { context:"a talk in a linguistics class",
+      text:"Consider how a child works out the past tense. At first you hear correct forms: went, came, took. The child has learned each of these as a separate word, the way they learned table. Then something strange happens, usually around the age of three. The correct forms disappear and are replaced by goed, comed, taked. To a parent this looks like the child getting worse. It is the opposite. The child has extracted a rule, that the past is made by adding a sound to the end, and is now applying it to everything, including the words they previously had right. They are no longer remembering forms one at a time. They are generating them. In time the exceptions are learned back, one by one, and by school age most are in place. The reason this matters beyond childhood is that the same curve appears in adult language learners, and it is routinely misread there too. A learner who was producing correct irregular forms and starts producing regular ones has not gone backwards. They have just discovered the rule, and the errors are evidence of that discovery rather than of failure.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["What children's past tense errors reveal", "How parents should correct young children", "Why irregular verbs disappear over time", "When children begin to speak fluently"], answer:0 },
+      { q:"What happens around the age of three?", options:["Correct irregular forms are replaced", "New vocabulary stops being acquired", "Children begin combining short sentences", "Pronunciation errors become more frequent"], answer:0 },
+      { q:"Why does the speaker mention the word table?", options:["To show how single words are memorised", "To give an example of an irregular form", "To describe a common classroom exercise", "To compare nouns with verbs generally"], answer:0 },
+      { q:"What does the speaker say about adult learners?", options:["Their new errors can signal progress", "They learn irregular forms more quickly", "They rarely repeat children's mistakes", "They should be corrected less often"], answer:0 },
+    ]},
+  ],
+  social: [
+    { context:"a talk in a social psychology class",
+      text:"Why does a room full of people watch a problem and do nothing? The usual explanation offered is indifference, and it is almost always wrong. What the research points to is something less comfortable. In an ambiguous situation, we look at other people to work out how serious it is. If they seem calm, we conclude it is nothing. The trouble is that every one of them is doing exactly the same thing, and reading our calm as evidence too. Everybody is waiting for somebody else to be alarmed first, and so nobody is. Now add a second effect. The larger the group, the more thinly responsibility is spread. Alone, you are the only person who can act. In a group of twenty, you are one of twenty, and stepping forward means being conspicuous, which people avoid more strongly than they expect. Put those together and you get the finding that surprises students most: a person in trouble is more likely to receive help from one bystander than from a crowd. The practical advice that follows is very specific. If you ever need help in public, do not address the crowd. Address one person, and describe what you want them to do.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["Why crowds often fail to intervene", "How groups make better decisions together", "Why some people enjoy being conspicuous", "How witnesses remember what they saw"], answer:0 },
+      { q:"What do people do in an ambiguous situation?", options:["They read other people for cues", "They act more quickly than usual", "They tend to leave the area", "They ask the person what happened"], answer:0 },
+      { q:"Why does the speaker mention a group of twenty?", options:["To show responsibility being spread thin", "To describe how the study was run", "To compare two kinds of emergency", "To explain why crowds gather quickly"], answer:0 },
+      { q:"What advice does the speaker give?", options:["Speak to one person, not everyone", "Move away from the crowd first", "Explain the situation in full detail", "Wait until somebody else reacts"], answer:0 },
+    ]},
+    { context:"a talk in a sociology class",
+      text:"When people are asked where they heard about the job they eventually took, the answer is rarely a close friend. It is much more often somebody they barely know. This looks wrong at first. Your close friends care about you and would help if they could. But think about what a close friend knows. They move in the same circles as you, read the same things, know the same people. Almost any opening they hear about, you have heard about too. The person you met twice at a conference is standing somewhere else entirely, and what reaches them does not reach you. So the value of a connection here is not affection. It is distance. Your close ties give you support, and your distant ties give you information, and these are simply different goods. The consequence for anyone looking for work is slightly counter-intuitive. The useful move is not to lean harder on the people closest to you, who have already told you everything they know, but to reactivate the ones at the edge, whose news is unfamiliar precisely because you have not spoken in a while.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why distant contacts carry useful information", "How friendships change after people start working", "Why job interviews favour confident candidates", "How conferences are organised for networking"], answer:0 },
+      { q:"What does the speaker say about close friends?", options:["They know much the same things", "They rarely offer any practical help", "They hear about openings much earlier", "They prefer not to discuss work"], answer:0 },
+      { q:"Why does the speaker mention a conference?", options:["To illustrate a contact standing elsewhere", "To describe where most jobs are advertised", "To explain why close ties matter less", "To give an example of a close friend"], answer:0 },
+      { q:"What does the speaker recommend?", options:["Getting back in touch with distant contacts", "Asking close friends to make introductions", "Attending as many conferences as possible", "Applying to openings as early as possible"], answer:0 },
+    ]},
+  ],
+  career: [
+    { context:"a talk in an economics class",
+      text:"Suppose a firm wants to reward its best salespeople and introduces a bonus for whoever sells the most each month. It seems straightforward. What happens is instructive. Sales rise in the first quarter, which everyone takes as proof the scheme works. Then several things start going wrong at once. Salespeople begin pushing customers towards products that count towards the target rather than products those customers need, and returns climb. They stop helping each other, because a colleague's sale is now a threat to their own bonus. And in the last week of a slow month, some of them simply stop trying, since the bonus is out of reach anyway, and hold their sales back for next month instead. None of this is dishonesty. Every one of those people is doing exactly what they were paid to do. The problem is that the firm measured one thing, sales this month, and wanted a different thing, a healthy business over years. Whenever a measure becomes the target, people optimise the measure, and any part of the goal the measure failed to capture quietly deteriorates. Next week we will look at what happens when the same logic is applied to hospitals and schools.",
+      questions:[
+      { q:"What is the main point of this talk?", options:["Targets distort the behaviour they measure", "Bonus schemes raise sales in the long run", "Salespeople need more thorough training", "Firms should measure customer satisfaction"], answer:0 },
+      { q:"What happens to sales in the first quarter?", options:["They rise, which seems to confirm it", "They fall before recovering slowly", "They stay level across the whole period", "They rise only among newer staff"], answer:0 },
+      { q:"Why does the speaker mention the last week?", options:["To show staff holding sales back", "To describe when bonuses are paid", "To explain why returns increase", "To compare two different quarters"], answer:0 },
+      { q:"What will the speaker discuss next week?", options:["The same logic in public services", "How bonus schemes should be designed", "Why customers return unwanted products", "How firms measure long-term health"], answer:0 },
+    ]},
+    { context:"a talk in a business class",
+      text:"There is a hiring problem that almost every organisation has and almost none can see. When a candidate is rejected, the story ends. When a candidate is hired, the organisation watches them for years and learns whether the decision was good. So all the evidence a company accumulates about its own judgement comes from the people it said yes to. The ones it turned down simply vanish, and with them any chance of discovering that the decision was wrong. Now consider what that does over time. If interviewers have a bias, and everyone does, they will see it confirmed among the people they hired and never contradicted by the people they did not. Their confidence grows while their accuracy does not, because confidence here is built entirely on the half of the data that came back. This is one reason structured interviews outperform the unstructured conversations that managers usually prefer and trust more. The structure is not there to make the process feel fair. It is there because the people running it have no way of finding out, from experience alone, that their instincts are unreliable.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why hiring decisions resist being corrected", "How companies should design job adverts", "Why interviews take longer than necessary", "How candidates prepare for structured interviews"], answer:0 },
+      { q:"What happens to rejected candidates in the data?", options:["They disappear from it entirely", "They are tracked for several years", "They are contacted again later", "They are compared with those hired"], answer:0 },
+      { q:"Why does the speaker mention growing confidence?", options:["To show accuracy not improving alongside it", "To praise managers with long experience", "To explain why interviews are popular", "To describe how bias is measured"], answer:0 },
+      { q:"What does the speaker say about structured interviews?", options:["They compensate for absent feedback", "They are preferred by most managers", "They take much longer to conduct", "They remove bias from hiring entirely"], answer:0 },
+    ]},
+  ],
+  health: [
+    { context:"a talk in a life science class",
+      text:"We used to describe sleep as the brain shutting down for the night. That description has not survived the evidence. Something quite active happens while you are unconscious, and one part of it concerns waste. Your brain cells, like every other cell, produce debris as a by-product of working. Elsewhere in the body the lymphatic system carries that material away. The brain has no lymphatic vessels, which was a puzzle for a long time, and the answer turns out to involve sleep directly. During deep sleep the spaces between brain cells widen considerably, and fluid moves through those channels far more freely than it does while you are awake, flushing the accumulated by-products out. In other words the clearing is not merely easier during sleep; it substantially depends on it. That gives us a mechanism for something everybody has experienced without being able to explain. After a poor night you are slower, your attention slips, and your mood is worse, and it is not simply that you feel tired. Material that should have been removed is still there. What I find interesting is how long we described sleep as an absence of activity, when it is one of the more demanding things the brain does.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["How the brain clears waste during sleep", "Why people need eight hours of sleep", "How brain cells produce useful energy", "Why deep sleep occurs early at night"], answer:0 },
+      { q:"What is unusual about the brain?", options:["It has no lymphatic vessels", "It produces very little waste", "It stops working during deep sleep", "It uses fluid instead of blood"], answer:0 },
+      { q:"Why does the speaker mention a poor night?", options:["To connect the mechanism to experience", "To describe how the study was conducted", "To warn about a serious health risk", "To compare deep and light sleep"], answer:0 },
+      { q:"What does the speaker find interesting?", options:["Sleep was long thought to be inactive", "The spaces between cells are so wide", "Waste clearance happens so quickly", "The lymphatic system works differently"], answer:0 },
+    ]},
+    { context:"a talk in a life science class",
+      text:"Pain is not a measurement. That statement bothers people, so let me be precise about what it means. It does not mean pain is imagined. It means pain is not a signal sent up from the injury and read off like a temperature. What arrives from the tissue is information about damage. What you experience is the brain's conclusion about how much trouble you are in, and that conclusion draws on far more than the incoming signal. This is why the same injury hurts differently on different days, and why soldiers have walked considerable distances on fractures without noticing. It also explains something that seems paradoxical at first. Expecting pain makes pain worse, reliably and measurably, because expectation is one of the inputs the brain is using. And in long-term pain the system can become sensitive enough that the experience continues after the tissue itself has healed. The patient is not exaggerating. Their alarm has simply been turned up and left there. Understanding this changes what treatment looks like, because if you treat only the tissue in a case like that, you are treating something that is no longer the problem.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["How the brain constructs the experience of pain", "Why some injuries heal more slowly", "How doctors measure a patient's pain", "Why soldiers ignore serious injuries"], answer:0 },
+      { q:"What does the speaker say pain is not?", options:["A direct reading of tissue damage", "A useful signal about the body", "A common reason for seeing doctors", "A subject of recent research"], answer:0 },
+      { q:"Why does the speaker mention expectation?", options:["It is one input the brain uses", "It explains why treatments often fail", "It reduces pain in most patients", "It varies little between individuals"], answer:0 },
+      { q:"What does the speaker imply about long-term pain?", options:["Treating the tissue alone may miss it", "It usually resolves once healing finishes", "It is less severe than sudden pain", "It affects mainly older patients"], answer:0 },
+    ]},
+  ],
+  environment: [
+    { context:"a talk in an environmental science class",
+      text:"A city can be several degrees warmer than the countryside around it, and on a still summer night the gap is at its widest. The reason is not mainly the heat that cars and buildings give off, although that contributes. It is what the surfaces do. Dark roofs and roads absorb sunlight through the day and release it slowly after dark, so the city never cools the way open ground does. Concrete and asphalt also shed rain rather than holding it, and a surface that cannot evaporate water cannot cool itself, which is the same reason you feel cooler when you are damp. Now, the interesting part is how cheap the remedies are relative to the problem. Painting a roof a pale colour reflects a substantial share of what a dark one absorbs. A street of mature trees can be markedly cooler than the identical street without them, partly from shade and partly from the water the leaves release. Neither of those requires new technology. What they require is a decision taken decades in advance, because the tree that cools a street in twenty years has to be planted now, and that is a harder thing for a city to do than to buy a machine.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["Why cities stay warmer than surrounding land", "How air conditioning affects city temperatures", "Why summer nights are becoming warmer", "How cities measure their own climates"], answer:0 },
+      { q:"What does the speaker say about hard surfaces?", options:["They shed water instead of holding it", "They cool faster than open ground", "They reflect most of the sunlight", "They release heat during the day"], answer:0 },
+      { q:"Why does the speaker mention pale roofs?", options:["To give an inexpensive existing remedy", "To describe a new building material", "To explain how heat is measured", "To compare two kinds of city"], answer:0 },
+      { q:"What does the speaker suggest is difficult?", options:["Acting decades before the benefit arrives", "Finding space for new street trees", "Persuading residents to accept change", "Measuring how much shade trees give"], answer:0 },
+    ]},
+    { context:"a talk in an environmental science class",
+      text:"When a species is removed from a system, the effects rarely stop where you expect. The clearest illustrations come from cases where a predator disappeared and somebody kept records. Remove the predator and the animals it fed on increase, which sounds obvious enough. What follows is less obvious. Those animals graze harder, and the plants they favour thin out along the water's edge. With fewer roots holding it, the bank erodes, the channel widens, and the water warms. Fish that needed cold, shaded water decline, and birds that fed on those fish move elsewhere. None of that was visible when the decision was taken, because nobody was looking at the riverbank while thinking about a predator. Ecologists call this a trophic cascade, and the term matters less than the habit of mind it encourages. The lesson is not that every intervention ends badly. It is that a system with many connections will pass an effect along several of them, and the ones that carry it are frequently not the ones anybody was watching. Which is a decent argument for monitoring more than you think you need to, and for being modest about predictions.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["How one removal spreads through a system", "Why predators are difficult to reintroduce", "How rivers change shape over time", "Why some fish need cold water"], answer:0 },
+      { q:"What happens to the riverbank in the example?", options:["It erodes once plants thin out", "It becomes shaded by new growth", "It narrows as the channel deepens", "It stays stable for many years"], answer:0 },
+      { q:"Why does the speaker mention birds?", options:["To show the effect travelling further still", "To identify the original cause", "To describe how records were kept", "To give an example of a predator"], answer:0 },
+      { q:"What does the speaker conclude?", options:["Effects appear where nobody is watching", "Interventions usually end in damage", "Predators should never be removed", "Systems recover given enough time"], answer:0 },
+    ]},
+  ],
+  daily: [
+    { context:"a talk in a psychology class",
+      text:"Habits are not built out of willpower, and studying them makes that unusually clear. A habit has three parts: something that triggers it, the behaviour itself, and whatever the behaviour delivers. Most people trying to change one attack the middle part, which is the hardest place to intervene, because by the time the behaviour has begun the decision was already made somewhere upstream. The trigger is usually far easier to reach. It is often a time, a place, or the end of another action rather than a craving, which is why the same person can be entirely uninterested in a snack at their desk and reach for one automatically the moment they sit down at home. Change the setting and you have removed the cue without needing to resist anything. There is a second finding worth having. Habits form fastest when the behaviour follows the trigger immediately and reliably, so making a desired action easier to begin does far more work than motivating yourself to want it. Putting the running shoes by the door sounds trivial. In this framework it is the whole intervention, because it shortens the distance between the cue and the act to almost nothing.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["How habits form and can be changed", "Why some people have stronger willpower", "How snacking affects concentration at work", "Why exercise routines are hard to keep"], answer:0 },
+      { q:"Which part do most people try to change?", options:["The behaviour in the middle", "The trigger that starts it", "The reward that follows it", "The setting it happens in"], answer:0 },
+      { q:"Why does the speaker mention running shoes?", options:["To show a cue made easier", "To describe a common excuse", "To compare two kinds of exercise", "To explain how rewards work"], answer:0 },
+      { q:"What does the speaker say about triggers?", options:["They are often a place or time", "They are usually a strong craving", "They differ little between people", "They weaken after several weeks"], answer:0 },
+    ]},
+    { context:"a talk in a psychology class",
+      text:"Interruptions cost more than the time they take, and the accounting is worse than most people assume. Suppose you are working on something demanding and a message arrives. You deal with it in thirty seconds and return. The obvious cost is thirty seconds. The real cost includes rebuilding the state you were in, which for genuinely complex work is measured in minutes rather than seconds, and it is not simply lost time. Something else is going on. The interrupted task leaves a residue: part of your attention stays with the message while you attempt to resume, so the work you do in the following minutes is done at reduced capacity even though you feel fully returned to it. That last part is what makes this hard to notice from the inside. You cannot perceive the difference, because the faculty you would use to judge it is the one that has been degraded. Which is why people consistently report that they handle interruptions well, and consistently perform as though they do not. The remedy that survives testing is unglamorous: not resisting interruption better, but arranging not to be reachable for defined stretches.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["The hidden cost of being interrupted", "Why messages arrive at bad moments", "How people organise their working day", "Why complex tasks take longer overall"], answer:0 },
+      { q:"What does the speaker say remains after an interruption?", options:["Part of the attention stays behind", "A clear memory of the original task", "A short but complete loss of focus", "A stronger motivation to finish"], answer:0 },
+      { q:"Why does the speaker mention thirty seconds?", options:["To contrast it with the real cost", "To show how quickly messages arrive", "To describe a typical working pattern", "To explain how the study measured time"], answer:0 },
+      { q:"What does the speaker say about self-assessment?", options:["People cannot detect their own decline", "People overestimate how long tasks take", "People notice interruptions more than expected", "People recover faster than they believe"], answer:0 },
+    ]},
+  ],
+  money: [
+    { context:"a talk in an economics class",
+      text:"There is a cost to having very little money that has nothing to do with prices, and it is worth being precise about it. Being short of money does not only mean you can buy less. It means every decision, including small ones, has to be calculated. Can I afford this journey, and what does it stop me doing later in the week. Somebody with a comfortable margin does not run that calculation at all, and the difference is not effort. It is attention, and attention is finite. So the same person, tested when money is tight and again when it is not, performs measurably worse on unrelated reasoning tasks during the tight period. Nothing about them changed. Part of their capacity is committed elsewhere. This reframes a familiar observation. People in financial difficulty do make more short-sighted decisions, and that has often been read as a cause of their situation. The evidence points the other way round, at least partly: the situation is producing the decisions. It also predicts something useful, which is that reducing the number of decisions someone has to make should improve outcomes on its own, and in several trials it has.",
+      questions:[
+      { q:"What is the main argument of this talk?", options:["Scarcity itself consumes mental capacity", "Poor households pay higher prices generally", "Financial education improves decision making", "Small purchases add up more than expected"], answer:0 },
+      { q:"What happens when the same person is tested twice?", options:["They score worse during the tight period", "They score the same on both occasions", "They improve slightly the second time", "They refuse the unrelated reasoning tasks"], answer:0 },
+      { q:"Why does the speaker mention a journey?", options:["To show a small decision needing calculation", "To compare transport costs between groups", "To explain how the trials were designed", "To give an example of a large expense"], answer:0 },
+      { q:"What does the evidence suggest about short-sighted decisions?", options:["The situation is largely producing them", "They are the main cause of hardship", "They are unrelated to available attention", "They disappear once income rises"], answer:0 },
+    ]},
+    { context:"a talk in an economics class",
+      text:"Consider two shops selling the same coat. One prices it at eighty and the other at a hundred and sixty, then marks it down to eighty. The coat is identical and the price you pay is identical, yet the second shop will sell more of them. That should trouble you, because in the standard account of a rational buyer, only the price and the coat should matter. What the second shop has supplied is a comparison. On its own, eighty means very little to somebody who does not buy coats often, so the buyer looks for something to judge it against, and the shop has helpfully provided that something. This is why the crossed-out figure appears everywhere, why menus carry one dish nobody is expected to order, and why the middle option in a range of three sells disproportionately well. None of it requires the buyer to be foolish. It requires only that value is judged in relation to whatever is nearby, which is how judgement generally works. The uncomfortable implication is that the reference point is very often chosen by the seller, and that is the part worth noticing.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["How buyers judge prices by comparison", "Why identical goods differ between shops", "How shops decide what to charge", "Why coats are marked down so often"], answer:0 },
+      { q:"What has the second shop supplied?", options:["Something to compare the price against", "A better quality version of the coat", "A longer period to make the decision", "A discount available only that week"], answer:0 },
+      { q:"Why does the speaker mention a menu?", options:["To show the same effect elsewhere", "To compare shopping with eating out", "To describe how prices are calculated", "To give an example of a bargain"], answer:0 },
+      { q:"What does the speaker call the uncomfortable part?", options:["The seller usually picks the reference", "The buyer is behaving irrationally", "The price never reflects real value", "The middle option is rarely best"], answer:0 },
+    ]},
+  ],
+  housing: [
+    { context:"a talk in an urban studies class",
+      text:"A neighbourhood where people know one another is not simply a pleasant thing to have. It shows up in outcomes you might not connect to it at all. Children are supervised by more adults than their own parents. An older resident who stops appearing is noticed within days rather than weeks. Tools get lent instead of bought four times over. Researchers sometimes group these effects together and call the underlying thing social capital, and while the term is clumsy, what it points at is real and measurable. Where it gets interesting for planners is that the physical arrangement of a place either supports this or quietly works against it. People form weak ties through repeated unplanned contact, which requires places where paths cross without anyone intending it. A shared entrance, a bench where a path narrows, a shop at the corner. A development where every household drives from a private garage directly onto a main road removes almost all of those crossings, and it does so without anybody deciding that neighbours should not meet. That is the thing to hold on to. The outcome was designed, but nobody designed it.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["How physical layout affects neighbourly ties", "Why older residents prefer quiet streets", "How planners decide where to build", "Why some neighbourhoods are safer"], answer:0 },
+      { q:"How does the speaker say weak ties form?", options:["Through repeated unplanned contact", "Through organised community events", "Through shared childhood friendships", "Through long residence in one place"], answer:0 },
+      { q:"Why does the speaker mention a private garage?", options:["To show a layout removing chance meetings", "To describe a popular housing feature", "To explain why car use has risen", "To compare two kinds of development"], answer:0 },
+      { q:"What does the speaker mean by the final remark?", options:["The result was unintended but built in", "The design was deliberately antisocial", "The planners ignored the research", "The residents chose the arrangement"], answer:0 },
+    ]},
+    { context:"a talk in an urban studies class",
+      text:"When a new road is opened to relieve congestion, traffic on it fills the new capacity, often within a few years, and the original congestion returns. This has been observed often enough that it has a name, induced demand, and it is not a failure of construction. It is a consequence of how people decide. Nobody has a fixed quantity of driving they must do. What they have is a tolerance for how long a journey should take, and journeys that were previously not worth making become worth making once the road is quicker. Somebody who took the train switches to driving. Somebody who shopped locally now drives further for a better shop. Somebody who lived near work moves further out, because the commute is now acceptable. Each of those is a reasonable individual decision and together they consume the new capacity. The same logic runs in reverse, which people find much harder to accept. Where road space has been removed, the traffic does not simply relocate to the next street in the volume expected. A portion of it disappears, because those journeys were only ever worth making while they were easy.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why new roads fill up again", "How congestion is measured in cities", "Why public transport use is falling", "How road building costs are estimated"], answer:0 },
+      { q:"What does the speaker say people have?", options:["A tolerance for journey length", "A fixed amount of necessary driving", "A preference for familiar routes", "A strong dislike of public transport"], answer:0 },
+      { q:"Why does the speaker mention moving further out?", options:["To show capacity being consumed again", "To explain why housing costs rise", "To describe a decline in local shops", "To compare commuting with shopping"], answer:0 },
+      { q:"What does the speaker say people find hard to accept?", options:["Removing road space removes traffic", "New roads take years to fill", "Congestion returns to former levels", "Individual decisions are reasonable ones"], answer:0 },
+    ]},
+  ],
+  travel: [
+    { context:"a talk in an anthropology class",
+      text:"Guidebooks tend to present a place as a set of things to see, and that framing quietly shapes what a visitor does with their time. It is worth asking where it came from. The organised tour is roughly two centuries old as a mass product, and from the beginning it had to solve a commercial problem: how do you sell a place to somebody who has never been there. The answer was a list. A list can be printed, compared, and completed, and a traveller who has completed it feels they have received what they paid for. What that arrangement does not measure is the part most people describe afterwards as the reason the trip mattered, which is almost never on the list. Anthropologists studying returning travellers find the same pattern repeatedly. Asked what they will remember, people describe an unplanned conversation, a meal they were taken to, a period of being lost. Ask the same people beforehand what they intend to do and you get the monuments. So the list is not wrong, exactly. It is simply optimised for something other than what the traveller will end up valuing, which is a reasonable definition of a design problem.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["Why guidebooks emphasise lists of sights", "How organised tours are priced today", "Why travellers visit the same monuments", "How anthropologists study foreign cultures"], answer:0 },
+      { q:"What commercial problem did tours have to solve?", options:["Selling a place nobody had seen", "Keeping travel costs low enough", "Finding guides who spoke the language", "Persuading people to travel in groups"], answer:0 },
+      { q:"Why does the speaker mention being lost?", options:["To give an unplanned but memorable experience", "To warn about the risks of travelling", "To describe a failure of the guidebook", "To explain why maps are unreliable"], answer:0 },
+      { q:"What does the speaker conclude about the list?", options:["It measures the wrong thing well", "It should be abandoned altogether", "It suits experienced travellers best", "It has changed very little recently"], answer:0 },
+    ]},
+    { context:"a talk in a geography class",
+      text:"Look at where the oldest cities sit and a pattern appears immediately. They cluster at points where one kind of transport had to become another. A river mouth, the last bridging point before the sea, the place where a mountain pass opens onto a plain. This is not a coincidence and it is not really about trade routes as such. It is about the cost of transferring goods. Wherever a cargo has to be lifted from a boat to a cart, somebody has to do the lifting, which means labour, which means people, which means food and lodging and eventually a market. The transfer point creates the settlement rather than the other way round. What makes this worth studying is what happens when the transfer stops being necessary. Build a bridge further downstream, or a railway that runs straight past, and the reason for the place is removed while the place itself remains. Some of these towns adapt. Many decline slowly over generations, and the residents experience it as a mystery, because nothing visible has been taken away from them. Next time we will look at several such towns and at what distinguished the ones that recovered.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why old cities grew at transfer points", "How rivers were used for early trade", "Why mountain passes were hard to cross", "How modern railways were first planned"], answer:0 },
+      { q:"What does the speaker say creates the settlement?", options:["The need to transfer cargo", "The presence of fertile land", "The safety of a river mouth", "The meeting of two cultures"], answer:0 },
+      { q:"Why does the speaker mention a new bridge?", options:["To show the original reason disappearing", "To describe how towns were connected", "To explain why rivers were bridged late", "To compare road and rail transport"], answer:0 },
+      { q:"What will the speaker examine next time?", options:["Towns that recovered and why", "How cargo was moved historically", "Where the oldest cities were founded", "Why some residents chose to stay"], answer:0 },
+    ]},
+  ],
+  media: [
+    { context:"a talk in a music class",
+      text:"Why does a piece of music make you feel something, when nothing has happened to you? A large part of the answer is expectation. Listening is not passive reception. From the opening bars you are predicting what comes next, using patterns absorbed from every piece you have ever heard, and you are doing this without any awareness of it. A composer who simply confirms those predictions produces something pleasant and forgettable. One who violates them constantly produces something a listener cannot follow. The interesting work sits between: a prediction set up clearly, then delayed, then eventually satisfied, and the feeling you get at the resolution is proportional to how long you were kept waiting. That is why the same chord can be unremarkable in one piece and overwhelming in another. Nothing about the chord differs. What differs is what you were expecting when it arrived. This also explains the peculiar fact that music from a tradition you have not grown up with often sounds flat rather than strange. You have no predictions for it yet, so there is nothing to delay and nothing to satisfy, and the effect only appears after enough exposure for the patterns to form.",
+      questions:[
+      { q:"What is the main topic of this talk?", options:["How expectation produces feeling in music", "Why some chords sound better than others", "How composers learn their craft", "Why listeners prefer familiar songs"], answer:0 },
+      { q:"What does the speaker say a listener is doing?", options:["Predicting what will come next", "Recalling pieces heard before", "Following the words closely", "Comparing performers deliberately"], answer:0 },
+      { q:"Why does the speaker mention the same chord?", options:["To show context creating the effect", "To explain how chords are built", "To compare two well-known composers", "To describe a common beginner error"], answer:0 },
+      { q:"Why does unfamiliar music often sound flat?", options:["The listener has no predictions yet", "The instruments are unfamiliar sounding", "The patterns are unusually simple", "The recordings are of poor quality"], answer:0 },
+    ]},
+    { context:"a talk in a film studies class",
+      text:"An audience will accept an enormous amount of impossibility and then refuse something small, and directors have to understand which is which. Nobody objects to a story in which people fly. They will object, loudly, if a character behaves in a way the film has not prepared them for. That tells you the rule is not about realism. It is about consistency with what the work has already established. Early scenes are doing work most viewers never notice, which is setting the terms: this is a world where that is possible, this is a person who would do that. Break those terms later and the audience feels cheated, not because the event is unlikely but because the agreement has been broken. There is a common failure that follows from misreading this. A film in trouble adds spectacle, on the reasoning that the audience was insufficiently gripped. Usually the audience was gripped and then had the terms changed on them, and more spectacle makes it worse rather than better, because it is answering a question nobody asked.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why audiences accept some impossibilities", "How special effects are created today", "Why films are often too long", "How directors choose their actors"], answer:0 },
+      { q:"What does the speaker say early scenes do?", options:["They establish the terms of the world", "They introduce the main characters quickly", "They explain the story's historical setting", "They show the most expensive effects"], answer:0 },
+      { q:"Why does the speaker mention people flying?", options:["To show impossibility is readily accepted", "To describe a popular kind of film", "To criticise an overused visual effect", "To explain why budgets have grown"], answer:0 },
+      { q:"What does the speaker say about adding spectacle?", options:["It answers a question nobody asked", "It usually rescues a weak film", "It appeals to younger audiences", "It costs less than rewriting scenes"], answer:0 },
+    ]},
+  ],
+  innovation: [
+    { context:"a talk in a physical science class",
+      text:"Most accounts of invention are built around a single moment and a single person, and the record almost never supports that shape. Take the light bulb, which is the example everybody reaches for. By the time the familiar version appeared, more than twenty people had produced working electric lamps. The problem was never producing light. It was producing a filament that lasted long enough to be worth installing, and that was solved by testing an enormous number of materials rather than by insight. What actually distinguished the successful effort was less romantic and more instructive: it treated the lamp as one component of a system that did not yet exist. A lamp is useless without generation, wiring, meters, and somebody willing to pay a monthly bill. The competitors were inventing a device. The winner was assembling an industry, and the device was the part that got remembered. This pattern is general enough to be worth carrying with you. When a technology appears to arrive suddenly, what usually happened is that the last missing piece of a surrounding system fell into place, and the piece that arrived last gets the credit for all of them.",
+      questions:[
+      { q:"What is the main argument of this talk?", options:["Inventions depend on surrounding systems", "The light bulb was invented too early", "Single inventors deserve more credit", "Testing materials is the key method"], answer:0 },
+      { q:"What was the real difficulty with the lamp?", options:["Making a filament that lasted", "Producing enough light to see", "Finding investors willing to pay", "Manufacturing the glass cheaply"], answer:0 },
+      { q:"Why does the speaker mention meters and wiring?", options:["To show the system a lamp needed", "To list the inventor's other patents", "To explain why electricity was expensive", "To compare two competing designs"], answer:0 },
+      { q:"What does the speaker say about sudden arrivals?", options:["The last piece receives all the credit", "They happen more often than expected", "They usually follow a single insight", "They depend on public enthusiasm"], answer:0 },
+    ]},
+    { context:"a talk in a physical science class",
+      text:"A useful thing to understand about materials is that failure almost never begins where the load is greatest. It begins at a flaw. Glass is the clearest demonstration. Pull on a sheet of ordinary glass and it breaks at a fraction of the strength the chemical bonds should give it, which looks like a contradiction until you look at the surface. Every sheet carries tiny scratches, most too small to see. A crack concentrates stress at its tip, so a scratch a fraction of a millimetre deep can multiply the local load many times over, and the sheet fails from that point outward while the rest of it is barely stressed at all. This is why the same glass is far stronger when the surface is protected, and why fibres drawn thin and kept from touching anything approach the theoretical figure. It also reframes what engineers are doing when they polish, coat, or compress a surface. They are not making the material stronger in any chemical sense. They are removing or closing the places where a failure could start, which is a different problem and often a much cheaper one to solve.",
+      questions:[
+      { q:"What is this talk mainly about?", options:["Why materials fail at surface flaws", "How glass is manufactured industrially", "Why chemical bonds are so strong", "How engineers measure applied loads"], answer:0 },
+      { q:"What does a crack do to the stress?", options:["It concentrates it at the tip", "It spreads it across the sheet", "It reduces it near the surface", "It removes it from the bonds"], answer:0 },
+      { q:"Why does the speaker mention thin fibres?", options:["To show protected surfaces performing better", "To describe how glass sheets are cut", "To explain why fibres are expensive", "To compare glass with other materials"], answer:0 },
+      { q:"What does the speaker say engineers are doing?", options:["Closing the places failure could start", "Strengthening the chemical bonds directly", "Reducing the loads a material carries", "Selecting materials with fewer bonds"], answer:0 },
+    ]},
+  ],
+};
 
 // ---- Take an Interview ----
 // Real TOEFL 2026 "Take an Interview": 4 questions on ONE topic, asked
@@ -5328,6 +5617,7 @@ function generateOne(type, theme, topicIndex){
     case 'choose-response': return { type, data: genChooseResponse(theme) };
     case 'announcement': return { type, data: genAnnouncement(theme) };
     case 'conversation': return { type, data: genConversation(theme, topicIndex) };
+    case 'talk': return { type, data: genTalk(theme, topicIndex) };
   }
 }
 // The named situations/topics a given type+theme offers, for the teacher's
@@ -5336,6 +5626,9 @@ function topicsFor(type, theme){
   if(type === 'listen-repeat') return (LISTEN_SETS[theme] || []).map(s => s.label);
   if(type === 'interview') return (INTERVIEW_BANK[theme] || []).map(s => s.topic);
   if(type === 'conversation') return (CONVERSATION_BANK[theme] || []).map(c => c.context.replace(/^a conversation /, '').replace(/^a /, ''));
+  // Two talks per theme share a context ("a talk in an economics class"),
+  // so the teacher is offered the opening words of each instead.
+  if(type === 'talk') return (TALK_BANK[theme] || []).map(t => t.text.split(' ').slice(0,6).join(' ') + '...');
   return [];
 }
 function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
@@ -5346,7 +5639,7 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // consistent.
 function generateBatchItems(type, theme, topicIndex){
   const items = [];
-  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement' || type === 'conversation'){
+  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement' || type === 'conversation' || type === 'talk'){
     // Real TOEFL structure: both Speaking tasks are ONE connected unit —
     // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
     // on a single topic — approved/discarded as a set, not as 4 separate
@@ -5615,6 +5908,16 @@ function renderTypeTabs(){
 
 function cardBody(item){
   const d = item.data;
+  if(item.type==='talk') return `
+    <div class="ex-body">A ${d.text.split(' ').length}-word academic talk, ${d.questions.length} questions. The student hears it and answers from listening — the transcript is never shown to them.</div>
+    <div style="margin-top:.7rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span class="small-note" style="flex:1">Listen to ${escapeHtml(d.context)}</span>
+        <button class="btn sound sm" onclick="speak('${d.text.replace(/'/g,"\\'")}')">🔊</button>
+      </div>
+      <div class="small-note" style="margin:.3rem 0 0 0">${escapeHtml(d.text)}</div>
+      ${d.questions.map(q=>`<div class="small-note" style="margin-top:.4rem">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}
+    </div>`;
   if(item.type==='conversation') return `
     <div class="ex-body">A two-speaker conversation, ${d.questions.length} questions. The student hears it and answers from listening — the transcript is never shown to them.</div>
     <div style="margin-top:.7rem">
@@ -5877,6 +6180,7 @@ function renderStudent(){
       : item.type==='choose-response' ? `${item.data.set.length} exchanges · pick the best reply`
       : item.type==='announcement' ? `${item.data.set.length} announcements · answer questions`
       : item.type==='conversation' ? `A conversation · ${item.data.questions.length} questions`
+      : item.type==='talk' ? `An academic talk · ${item.data.questions.length} questions`
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
       : `${item.data.topic} · 4 questions`;
     const b = document.createElement('button');
@@ -6125,6 +6429,14 @@ function renderPractice(){
     renderConversationStep(item);
     return;
   }
+
+  if(item.type==='talk'){
+    if(!window._tkState || window._tkState.itemId !== item.id){
+      window._tkState = { itemId:item.id, q:0, listens:0, results:[], chosen:null };
+    }
+    renderTalkStep(item);
+    return;
+  }
 }
 // Listen to an Announcement. Same rule as every other Listening task: the
 // announcement is heard, never written. It stays hidden even while the
@@ -6216,6 +6528,91 @@ function advanceAnnouncement(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">Announcements carry one or two facts that matter and a good deal that does not. If you missed one, it is usually worth checking whether the answer was stated outright or only implied.</p>
+    </div>` + PRACTICE_AGAIN_BTN;
+}
+// Listen to an Academic Talk. Four questions on one ~200-word talk, and
+// the longest thing the app asks a student to hold in their head. Same
+// rule as the rest of the section -- heard, never read -- but with one
+// deliberate difference: the four questions come one after another off a
+// single listen, because that is what the real task does and because
+// re-listening per question would turn it into four short exercises.
+const TALK_MAX_LISTENS = 2;
+function renderTalkStep(item){
+  const st = window._tkState;
+  const d = item.data;
+  const q = d.questions[st.q];
+  const wrap = document.getElementById('practice-wrap');
+  const answered = st.chosen !== null;
+  const listensLeft = TALK_MAX_LISTENS - st.listens;
+
+  const options = q.options.map((o,i)=>{
+    let cls = 'mc-option';
+    if(answered){
+      if(i === q.answer) cls += ' mc-correct';
+      else if(i === st.chosen) cls += ' mc-wrong';
+    }
+    return `<button class="${cls}" ${answered?'disabled':''} onclick="answerTalk(${i})">
+      <span class="mc-letter">${'ABCD'[i]}</span><span>${escapeHtml(o)}</span></button>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
+      <div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>Listen to ${escapeHtml(d.context)}. You do not need to know anything about the subject beforehand.</div>
+      <div class="ex-actions" style="margin-top:.6rem">
+        ${listensLeft > 0
+          ? `<button class="btn sound" onclick="playTalk()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
+          : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+      </div>
+      ${st.listens ? `
+        <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
+        <div class="mc-options">${options}</div>`
+        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin. It runs about a minute, and you will hear it at most twice. All four questions come from this one talk.</p>'}
+      <div id="tk-result"></div>
+      ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
+        <button class="btn" onclick="advanceTalk()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
+      </div>` : ''}
+    </div>`;
+  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+}
+function playTalk(){
+  const st = window._tkState, item = currentItem();
+  if(!st || !item) return;
+  st.listens++;
+  renderTalkStep(item);
+  speak(item.data.text);
+}
+function answerTalk(i){
+  const st = window._tkState, item = currentItem();
+  if(!st || st.chosen !== null) return;
+  const q = item.data.questions[st.q];
+  st.chosen = i;
+  const ok = i === q.answer;
+  st.results.push(ok ? 1 : 0);
+  renderTalkStep(item);
+  document.getElementById('tk-result').innerHTML = `
+    <div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct' : '✕ Not quite'}</div>
+    ${ok ? '' : `<p class="small-note">The answer was <b>${'ABCD'[q.answer]}</b>. The talk is below — find the part that settles it.</p>`}
+    <div class="interview-reveal">
+      <span class="interview-reveal-label">📝 What you heard</span>${escapeHtml(item.data.text)}
+    </div>`;
+}
+function advanceTalk(){
+  const st = window._tkState, item = currentItem();
+  if(!st || !item) return;
+  st.chosen = null;
+  if(st.q < item.data.questions.length - 1){
+    // All four questions come off the same listen, so no fresh listen here.
+    st.q++;
+    renderTalkStep(item);
+    return;
+  }
+  const score = st.results.reduce((x,y)=>x+y,0);
+  logUsage('talk', item.theme, score / st.results.length);
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
+      <p class="small-note">The four questions are deliberately different from each other: what the talk is about, one thing it stated, why the speaker brought up a particular example, and what follows from it. If you keep missing the third kind, listen for <i>why</i> something was mentioned rather than what was said about it.</p>
     </div>` + PRACTICE_AGAIN_BTN;
 }
 // Listen to a Conversation. Two speakers, heard once through, then two
@@ -7183,6 +7580,7 @@ function guideContent(role){
       <li><b>Listen and Choose a Response</b> — hear a short question, pick the best reply.</li>
       <li><b>Listen to an Announcement</b> — hear a notice, answer questions about it.</li>
       <li><b>Listen to a Conversation</b> — hear two people talking, answer questions about it.</li>
+      <li><b>Listen to an Academic Talk</b> — hear a short talk, answer four questions on it.</li>
       <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
       <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
       <li><b>Academic Discussion</b> — join a class discussion thread, at least 100 words.</li>

@@ -45,6 +45,14 @@ IV_VOICES = [            # the "interviewer" running the research study
 # clip, so it needs a voice per SPEAKER rather than a voice per exercise.
 # Piper has no way to switch voice mid-utterance: each turn is rendered
 # with its own model and the turns are joined afterwards.
+# The lecturer in an academic talk. A wider roster than the others because
+# there are 28 talks and hearing the same voice twice in a session is more
+# noticeable over a minute of speech than over one sentence.
+TALK_VOICES = ['en_US-lessac-high.onnx', 'en_US-ryan-high.onnx', 'en_GB-cori-high.onnx',
+               'en_US-amy-medium.onnx', 'en_US-joe-medium.onnx', 'en_GB-alba-medium.onnx',
+               'en_US-hfc_female-medium.onnx', 'en_GB-northern_english_male-medium.onnx',
+               'en_US-kusal-medium.onnx']
+
 CONV_M = ['en_US-ryan-high.onnx', 'en_US-joe-medium.onnx',
           'en_US-kusal-medium.onnx', 'en_GB-northern_english_male-medium.onnx']
 CONV_W = ['en_US-lessac-high.onnx', 'en_US-amy-medium.onnx',
@@ -76,6 +84,11 @@ def main(texts_json, outdir):
     assign, used = {}, collections.Counter()
     for i in items:
         key = (i['kind'], i['theme'], i['set'])
+        if i['kind'] == 'tk':
+            n = themes.index(i['theme']) + i['set'] * 7
+            i['voice'] = (TALK_VOICES[n % len(TALK_VOICES)], 'lecturer')
+            used['lecturer'] += 1
+            continue
         if i['kind'] == 'cv':
             # Pair the two speakers off the theme+set index so the same
             # conversation always sounds like the same two people, and

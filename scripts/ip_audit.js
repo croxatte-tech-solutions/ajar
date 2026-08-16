@@ -15,7 +15,7 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
 sb.self=sb.window;sb.globalThis=sb;vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`;globalThis.__c={
  lr:LISTEN_SETS, iv:INTERVIEW_BANK, em:EMAIL_BANK, di:DISCUSSION_BANK,
- cw:COMPLETE_WORDS_BANK, se:SENTENCE_BANK, cr:CHOOSE_RESPONSE_BANK, an:ANNOUNCEMENT_BANK, cv:CONVERSATION_BANK, themes:ALL_THEMES};`, sb);
+ cw:COMPLETE_WORDS_BANK, se:SENTENCE_BANK, cr:CHOOSE_RESPONSE_BANK, an:ANNOUNCEMENT_BANK, cv:CONVERSATION_BANK, tk:TALK_BANK, themes:ALL_THEMES};`, sb);
 const c=sb.__c;
 
 // every user-facing string we ship
@@ -29,6 +29,7 @@ for(const th of c.themes){
   (c.cr[th]||[]).forEach(q=>{ ours.push(q.prompt); q.options.forEach(o=>ours.push(o)); });
   (c.an[th]||[]).forEach(a=>{ ours.push(a.text); a.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
   (c.cv[th]||[]).forEach(v=>{ v.turns.forEach(t=>ours.push(t[1])); v.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
+  (c.tk[th]||[]).forEach(k=>{ ours.push(k.text); k.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
   (c.se[th]||[]).forEach(s=>ours.push(s.target));
 }
 
@@ -72,6 +73,9 @@ for(const th of c.themes){
   (c.cv[th]||[]).forEach(v=>{ v.turns.forEach(t=>(areas['Conversation turn']=areas['Conversation turn']||[]).push(t[1]));
                               v.questions.forEach(q=>{ (areas['Conversation question']=areas['Conversation question']||[]).push(q.q);
                                 q.options.forEach(o=>(areas['Conversation option']=areas['Conversation option']||[]).push(o)); }); });
+  (c.tk[th]||[]).forEach(k=>{ (areas['Talk text']=areas['Talk text']||[]).push(k.text);
+                              k.questions.forEach(q=>{ (areas['Talk question']=areas['Talk question']||[]).push(q.q);
+                                q.options.forEach(o=>(areas['Talk option']=areas['Talk option']||[]).push(o)); }); });
   (c.cr[th]||[]).forEach(q=>{ (areas['Choose Response prompt']=areas['Choose Response prompt']||[]).push(q.prompt);
                               q.options.forEach(o=>(areas['Choose Response option']=areas['Choose Response option']||[]).push(o)); });
 }

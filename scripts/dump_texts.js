@@ -16,7 +16,7 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
   URLSearchParams,console,Date,Math,JSON,Array,Object,String,Number,Intl,Set,Promise,setInterval,clearInterval,setTimeout,clearTimeout};
 sb.self=sb.window; sb.globalThis=sb; vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`
-globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, ann: ANNOUNCEMENT_BANK, conv: CONVERSATION_BANK, convText: conversationText, hash: hashStr };
+globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, ann: ANNOUNCEMENT_BANK, conv: CONVERSATION_BANK, convText: conversationText, talk: TALK_BANK, hash: hashStr };
 `, sb);
 const d=sb.__dump, out=[];
 for(const th of d.themes){
@@ -38,9 +38,12 @@ for(const th of d.themes){
   // is exactly what the app asks for at play time.
   (d.conv[th]||[]).forEach((c,ci)=>out.push({kind:'cv', theme:th, set:ci, idx:0,
     text:d.convText(c.turns), turns:c.turns.map(t=>({s:t[0], t:t[1]}))}));
+  // An academic talk is one speaker for ~200 words -- one clip, one voice,
+  // the longest single utterance the app renders.
+  (d.talk[th]||[]).forEach((k,ki)=>out.push({kind:'tk', theme:th, set:ki, idx:0, text:k.text}));
 }
 out.forEach(o=>o.hash=d.hash(o.text));
 fs.writeFileSync(process.argv[3], JSON.stringify(out,null,1));
 console.log('themes:',d.themes.length,'| clips:',out.length,
   '| lr:',out.filter(o=>o.kind==='lr').length,'| iv:',out.filter(o=>o.kind==='iv').length,
-  '| cv:',out.filter(o=>o.kind==='cv').length);
+  '| cv:',out.filter(o=>o.kind==='cv').length,'| tk:',out.filter(o=>o.kind==='tk').length);
