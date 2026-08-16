@@ -119,6 +119,16 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .forum-post{ background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:.6rem .8rem; margin-bottom:.5rem; font-size:.86rem; line-height:1.6; }
 .forum-post.forum-prof{ background:var(--accent-soft); border-color:var(--accent); }
 .forum-name{ display:block; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--accent); margin-bottom:.25rem; }
+.mc-options{ display:grid; gap:.5rem; margin-top:.8rem; }
+.mc-option{ display:flex; gap:.6rem; align-items:flex-start; text-align:left; width:100%; font:inherit; font-size:.88rem; line-height:1.5;
+  background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:.7rem .8rem; cursor:pointer; }
+.mc-option:hover:not(:disabled){ border-color:var(--accent); background:var(--accent-soft); }
+.mc-option:disabled{ cursor:default; }
+.mc-letter{ font-weight:700; color:var(--accent); flex-shrink:0; }
+.mc-option.mc-correct{ border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:600; }
+.mc-option.mc-correct .mc-letter{ color:var(--green); }
+.mc-option.mc-wrong{ border-color:var(--red); background:var(--red-soft); color:var(--red); }
+.mc-option.mc-wrong .mc-letter{ color:var(--red); }
 .lr-diff{ font-size:.95rem; line-height:2; margin:.5rem 0; }
 .lr-diff span{ padding:.1rem .3rem; border-radius:5px; }
 .lr-ok{ color:var(--green); font-weight:600; }
@@ -2608,6 +2618,7 @@ var qrcode = function() {
 
 const TASK_TYPES = [
   { id:'complete-words', tag:'Complete the Words', section:'Reading' },
+  { id:'choose-response', tag:'Listen and Choose a Response', section:'Listening' },
   { id:'sentence',       tag:'Build a Sentence',    section:'Writing' },
   { id:'email',          tag:'Write an Email',      section:'Writing' },
   { id:'discussion',     tag:'Academic Discussion', section:'Writing' },
@@ -3841,6 +3852,139 @@ function genListenRepeatSet(theme, topicIndex){
   };
 }
 
+/* ---- Listen and Choose a Response (Listening) ----
+   Real TOEFL 2026 task: the student HEARS a short question or statement --
+   it is never written on screen -- then reads four possible replies and
+   picks the one that actually answers what was said. ETS's own example
+   shows the craft: every wrong option is a perfectly good reply to a
+   DIFFERENT question, so the item tests whether you understood this one
+   rather than whether you can write English.
+   Correct answer is stored first here for readability; genChooseResponse()
+   shuffles the options on every draw so position carries no information. */
+const CHOOSE_RESPONSE_BANK = {
+  campus: [
+    { prompt:'Didn\'t you have a class in this building on Tuesdays?', options:['I did, but the room was changed last week.', 'Yes, the building closes at nine on weekdays.', 'No, I\'d rather meet somewhere quieter than that.', 'Sure, I can bring the notes along with me.'], answer:0 },
+    { prompt:'Do you know whether the advisor is in this afternoon?', options:['She was here this morning, but I haven\'t seen her since.', 'It\'s on the second floor, just past the lift.', 'I think the deadline is the end of next week.', 'Yes, I\'ve already sent her everything she asked for.'], answer:0 },
+    { prompt:'I thought the orientation session started at ten.', options:['So did I, but they moved it forward an hour.', 'The auditorium seats about two hundred people.', 'You\'ll need your student card to get in.', 'I\'d rather sit near the back if that\'s alright.'], answer:0 },
+    { prompt:'Could you tell me where students hand in these forms?', options:['There\'s a box just inside the office door.', 'They\'re usually processed within three working days.', 'I filled mine in last term without any trouble.', 'You should ask her before the deadline passes.'], answer:0 },
+    { prompt:'Weren\'t you supposed to meet your tutor this morning?', options:['I was, but she emailed to reschedule.', 'Her office is at the end of the corridor.', 'I\'ve been meaning to read that chapter again.', 'Yes, the library is much busier than usual.'], answer:0 },
+    { prompt:'How did you find the first week here?', options:['Busier than I expected, but people were very helpful.', 'I came in through the main entrance on Oak Street.', 'It\'s about twenty minutes on foot from my flat.', 'I\'d say the reading list is the hardest part.'], answer:0 },
+  ],
+  register: [
+    { prompt:'Would you mind if I opened the window a little?', options:['Not at all, it is rather warm in here.', 'Yes, it closes automatically at six.', 'I think it\'s the third one along.', 'No thanks, I\'ve already had one.'], answer:0 },
+    { prompt:'I\'m sorry, I didn\'t quite catch your name.', options:['It\'s Marta — with a T, not a TH.', 'No, I don\'t think we\'ve been introduced.', 'She should be arriving any moment now.', 'That\'s quite alright, it happens often.'], answer:0 },
+    { prompt:'Do you think you could send that through by Friday?', options:['I should be able to, as long as nothing else comes up.', 'It arrived on Wednesday, I believe.', 'She usually answers within a day or two.', 'No, I\'ve never used that system before.'], answer:0 },
+    { prompt:'Thanks for staying late to finish that.', options:['It was no trouble at all, honestly.', 'I\'ll be here from nine tomorrow morning.', 'Yes, it took rather longer than expected.', 'You can leave it on my desk if you like.'], answer:0 },
+    { prompt:'Shall I ask her to call you back?', options:['Please do, any time before five would suit me.', 'She\'s been in meetings most of the morning.', 'I left a message on the machine yesterday.', 'Yes, her number is on the notice board.'], answer:0 },
+    { prompt:'You couldn\'t spare five minutes, could you?', options:['Of course — is now a good time, or shall I come back?', 'It only took about ten minutes in the end.', 'No, I\'m afraid she left some time ago.', 'Yes, I\'ve put it in the diary for Thursday.'], answer:0 },
+  ],
+  current: [
+    { prompt:'Has your phone been doing that too?', options:['Mine\'s been fine, actually — when did yours start?', 'I bought it about eighteen months ago.', 'There\'s a shop on the high street that repairs them.', 'No, I never use that application myself.'], answer:0 },
+    { prompt:'Didn\'t the update fix the battery problem?', options:['It helped a bit, but it still drains overnight.', 'You can find it under settings, then general.', 'I\'ve had this model for nearly two years.', 'Yes, I downloaded it as soon as it appeared.'], answer:0 },
+    { prompt:'Do you back your work up anywhere?', options:['Everything goes to the cloud automatically now.', 'It took about three hours to install.', 'I\'d rather not pay for another subscription.', 'Yes, the connection here is surprisingly good.'], answer:0 },
+    { prompt:'I can never get that thing to connect.', options:['Try forgetting the network and joining it again.', 'It\'s just behind the reception desk.', 'Mine cost less than I expected, actually.', 'No, I don\'t think they sell those any more.'], answer:0 },
+    { prompt:'You don\'t happen to have a charger, do you?', options:['I do, but it\'s the older type — will that work?', 'It usually takes about an hour to fill.', 'No, I left the laptop at home today.', 'Yes, there\'s a socket under the table.'], answer:0 },
+    { prompt:'Weren\'t you going to cancel that subscription?', options:['I keep meaning to, and then forgetting.', 'It costs about six pounds a month.', 'They sent me an email about it yesterday.', 'Yes, the free trial lasts thirty days.'], answer:0 },
+  ],
+  grammar: [
+    { prompt:'How\'s the essay coming along?', options:['Slowly — I\'m still stuck on the introduction.', 'It\'s due at the end of the month.', 'About fifteen hundred words, I think.', 'Yes, she marked it rather harshly.'], answer:0 },
+    { prompt:'Did she say what she wanted us to read?', options:['Only the first two chapters, as far as I remember.', 'She\'s usually in her office on Thursdays.', 'I found it in the library last week.', 'Yes, the seminar has been moved again.'], answer:0 },
+    { prompt:'You\'ve been to the writing centre before, haven\'t you?', options:['A couple of times — it\'s genuinely useful.', 'It\'s open until six on weekdays.', 'No, I\'d rather write it on my own.', 'Yes, I\'ll send you the draft this evening.'], answer:0 },
+    { prompt:'I still can\'t hear the difference between those two sounds.', options:['It took me months, honestly — keep listening.', 'There\'s a recording of it on the class page.', 'No, that word has three syllables.', 'Yes, I\'d say her accent is quite clear.'], answer:0 },
+    { prompt:'Would it help if we went over it together?', options:['It would, actually — are you free after lunch?', 'I\'ve read it twice already this week.', 'She explained it again on Wednesday.', 'No, the exam covers only the first unit.'], answer:0 },
+    { prompt:'Shouldn\'t that be in the past tense?', options:['You\'re right — I\'ve written it wrong throughout.', 'It\'s on page forty of the workbook.', 'She corrected mine in red as well.', 'Yes, I handed it in on Monday.'], answer:0 },
+  ],
+  social: [
+    { prompt:'Are you coming along on Saturday?', options:['I\'d like to — what time does it start?', 'It was held at the community centre.', 'There were about thirty people there.', 'Yes, I met her at the fair last month.'], answer:0 },
+    { prompt:'Do you know many people here yet?', options:['Only a couple, but everyone\'s been friendly.', 'It\'s my second term at this school.', 'I came over from Colombia in September.', 'Yes, the food is much better than I expected.'], answer:0 },
+    { prompt:'Weren\'t you going to join one of the clubs?', options:['I signed up, but I haven\'t been yet.', 'They meet in the hall on Wednesdays.', 'There\'s a list on the noticeboard downstairs.', 'Yes, it costs nothing to become a member.'], answer:0 },
+    { prompt:'I hear you cooked for the whole group.', options:['I did, and I\'m not doing it again in a hurry.', 'It\'s a dish from the north of my country.', 'There\'s usually enough for about twenty.', 'Yes, the kitchen was rather crowded.'], answer:0 },
+    { prompt:'Would you rather go out or stay in tonight?', options:['Stay in, if you don\'t mind — I\'m exhausted.', 'It finished around eleven, I think.', 'I\'ve been meaning to try that place.', 'Yes, the weather has been dreadful all week.'], answer:0 },
+    { prompt:'You didn\'t seem to enjoy that film much.', options:['Not really, no — it went on far too long.', 'It\'s showing again on Thursday evening.', 'The cinema is just past the station.', 'Yes, I booked the tickets online.'], answer:0 },
+  ],
+  career: [
+    { prompt:'How did the interview go?', options:['Better than I feared, though they asked a lot.', 'It\'s a small firm in the city centre.', 'I sent the application in last month.', 'Yes, I wore the suit in the end.'], answer:0 },
+    { prompt:'Have you heard anything back from them?', options:['Not a word yet, and it\'s been three weeks.', 'They\'re based somewhere near the river.', 'I applied for the junior position.', 'Yes, the salary was mentioned in the advert.'], answer:0 },
+    { prompt:'Didn\'t you say you were leaving that job?', options:['I was, but they offered me better hours.', 'It\'s about twenty minutes on the bus.', 'She started there around the same time.', 'Yes, the shifts finish quite late.'], answer:0 },
+    { prompt:'Would you be willing to take on the extra project?', options:['I would, though I\'d need to drop something else.', 'It ran for about six weeks in total.', 'She handled that one last year.', 'Yes, the deadline was moved forward.'], answer:0 },
+    { prompt:'What made you choose this field in the first place?', options:['An uncle of mine worked in it, and it stuck.', 'I studied for four years altogether.', 'There are more openings than there used to be.', 'Yes, the training took rather longer than expected.'], answer:0 },
+    { prompt:'You must be pleased with how that turned out.', options:['Relieved, more than anything — it was close.', 'It finished slightly ahead of schedule.', 'There were five of us working on it.', 'Yes, the client is based abroad.'], answer:0 },
+  ],
+  health: [
+    { prompt:'You\'re looking rather tired today.', options:['I\'ve barely slept all week, to be honest.', 'It\'s just along the corridor on the left.', 'I usually go around seven in the morning.', 'Yes, the appointment is on Thursday.'], answer:0 },
+    { prompt:'Have you managed to see anyone about it?', options:['Not yet — the waiting list is enormous.', 'It started about a fortnight ago.', 'There\'s a clinic near the station.', 'Yes, I take them twice a day.'], answer:0 },
+    { prompt:'Don\'t you usually go running on Mondays?', options:['I do, but my knee\'s been bothering me.', 'It\'s about five kilometres altogether.', 'There\'s a path that goes round the lake.', 'Yes, the gym opens at six.'], answer:0 },
+    { prompt:'Would you like me to come with you?', options:['That\'s kind — I\'d feel better if you did.', 'It\'s on the third floor, room twelve.', 'I\'ve been once before, last winter.', 'Yes, they open again after lunch.'], answer:0 },
+    { prompt:'Are you managing to eat properly with all this on?', options:['Barely — it\'s mostly whatever\'s quickest.', 'The canteen closes at half past two.', 'I\'ve been cooking more since I moved.', 'Yes, the prices have gone up again.'], answer:0 },
+    { prompt:'I thought you\'d given that up.', options:['I had, but exam week undid all of it.', 'It\'s usually about three cups a day.', 'There\'s a machine on the ground floor.', 'Yes, it does help me concentrate.'], answer:0 },
+  ],
+  environment: [
+    { prompt:'Do you know which bin this goes in?', options:['The blue one, I think — it\'s cardboard.', 'They\'re emptied on Tuesday mornings.', 'There\'s one just outside the back door.', 'Yes, I rinsed it out first.'], answer:0 },
+    { prompt:'Weren\'t there more of these bins last term?', options:['There were — they took two away in December.', 'They\'re for paper and cardboard only.', 'It\'s on the far side of the courtyard.', 'Yes, I always separate mine.'], answer:0 },
+    { prompt:'Do you ever cycle in rather than take the bus?', options:['When the weather allows, but not lately.', 'It takes about twenty-five minutes.', 'There\'s a rack near the main entrance.', 'Yes, the fares went up in September.'], answer:0 },
+    { prompt:'Somebody\'s left all these lights on again.', options:['They\'ve been on every night this week.', 'The switch is by the far door.', 'It\'s brighter than it needs to be.', 'Yes, the building closes at ten.'], answer:0 },
+    { prompt:'Are you coming to the clean-up on Sunday?', options:['I\'d planned to, unless it pours down.', 'It\'s organised by the students\' union.', 'They start at nine in the morning.', 'Yes, gloves are provided on the day.'], answer:0 },
+    { prompt:'That\'s a lot of packaging for one small thing.', options:['It is — half of it isn\'t even recyclable.', 'It arrived the day after I ordered it.', 'There\'s a collection point near the shop.', 'Yes, delivery was free over twenty pounds.'], answer:0 },
+  ],
+  daily: [
+    { prompt:'Did the parcel ever turn up?', options:['It did, eventually — a neighbour had it.', 'It was sent second class, I think.', 'There\'s a depot on the edge of town.', 'Yes, I ordered it a fortnight ago.'], answer:0 },
+    { prompt:'Is the machine on the end still broken?', options:['It is, and nobody\'s come to look at it.', 'They take coins as well as the app.', 'A full cycle is about forty minutes.', 'Yes, I did mine on Sunday evening.'], answer:0 },
+    { prompt:'Weren\'t you meant to be at the bank this morning?', options:['I was, but they cancelled at the last minute.', 'It\'s open until four on weekdays.', 'There\'s a branch near the market square.', 'Yes, I brought my passport with me.'], answer:0 },
+    { prompt:'How long does the number eleven usually take?', options:['Twenty minutes, unless the traffic\'s bad.', 'It runs every quarter of an hour.', 'The stop is outside the chemist.', 'Yes, I bought a monthly pass.'], answer:0 },
+    { prompt:'Could you pick up some milk on your way back?', options:['Of course — anything else while I\'m there?', 'It\'s just past the traffic lights.', 'I\'ll be home around seven, I expect.', 'Yes, the shop shuts at eleven.'], answer:0 },
+    { prompt:'You haven\'t seen my keys anywhere, have you?', options:['I haven\'t — did you check your coat pocket?', 'There\'s a spare set in the drawer.', 'The door locks by itself, I\'m afraid.', 'Yes, I left mine at work once.'], answer:0 },
+  ],
+  money: [
+    { prompt:'Did you ever sort out that charge on your account?', options:['I did — they refunded it in the end.', 'It\'s a student account, so there\'s no fee.', 'The branch is open until four.', 'Yes, I use the app for everything now.'], answer:0 },
+    { prompt:'Are you still splitting the bills evenly?', options:['We are, though it hasn\'t been working well.', 'They arrive at the start of each month.', 'It comes to about ninety each.', 'Yes, the landlord pays for the water.'], answer:0 },
+    { prompt:'That seems rather expensive for what it is.', options:['It does, but I couldn\'t find it cheaper anywhere.', 'It arrived on Thursday afternoon.', 'There\'s a shop on the corner that stocks them.', 'Yes, I paid by card in the end.'], answer:0 },
+    { prompt:'Have you thought about putting something aside each month?', options:['I\'ve been meaning to, but there\'s never much left.', 'The account pays very little interest.', 'It\'s the same day every month.', 'Yes, the rent went up again in June.'], answer:0 },
+    { prompt:'Didn\'t the scholarship cover the whole fee?', options:['Only about half of it, as it turned out.', 'The letter came through in August.', 'I applied along with everyone else.', 'Yes, the office is on the first floor.'], answer:0 },
+    { prompt:'Would you rather pay it all at once or in instalments?', options:['Instalments, I think — it\'s easier to manage.', 'It came to just over two thousand.', 'The deadline is the end of term.', 'Yes, they accept bank transfer.'], answer:0 },
+  ],
+  housing: [
+    { prompt:'How are you finding the new place?', options:['Quieter than the last one, thankfully.', 'It\'s a ten-minute walk from campus.', 'I moved in at the start of the month.', 'Yes, the rent includes the bills.'], answer:0 },
+    { prompt:'Has the landlord been back about the heating?', options:['Not yet, and it\'s been nearly a week.', 'It\'s on the wall in the hallway.', 'The flat faces north, unfortunately.', 'Yes, I paid the deposit in advance.'], answer:0 },
+    { prompt:'Do you get on with the people you live with?', options:['Mostly, though the kitchen causes arguments.', 'There are four of us altogether.', 'We each have our own room.', 'Yes, the contract runs until July.'], answer:0 },
+    { prompt:'Weren\'t you looking for somewhere closer in?', options:['I was, but everything nearby was far too dear.', 'It\'s about forty minutes on the bus.', 'The area is quite lively in the evenings.', 'Yes, I viewed three places last week.'], answer:0 },
+    { prompt:'Did you take photographs when you moved in?', options:['I did, and I\'m glad — there was damage already.', 'It took most of a Saturday to unpack.', 'The inventory was quite detailed.', 'Yes, the keys were left with the agent.'], answer:0 },
+    { prompt:'Is it noisy at night where you are?', options:['Only at weekends, and not unbearably.', 'It\'s the second floor, facing the road.', 'I\'ve been there since September.', 'Yes, the windows are double-glazed.'], answer:0 },
+  ],
+  travel: [
+    { prompt:'Did you make your connection in the end?', options:['Only just — I had four minutes to spare.', 'It leaves from platform six, I think.', 'The journey takes about three hours.', 'Yes, I booked the tickets in advance.'], answer:0 },
+    { prompt:'Weren\'t you flying out on Thursday?', options:['I was, but the flight\'s been put back a day.', 'It\'s a four-hour flight, roughly.', 'The airport is north of the city.', 'Yes, I\'ve packed almost everything.'], answer:0 },
+    { prompt:'Have you been to that part of the country before?', options:['Never — this will be the first time.', 'It\'s about two hundred miles north.', 'The train runs twice a day.', 'Yes, the hotel was reasonably priced.'], answer:0 },
+    { prompt:'Is it worth taking the coach rather than the train?', options:['It\'s cheaper, but it does take twice as long.', 'It leaves from the station forecourt.', 'There\'s a stop halfway for refreshments.', 'Yes, I usually book a window seat.'], answer:0 },
+    { prompt:'Did the hotel turn out alright?', options:['Not quite — the room was smaller than advertised.', 'It\'s near the old part of the town.', 'We stayed for four nights altogether.', 'Yes, breakfast was included in the price.'], answer:0 },
+    { prompt:'You didn\'t lose your luggage again, did you?', options:['Thankfully not, though it was last off the belt.', 'It weighed just under twenty kilos.', 'There\'s a desk in the arrivals hall.', 'Yes, I always keep the tag.'], answer:0 },
+  ],
+  media: [
+    { prompt:'Have you finished that series everyone\'s talking about?', options:['Two episodes to go — don\'t tell me anything.', 'It\'s on most evenings at nine.', 'There are six seasons altogether.', 'Yes, I watch it with subtitles on.'], answer:0 },
+    { prompt:'Do you read much in English outside class?', options:['A little — mostly news articles at the moment.', 'The library has a good selection.', 'I usually read before bed.', 'Yes, it was translated from Spanish.'], answer:0 },
+    { prompt:'Weren\'t you going to cancel one of those services?', options:['I was, but then they added something I wanted.', 'It costs about eight a month.', 'They have a free tier as well.', 'Yes, I signed up during the offer.'], answer:0 },
+    { prompt:'What did you make of the ending?', options:['Honestly, I thought it was rushed.', 'It runs for just over two hours.', 'There\'s talk of another one next year.', 'Yes, I saw it at the cinema.'], answer:0 },
+    { prompt:'Do you ever listen to podcasts while you travel?', options:['Constantly — it\'s how I get through the commute.', 'It\'s about forty minutes each way.', 'There\'s usually good signal on that line.', 'Yes, I downloaded a few last night.'], answer:0 },
+    { prompt:'That advert seems to follow me everywhere.', options:['Mine too — I only looked at it once.', 'It\'s on before every video now.', 'The company is fairly new, I think.', 'Yes, I turned notifications off.'], answer:0 },
+  ],
+  innovation: [
+    { prompt:'Have you tried any of those writing tools yet?', options:['A couple, though I don\'t trust them entirely.', 'They came out in the last year or so.', 'There\'s a free version and a paid one.', 'Yes, the department sent an email about it.'], answer:0 },
+    { prompt:'Do you think it actually understands the question?', options:['Not really — it just predicts what sounds right.', 'It answers within a second or two.', 'There\'s a limit on how much you can ask.', 'Yes, I use it most days now.'], answer:0 },
+    { prompt:'Weren\'t you sceptical about all this a year ago?', options:['I was, and parts of it still worry me.', 'It\'s changed a great deal since then.', 'There was an article about it recently.', 'Yes, the course covers it in week nine.'], answer:0 },
+    { prompt:'Would you trust one to check your grammar?', options:['For small things, yes — not for anything important.', 'It highlights errors as you type.', 'The department has its own guidance.', 'Yes, I installed it last term.'], answer:0 },
+    { prompt:'Did the demonstration actually work?', options:['Half of it did, which was better than expected.', 'It ran for about twenty minutes.', 'There were around fifty people watching.', 'Yes, they\'re repeating it on Friday.'], answer:0 },
+    { prompt:'How much of your work do these tools really save?', options:['An hour here and there, but not as much as people claim.', 'It depends which one you use.', 'They\'ve become much faster recently.', 'Yes, the free version has limits.'], answer:0 },
+  ],
+};
+// 5 exchanges per exercise, drawn without repeats, options reshuffled.
+function genChooseResponse(theme){
+  const bank = CHOOSE_RESPONSE_BANK[theme] || CHOOSE_RESPONSE_BANK.campus;
+  return { set: pickN(bank, Math.min(5, bank.length)).map((it, i) => {
+    const correct = it.options[it.answer];
+    const options = shuffle(it.options);
+    return { prompt: it.prompt, options, answer: options.indexOf(correct), index: i + 1 };
+  }) };
+}
+
 // ---- Take an Interview ----
 // Real TOEFL 2026 "Take an Interview": 4 questions on ONE topic, asked
 // back-to-back, 45s each, no prep time. Each set below is a self-contained
@@ -4586,6 +4730,7 @@ function generateOne(type, theme, topicIndex){
     case 'complete-words': return { type, data: genCompleteWords(theme) };
     case 'listen-repeat': return { type, data: genListenRepeatSet(theme, topicIndex) };
     case 'interview': return { type, data: genInterview(theme, topicIndex) };
+    case 'choose-response': return { type, data: genChooseResponse(theme) };
   }
 }
 // The named situations/topics a given type+theme offers, for the teacher's
@@ -4603,7 +4748,7 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // consistent.
 function generateBatchItems(type, theme, topicIndex){
   const items = [];
-  if(type === 'listen-repeat' || type === 'interview'){
+  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response'){
     // Real TOEFL structure: both Speaking tasks are ONE connected unit —
     // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
     // on a single topic — approved/discarded as a set, not as 4 separate
@@ -4872,6 +5017,18 @@ function renderTypeTabs(){
 
 function cardBody(item){
   const d = item.data;
+  if(item.type==='choose-response') return `
+    <div class="ex-body">${d.set.length} short exchanges. The student hears each one and picks the best reply from four — the prompt is never written on screen for them.</div>
+    <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem">
+      ${d.set.map((q,i)=>`<div style="font-size:.82rem">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span class="chip" style="flex-shrink:0">#${i+1}</span>
+          <span style="flex:1">${escapeHtml(q.prompt)}</span>
+          <button class="btn sound sm" onclick="speak('${q.prompt.replace(/'/g,"\\'")}')">🔊</button>
+        </div>
+        <div class="small-note" style="margin:.15rem 0 0 2.2rem">✓ ${escapeHtml(q.options[q.answer])}</div>
+      </div>`).join('')}
+    </div>`;
   if(item.type==='email') return emailPromptHtml(d);
   if(item.type==='discussion') return discussionPromptHtml(d);
   if(item.type==='sentence') return `<div class="ex-body">Target sentence (for teacher reference):<br><b>${d.target}</b></div><div class="chip-row">${d.scrambled.map(w=>`<span class="chip">${w}</span>`).join('')}</div>`;
@@ -5098,6 +5255,7 @@ function renderStudent(){
       : item.type==='discussion' ? (item.data.course ? 'Class discussion · ' + item.data.course : item.data.professor)
       : item.type==='sentence' ? 'Reorder the scrambled words'
       : item.type==='complete-words' ? 'Fill in the missing letters'
+      : item.type==='choose-response' ? `${item.data.set.length} exchanges · pick the best reply`
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
       : `${item.data.topic} · 4 questions`;
     const b = document.createElement('button');
@@ -5322,6 +5480,96 @@ function renderPractice(){
     renderInterviewStep(item);
     return;
   }
+
+  if(item.type==='choose-response'){
+    if(!window._crState || window._crState.itemId !== item.id){
+      window._crState = { itemId:item.id, step:0, listens:0, results:[], chosen:null };
+    }
+    renderChooseResponseStep(item);
+    return;
+  }
+}
+// Listen and Choose a Response. The defining rule of the real task is that
+// the prompt is HEARD and never written on screen — so the student decides
+// from listening alone, and only sees the words afterwards, when seeing
+// them teaches something. Two listens are allowed here rather than the
+// exam's one, for the same reason as Take an Interview: this is practice.
+const CHOOSE_MAX_LISTENS = 2;
+function renderChooseResponseStep(item){
+  const st = window._crState;
+  const q = item.data.set[st.step];
+  const wrap = document.getElementById('practice-wrap');
+  const total = item.data.set.length;
+  const answered = st.chosen !== null;
+  const listensLeft = CHOOSE_MAX_LISTENS - st.listens;
+
+  const options = q.options.map((o,i)=>{
+    let cls = 'mc-option';
+    if(answered){
+      if(i === q.answer) cls += ' mc-correct';
+      else if(i === st.chosen) cls += ' mc-wrong';
+    }
+    return `<button class="${cls}" ${answered||!st.listens?'disabled':''} onclick="answerChooseResponse(${i})">
+      <span class="mc-letter">${'ABCD'[i]}</span><span>${escapeHtml(o)}</span></button>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Exchange ${st.step+1} of ${total}</div>
+      <p class="small-note">You will only <b>hear</b> this — it is never written down, exactly as on the real test. Choose the reply that fits what was said.</p>
+      <div class="ex-actions" style="margin-top:.6rem">
+        ${listensLeft > 0 && !answered
+          ? `<button class="btn sound" onclick="playChoosePrompt()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
+          : (!answered ? '<span class="small-note">🔇 Both listens used — choose from what you heard.</span>' : '')}
+      </div>
+      ${st.listens ? `<div class="mc-options">${options}</div>`
+        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin.</p>'}
+      <div id="cr-result"></div>
+      ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
+        <button class="btn" onclick="advanceChooseResponse()">${st.step < total-1 ? 'Next exchange →' : 'Finish →'}</button>
+      </div>` : ''}
+    </div>`;
+  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+}
+function playChoosePrompt(){
+  const st = window._crState, item = currentItem();
+  if(!st || !item) return;
+  st.listens++;
+  renderChooseResponseStep(item);
+  speak(item.data.set[st.step].prompt);
+}
+function answerChooseResponse(i){
+  const st = window._crState, item = currentItem();
+  if(!st || st.chosen !== null) return;
+  const q = item.data.set[st.step];
+  st.chosen = i;
+  const ok = i === q.answer;
+  st.results.push(ok ? 1 : 0);
+  renderChooseResponseStep(item);
+  // The words appear only now — seeing the prompt after committing is what
+  // turns a wrong answer into a lesson rather than a mystery.
+  document.getElementById('cr-result').innerHTML = `
+    <div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct' : '✕ Not the best reply'}</div>
+    <div class="interview-reveal">
+      <span class="interview-reveal-label">📝 What you heard</span>${escapeHtml(q.prompt)}
+      ${ok ? '' : `<p class="small-note" style="margin-top:.5rem">The reply that fits is <b>${'ABCD'[q.answer]}</b>. Read the question again and see why the others answer something slightly different.</p>`}
+    </div>`;
+}
+function advanceChooseResponse(){
+  const st = window._crState, item = currentItem();
+  if(!st || !item) return;
+  if(st.step < item.data.set.length - 1){
+    st.step++; st.listens = 0; st.chosen = null;
+    renderChooseResponseStep(item);
+    return;
+  }
+  const score = st.results.reduce((a,b)=>a+b,0);
+  logUsage('choose-response', item.theme, score / st.results.length);
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
+      <p class="small-note">This task rewards catching what was actually said, not general English. If a reply looked reasonable but was wrong, it usually answered a slightly different question.</p>
+    </div>` + PRACTICE_AGAIN_BTN;
 }
 // Real TOEFL 2026 "Take an Interview": 4 questions on one topic, asked
 // back-to-back, 45s each, no prep time. Two things about the real task

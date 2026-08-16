@@ -16,16 +16,19 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
   URLSearchParams,console,Date,Math,JSON,Array,Object,String,Number,Intl,Set,Promise,setInterval,clearInterval,setTimeout,clearTimeout};
 sb.self=sb.window; sb.globalThis=sb; vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`
-globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, hash: hashStr };
+globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, hash: hashStr };
 `, sb);
 const d=sb.__dump, out=[];
 for(const th of d.themes){
   // LISTEN_SETS[theme] is now an array of complete 7-sentence scenarios,
   // so each scenario is its own "exercise" and gets its own single voice.
-  (d.listen[th]||[]).forEach((set,si)=>set.forEach((s,i)=>
+  (d.listen[th]||[]).forEach((sc,si)=>sc.items.forEach((s,i)=>
     out.push({kind:'lr', theme:th, set:si, idx:i, text:s.text})));
   (d.interview[th]||[]).forEach((set,si)=>set.questions.forEach((q,qi)=>
     out.push({kind:'iv', theme:th, set:si, idx:qi, text:q.text})));
+  // Listen and Choose prompts are heard, never read. Each theme's bank is
+  // one 'exercise' for voice purposes, so a drawn set sounds like one person.
+  (d.choose[th]||[]).forEach((q,qi)=>out.push({kind:'cr', theme:th, set:0, idx:qi, text:q.prompt}));
 }
 out.forEach(o=>o.hash=d.hash(o.text));
 fs.writeFileSync(process.argv[3], JSON.stringify(out,null,1));

@@ -61,6 +61,10 @@ def main(texts_json, outdir):
         key = (i['kind'], i['theme'], i['set'])
         if key not in assign:
             roster = LR_VOICES if i['kind'] == 'lr' else IV_VOICES
+            if i['kind'] == 'cr':
+                # Listen and Choose: the speaker is a peer in a corridor
+                # exchange, so the whole theme uses one consistent voice.
+                roster = LR_VOICES
             n = themes.index(i['theme']) + (i['set'] * 3)   # stagger the 2 interview sets
             assign[key] = roster[n % len(roster)]
             used[assign[key][1]] += 1
