@@ -15,7 +15,7 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
 sb.self=sb.window;sb.globalThis=sb;vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`;globalThis.__c={
  lr:LISTEN_SETS, iv:INTERVIEW_BANK, em:EMAIL_BANK, di:DISCUSSION_BANK,
- cw:COMPLETE_WORDS_BANK, se:SENTENCE_BANK, cr:CHOOSE_RESPONSE_BANK, themes:ALL_THEMES};`, sb);
+ cw:COMPLETE_WORDS_BANK, se:SENTENCE_BANK, cr:CHOOSE_RESPONSE_BANK, an:ANNOUNCEMENT_BANK, themes:ALL_THEMES};`, sb);
 const c=sb.__c;
 
 // every user-facing string we ship
@@ -27,6 +27,7 @@ for(const th of c.themes){
   (c.di[th]||[]).forEach(d=>{ ours.push(d.professor.post); d.posts.forEach(p=>ours.push(p.text)); });
   (c.cw[th]||[]).forEach(p=>ours.push(String(p).replace(/\*\*/g,'')));
   (c.cr[th]||[]).forEach(q=>{ ours.push(q.prompt); q.options.forEach(o=>ours.push(o)); });
+  (c.an[th]||[]).forEach(a=>{ ours.push(a.text); a.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
   (c.se[th]||[]).forEach(s=>ours.push(s.target));
 }
 
@@ -64,6 +65,9 @@ for(const th of c.themes){
                               d.posts.forEach(p=>(areas['Discussion student']=areas['Discussion student']||[]).push(p.text)); });
   (c.cw[th]||[]).forEach(p=>(areas['Complete the Words']=areas['Complete the Words']||[]).push(String(p).replace(/\*\*/g,'')));
   (c.se[th]||[]).forEach(s=>(areas['Build a Sentence']=areas['Build a Sentence']||[]).push(s.target));
+  (c.an[th]||[]).forEach(a=>{ (areas['Announcement text']=areas['Announcement text']||[]).push(a.text);
+                              a.questions.forEach(q=>{ (areas['Announcement question']=areas['Announcement question']||[]).push(q.q);
+                                q.options.forEach(o=>(areas['Announcement option']=areas['Announcement option']||[]).push(o)); }); });
   (c.cr[th]||[]).forEach(q=>{ (areas['Choose Response prompt']=areas['Choose Response prompt']||[]).push(q.prompt);
                               q.options.forEach(o=>(areas['Choose Response option']=areas['Choose Response option']||[]).push(o)); });
 }

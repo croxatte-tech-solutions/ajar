@@ -2622,6 +2622,7 @@ var qrcode = function() {
 const TASK_TYPES = [
   { id:'complete-words', tag:'Complete the Words', section:'Reading' },
   { id:'choose-response', tag:'Listen and Choose a Response', section:'Listening' },
+  { id:'announcement',     tag:'Listen to an Announcement',    section:'Listening' },
   { id:'sentence',       tag:'Build a Sentence',    section:'Writing' },
   { id:'email',          tag:'Write an Email',      section:'Writing' },
   { id:'discussion',     tag:'Academic Discussion', section:'Writing' },
@@ -3988,6 +3989,173 @@ function genChooseResponse(theme){
   }) };
 }
 
+/* ---- Listen to an Announcement (Listening) ----
+   Real TOEFL 2026 task: a short academic announcement of about 40-85 words
+   -- a room change, a schedule, a rule, an event -- heard once, followed by
+   questions on the main idea, a specific detail, or what the speaker is
+   implying. Measured against the official recordings, the real ones run
+   20-24 seconds.
+   Options here are short noun phrases, which is what ETS uses for this task
+   (unlike Listen and Choose, where they are full spoken replies). They are
+   written near-equal in length within each item so that picking the longest
+   is worth nothing -- the mistake that made Listen and Choose answerable
+   with the sound off. */
+const ANNOUNCEMENT_BANK = {
+  campus: [
+    { context:'an announcement in a classroom', text:'Good morning, everyone. Before we begin, a quick note about next week. Room 214 is being repainted, so Tuesday and Thursday sessions will move to the seminar room on the ground floor, just past the library entrance. The time stays the same. I have put a sign on the old door, but please tell anyone who missed today.', questions:[
+      { q:'What is the announcement mainly about?', options:['A change of room', 'A change of teacher', 'A cancelled session', 'A new reading list'], answer:0 },
+      { q:'What does the speaker ask the students to do?', options:['Pass the news on', 'Arrive rather earlier', 'Collect a printed sheet', 'Email the department'], answer:0 },
+    ]},
+    { context:'an announcement at a student event', text:'Welcome, everyone, and thank you for coming. The workshops begin at ten, and you will find the full timetable on the board behind me. Places in the smaller sessions are limited, so please sign your name on the sheet outside the room you want rather than simply turning up. Lunch is included and will be served in the hall at half past twelve.', questions:[
+      { q:'What must students do to join a small session?', options:['Write their name down', 'Pay a small fee', 'Speak to the organiser', 'Arrive before ten'], answer:0 },
+      { q:'What does the speaker say about lunch?', options:['It costs nothing extra', 'It is served outside', 'It requires a ticket', 'It starts at eleven'], answer:0 },
+    ]},
+  ],
+  register: [
+    { context:'an announcement in an office', text:'Afternoon, everyone. Two quick things before you go. From Monday, the main reception phone will be answered by whoever is on the front desk, so please put your extension on the rota if you have not already. Second, if you take a message for someone, write down the caller\'s number as well as the name. We have lost two enquiries this week for exactly that reason.', questions:[
+      { q:'Why does the speaker mention lost enquiries?', options:['To explain a new rule', 'To praise the front desk', 'To announce a complaint', 'To request more staff'], answer:0 },
+      { q:'What should staff add to the rota?', options:['Their telephone extension', 'Their preferred hours', 'Their room number', 'Their email address'], answer:0 },
+    ]},
+    { context:'an announcement before a talk', text:'Good evening, and thank you all for coming. Our speaker has been delayed by traffic and expects to arrive in about fifteen minutes. Rather than start late and finish late, we will bring forward the short question session that was planned for the end. Tea and coffee are still available at the back, and please do help yourselves while we wait.', questions:[
+      { q:'Why has the schedule changed?', options:['The speaker is late', 'The room is too small', 'The talk was shortened', 'The equipment has failed'], answer:0 },
+      { q:'What will happen next?', options:['Questions will come first', 'The event will be cancelled', 'Everyone will move rooms', 'The talk will begin sooner'], answer:0 },
+    ]},
+  ],
+  current: [
+    { context:'an announcement in a computer room', text:'Can I have your attention for a moment. The network will be down for maintenance this Saturday from six in the morning until about midday. Anything saved to the cloud will be perfectly safe, but files left only on these machines may not survive the update. If you are working on something important, copy it to your own storage before Friday evening.', questions:[
+      { q:'What are students advised to do?', options:['Back up their files', 'Arrive earlier on Saturday', 'Book a machine ahead', 'Report any faults found'], answer:0 },
+      { q:'What is at risk during the maintenance?', options:['Files stored locally', 'Cloud documents', 'Printing credit', 'Login passwords'], answer:0 },
+    ]},
+    { context:'an announcement in a library', text:'A short notice before you settle in. The library app has been updated overnight, and everyone will need to sign in again the first time they use it. Your borrowing history and any reservations are unaffected. If the app refuses your usual password, use the reset link rather than queueing at the desk, as we cannot reset it from here today.', questions:[
+      { q:'What should students do if the app rejects their password?', options:['Use the reset link', 'Come to the desk', 'Wait until tomorrow', 'Create a new account'], answer:0 },
+      { q:'What does the speaker say is unaffected?', options:['Existing reservations', 'Opening hours', 'Borrowing limits', 'Fine payments'], answer:0 },
+    ]},
+  ],
+  grammar: [
+    { context:'an announcement in a language class', text:'Before we start, a note about the speaking assessment. It will now take place in the language laboratory rather than in here, because we need the recording booths. The date has not changed. Each of you will have a ten-minute slot, and the list of times goes up outside my office on Thursday. Please check it rather than assuming last term\'s order.', questions:[
+      { q:'What has changed about the assessment?', options:['The place it happens', 'The date it happens', 'Its total length', 'The topic covered'], answer:0 },
+      { q:'Why should students check the list?', options:['The order may differ', 'The date may move', 'The times are shorter', 'The rooms are shared'], answer:0 },
+    ]},
+    { context:'an announcement about a workshop', text:'Good afternoon. The writing centre is running an extra session on referencing this Friday at four, in response to a good many questions after the last assignment. It is open to everyone, not only to students who have already booked a tutorial. Bring a draft if you have one, though you are very welcome to come and simply listen.', questions:[
+      { q:'Why is the extra session being held?', options:['Many students asked about it', 'A tutor became available', 'The last one was cancelled', 'Attendance has been falling'], answer:0 },
+      { q:'What does the speaker say about attending?', options:['Anyone may come along', 'Booking is required first', 'A draft must be brought', 'Only tutorial students qualify'], answer:0 },
+    ]},
+  ],
+  social: [
+    { context:'an announcement at a community centre', text:'Thanks for coming, everyone. The international evening is a fortnight today, and we still need help with setting up from about five o\'clock. If you are bringing food, please write the main ingredients on a card next to the dish, since several people last year had to avoid things they could not identify. Anything else, come and find me afterwards.', questions:[
+      { q:'Why should ingredients be labelled?', options:['Some guests avoid certain foods', 'The council requires labels', 'The dishes look similar', 'Prizes are given for cooking'], answer:0 },
+      { q:'What help is still needed?', options:['Assistance setting up', 'Money for supplies', 'More food donations', 'People to clean up'], answer:0 },
+    ]},
+    { context:'an announcement to a student club', text:'Quick notice before we finish. Next week\'s meeting clashes with the careers fair, so we are moving it to Wednesday at the same time and place. Anyone who cannot make Wednesday should let me know by Monday, because if enough of you are stuck we will simply skip a week rather than meet with four people in the room.', questions:[
+      { q:'Why is the meeting being moved?', options:['It clashes with an event', 'The room is unavailable', 'The speaker cannot attend', 'Attendance has dropped'], answer:0 },
+      { q:'What might happen if many cannot come?', options:['The meeting will be skipped', 'A second date will be added', 'The club will close', 'The venue will change'], answer:0 },
+    ]},
+  ],
+  career: [
+    { context:'an announcement at a careers event', text:'Good morning, everyone. A change to the programme: the interview skills session has been moved from the small room upstairs to the main hall, because far more of you signed up than we expected. It still begins at eleven. If you were planning to arrive at the last moment, do allow a few extra minutes to find the hall.', questions:[
+      { q:'Why was the session moved?', options:['Too many people registered', 'The room was double booked', 'The speaker requested it', 'The equipment failed upstairs'], answer:0 },
+      { q:'What has stayed the same?', options:['The starting time', 'The room number', 'The list of speakers', 'The length of the session'], answer:0 },
+    ]},
+    { context:'an announcement to new employees', text:'Welcome, all of you. Your first week is mostly shadowing, so do not worry about producing anything yet. Your access cards should arrive on Wednesday; until then, please sign in at reception each morning. If anything about the role is unclear, raise it during Friday\'s review rather than saving it up, because that is exactly what the meeting is for.', questions:[
+      { q:'What should new staff do before Wednesday?', options:['Sign in at reception', 'Collect their access card', 'Report to the manager', 'Complete the online form'], answer:0 },
+      { q:'When should concerns be raised?', options:['At the Friday review', 'Immediately by email', 'During the second week', 'At the next induction'], answer:0 },
+    ]},
+  ],
+  health: [
+    { context:'an announcement at a health centre', text:'Good morning. A short notice about appointments this week. Two of our doctors are away at training on Wednesday, so we are running a reduced service that day. Urgent cases will still be seen. If your appointment was booked for Wednesday afternoon, reception will telephone you today to move it, so please answer or ring back if you miss the call.', questions:[
+      { q:'What is the announcement mainly about?', options:['Fewer appointments on Wednesday', 'A change of address', 'New opening hours', 'A charge for missed visits'], answer:0 },
+      { q:'What should affected patients do?', options:['Answer or return the call', 'Come to reception directly', 'Book again online', 'Wait for a letter'], answer:0 },
+    ]},
+    { context:'an announcement at a sports centre', text:'Afternoon, everyone. The pool will close for cleaning from Thursday evening and reopen on Saturday morning. All other facilities stay open as usual. Anyone with a lesson booked on Friday will be contacted directly and offered another time. Memberships will not be charged for the missed days, so there is no need to come and ask about that.', questions:[
+      { q:'When will the pool reopen?', options:['On Saturday morning', 'On Friday evening', 'On Sunday afternoon', 'On Thursday morning'], answer:0 },
+      { q:'What does the speaker say about payment?', options:['Nobody will be charged', 'Refunds must be requested', 'Fees will rise slightly', 'Payment is due Friday'], answer:0 },
+    ]},
+  ],
+  environment: [
+    { context:'an announcement in a residence hall', text:'Quick notice, everyone. The recycling collection has moved from Monday to Wednesday, starting next week. Please do not leave bags out on Monday, because they will simply sit there for two days and the corridor becomes impassable. The bins themselves stay where they are, by the back door. If yours is full, there is a second one downstairs.', questions:[
+      { q:'What has changed?', options:['The collection day', 'The bin location', 'The type of waste taken', 'The building entrance'], answer:0 },
+      { q:'Why should bags not be left on Monday?', options:['They would block the corridor', 'They attract animals', 'They will be fined', 'They may be stolen'], answer:0 },
+    ]},
+    { context:'an announcement before a volunteer event', text:'Thanks for signing up, everyone. We meet at the park gates at nine on Saturday, not at the centre as the poster says — that was printed before the plan changed. Gloves and bags are provided. Wear something you do not mind ruining, and bring water, because the nearest tap is a fair walk from where we will be working.', questions:[
+      { q:'What does the speaker correct?', options:['The meeting place', 'The starting time', 'The date of the event', 'The equipment provided'], answer:0 },
+      { q:'Why should volunteers bring water?', options:['No tap is nearby', 'The weather is hot', 'None is provided free', 'The walk is long'], answer:0 },
+    ]},
+  ],
+  daily: [
+    { context:'an announcement at a railway station', text:'Attention, please. The nine forty service to the city will depart from platform four this morning, not platform two as shown on the boards. We apologise for the late change. Passengers already waiting on platform two should use the footbridge rather than crossing the line. The service is running approximately ten minutes behind schedule.', questions:[
+      { q:'What has changed about the service?', options:['The departure platform', 'The final destination', 'The ticket price', 'The time of arrival'], answer:0 },
+      { q:'How should waiting passengers move?', options:['Across the footbridge', 'Along the platform', 'Through the main hall', 'Around the car park'], answer:0 },
+    ]},
+    { context:'an announcement in a residence building', text:'Evening, all. The lift in this building will be out of service from Monday to Wednesday for its annual inspection. Anyone who would struggle with the stairs should speak to the office before Friday and we will make other arrangements. Deliveries will be left at reception during those days rather than brought up to individual floors.', questions:[
+      { q:'What should residents who cannot use stairs do?', options:['Contact the office beforehand', 'Wait until Wednesday', 'Use the other staircase', 'Ask a neighbour for help'], answer:0 },
+      { q:'What happens to deliveries?', options:['They stay at reception', 'They are returned to sender', 'They are left outside', 'They arrive on Thursday'], answer:0 },
+    ]},
+  ],
+  money: [
+    { context:'an announcement at a student finance office', text:'Good afternoon. A reminder that the deadline for the second instalment is the last working day of this month. If paying in full is difficult, come and speak to us before the deadline rather than after it, because arrangements are far easier to make in advance. Nobody is removed from a course over a payment we knew about.', questions:[
+      { q:'What does the speaker encourage students to do?', options:['Speak to the office early', 'Pay the full amount now', 'Apply for a new loan', 'Ignore the first reminder'], answer:0 },
+      { q:'What does the speaker imply?', options:['Late contact makes it harder', 'The deadline may be extended', 'Fees will increase soon', 'Payment plans have ended'], answer:0 },
+    ]},
+    { context:'an announcement about a workshop', text:'Before you leave, a quick note. We are running a short session on managing a monthly budget next Tuesday at five, in this room. It is aimed at anyone living away from home for the first time. There is nothing to prepare and nothing to sign; simply turn up. It should last about forty minutes, including questions.', questions:[
+      { q:'Who is the session aimed at?', options:['Students living away newly', 'Students in financial difficulty', 'Staff joining the office', 'Anyone taking a loan'], answer:0 },
+      { q:'What must students do to attend?', options:['Nothing at all beforehand', 'Register by Monday', 'Bring their bank details', 'Pay a small charge'], answer:0 },
+    ]},
+  ],
+  housing: [
+    { context:'an announcement to residents', text:'A short notice about the kitchens. From next week, each floor is responsible for its own cleaning rota, and a blank sheet will go up on every noticeboard. If nobody fills it in, the cleaning staff will not do it for you, and the kitchen will simply be closed until the floor sorts it out among themselves.', questions:[
+      { q:'What will happen if the rota is empty?', options:['The kitchen will close', 'Cleaners will do it anyway', 'A fine will be charged', 'The floor loses access'], answer:0 },
+      { q:'Who is now responsible for cleaning?', options:['The residents themselves', 'The cleaning staff', 'The building manager', 'A hired company'], answer:0 },
+    ]},
+    { context:'an announcement on move-in day', text:'Welcome, everyone. Collect your keys from the desk behind me, and please check your room against the inventory sheet before you unpack anything. If something is already damaged, photograph it and email the office today. Anything reported later than this evening may be charged to you when the room is inspected at the end of the year.', questions:[
+      { q:'Why should damage be reported today?', options:['To avoid later charges', 'To get a different room', 'To claim on insurance', 'To speed up repairs'], answer:0 },
+      { q:'What should residents do before unpacking?', options:['Check the inventory sheet', 'Sign the contract', 'Meet the other residents', 'Collect their post'], answer:0 },
+    ]},
+  ],
+  travel: [
+    { context:'an announcement at an airport', text:'Attention, passengers. Flight two four one to Lisbon is now boarding at gate twelve, which has changed from gate eight shown on your boarding pass. Passengers requiring assistance should make themselves known at the desk before boarding begins. The gate closes twenty minutes before departure and late passengers cannot be accepted.', questions:[
+      { q:'What has changed?', options:['The boarding gate', 'The departure time', 'The destination city', 'The aircraft type'], answer:0 },
+      { q:'What happens twenty minutes before departure?', options:['The gate is closed', 'Boarding begins', 'Assistance ends', 'Bags are loaded'], answer:0 },
+    ]},
+    { context:'an announcement on a coach', text:'Good morning, everyone. We will be stopping for twenty minutes at the service area at around eleven o\'clock. Please take your valuables with you when you leave the coach. We cannot wait for anyone who is late back, as the schedule is tight and we have a connection to make at the other end.', questions:[
+      { q:'What are passengers warned about?', options:['The coach will not wait', 'The stop may be cancelled', 'Food is not available', 'The journey is delayed'], answer:0 },
+      { q:'What should passengers take with them?', options:['Anything of value', 'All of their luggage', 'Their printed ticket', 'Their travel documents'], answer:0 },
+    ]},
+  ],
+  media: [
+    { context:'an announcement in a cinema', text:'Good evening. Tonight\'s screening will begin about ten minutes late, as we are having trouble with the sound in this screen. Refreshments bought before the film may be taken in as usual. If you would prefer not to wait, the desk in the foyer will exchange your ticket for any other showing this week.', questions:[
+      { q:'Why is the film starting late?', options:['A technical problem', 'A late delivery', 'An earlier film overran', 'A power failure'], answer:0 },
+      { q:'What can people who leave do?', options:['Exchange their ticket', 'Claim a full refund', 'Watch a different film now', 'Return the following day'], answer:0 },
+    ]},
+    { context:'an announcement in a studio', text:'Before we begin, a few reminders. When the red light is on we are recording, so please keep still and quiet, even at the back. Phones should be off rather than silent, as they interfere with the equipment. There will be a break after about forty minutes, and questions are welcome then rather than during the session.', questions:[
+      { q:'Why must phones be switched off?', options:['They disturb the equipment', 'They distract the speaker', 'They are not permitted', 'They may be recorded'], answer:0 },
+      { q:'When can the audience ask questions?', options:['During the break', 'At any point', 'Before recording starts', 'After everyone leaves'], answer:0 },
+    ]},
+  ],
+  innovation: [
+    { context:'an announcement at a science museum', text:'Welcome, everyone. The robotics demonstration in the upper gallery runs every hour until four o\'clock today. Numbers are limited to about thirty, so if the room is full please come back for the next one rather than waiting in the doorway. The rest of the gallery stays open throughout, and everything there can be touched.', questions:[
+      { q:'What should visitors do if the room is full?', options:['Return for the next one', 'Queue in the doorway', 'Ask a member of staff', 'Book a place online'], answer:0 },
+      { q:'What are visitors told about the rest of the gallery?', options:['Exhibits may be touched', 'It closes at four', 'Photography is banned', 'Tickets are required'], answer:0 },
+    ]},
+    { context:'an announcement in a maker lab', text:'Right, listen carefully before you start. Safety glasses are worn at all times in this room, not just when a machine is running. If you have not used a particular machine before, book an induction rather than working it out yourself. Anything left overnight must carry a label with your name and the date you expect to finish.', questions:[
+      { q:'When must safety glasses be worn?', options:['At all times inside', 'Only when machines run', 'Only near the cutters', 'When a supervisor asks'], answer:0 },
+      { q:'What should a first-time user do?', options:['Book an induction first', 'Ask another student', 'Read the printed guide', 'Start on a small project'], answer:0 },
+    ]},
+  ],
+};
+// Two announcements per exercise (four questions in all), matching how the
+// real Listening module presents them. Options are reshuffled on every draw.
+function genAnnouncement(theme){
+  const bank = ANNOUNCEMENT_BANK[theme] || ANNOUNCEMENT_BANK.campus;
+  return { set: pickN(bank, Math.min(2, bank.length)).map(a => ({
+    context: a.context, text: a.text,
+    questions: a.questions.map(q => {
+      const correct = q.options[q.answer];
+      const options = shuffle(q.options);
+      return { q: q.q, options, answer: options.indexOf(correct) };
+    }),
+  })) };
+}
+
 // ---- Take an Interview ----
 // Real TOEFL 2026 "Take an Interview": 4 questions on ONE topic, asked
 // back-to-back, 45s each, no prep time. Each set below is a self-contained
@@ -4734,6 +4902,7 @@ function generateOne(type, theme, topicIndex){
     case 'listen-repeat': return { type, data: genListenRepeatSet(theme, topicIndex) };
     case 'interview': return { type, data: genInterview(theme, topicIndex) };
     case 'choose-response': return { type, data: genChooseResponse(theme) };
+    case 'announcement': return { type, data: genAnnouncement(theme) };
   }
 }
 // The named situations/topics a given type+theme offers, for the teacher's
@@ -4751,7 +4920,7 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // consistent.
 function generateBatchItems(type, theme, topicIndex){
   const items = [];
-  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response'){
+  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement'){
     // Real TOEFL structure: both Speaking tasks are ONE connected unit —
     // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
     // on a single topic — approved/discarded as a set, not as 4 separate
@@ -5020,6 +5189,17 @@ function renderTypeTabs(){
 
 function cardBody(item){
   const d = item.data;
+  if(item.type==='announcement') return `
+    <div class="ex-body">${d.set.length} announcements, ${d.set.reduce((n,a)=>n+a.questions.length,0)} questions. The student hears each one and answers from listening — the text is never shown to them.</div>
+    ${d.set.map((a,i)=>`<div style="margin-top:.7rem">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span class="chip" style="flex-shrink:0">#${i+1}</span>
+        <span class="small-note" style="flex:1">Listen to ${escapeHtml(a.context)}</span>
+        <button class="btn sound sm" onclick="speak('${a.text.replace(/'/g,"\\'")}')">🔊</button>
+      </div>
+      <div class="small-note" style="margin:.2rem 0 0 2.2rem">${escapeHtml(a.text)}</div>
+      ${a.questions.map(q=>`<div class="small-note" style="margin:.2rem 0 0 2.2rem">• ${escapeHtml(q.q)} ✓ ${escapeHtml(q.options[q.answer])}</div>`).join('')}
+    </div>`).join('')}`;
   if(item.type==='choose-response') return `
     <div class="ex-body">${d.set.length} short exchanges. The student hears each one and picks the best reply from four — the prompt is never written on screen for them.</div>
     <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem">
@@ -5259,6 +5439,7 @@ function renderStudent(){
       : item.type==='sentence' ? 'Reorder the scrambled words'
       : item.type==='complete-words' ? 'Fill in the missing letters'
       : item.type==='choose-response' ? `${item.data.set.length} exchanges · pick the best reply`
+      : item.type==='announcement' ? `${item.data.set.length} announcements · answer questions`
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
       : `${item.data.topic} · 4 questions`;
     const b = document.createElement('button');
@@ -5491,6 +5672,106 @@ function renderPractice(){
     renderChooseResponseStep(item);
     return;
   }
+
+  if(item.type==='announcement'){
+    if(!window._anState || window._anState.itemId !== item.id){
+      window._anState = { itemId:item.id, ann:0, q:0, listens:0, results:[], chosen:null };
+    }
+    renderAnnouncementStep(item);
+    return;
+  }
+}
+// Listen to an Announcement. Same rule as every other Listening task: the
+// announcement is heard, never written. It stays hidden even while the
+// questions are on screen — showing the text would turn a listening item
+// into a reading one — and appears only in the review after answering.
+const ANN_MAX_LISTENS = 2;
+function renderAnnouncementStep(item){
+  const st = window._anState;
+  const a = item.data.set[st.ann];
+  const q = a.questions[st.q];
+  const wrap = document.getElementById('practice-wrap');
+  const answered = st.chosen !== null;
+  const listensLeft = ANN_MAX_LISTENS - st.listens;
+  const totalQ = item.data.set.reduce((n,x)=>n+x.questions.length, 0);
+  const doneQ = item.data.set.slice(0, st.ann).reduce((n,x)=>n+x.questions.length, 0) + st.q;
+
+  const options = q.options.map((o,i)=>{
+    let cls = 'mc-option';
+    if(answered){
+      if(i === q.answer) cls += ' mc-correct';
+      else if(i === st.chosen) cls += ' mc-wrong';
+    }
+    return `<button class="${cls}" ${answered?'disabled':''} onclick="answerAnnouncement(${i})">
+      <span class="mc-letter">${'ABCD'[i]}</span><span>${escapeHtml(o)}</span></button>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Announcement ${st.ann+1} of ${item.data.set.length} &middot; question ${doneQ+1} of ${totalQ}</div>
+      <div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>Listen to ${escapeHtml(a.context)}.</div>
+      <div class="ex-actions" style="margin-top:.6rem">
+        ${listensLeft > 0
+          ? `<button class="btn sound" onclick="playAnnouncement()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
+          : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+      </div>
+      ${st.listens ? `
+        <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
+        <div class="mc-options">${options}</div>`
+        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin. You will hear it at most twice.</p>'}
+      <div id="an-result"></div>
+      ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
+        <button class="btn" onclick="advanceAnnouncement()">${doneQ < totalQ-1 ? 'Next question →' : 'Finish →'}</button>
+      </div>` : ''}
+    </div>`;
+  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+}
+function playAnnouncement(){
+  const st = window._anState, item = currentItem();
+  if(!st || !item) return;
+  st.listens++;
+  renderAnnouncementStep(item);
+  speak(item.data.set[st.ann].text);
+}
+function answerAnnouncement(i){
+  const st = window._anState, item = currentItem();
+  if(!st || st.chosen !== null) return;
+  const a = item.data.set[st.ann], q = a.questions[st.q];
+  st.chosen = i;
+  const ok = i === q.answer;
+  st.results.push(ok ? 1 : 0);
+  renderAnnouncementStep(item);
+  document.getElementById('an-result').innerHTML = `
+    <div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct' : '✕ Not quite'}</div>
+    ${ok ? '' : `<p class="small-note">The answer was <b>${'ABCD'[q.answer]}</b>. The full announcement is below — find the part that settles it.</p>`}
+    <div class="interview-reveal">
+      <span class="interview-reveal-label">📝 What you heard</span>${escapeHtml(a.text)}
+    </div>`;
+}
+function advanceAnnouncement(){
+  const st = window._anState, item = currentItem();
+  if(!st || !item) return;
+  const a = item.data.set[st.ann];
+  st.chosen = null;
+  if(st.q < a.questions.length - 1){
+    // Same announcement, next question — keep it audible rather than
+    // forcing a fresh listen for a question about what they just heard.
+    st.q++;
+    renderAnnouncementStep(item);
+    return;
+  }
+  if(st.ann < item.data.set.length - 1){
+    st.ann++; st.q = 0; st.listens = 0;
+    renderAnnouncementStep(item);
+    return;
+  }
+  const score = st.results.reduce((x,y)=>x+y,0);
+  logUsage('announcement', item.theme, score / st.results.length);
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
+      <p class="small-note">Announcements carry one or two facts that matter and a good deal that does not. If you missed one, it is usually worth checking whether the answer was stated outright or only implied.</p>
+    </div>` + PRACTICE_AGAIN_BTN;
 }
 // Listen and Choose a Response. The defining rule of the real task is that
 // the prompt is HEARD and never written on screen — so the student decides
@@ -6368,6 +6649,7 @@ function guideContent(role){
     <ul>
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
       <li><b>Listen and Choose a Response</b> — hear a short question, pick the best reply.</li>
+      <li><b>Listen to an Announcement</b> — hear a notice, answer questions about it.</li>
       <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
       <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
       <li><b>Academic Discussion</b> — join a class discussion thread, at least 100 words.</li>

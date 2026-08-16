@@ -16,7 +16,7 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
   URLSearchParams,console,Date,Math,JSON,Array,Object,String,Number,Intl,Set,Promise,setInterval,clearInterval,setTimeout,clearTimeout};
 sb.self=sb.window; sb.globalThis=sb; vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`
-globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, hash: hashStr };
+globalThis.__dump = { themes: ALL_THEMES, listen: LISTEN_SETS, interview: INTERVIEW_BANK, choose: CHOOSE_RESPONSE_BANK, ann: ANNOUNCEMENT_BANK, hash: hashStr };
 `, sb);
 const d=sb.__dump, out=[];
 for(const th of d.themes){
@@ -29,6 +29,9 @@ for(const th of d.themes){
   // Listen and Choose prompts are heard, never read. Each theme's bank is
   // one 'exercise' for voice purposes, so a drawn set sounds like one person.
   (d.choose[th]||[]).forEach((q,qi)=>out.push({kind:'cr', theme:th, set:0, idx:qi, text:q.prompt}));
+  // Each announcement is its own exercise for voice purposes -- one
+  // speaker delivering one notice, as in the real recordings.
+  (d.ann[th]||[]).forEach((a,ai)=>out.push({kind:'an', theme:th, set:ai, idx:0, text:a.text}));
 }
 out.forEach(o=>o.hash=d.hash(o.text));
 fs.writeFileSync(process.argv[3], JSON.stringify(out,null,1));
