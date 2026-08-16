@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Real Life English — free TOEFL 2026 practice built around real student life, from Croxatte Tech Solutions.">
+<meta name="description" content="Ajar — free TOEFL 2026 practice built around real student life, from Croxatte Tech Solutions.">
 <meta name="theme-color" content="#0f6e56">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Real Life English">
-<title>Real Life English by Croxatte Tech Solutions</title>
+<meta name="apple-mobile-web-app-title" content="Ajar">
+<title>Ajar by Croxatte Tech Solutions</title>
 <style>
 :root{
   --bg: #f6f9f8; --surface: #ffffff; --surface-alt: #edf4f2; --border: #d7e0dc;
@@ -194,9 +194,9 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 <div class="app">
   <div class="masthead">
     <div class="brand">
-      <div class="brand-mark"><img src="logo.svg" alt="Real Life English logo"></div>
+      <div class="brand-mark"><img src="logo.svg" alt="Ajar logo"></div>
       <div class="brand-text">
-        <h1>Real Life English <span style="font-weight:400;color:var(--text-dim)">by Croxatte Tech Solutions</span></h1>
+        <h1>Ajar <span style="font-weight:400;color:var(--text-dim)">by Croxatte Tech Solutions</span></h1>
         <span>Prototype for a language school &middot; fictional data &middot; not connected to the school's own system</span>
       </div>
     </div>
@@ -305,6 +305,53 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
     <div id="practice-wrap"></div>
   </div>
 </div>
+
+<script>
+/* =========================================================
+   AJAR — CONFIG
+   Everything that changes when the infrastructure changes lives
+   here and nowhere else. Today the app is a static page on GitHub
+   Pages with no server and no login; the domain (tryajar.com) and
+   a real backend are planned but do not exist yet.
+
+   The point of this block is that moving to them is a config edit,
+   not a search-and-replace through the app.
+   ========================================================= */
+const CONFIG = {
+  // Product name. "Ajar" is the product everywhere a person can see
+  // it; the "tryajar" prefix belongs to the domain and handles only,
+  // because "ajar" alone was already taken. It must never appear as
+  // the product's name in the UI, the manifest, or a store listing.
+  productName: 'Ajar',
+
+  // Where the app is served from. Empty means "wherever this page
+  // happens to be", which is what a static deploy needs. When
+  // tryajar.com exists, set it to 'https://tryajar.com/' and every
+  // share link and QR code follows without touching the code.
+  baseUrl: '',
+
+  // No API of our own yet — the app runs entirely in the browser.
+  // When a server exists, endpoints go here.
+  apiBase: null,
+
+  // TODO(auth): there is no authentication anywhere in this app.
+  // Anyone holding a share link can write to the classroom document,
+  // INCLUDING the teacher-approval path in shareApproved(). That is a
+  // pilot-scale shortcut, not a design decision, and it is the first
+  // thing to close when a real server exists. Flip this to true and
+  // wire the sign-in then; the flag exists so "no auth" is a stated
+  // temporary state in one place rather than an unexamined premise
+  // spread through the code.
+  authRequired: false,
+};
+
+// The one place a share link or QR code gets its origin. Falls back to
+// wherever the page is actually served, so the app keeps working on
+// GitHub Pages, on localhost, and on a future custom domain unchanged.
+function appBaseUrl(){
+  return CONFIG.baseUrl || (location.origin + location.pathname);
+}
+</script>
 
 <script>
 //---------------------------------------------------------------------
@@ -5209,6 +5256,7 @@ function getEnglishVoices(){
 if('speechSynthesis' in window){
   window.speechSynthesis.onvoiceschanged = () => { _voiceCache = null; };
 }
+const PRODUCT_NAME = CONFIG.productName;
 function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i))|0; } return Math.abs(h); }
 // Pre-rendered audio. Every sentence the app speaks comes from a fixed
 // bank, so each one is rendered ahead of time to a small AAC clip named
@@ -5383,8 +5431,8 @@ async function loadSharedClassroomContent(){
 // isn't reachable at all.
 function itemShareLink(item){
   return window.CloudSync
-    ? location.origin + location.pathname + '?ex=' + item.id
-    : location.origin + location.pathname + '#batch=' + encodeBatchForShare([item], {}, [], '', '');
+    ? appBaseUrl() + '?ex=' + item.id
+    : appBaseUrl() + '#batch=' + encodeBatchForShare([item], {}, [], '', '');
 }
 
 // QR rendering: builds a plain SVG from the qrcode-generator matrix (dark
@@ -5460,9 +5508,9 @@ function parseSpeakTurn(raw){
 // unreachable, this falls back to the old full-payload link so
 // sharing never simply breaks — it only gets denser as a QR code,
 // exactly like it always has.
-function shortShareLink(){ return location.origin + location.pathname + '?s=1'; }
+function shortShareLink(){ return appBaseUrl() + '?s=1'; }
 function legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw){
-  return location.origin + location.pathname + '#batch=' + encodeBatchForShare(approved, individual, speakTurn, teacherEmailRaw, announcementRaw);
+  return appBaseUrl() + '#batch=' + encodeBatchForShare(approved, individual, speakTurn, teacherEmailRaw, announcementRaw);
 }
 function renderShareBox(){
   const box = document.getElementById('share-box');
@@ -7834,7 +7882,7 @@ function sendFeedback(){
     }
   }
   const email = (localStorage.getItem('cse_teacher_email') || '').trim();
-  const subject = `Real Life English — app feedback from ${name}`;
+  const subject = `${PRODUCT_NAME} — app feedback from ${name}`;
   // Either path below means the student actually engaged with feedback
   // this cycle, so the weekly nudge stays quiet for another 7 days.
   localStorage.setItem('cse_feedback_last_prompt', String(Date.now()));
@@ -7895,7 +7943,11 @@ loadSharedClassroomContent().then(()=>{
 
 
 <!-- ============================================================
-     CLOUD SYNC — Firebase (project: real-life-english). Runs as
+     CLOUD SYNC — Firebase (project: real-life-english). The Firebase
+     project id is an infrastructure identifier, not the product name:
+     it cannot be renamed without creating a new project and losing
+     every student's synced history, so it keeps the old string on
+     purpose. The product is called Ajar. Runs as
      an ES module so it can import from Firebase's CDN. This is
      the ONLY part of the app that needs real network access —
      everything else keeps working offline/local-only exactly as
@@ -7917,6 +7969,9 @@ loadSharedClassroomContent().then(()=>{
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
+  // Infrastructure identifiers, not brand: the project id keeps its
+  // original string because renaming it means a new Firebase project.
+  // Move these into CONFIG if a second environment ever exists.
   const firebaseConfig = {
     apiKey: "AIzaSyDXIlimBWWXC-jtX9-Kh7GcdVXzxN5Ii3M",
     authDomain: "real-life-english.firebaseapp.com",
@@ -7968,6 +8023,9 @@ loadSharedClassroomContent().then(()=>{
       // different doc id per item) — lets a single exercise's own QR
       // resolve to exactly that exercise, independent of whatever else
       // is or isn't in the current whole-class batch.
+      // TODO(auth): this is the write that publishes a teacher's
+      // approved batch, and it is reachable by anyone with the link.
+      // See CONFIG.authRequired — real sign-in gates this call first.
       async pushClassroomItem(id, payload) {
         await authReady;
         await setDoc(doc(db, 'classroom', 'item_' + id), { ...payload, updatedAt: serverTimestamp() });

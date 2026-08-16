@@ -3,12 +3,12 @@
 // break CDN version pinning, and they already fail gracefully offline.
 // ponytail: app-shell-only cache, no runtime asset versioning strategy —
 // bump CACHE_NAME by hand when index.html changes meaningfully.
-const CACHE_NAME = 'rle-shell-v3';
+const CACHE_NAME = 'ajar-shell-v1';
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have
 // just because index.html was fixed.
-const AUDIO_CACHE = 'rle-audio-v1';
+const AUDIO_CACHE = 'ajar-audio-v1';
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
