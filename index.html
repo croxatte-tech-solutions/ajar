@@ -2906,6 +2906,28 @@ function drawFromBag(bagKey, allItems, studentKey){
   return draw;
 }
 
+// Draw ONE exercise from a bank, with the same memory themes already have.
+//
+// Themes rotate properly: drawFromBag hands out all fourteen before any
+// repeats. The pick INSIDE a theme did not — it was plain random with no
+// memory, against banks that mostly hold two items per theme. So a theme
+// coming round again was a coin flip between the same two texts.
+//
+// Measured over six Reading sittings, that put repeats at 30%: the first
+// three sittings were nearly all fresh, then session four fell off a
+// cliff. With a bag per (type, theme) a student works through all 28
+// passages before meeting one twice.
+//
+// Same storage as the theme bag, so it survives closing the browser and
+// stays per student on a shared device. A single-item bank skips the
+// bookkeeping — there is nothing there to rotate.
+function drawFromBank(kind, theme, bank){
+  if(!bank || !bank.length) return null;
+  if(bank.length === 1) return bank[0];
+  const i = drawFromBag(kind + '_' + theme, bank.map((_, n) => n), getStudentName());
+  return bank[i];
+}
+
 // ---- Write an Email ----
 // Each theme has 3 genuinely different scenarios (different recipient,
 // different situation) — not one template with a swapped-in word, which
@@ -3095,7 +3117,7 @@ const EMAIL_BANK = {
 };
 function genEmail(theme){
   const bank = EMAIL_BANK[theme] || EMAIL_BANK.campus;
-  const e = pick(bank);
+  const e = drawFromBank('email', theme, bank);
   // `prompt` is kept as a flat text version of the task: several places
   // (the batch de-dup key, the student's scenario list preview, the
   // teacher's review card) want one string, and older saved batches in a
@@ -3327,7 +3349,7 @@ const DISCUSSION_BANK = {
   ],
 };
 function genDiscussion(theme){
-  const item = pick(DISCUSSION_BANK[theme] || DISCUSSION_BANK.campus);
+  const item = drawFromBank('discussion', theme, DISCUSSION_BANK[theme] || DISCUSSION_BANK.campus);
   // `professor` stays a plain string for the same backward-compatibility
   // reasons as genEmail's `prompt`; the professor's NAME and the course
   // are new fields alongside it.
@@ -3418,7 +3440,7 @@ const SENTENCE_BANK = {
   ],
 };
 function genSentence(theme){
-  const item = pick(SENTENCE_BANK[theme] || SENTENCE_BANK.grammar);
+  const item = drawFromBank('sentence', theme, SENTENCE_BANK[theme] || SENTENCE_BANK.grammar);
   const words = item.target.replace(/[.?]$/,'').split(' ');
   const pool = item.distractor ? [...words, item.distractor] : words;
   return { target:item.target, scrambled: shuffle(pool) };
@@ -3521,7 +3543,7 @@ function blankWord(word){
   return shown + `<span class="blank-marks">${'_'.repeat(hiddenCount)}</span>`;
 }
 function genCompleteWords(theme){
-  const raw = pick(COMPLETE_WORDS_BANK[theme] || COMPLETE_WORDS_BANK.campus);
+  const raw = drawFromBank('complete-words', theme, COMPLETE_WORDS_BANK[theme] || COMPLETE_WORDS_BANK.campus);
   const answer = raw.replace(/\*\*(.+?)\*\*/g, '$1');
   const words = [...raw.matchAll(/\*\*(.+?)\*\*/g)].map(m => m[1]);
   const display = raw.replace(/\*\*(.+?)\*\*/g, (_,w)=>`<span class="blank">${blankWord(w)}</span>`);
@@ -4089,7 +4111,7 @@ const LISTEN_SETS = {
 // topicIndex selects one deliberately; leave it undefined for a random draw.
 function genListenRepeatSet(theme, topicIndex){
   const sets = LISTEN_SETS[theme] || LISTEN_SETS.campus;
-  const chosen = (typeof topicIndex === 'number' && sets[topicIndex]) ? sets[topicIndex] : pick(sets);
+  const chosen = (typeof topicIndex === 'number' && sets[topicIndex]) ? sets[topicIndex] : drawFromBank('listen-repeat', theme, sets);
   return {
     label: chosen.label,
     situation: chosen.situation,
@@ -4868,7 +4890,7 @@ function passageDocHtml(d, highlight){
 // One passage per exercise with its five questions. Options reshuffled.
 function genPassage(theme, topicIndex){
   const bank = PASSAGE_BANK[theme] || PASSAGE_BANK.campus;
-  const p = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  const p = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : drawFromBank('passage', theme, bank);
   return { ...p, questions: p.questions.map(q => {
     const correct = q.options[q.answer];
     const options = shuffle(q.options);
@@ -4880,7 +4902,7 @@ function genPassage(theme, topicIndex){
 // Options are reshuffled on every draw.
 function genDailyRead(theme, topicIndex){
   const bank = DAILY_READ_BANK[theme] || DAILY_READ_BANK.campus;
-  const d = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  const d = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : drawFromBank('daily-read', theme, bank);
   return { ...d, questions: d.questions.map(q => {
     const correct = q.options[q.answer];
     const options = shuffle(q.options);
@@ -4892,7 +4914,7 @@ function genDailyRead(theme, topicIndex){
 // Options are reshuffled on every draw.
 function genTalk(theme, topicIndex){
   const bank = TALK_BANK[theme] || TALK_BANK.campus;
-  const t = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  const t = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : drawFromBank('talk', theme, bank);
   return { context: t.context, text: t.text, questions: t.questions.map(q => {
     const correct = q.options[q.answer];
     const options = shuffle(q.options);
@@ -4903,7 +4925,7 @@ function genTalk(theme, topicIndex){
 // task. Options are reshuffled on every draw.
 function genConversation(theme, topicIndex){
   const bank = CONVERSATION_BANK[theme] || CONVERSATION_BANK.campus;
-  const c = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  const c = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : drawFromBank('conversation', theme, bank);
   return { context: c.context, turns: c.turns, questions: c.questions.map(q => {
     const correct = q.options[q.answer];
     const options = shuffle(q.options);
@@ -5953,7 +5975,7 @@ const INTERVIEW_BANK = {
 };
 function genInterview(theme, topicIndex){
   const sets = INTERVIEW_BANK[theme] || INTERVIEW_BANK.campus;
-  const set = (typeof topicIndex === 'number' && sets[topicIndex]) ? sets[topicIndex] : pick(sets);
+  const set = (typeof topicIndex === 'number' && sets[topicIndex]) ? sets[topicIndex] : drawFromBank('interview', theme, sets);
   return { topic: set.topic, scenario: set.scenario, questions: set.questions };
 }
 
@@ -7769,7 +7791,19 @@ function buildExamItems(cfg, theme){
   const themeOf = () => theme || drawFromBag('theme', ALL_THEMES, getStudentName());
   const draw = type => {
     const th = themeOf();
-    return { id:'__exam__', type, tag: tagFor(type), theme: th,
+    // A UNIQUE id per item, not a shared '__exam__'.
+    //
+    // Every exercise type keeps its own progress on window and resets it
+    // with `if(state.itemId !== item.id)`. Give two items the same id and
+    // that guard never fires: the next conversation inherits the previous
+    // one's question index, its spent listens and its answers, so the
+    // student sees fresh questions attached to audio they already heard.
+    //
+    // selectedId is what routes to the exam (getBaseItem checks that, not
+    // the item's own id), so the id here is free to be unique — and being
+    // unique is what makes all eight guards work without the exam having
+    // to remember to clear each one by hand.
+    return { id: uid(), type, tag: tagFor(type), theme: th,
              status:'approved', data: generateOne(type, th).data };
   };
 
@@ -7899,7 +7933,10 @@ function advanceExam(){
   ex.idx += 1;
   saveExam(ex);
   clearPracticeTimer();
-  window._lrState = null; window._interviewState = null; window._crState = null;
+  // No per-type state is cleared here on purpose. Each renderer resets its
+  // own when the item id changes, and the items now have distinct ids —
+  // clearing three of the eight by hand here is what hid the fault, since
+  // the three that were cleared worked and the five that were not did not.
   renderPractice();
   mountExamBar(ex);
 }

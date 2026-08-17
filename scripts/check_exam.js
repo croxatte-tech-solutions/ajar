@@ -235,6 +235,67 @@ const testScript = `
   assert('the raw constant is referenced only where it is defined and returned',
     (HTML_SOURCE.match(/PRACTICE_AGAIN_BTN/g) || []).length === 2);
 
+  // --- each item must be its own exercise, not the previous one's leftovers ---
+  //
+  // Reported from a real sitting: in Listening the next audio did not come
+  // up and the new questions stayed attached to the previous clip.
+  //
+  // Every type keeps its progress on window and resets it with
+  // if(state.itemId !== item.id). Exam items were all built with the
+  // same id, '__exam__', so that guard never fired: the second
+  // conversation inherited the first one's question index, its spent
+  // listens and its answers. advanceExam cleared three of the eight state
+  // objects by hand, which is why some types looked fine and hid it.
+  //
+  // Every check I had drove advanceExam() directly without rendering, so
+  // none of them ever touched a guard. These render.
+  localStorage.removeItem('ajar_exam_current');
+  startExam('listening');
+  const exIds = JSON.parse(localStorage.getItem('ajar_exam_current')).items.map(i => i.id);
+  assert('every item in a section has its own id', new Set(exIds).size === exIds.length);
+  assert('no item reuses the routing key as its id',
+    exIds.every(id => id !== '__exam__'));
+
+  // Two items of the same type, back to back: the second must start clean.
+  const cur = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  const convIdx = cur.items.map((it, n) => it.type === 'conversation' ? n : -1).filter(n => n >= 0);
+  if(convIdx.length >= 2){
+    cur.idx = convIdx[0];
+    localStorage.setItem('ajar_exam_current', JSON.stringify(cur));
+    renderPractice();
+    // part-way through the first conversation: a question in, a listen spent
+    window._cvState.q = 1;
+    window._cvState.listens = 1;
+    window._cvState.results = [1];
+    const firstId = window._cvState.itemId;
+
+    const mid = JSON.parse(localStorage.getItem('ajar_exam_current'));
+    mid.idx = convIdx[1];
+    localStorage.setItem('ajar_exam_current', JSON.stringify(mid));
+    renderPractice();
+
+    assert('the next conversation gets its own state', window._cvState.itemId !== firstId);
+    assert('it starts on its first question, not the previous one\\'s', window._cvState.q === 0);
+    assert('its listens are not already spent', window._cvState.listens === 0);
+    assert('it carries none of the previous answers', window._cvState.results.length === 0);
+  } else {
+    assert('a Listening section has two conversations to compare', false);
+  }
+  finishExam('completed');
+
+  // The same guard, across every type that keeps state. A type added later
+  // with a stale-state bug should fail here rather than in a lesson.
+  localStorage.removeItem('ajar_exam_current');
+  ['reading', 'listening'].forEach(sec => {
+    localStorage.removeItem('ajar_exam_current');
+    startExam(sec);
+    const ids = JSON.parse(localStorage.getItem('ajar_exam_current')).items.map(i => i.id);
+    assert('ids are unique across the whole ' + sec + ' section',
+      new Set(ids).size === ids.length);
+    finishExam('completed');
+  });
+  localStorage.removeItem('ajar_exam_current');
+
   // --- sit each section end to end ---
   // Building a section and finishing one are separate things. This walks
   // every item the way a student does — answer, advance — and checks it
