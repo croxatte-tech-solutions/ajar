@@ -35,7 +35,7 @@ The app also never touches SEVIS/I-20 or any immigration data — its scope is s
 
 ## Features
 
-- 9 task types × 14 real-life themes, unlimited fresh practice ("practice again" regenerates without repeating content)
+- 10 task types × 14 real-life themes, unlimited fresh practice ("practice again" regenerates without repeating content)
 - Pre-rendered audio for every spoken line, so a student on an old phone hears the same voice as a student on a new one; two-speaker conversations are stitched from two voices at build time
 - Teacher batch-approval workflow, individual per-student assignment (own task type + theme, independent of the class), whole-class QR-code sharing
 - Classroom-aware audio: one shared playback through the room speakers instead of 13 phones firing out of sync, with a "who's speaking this round" control to avoid mic crosstalk
@@ -51,7 +51,7 @@ Early pilot. No official grades or scores are ever recorded here — this is a p
 **Known gaps, deliberately open:**
 - No CEFR/GSE level scale yet. Exercises are organised by theme and task type; the school's A1–C2 scale is not modelled. When it is added, it must be the CSE's existing scale, never an invented one.
 - No L1 (native-language) support tiering yet. CSE policy is that beginners get L1 support which tapers to none at advanced levels.
-- **No authentication.** Anyone with the share link can currently write to the classroom document, including the teacher-approval path. This is a pilot-scale shortcut, not a design decision, and it is the first thing to close when a real server exists.
+- Students are identified by the name they type, not by an account. `firestore.rules` therefore cannot stop one student from logging attempts under another student's name, or from reading another student's history. Closing that needs per-student accounts, which costs more than it buys for a class of 13 sharing a room with their teacher. The serious case — forging or overwriting what the class receives — **is** closed.
 
 ## Tech
 

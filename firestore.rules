@@ -1,0 +1,119 @@
+rules_version = '2';
+
+// Ajar — Firestore security rules.
+//
+// These are not deployed by the app. Paste them into the Firebase console
+// (Firestore Database -> Rules -> Publish). They live in the repo so the
+// rules are reviewable and versioned alongside the code they protect,
+// instead of existing only as console state nobody can diff.
+//
+// What these fix
+// --------------
+// The previous rules required only that a caller be authenticated, and
+// anonymous sign-in is open to anyone. That meant any visitor holding a
+// share link — or anyone at all with the project id — could overwrite
+// /classroom, which is the document a student's QR code resolves to. In
+// other words, the one guarantee the whole product rests on ("nothing
+// reaches a student until the teacher approves it") was enforced by the
+// UI hiding a button, and not by anything underneath.
+//
+// The model here
+// --------------
+// Students stay anonymous. They never create an account, never type a
+// password, and can only append their own practice attempts. Only a
+// teacher — a real Google sign-in whose uid has been added by hand to
+// /teachers — can write anything students will read.
+//
+// Known limitation, stated rather than hidden: a student is identified by
+// the name they type, not by an account, so these rules cannot stop one
+// student from writing attempts under another student's name, or from
+// reading another student's history. Closing that needs per-student
+// accounts, which would cost more than it buys for a classroom of 13 who
+// share a room with their teacher. What it DOES close is the serious
+// case: nobody can forge or overwrite what the class receives.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // A teacher is someone whose uid has a document under /teachers.
+    // Deliberately a lookup rather than a uid hardcoded into the rules:
+    // adding a second teacher is then a one-document change in the
+    // console, not a rules edit and redeploy.
+    function isTeacher() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
+    }
+
+    // The teacher roster itself. Created by hand in the console; the app
+    // never writes here, so no client can promote itself.
+    match /teachers/{uid} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Everything the class receives: the whole-class batch (classroom/current)
+    // and one document per individually shared exercise (classroom/item_*).
+    // Any signed-in visitor may read — that is how a student's QR code
+    // works without an account. Only a teacher may write.
+    match /classroom/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isTeacher();
+    }
+
+    // A student's practice history.
+    match /students/{studentId} {
+
+      // Shape of the student document, exactly as pushAttempt() writes it.
+      function validStudent() {
+        return request.resource.data.keys().hasOnly(['displayName', 'lastSeen'])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() > 0
+          && request.resource.data.displayName.size() <= 60;
+      }
+
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+        && studentId.size() <= 60
+        && validStudent();
+      // History is a record of what happened. Nothing in the app deletes
+      // a student, so nothing should be able to.
+      allow delete: if false;
+
+      match /attempts/{attemptId} {
+
+        // Shape of one logged attempt, exactly as logUsage() builds it:
+        // { type, theme, outcome, ts }. Anything else is not something
+        // this app produces, so it is not something the database accepts.
+        function validAttempt() {
+          return request.resource.data.keys().hasOnly(['type', 'theme', 'outcome', 'ts'])
+            && request.resource.data.type is string
+            && request.resource.data.type.size() <= 40
+            && request.resource.data.theme is string
+            && request.resource.data.theme.size() <= 40
+            && request.resource.data.outcome is number
+            && request.resource.data.outcome >= 0
+            && request.resource.data.outcome <= 1
+            && request.resource.data.ts is number;
+        }
+
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() && validAttempt();
+        // An attempt is a fact about the past. Editing or deleting one
+        // would let a student rewrite their own history, and the teacher
+        // reads this to decide what a student needs next.
+        allow update, delete: if false;
+      }
+    }
+
+    // Anything not named above does not exist as far as clients are
+    // concerned. Without this, a future collection added in the console
+    // would silently inherit no protection at all.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
