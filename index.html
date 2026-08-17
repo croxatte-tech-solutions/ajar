@@ -9547,6 +9547,7 @@ function mountBackBar(){
 // others. One wrapper runs after whichever branch fired.
 function renderPractice(){
   renderPracticeInner();
+  ensureWayForward();
   mountBackBar();
   bringPracticeIntoView();
 }
@@ -9649,6 +9650,34 @@ function bringPracticeIntoView(){
   const block = gate ? 'center' : 'start';
   try{ target.scrollIntoView({ behavior: 'smooth', block }); }
   catch(e){ try{ target.scrollIntoView(); }catch(e2){} }
+}
+
+/* NO SCREEN WITHOUT A WAY OFF IT
+   ============================
+   Eleven of the twelve renderers end with `wrap.innerHTML += practiceFooter()`.
+   Listen and Repeat did not — it assigns innerHTML and returns — so in free
+   practice it offered nothing after the seventh sentence, and in the Speaking
+   SECTION, where it is the first of two items, there was no button to move on
+   at all. A student sitting Speaking reached sentence one and stopped. That is
+   the same dead end reported once before as "o botao sumiu e nao foi para o
+   proximo exercicio", still alive in the one section nobody had sat.
+
+   Patching the twelfth renderer would fix today. This is in the wrapper
+   instead, so a thirteenth cannot reintroduce it: after the inner render, if
+   the screen carries no way forward, one is added.
+
+   Not-done is the safe default. "Skip this exercise" always works, and a
+   renderer that knows it is finished has already emitted the finished footer,
+   which this then leaves alone. Detected by the two things a footer actually
+   contains rather than by asking each renderer to declare itself. */
+function ensureWayForward(){
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap || !wrap.innerHTML || !selectedId) return;
+  const html = wrap.innerHTML;
+  // The gate is a screen whose only job is its own button.
+  if(html.indexOf('start-gate-btn') > -1) return;
+  if(html.indexOf('practiceAgain(') > -1 || html.indexOf('exam-footer') > -1) return;
+  wrap.innerHTML += practiceFooter();
 }
 
 function renderPracticeInner(){

@@ -56,9 +56,23 @@ assert('the bar is shown only when an exercise is open',
 // screens and not others.
 assert('the bar mounts outside the wrap that gets replaced',
   /wrap\.parentNode\.insertBefore\(bar, wrap\)/.test(bar));
-assert('renderPractice is wrapped rather than edited twelve times',
-  /function renderPractice\(\)\{\s*renderPracticeInner\(\);\s*mountBackBar\(\);/.test(
-    html.replace(/\n/g, ' ').replace(/\s+/g, ' ')));
+// The wrapper gained ensureWayForward, which is the point of having a wrapper:
+// a safety net added once instead of in each of the twelve branches. Listen and
+// Repeat was the branch that forgot its footer, which dead-ended the Speaking
+// section — so this asserts the net is there, not just the bar.
+{
+  const flat = html.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+  assert('renderPractice is wrapped rather than edited twelve times',
+    /function renderPractice\(\)\{ renderPracticeInner\(\); ensureWayForward\(\); mountBackBar\(\); bringPracticeIntoView\(\);/.test(flat));
+  assert('and the net runs before the bars, so it sees the finished screen',
+    flat.indexOf('ensureWayForward();') < flat.indexOf('mountBackBar(); bringPracticeIntoView();'));
+}
+assert('no screen with an exercise open is left without a way off it',
+  /function ensureWayForward\(\)/.test(html));
+assert('the start gate is exempt, since its whole job is its own button',
+  /start-gate-btn'\) > -1\) return;/.test(html));
+assert('a finished footer is left alone rather than doubled',
+  /practiceAgain\('\) > -1 \|\| html\.indexOf\('exam-footer'\) > -1\) return;/.test(html));
 assert('the real work moved to renderPracticeInner', /function renderPracticeInner\(\)/.test(html));
 
 // --- no side menu on the student side ---
