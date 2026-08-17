@@ -116,6 +116,50 @@ assert('schoolId stays out of reach, so no account can move school',
   teacherRule.indexOf("hasOnly(['name'])") > -1 && !/affectedKeys\(\)\.hasAny/.test(teacherRule));
 assert('becoming a teacher is still a console job', /allow create, delete: if false/.test(teacherRule));
 
+// --- the trial run, and feedback that cannot be skipped ---
+//
+// Two audiences, one mechanism: the teacher deciding whether material is
+// good enough for her class, and native speakers judging whether the
+// English is natural and the questions fair. Both review the material
+// rather than being measured by it.
+assert('the teacher has a trial-run tab',
+  /\{ id:'sec-trial',\s*label:'Trial run' \}/.test(html));
+assert('it is behind the sign-in like the rest', gated.indexOf('sec-trial') > -1);
+assert('the panel is drawn with the others', /renderReviewPanel\(\);/.test(html));
+
+assert('review mode can be switched on', /function setReviewMode\(/.test(html));
+assert('and remembered', /REVIEW_KEY/.test(html));
+assert('the questions are open, not ratings',
+  /const REVIEW_QUESTIONS = \[/.test(html) && !/stars|rating|1-5|out of 5/i.test(
+    html.slice(html.indexOf('const REVIEW_QUESTIONS'), html.indexOf('function loadReviewNotes'))));
+
+// The point of the mode: an empty form is refused rather than accepted
+// and quietly amounting to nothing.
+const submit = html.slice(html.indexOf('function submitReview('),
+                          html.indexOf('function mailReview('));
+assert('an empty review is refused', /if\(!written\.length\)/.test(submit));
+assert('and says what would still be useful', /nothing wrong/i.test(submit));
+assert('only the answered questions are kept', /filter\(a => a\.a\.length > 1\)/.test(submit));
+assert('the notes are kept for her to read', /saveReviewNote\(/.test(html));
+assert('and offered as text she can copy or mail', /mailto:/.test(html.slice(html.indexOf('function mailReview'))));
+
+// While the mode is on, the normal way out of the results screen is
+// replaced — otherwise "mandatory" is a suggestion.
+const resultScreen = html.slice(html.indexOf('function renderExamResult'),
+                                html.indexOf('function leaveExam'));
+assert('review mode replaces the ordinary exit from the results screen',
+  /reviewMode\(\) \? reviewFormHtml\(ex\)/.test(resultScreen));
+
+// Reviewers who have never met the exam need to know what they are judging.
+assert('there is a brief to send to outside reviewers', /const REVIEWER_BRIEF/.test(html));
+const brief = html.slice(html.indexOf('const REVIEWER_BRIEF'), html.indexOf('const REVIEWER_BRIEF') + 1400);
+assert('it explains what TOEFL is', /TOEFL is the English exam/.test(brief));
+assert('it warns them it will feel easy, and why that is fine',
+  /find it easy/.test(brief) && /not the point/.test(brief));
+assert('it asks for bluntness rather than politeness', /blunt/i.test(brief));
+assert('it tells them one section is timed, not all four',
+  /ONE of them/.test(brief) && /cannot go back/.test(brief));
+
 // --- tabs, not a scroll position ---
 assert('the old scroll-jump is gone', html.indexOf('function jumpToSection') === -1);
 assert('the scroll-spy is gone too', html.indexOf('markSectionInView') === -1);

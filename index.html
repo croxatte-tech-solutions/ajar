@@ -435,6 +435,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
     <div id="sec-account"><div id="teacher-signin"></div></div>
     <div id="sec-share"><div id="share-box"></div></div>
     <div id="sec-review"><div id="batch" class="batch-grid"></div></div>
+    <div id="sec-trial"><div id="review-panel"></div></div>
     <div id="teacher-empty" class="empty">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 19V6a2 2 0 012-2h9l5 5v10a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5"/><path d="M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       <div>Pick a task type and theme, then generate a batch to begin.</div>
@@ -7085,6 +7086,7 @@ const TEACHER_SECTIONS = [
   { id:'sec-account',    label:'Account' },
   { id:'sec-share',      label:'Share' },
   { id:'sec-review',     label:'Review' },
+  { id:'sec-trial',      label:'Trial run' },
 ];
 /* The teacher panel is behind the sign-in.
    ---------------------------------------
@@ -7117,7 +7119,7 @@ function teacherIsSignedIn(){
 
 // Sections holding anything about a real class. Everything here stays out
 // of the DOM's way until a teacher is signed in.
-const TEACHER_GATED = ['sec-progress','sec-generate','sec-roster','sec-class','sec-individual','sec-share','sec-review'];
+const TEACHER_GATED = ['sec-progress','sec-generate','sec-roster','sec-class','sec-individual','sec-share','sec-review','sec-trial'];
 
 function applyTeacherGate(){
   const signedIn = teacherIsSignedIn();
@@ -7134,6 +7136,86 @@ function applyTeacherGate(){
   return signedIn;
 }
 
+// Her own trial run, and the brief she hands to other reviewers.
+//
+// She is not being tested here — she is deciding whether the material is
+// good enough for her class, which is a different job and deserves its own
+// screen rather than being buried in the student view.
+function renderReviewPanel(){
+  const box = document.getElementById('review-panel');
+  if(!box) return;
+  const on = reviewMode();
+  const notes = loadReviewNotes();
+
+  box.innerHTML = `
+    <div class="panel">
+      <h2>Trial run</h2>
+      <p class="small-note" style="margin-top:0">
+        Sit a section yourself before you give it to anyone, and ask other people to sit one
+        too. What we need back is not a score — it is where the material is wrong.
+      </p>
+
+      <label style="display:flex;gap:.5rem;align-items:flex-start;margin:.8rem 0;font-size:.85rem;font-weight:600">
+        <input type="checkbox" ${on ? 'checked' : ''} onchange="setReviewMode(this.checked)" style="margin-top:.2rem">
+        <span>Ask for notes at the end of every section
+          <span class="small-note" style="display:block;font-weight:400;margin-top:.15rem">
+            Applies to anyone using this device — you, or a reviewer you hand it to. The
+            results screen asks for notes before it lets go.
+          </span>
+        </span>
+      </label>
+
+      <h3 style="margin:.9rem 0 .4rem">Sit one now</h3>
+      <div class="ex-actions">
+        ${Object.keys(EXAM_SECTIONS).map(k => `<button class="btn ghost sm" onclick="confirmStartExam('${k}')">${EXAM_SECTIONS[k].label} &middot; ${Math.round(EXAM_SECTIONS[k].seconds/60)} min</button>`).join(' ')}
+      </div>
+      <p class="small-note" style="margin:.6rem 0 0">
+        One section at a time on purpose. The three together run
+        ${Math.round(Object.values(EXAM_SECTIONS).reduce((n,c)=>n+c.seconds,0)/60)} minutes, and
+        judgement about whether a question is fair is the first thing tiredness takes.
+      </p>
+    </div>
+
+    <div class="panel" style="margin-top:.8rem">
+      <h3 style="margin:0 0 .4rem">For reviewers who don't know the exam</h3>
+      <p class="small-note" style="margin:0 0 .6rem">
+        Send this to a native speaker before they start, so they know what they are looking at.
+        Tap to select, then copy.
+      </p>
+      <textarea rows="9" readonly onclick="this.select()" style="width:100%">${escapeHtml(REVIEWER_BRIEF)}</textarea>
+    </div>
+
+    ${notes.length ? `
+      <div class="panel" style="margin-top:.8rem">
+        <h3 style="margin:0 0 .4rem">Notes left on this device (${notes.length})</h3>
+        <p class="small-note" style="margin:0 0 .6rem">Kept here only — nothing was sent anywhere on its own.</p>
+        ${notes.slice().reverse().slice(0, 6).map(n => `
+          <div class="small-note" style="border-left:2px solid var(--border);padding-left:.6rem;margin-bottom:.5rem">
+            <b>${escapeHtml(n.who)}</b> · ${escapeHtml((EXAM_SECTIONS[n.section] || {}).label || n.section)} ·
+            ${escapeHtml(new Date(n.at).toLocaleDateString())}<br>
+            ${n.answers.map(a => escapeHtml(a.a)).join('<br>')}
+          </div>`).join('')}
+      </div>` : ''}`;
+}
+
+// What a native speaker needs to know before sitting a section. Written for
+// somebody who has never met the exam: they are excellent at judging whether
+// English sounds natural and have no idea what TOEFL asks for.
+const REVIEWER_BRIEF = `What you are about to try, in one minute.
+
+TOEFL is the English exam people sit to get into an English-speaking university or job. This is practice material for the 2026 version of it, aimed at adult learners — not children, and not beginners.
+
+The exam is in four sections. You will sit ONE of them, and it is timed like the real thing: one clock for the whole section, and you cannot go back to a question once you have left it.
+
+You will find it easy. That is expected and it is not the point. What we need is your ear:
+
+- Does the English sound like a person wrote it, or like a translation?
+- Is any question ambiguous — could two answers both be defended?
+- Does any wrong answer feel unfairly tricky, or any right answer guessable without reading?
+- Did anything simply annoy you?
+
+At the end you will be asked for notes. Please be blunt. "The third passage had a sentence I had to read twice" is worth more to us than "it was good".`;
+
 function renderTeacherNav(){
   const nav = document.getElementById('teacher-nav');
   if(!nav) return;
@@ -7148,6 +7230,7 @@ function renderTeacherNav(){
     const here = sec.id === activeTeacherSection() ? ' class="here"' : '';
     return `<a href="#${sec.id}"${here} onclick="showSection(event,'${sec.id}')">${sec.label}${n ? `<span class="n">${n}</span>` : ''}</a>`;
   }).join('');
+  renderReviewPanel();
   showSection(null, activeTeacherSection(), true);
 }
 
@@ -8042,6 +8125,60 @@ function buildExamItems(cfg, theme){
   return shuffle(items);
 }
 
+/* Review mode — the app asking to be judged.
+   ------------------------------------------
+   Two audiences, one mechanism. The teacher sits a section to see whether
+   it is worth giving her class, and native speakers sit one to say whether
+   the English is natural and the questions are fair. Both are reviewing
+   the material, not being measured by it.
+
+   Deliberately per-section rather than one 90-minute run. Everything the
+   reviewers are useful for — is this question ambiguous, does this
+   distractor feel unfair, does this sentence sound like a person wrote it
+   — is judgement, and judgement is the first thing fatigue takes. A
+   reviewer who stops at minute 55 leaves worse notes than one who
+   finished a 30-minute section, and far more people will agree to thirty
+   minutes than to ninety.
+
+   Feedback is asked for at the end of a section, while it is still fresh,
+   and the result screen will not let go until something is written. That
+   is the whole point of the mode: a review nobody wrote down did not
+   happen. */
+const REVIEW_KEY = 'ajar_review_mode';
+const REVIEW_NOTES_KEY = 'ajar_review_notes';
+
+function reviewMode(){
+  try{ return localStorage.getItem(REVIEW_KEY) === '1'; }catch(e){ return false; }
+}
+function setReviewMode(on){
+  try{ localStorage.setItem(REVIEW_KEY, on ? '1' : '0'); }catch(e){}
+  renderReviewPanel();
+}
+
+// What we actually want to know, in the order it is easiest to answer.
+// Open questions rather than ratings: a number tells us a section scored
+// 3 out of 5 and nothing about what to change.
+const REVIEW_QUESTIONS = [
+  { id:'natural', label:'Did the English sound like a person wrote it?',
+    hint:'Anything that read as translated, stiff, or oddly formal — quote it if you can.' },
+  { id:'fair',    label:'Was any question unfair or ambiguous?',
+    hint:'Two answers that both work, a trick that felt cheap, a question you could answer without reading.' },
+  { id:'timing',  label:'How was the time?',
+    hint:'Finished early with time to spare, or ran out? Roughly how much was left?' },
+  { id:'anything',label:'Anything else — however small',
+    hint:'Typos, a confusing button, something that annoyed you.' },
+];
+
+function loadReviewNotes(){
+  try{ return JSON.parse(localStorage.getItem(REVIEW_NOTES_KEY) || '[]'); }catch(e){ return []; }
+}
+function saveReviewNote(note){
+  const all = loadReviewNotes();
+  all.push(note);
+  while(all.length > 40) all.shift();
+  try{ localStorage.setItem(REVIEW_NOTES_KEY, JSON.stringify(all)); }catch(e){}
+}
+
 const EXAM_KEY = 'ajar_exam_current';
 
 // The clock is stored as the moment it runs out, not as seconds left.
@@ -8245,11 +8382,89 @@ function renderExamResult(ex){
           writing above is not in it, and a real ${cfg.label} score would be.` : ''}
         </p>
       </div>
-      <div class="ex-actions" style="margin-top:1rem">
-        <button class="btn" onclick="leaveExam()">Back to practice</button>
-        <button class="btn ghost sm" onclick="confirmStartExam('${ex.section}')">Sit it again</button>
-      </div>
+      ${reviewMode() ? reviewFormHtml(ex) : `
+        <div class="ex-actions" style="margin-top:1rem">
+          <button class="btn" onclick="leaveExam()">Back to practice</button>
+          <button class="btn ghost sm" onclick="confirmStartExam('${ex.section}')">Sit it again</button>
+        </div>`}
     </div>`;
+}
+
+// Asked at the end of a section, while it is still fresh, and the way out
+// is through it. A review nobody wrote down did not happen.
+function reviewFormHtml(ex){
+  const cfg = EXAM_SECTIONS[ex.section];
+  return `
+    <div class="panel" style="margin-top:1rem;background:var(--accent-soft);border:none">
+      <h3 style="margin:0 0 .2rem">Now the part we actually need</h3>
+      <p class="small-note" style="margin:0 0 .8rem">
+        You just sat the ${escapeHtml(cfg.label)} section. Tell us what was wrong with it —
+        that is what this run was for. Rough notes are fine, and one honest sentence beats
+        four polite ones.
+      </p>
+      ${REVIEW_QUESTIONS.map(q => `
+        <div class="field" style="margin-bottom:.7rem">
+          <label for="rv-${q.id}">${escapeHtml(q.label)}</label>
+          <div class="small-note" style="margin:0 0 .25rem">${escapeHtml(q.hint)}</div>
+          <textarea id="rv-${q.id}" rows="2"></textarea>
+        </div>`).join('')}
+      <div class="field" style="margin-bottom:.7rem">
+        <label for="rv-who">Your name, so we know whose notes these are</label>
+        <input type="text" id="rv-who" placeholder="First name is enough">
+      </div>
+      <div id="rv-msg"></div>
+      <div class="ex-actions" style="margin-top:.6rem">
+        <button class="btn" onclick="submitReview('${ex.section}')">Send my notes</button>
+      </div>
+      <p class="small-note" style="margin:.6rem 0 0">
+        Nothing here is stored on a server. Sending opens an email draft with your notes in
+        it, and shows the same text to copy if your device has no mail set up.
+      </p>
+    </div>`;
+}
+
+function submitReview(section){
+  const msg = document.getElementById('rv-msg');
+  const val = id => (document.getElementById('rv-' + id) || {}).value || '';
+  const answers = REVIEW_QUESTIONS.map(q => ({ q: q.label, a: val(q.id).trim() }));
+  const written = answers.filter(a => a.a.length > 1);
+
+  // The one thing the mode exists for. Refuse an empty form rather than
+  // accept it and quietly have nothing.
+  if(!written.length){
+    if(msg) msg.innerHTML = '<p class="small-note" style="color:var(--red)">Please answer at least one of these — even "nothing wrong, finished with 8 minutes left" is useful.</p>';
+    return;
+  }
+
+  const who = val('who').trim() || 'anonymous';
+  const cfg = EXAM_SECTIONS[section];
+  const note = { section, who, at: new Date().toISOString(), answers: written };
+  saveReviewNote(note);
+
+  const body = [
+    `Ajar — review of the ${cfg.label} section`,
+    `From: ${who}`,
+    `When: ${new Date().toLocaleString()}`,
+    '',
+    ...written.map(a => `${a.q}\n${a.a}\n`),
+  ].join('\n');
+
+  if(msg){
+    msg.innerHTML = `
+      <p class="small-note" style="color:var(--accent)"><b>Thank you — that is genuinely the useful part.</b></p>
+      <textarea rows="7" readonly onclick="this.select()" style="width:100%">${escapeHtml(body)}</textarea>
+      <div class="ex-actions" style="margin-top:.5rem">
+        <button class="btn sm" onclick="mailReview(${JSON.stringify(JSON.stringify(body))})">Open an email with this</button>
+        <button class="btn ghost sm" onclick="leaveExam()">Done</button>
+      </div>`;
+  }
+}
+
+function mailReview(body){
+  const to = (CONFIG && CONFIG.feedbackEmail) || '';
+  location.href = 'mailto:' + encodeURIComponent(to) +
+    '?subject=' + encodeURIComponent('Ajar — section review') +
+    '&body=' + encodeURIComponent(body);
 }
 
 function leaveExam(){
