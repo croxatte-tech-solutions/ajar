@@ -270,6 +270,8 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .welcome{ max-width:30rem; margin:2.5rem auto 0; text-align:center; padding:0 .5rem; }
 /* 84px -> 109px, the same 30%. The front door is the one screen with room
    to spare, so the mark can carry it. */
+.welcome-clock{ font-size:.82rem; color:var(--text-dim); margin:-.2rem 0 .9rem; font-variant-numeric:tabular-nums; }
+.welcome-clock b{ color:var(--text); font-weight:700; }
 .welcome-mark{ width:109px; height:109px; }
 .welcome-name{ font-size:2.1rem; font-weight:800; margin:.5rem 0 .1rem; letter-spacing:-.02em; }
 .welcome-lede{ color:var(--text-dim); font-size:1rem; line-height:1.55; margin:.6rem 0 1.6rem; transition:opacity .26s ease; }
@@ -360,6 +362,10 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
     <div class="welcome">
       <img src="logo.svg" alt="" class="welcome-mark">
       <h1 class="welcome-name">Ajar</h1>
+      <!-- The school's date and clock, in Denver, in American order. Stays in
+           English while the text below it changes language: it is not a
+           translation of anything, it is what day the class is on. -->
+      <p class="welcome-clock" id="welcome-clock"></p>
       <p class="welcome-lede" id="welcome-lede"></p>
       <p class="welcome-meaning" id="welcome-meaning"></p>
       <div class="welcome-doors">
@@ -545,6 +551,29 @@ const CONFIG = {
   // published contact address for the app, not a person's login.
   devEmail: 'croxattetechsolutions@gmail.com',
 
+  // The school's clock, and the Monday the plan is pinned to.
+  //
+  // The class meets in Denver. Every date this app says out loud is a school
+  // date — which class day it is, which week of the plan — so it is computed
+  // in the school's timezone and not in whatever timezone the phone holding
+  // it happens to be in. A student practising from another state, or a
+  // teacher checking on a trip, should see the same class day the classroom
+  // sees.
+  //
+  // Named rather than an offset: 'America/Denver' moves itself on and off
+  // daylight time. An offset would be wrong for half the year, and wrong in
+  // the direction that quietly shifts a class day at midnight.
+  timeZone: 'America/Denver',
+
+  // Week 8 begins on this Monday. Weeks 1-7 happened before the app existed.
+  //
+  // Without an anchor, "Week 8 · Monday" was a pointer the teacher moved by
+  // hand with no connection to any real day, so the app could not say
+  // whether it was showing today or a week she had left it on. This is that
+  // connection, and it is one line because the schedule is fixed: CSE runs
+  // Monday to Thursday, so week N day D is a date you can work out.
+  termStart: '2026-08-17',
+
   // TODO(auth): there is no authentication anywhere in this app.
   // Anyone holding a share link can write to the classroom document,
   // INCLUDING the teacher-approval path in shareApproved(). That is a
@@ -573,6 +602,75 @@ function currentSchool(){
   }catch(e){}
   return CONFIG.defaultSchool;
 }
+
+/* THE SCHOOL'S CALENDAR AND THE SCHOOL'S CLOCK
+   ==========================================
+   Everything below reads the date in the school's timezone rather than the
+   device's, through Intl — which knows when Denver is on daylight time and
+   the code therefore does not have to.
+
+   The trap this avoids: taking a Date, calling getDate() on it, and calling
+   the answer "today". On a phone set to another timezone that is the wrong
+   day, and near midnight it is the wrong day in Denver too.
+   ========================================================= */
+const SCHOOL_TZ = () => CONFIG.timeZone || 'America/Denver';
+
+// Today in the school's timezone, as a plain calendar date.
+//
+// formatToParts rather than parsing a formatted string: the parts are
+// labelled, so this does not depend on the order or the punctuation of any
+// locale's format.
+function schoolToday(now){
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SCHOOL_TZ(), year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(now || new Date());
+  const get = t => Number((parts.find(p => p.type === t) || {}).value);
+  return { y: get('year'), m: get('month'), d: get('day') };
+}
+// A calendar date as a UTC midnight, which is the only safe way to subtract
+// two dates: no hours, so no daylight-saving hour to lose or gain.
+function schoolDayStamp(t){ return Date.UTC(t.y, t.m - 1, t.d); }
+
+// "Monday, August 17, 2026" — the American order, spelled out, because this
+// is read once at a glance and an ambiguous 8/17 vs 17/8 is a real confusion
+// in a class of international students.
+function schoolDateLabel(now){
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: SCHOOL_TZ(), weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  }).format(now || new Date());
+}
+// "9:42 AM" — and the zone's own short name beside it, so MDT or MST is
+// whatever Denver is actually observing rather than something written here.
+function schoolTimeLabel(now){
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: SCHOOL_TZ(), hour: 'numeric', minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(now || new Date());
+}
+
+// Which week and class day today is, from the anchor in CONFIG.
+//
+// CSE runs Monday to Thursday, so a class day is day 1 to 4 and the weekend
+// is not a class day at all — this returns null then rather than pretending
+// Saturday is Day 6. Also null before the term starts, and outside the
+// 12-week plan, since inventing a Week 19 would be worse than saying nothing.
+function schoolPlanToday(now){
+  const m = String(CONFIG.termStart || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  const anchor = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const today = schoolDayStamp(schoolToday(now));
+  const days = Math.round((today - anchor) / 86400000);
+  if(days < 0) return null;
+  // getUTCDay on a UTC-midnight stamp: 1 = Monday through 4 = Thursday.
+  const dow = new Date(today).getUTCDay();
+  if(dow < 1 || dow > 4) return null;
+  const week = TERM_START_WEEK + Math.floor(days / 7);
+  if(!WEEK_PLAN[week]) return null;
+  return { week, day: dow };
+}
+// The week CONFIG.termStart is the Monday of. Weeks 1-7 ran before the app
+// existed, so the anchor is week 8 rather than week 1.
+const TERM_START_WEEK = 8;
 
 // The one place a share link or QR code gets its origin. Falls back to
 // wherever the page is actually served, so the app keeps working on
@@ -7010,6 +7108,45 @@ function useThisWeeksFocus(){
   }
   if(tabs){ try{ tabs.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){} }
 }
+/* THE SCHOOL CLOCK ON SCREEN
+   ========================
+   One renderer, one interval. Both places that show the date read the same
+   two functions, so the welcome screen and the teacher panel can never
+   disagree about what day it is.
+
+   Twenty seconds, for a clock that shows minutes: near enough that the
+   displayed minute is never more than twenty seconds stale, cheap enough not
+   to matter on a page that is otherwise doing nothing. */
+const SCHOOL_CLOCK_TICK_MS = 20000;
+function renderSchoolClock(){
+  const el = document.getElementById('welcome-clock');
+  if(!el) return;
+  const plan = schoolPlanToday();
+  // On a weekend or outside the plan it says the date and stops. Better an
+  // honest gap than a Week 19 nobody scheduled.
+  const week = plan
+    ? ` &middot; Week ${plan.week}, day ${plan.day} of 4`
+    : '';
+  el.innerHTML = `<b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())}${week}`;
+}
+function startSchoolClock(){
+  renderSchoolClock();
+  clearInterval(window._schoolClock);
+  window._schoolClock = setInterval(renderSchoolClock, SCHOOL_CLOCK_TICK_MS);
+}
+// Move the plan pointer to whatever today actually is.
+//
+// Not automatic, on purpose. The week and day are hers to move — she goes
+// back into finished weeks, and a pointer that jumped to today every time
+// she opened the app would fight her for the screen. So the app says when
+// they disagree and offers the one tap, which is the difference between
+// being told the date and being corrected by a machine.
+function goToTodaysPlan(){
+  const plan = schoolPlanToday();
+  if(!plan) return;
+  saveProgress({ week: plan.week, day: plan.day });
+  renderProgressBox();
+}
 function renderProgressBox(){
   const el = document.getElementById('progress-box');
   if(!el) return;
@@ -7026,6 +7163,23 @@ function renderProgressBox(){
   } else {
     planNote = `This week's suggested area of study: <b>${plan.label}</b>`;
   }
+
+  // The real date, next to the week and day it belongs to. Without this the
+  // two arrows moved a number that meant nothing outside her head, and the
+  // app could not tell her whether it was showing today or the day she had
+  // left it on last week.
+  const real = schoolPlanToday();
+  const onToday = real && real.week === p.week && real.day === p.day;
+  let dateNote;
+  if(!real){
+    dateNote = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())} — not a class day, so nothing here is today.`;
+  } else if(onToday){
+    dateNote = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())} — this is today.`;
+  } else {
+    dateNote = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())} — today is Week ${real.week}, ${WEEKDAY_NAMES[real.day] || ('day ' + real.day)}.
+      <button class="btn ghost sm" style="margin-left:.4rem" onclick="goToTodaysPlan()">Go to today</button>`;
+  }
+
   el.innerHTML = `
     <div class="panel">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
@@ -7040,6 +7194,7 @@ function renderProgressBox(){
           <button class="btn ghost sm" onclick="changeDay(1)" title="Next day">▶</button>
         </div>
       </div>
+      <p class="small-note" style="margin:.6rem 0 0">${dateNote}</p>
       <p class="small-note" style="margin:.6rem 0 0">${planNote}${plan && !plan.simulado ? ` <button class="btn ghost sm" style="margin-left:.4rem" onclick="useThisWeeksFocus()">Use this focus</button>` : ''}</p>
     </div>`;
 }
@@ -11342,6 +11497,7 @@ renderIndividualControls();
 renderTeacher();
 renderStudent();
 renderWhoAmI();
+startSchoolClock();
 
 // A section survives a refresh, a closed tab, a flat battery — the clock
 // is stored as the moment it runs out, so time keeps passing whether the
