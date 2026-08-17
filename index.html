@@ -11639,7 +11639,10 @@ function logUsage(type, theme, outcome01, name){
       // that document was a test — no way to tell, from the outside, whether
       // nobody had practised or whether every save had failed in silence.
       window.CloudSync?.pushAttempt(rawName, entry)
-        .then(() => setSyncState('live'))
+        // 'no-school' is neither. Someone practising on their own has no
+        // teacher waiting, so warning them their work is not arriving would
+        // be a lie about a working app.
+        .then(res => { if(res !== 'no-school') setSyncState('live'); })
         .catch(err => { console.error('Ajar: this attempt did not reach your teacher —', err);
                         setSyncState('failed'); });
       window.CloudSync?.pushSummary?.(rawName, progressSummary(rawName))
@@ -12856,6 +12859,10 @@ loadSharedClassroomContent().then(()=>{
     // nothing rather than to throw inside a fire-and-forget promise nobody
     // reads.
     const noSchool = () => !school();
+    // Returned instead of writing when this device belongs to no class. The
+    // caller must not read it as a failure: practising alone is a supported
+    // way to use this, not a broken one.
+    const NO_SCHOOL = 'no-school';
     onAuthStateChanged(auth, user => {
       currentUser = user || null;
       teacherRecord = null;
@@ -12868,8 +12875,20 @@ loadSharedClassroomContent().then(()=>{
     signInAnonymously(auth).catch(e => console.warn('CloudSync: anonymous sign-in failed', e));
 
     window.CloudSync = {
+      // These two were the only paths under schools/ with no noSchool() guard,
+      // and they are the two a student hits most. Without a school id the
+      // path becomes schools//students/ana, which Firestore rejects outright
+      // — so someone who reached hiajar.com directly, never having scanned a
+      // link, threw on every single exercise they finished. It was invisible
+      // while the catch was empty. It is worse than invisible now that the
+      // catch draws a warning, because "your work is not reaching your
+      // teacher" is the wrong thing to tell someone practising on their own:
+      // there is no teacher, and nothing is wrong.
+      //
+      // NO_SCHOOL is that third answer, distinct from success and failure.
       async pullHistory(name) {
         await authReady;
+        if(noSchool()) return [];
         const key = name.toLowerCase();
         const q = query(collection(db, 'schools', school(), 'students', key, 'attempts'), orderBy('ts', 'desc'), limit(60));
         const snap = await getDocs(q);
@@ -12877,6 +12896,7 @@ loadSharedClassroomContent().then(()=>{
       },
       async pushAttempt(name, entry) {
         await authReady;
+        if(noSchool()) return NO_SCHOOL;
         const key = name.toLowerCase();
         await setDoc(doc(db, 'schools', school(), 'students', key), { displayName: name, lastSeen: serverTimestamp() }, { merge: true });
         await addDoc(collection(db, 'schools', school(), 'students', key, 'attempts'), entry);
@@ -12910,6 +12930,7 @@ loadSharedClassroomContent().then(()=>{
       async pushSummary(name, summary) {
         if(!summary) return;
         await authReady;
+        if(noSchool()) return NO_SCHOOL;
         await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
           { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
       },

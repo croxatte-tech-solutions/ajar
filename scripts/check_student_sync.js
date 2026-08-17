@@ -50,6 +50,11 @@ const el = (id) => {
 // not written yet, one that never will be, one that belongs to another school.
 function boot(opts){
   opts = opts || {};
+  // The element cache is module-level and shared, so a warning drawn by an
+  // earlier case is still sitting in the node when the next one starts. That
+  // reads as the new case having drawn it — a false failure that looks
+  // exactly like a real one.
+  for(const k in nodes) delete nodes[k];
   const store = Object.assign({}, opts.storage || {});
   const docs = Object.assign({}, opts.docs || {});
   const asked = [];
@@ -68,12 +73,14 @@ function boot(opts){
       if(prop === 'pullNote') return async () => '';
       if(prop === 'pullClassSummaries') return async () => ({});
       if(prop === 'pushAttempt') return async () => {
+        if(opts.noSchool) return 'no-school';
         pushed.push('attempt');
         if(opts.pushMode === 'denied'){ const e = new Error('Missing or insufficient permissions.'); e.code = 'permission-denied'; throw e; }
         if(opts.pushMode === 'network') throw new Error('client is offline');
         return true;
       };
       if(prop === 'pushSummary') return async () => {
+        if(opts.noSchool) return 'no-school';
         pushed.push('summary');
         if(opts.pushMode) throw new Error('same failure as the attempt');
         return true;
@@ -162,6 +169,27 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
     assert('their own history still records it locally (' + mode + ')',
       (f.store['ajar_usage_log_by_name'] || '').indexOf('passage') > -1);
   }
+
+  //===================================================================
+  // PRACTISING ALONE IS NOT A FAILURE
+  //===================================================================
+  // Someone who reached hiajar.com directly, never having scanned a link,
+  // belongs to no class. pushAttempt and pushSummary were the only paths
+  // under schools/ with no school guard, so the path became schools//students
+  // and Firestore rejected it — on every exercise they ever finished. Silent
+  // before. Now it must not be reported as a failure either: there is no
+  // teacher waiting, and nothing is wrong.
+  const alone = boot({ search: '', noSchool: true });
+  alone.sandbox.currentView = 'student';
+  alone.api.setStudentName('Ana');
+  alone.api.logUsage('passage', 'campus', 0.8);
+  await new Promise(r => setTimeout(r, 0));
+  assert('a student with no class is not told their work is going nowhere',
+    warning() === '' && alone.api.syncState() !== 'failed', alone.api.syncState());
+  assert('and their own history still records it',
+    (alone.store['ajar_usage_log_by_name'] || '').indexOf('passage') > -1);
+  assert('the school-less path is guarded before it builds schools//students',
+    html.indexOf('if(noSchool()) return NO_SCHOOL;') > -1);
 
   //===================================================================
   // THE WARNING LIVES WHERE A RE-RENDER CANNOT EAT IT
