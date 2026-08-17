@@ -164,7 +164,14 @@ ${blocks.join('\n;\n')}
        spread; trimming to the word count re-creates the character tell. So
        both are asserted here, on every bank, and a fix has to satisfy the
        pair. Only conversation had the word half before this. */
-    const words = o => String(o).trim().split(/\s+/).length;
+    // \\s, not \s. This whole probe is a template literal, where \s is not a
+    // recognised escape and collapses to the letter s — so this split on
+    // whitespace was silently splitting on the letter "s", every option came
+    // out several words too long, and the ceilings below were set from those
+    // inflated numbers. It is the seventh time this file family has lost a
+    // backslash that way, and the first six were caught by a number that
+    // looked wrong; this one passed as green.
+    const words = o => String(o).trim().split(/\\s+/).length;
     const spread = list.reduce((acc, q) => {
       const W = q.options.map(words);
       return acc + (Math.max(...W) - Math.min(...W));
@@ -173,52 +180,63 @@ ${blocks.join('\n;\n')}
     // cannot be bought with padding. These are not targets — they are
     // ceilings, and each may be lowered, never raised.
     const WORD_SPREAD_MAX = {
-      'choose-response': 2.60, 'announcement': 1.65, 'conversation': 1.60,
-      'talk': 2.15, 'daily-read': 1.60, 'passage': 1.90,
+      'choose-response': 1.85, 'announcement': 1.05, 'conversation': 1.20,
+      'talk': 1.10, 'daily-read': 1.45, 'passage': 1.30,
     };
     const cap = WORD_SPREAD_MAX[type] || 2.0;
     assert(type + ': options stay within about a word of each other (' +
       spread.toFixed(2) + ' of ' + cap.toFixed(2) + ' words average spread, n=' + n + ')',
       spread <= cap, 'a distractor padded to hide a length tell reads as padded');
-    const longest  = rate(o => o.map(s=>s.length).indexOf(Math.max(...o.map(s=>s.length))));
-    const shortest = rate(o => o.map(s=>s.length).indexOf(Math.min(...o.map(s=>s.length))));
+    /* Ties are a guess, not a hit.
+       The old form was indexOf(Math.max(...)), which returns the FIRST index
+       holding the maximum — so it credited the strategy a whole point every
+       time the correct answer merely sorted first among equal-length options.
+       Every key in these banks is index 0, so that happened constantly, and
+       the numbers in the comment below are inflated by it: conversation was
+       reported at 57% and was really 48%. A student facing three equally long
+       options has to pick one, which is worth 1/k, and that is what this
+       counts now. */
+    const extremeRate = pick => list.reduce((acc, q) => {
+      const L = q.options.map(o => String(o).length);
+      const target = pick(L);
+      const tied = L.filter(v => v === target).length;
+      return acc + (L[q.answer] === target ? 1 / tied : 0);
+    }, 0) / n;
+    const longest  = extremeRate(L => Math.max(...L));
+    const shortest = extremeRate(L => Math.min(...L));
     const ceiling = 0.25 + 3 * Math.sqrt(0.25 * 0.75 / n);
 
-    /* A RATCHET, NOT A PASS. This is an OPEN FINDING held at today's level.
+    /* CLOSED 2026-08-17, and the honest numbers are smaller than the ones
+       that opened it.
        -------------------------------------------------------------------
-       Measured 2026-08-17: a student who never reads the question and always
-       picks the shortest (or longest) option scores well above the 25% a
-       four-option guess should give.
+       As first reported, a student who never read or listened and always
+       picked the longest (or shortest) option scored: conversation 57%,
+       passage 44%, choose-response 43%, announcement 43%, talk 38% — against
+       the 25% a four-option guess gives. Two things were wrong with those
+       figures and one thing was right.
 
-         passage          shortest  44%
-         choose-response  shortest  43%
-         announcement     longest   43%
-         conversation     longest   57%
-         talk             shortest  38%
+       Wrong, first: they credited ties. Re-measured honestly the same day,
+       the real rates were 48 / 39 / 41 / 38 / 35. Still far above chance, so
+       the finding stood, but it was never as bad as the report said and the
+       ratchet was set from the inflated numbers.
 
-       Conversation is the worst: more than double chance with no
-       comprehension at all. That inflates every score the app reports and
-       rewards a test-taking habit instead of English.
+       Wrong, second: in choose-response the length gap was a symptom. 62% of
+       the wrong options ended in a tacked-on hedge — "really", "I believe",
+       "I gather" — against 21% of the right ones, so "pick the one that does
+       not trail off" scored 48% on its own, and those tails were also what
+       made the wrong options run long. Removing all 171 fixed both.
 
-       It is NOT fixed, and it was deliberately not auto-fixed. The cause is
-       that correct answers and distractors were written at systematically
-       different lengths across hundreds of options, and rebalancing them is
-       content authoring — the same edit that, done in bulk without checking
-       fit, is what put "it's the whole only way" into an answer key in the
-       first place. Rewriting an English exam bank unsupervised is not a safe
-       change, and this file already proved why.
+       Right: the rest of it was real, and it was fixed the slow way — one
+       wrong option rewritten in 83 questions across five banks, each swapping
+       words rather than adding them, because the options must also stay
+       near-equal in WORD count and padding to hide a character tell fails
+       that. Every batch went through scripts/try_option_fixes.sh, which
+       applies to a copy and runs these checks before index.html is touched.
 
-       So the bar is held where it is: these numbers may not get WORSE, and
-       lowering a bound here is a deliberate act with the measurement to
-       justify it. When the options are rebalanced, drop OPEN_LENGTH_BIAS and
-       let the statistical ceiling apply. */
-    const OPEN_LENGTH_BIAS = {
-      'passage':          { shortest: 0.45, longest: null },
-      'choose-response':  { shortest: 0.44, longest: null },
-      'announcement':     { shortest: null, longest: 0.44 },
-      'conversation':     { shortest: null, longest: 0.58 },
-      'talk':             { shortest: 0.39, longest: null },
-    };
+       No bank now beats chance by more than noise. The statistical ceiling
+       applies everywhere, so OPEN_LENGTH_BIAS is empty — if a bank drifts
+       back above it, that is a regression and not a known condition. */
+    const OPEN_LENGTH_BIAS = {};   // empty: nothing is held open any more
     const held = OPEN_LENGTH_BIAS[type] || {};
     const boundFor = which => (held[which] === null || held[which] === undefined)
       ? ceiling : held[which];

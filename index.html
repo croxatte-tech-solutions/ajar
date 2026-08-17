@@ -4689,13 +4689,13 @@ const ANNOUNCEMENT_BANK = {
     ]},
     { context:'an announcement at a student event', text:'Welcome, everyone, and thank you for coming. The workshops begin at ten, and you will find the full timetable on the board behind me. Places in the smaller sessions are limited, so please sign your name on the sheet outside the room you want rather than simply turning up. Lunch is included and will be served in the hall at half past twelve.', questions:[
       { q:'What must students do to join a small session?', options:['Write their name down', 'Pay a small fee', 'Speak to the organiser', 'Arrive before ten'], answer:0 },
-      { q:'What does the speaker say about lunch?', options:['It costs nothing extra', 'It is served outside', 'It requires a ticket', 'It starts at eleven'], answer:0 },
+      { q:'What does the speaker say about lunch?', options:['It costs nothing extra', 'It is served outside', 'It requires advance registration', 'It starts at eleven'], answer:0 },
     ]},
   ],
   register: [
     { context:'an announcement in an office', text:'Afternoon, everyone. Two quick things before you go. From Monday, the main reception phone will be answered by whoever is on the front desk, so please put your extension on the rota if you have not already. Second, if you take a message for someone, write down the caller\'s number as well as the name. We have lost two enquiries this week for exactly that reason.', questions:[
       { q:'Why does the speaker mention lost enquiries?', options:['To explain a new rule', 'To praise the front desk', 'To announce a complaint', 'To request more staff'], answer:0 },
-      { q:'What should staff add to the rota?', options:['Their telephone extension', 'Their preferred hours', 'Their room number', 'Their email address'], answer:0 },
+      { q:'What should staff add to the rota?', options:['Their telephone extension', 'Their scheduling preferences', 'Their room number', 'Their email address'], answer:0 },
     ]},
     { context:'an announcement before a talk', text:'Good evening, and thank you all for coming. Our speaker has been delayed by traffic and expects to arrive in about fifteen minutes. Rather than start late and finish late, we will bring forward the short question session that was planned for the end. Tea and coffee are still available at the back, and please do help yourselves while we wait.', questions:[
       { q:'Why has the schedule changed?', options:['The speaker is late', 'The room is too small', 'The talk was shortened', 'The equipment has failed'], answer:0 },
@@ -4705,16 +4705,16 @@ const ANNOUNCEMENT_BANK = {
   current: [
     { context:'an announcement in a computer room', text:'Can I have your attention for a moment. The network will be down for maintenance this Saturday from six in the morning until about midday. Anything saved to the cloud will be perfectly safe, but files left only on these machines may not survive the update. If you are working on something important, copy it to your own storage before Friday evening.', questions:[
       { q:'What are students advised to do?', options:['Back up their files', 'Arrive earlier on Saturday', 'Book a machine ahead', 'Report any faults found'], answer:0 },
-      { q:'What is at risk during the maintenance?', options:['Files stored locally', 'Cloud documents', 'Printing credit', 'Login passwords'], answer:0 },
+      { q:'What is at risk during the maintenance?', options:['Files stored locally', 'Cloud documents', 'Printing credit', 'Authentication credentials'], answer:0 },
     ]},
     { context:'an announcement in a library', text:'A short notice before you settle in. The library app has been updated overnight, and everyone will need to sign in again the first time they use it. Your borrowing history and any reservations are unaffected. If the app refuses your usual password, use the reset link rather than queueing at the desk, as we cannot reset it from here today.', questions:[
       { q:'What should students do if the app rejects their password?', options:['Use the reset link', 'Come to the desk', 'Wait until tomorrow', 'Create a new account'], answer:0 },
-      { q:'What does the speaker say is unaffected?', options:['Existing reservations', 'Opening hours', 'Borrowing limits', 'Fine payments'], answer:0 },
+      { q:'What does the speaker say is unaffected?', options:['Existing reservations', 'Opening hours', 'Maximum borrowing limits', 'Fine payments'], answer:0 },
     ]},
   ],
   grammar: [
     { context:'an announcement in a language class', text:'Before we start, a note about the speaking assessment. It will now take place in the language laboratory rather than in here, because we need the recording booths. The date has not changed. Each of you will have a ten-minute slot, and the list of times goes up outside my office on Thursday. Please check it rather than assuming last term\'s order.', questions:[
-      { q:'What has changed about the assessment?', options:['The place it happens', 'The date it happens', 'Its total length', 'The topic covered'], answer:0 },
+      { q:'What has changed about the assessment?', options:['The place it happens', 'The date it happens', 'Its total length', 'The subject matter covered'], answer:0 },
       { q:'Why should students check the list?', options:['The order may differ', 'The date may move', 'The times are shorter', 'The rooms are shared'], answer:0 },
     ]},
     { context:'an announcement about a workshop', text:'Good afternoon. The writing centre is running an extra session on referencing this Friday at four, in response to a good many questions after the last assignment. It is open to everyone, not only to students who have already booked a tutorial. Bring a draft if you have one, though you are very welcome to come and simply listen.', questions:[
@@ -4724,8 +4724,8 @@ const ANNOUNCEMENT_BANK = {
   ],
   social: [
     { context:'an announcement at a community centre', text:'Thanks for coming, everyone. The international evening is a fortnight today, and we still need help with setting up from about five o\'clock. If you are bringing food, please write the main ingredients on a card next to the dish, since several people last year had to avoid things they could not identify. Anything else, come and find me afterwards.', questions:[
-      { q:'Why should ingredients be labelled?', options:['Some guests avoid certain foods', 'The council requires labels', 'The dishes look similar', 'Prizes are given for cooking'], answer:0 },
-      { q:'What help is still needed?', options:['Assistance setting up', 'Money for supplies', 'More food donations', 'People to clean up'], answer:0 },
+      { q:'Why should ingredients be labelled?', options:['Some guests avoid certain foods', 'The council requires certification', 'The dishes look similar', 'Prizes are given for cooking'], answer:0 },
+      { q:'What help is still needed?', options:['Assistance setting up', 'Contributions towards supplies', 'More food donations', 'People to clean up'], answer:0 },
     ]},
     { context:'an announcement to a student club', text:'Quick notice before we finish. Next week\'s meeting clashes with the careers fair, so we are moving it to Wednesday at the same time and place. Anyone who cannot make Wednesday should let me know by Monday, because if enough of you are stuck we will simply skip a week rather than meet with four people in the room.', questions:[
       { q:'Why is the meeting being moved?', options:['It clashes with an event', 'The room is unavailable', 'The speaker cannot attend', 'Attendance has dropped'], answer:0 },
@@ -4744,7 +4744,7 @@ const ANNOUNCEMENT_BANK = {
   ],
   health: [
     { context:'an announcement at a health centre', text:'Good morning. A short notice about appointments this week. Two of our doctors are away at training on Wednesday, so we are running a reduced service that day. Urgent cases will still be seen. If your appointment was booked for Wednesday afternoon, reception will telephone you today to move it, so please answer or ring back if you miss the call.', questions:[
-      { q:'What is the announcement mainly about?', options:['Fewer appointments on Wednesday', 'A change of address', 'New opening hours', 'A charge for missed visits'], answer:0 },
+      { q:'What is the announcement mainly about?', options:['Fewer appointments on Wednesday', 'A change of address', 'New opening hours', 'A charge for cancelled appointments'], answer:0 },
       { q:'What should affected patients do?', options:['Answer or return the call', 'Come to reception directly', 'Book again online', 'Wait for a letter'], answer:0 },
     ]},
     { context:'an announcement at a sports centre', text:'Afternoon, everyone. The pool will close for cleaning from Thursday evening and reopen on Saturday morning. All other facilities stay open as usual. Anyone with a lesson booked on Friday will be contacted directly and offered another time. Memberships will not be charged for the missed days, so there is no need to come and ask about that.', questions:[
@@ -4755,7 +4755,7 @@ const ANNOUNCEMENT_BANK = {
   environment: [
     { context:'an announcement in a residence hall', text:'Quick notice, everyone. The recycling collection has moved from Monday to Wednesday, starting next week. Please do not leave bags out on Monday, because they will simply sit there for two days and the corridor becomes impassable. The bins themselves stay where they are, by the back door. If yours is full, there is a second one downstairs.', questions:[
       { q:'What has changed?', options:['The collection day', 'The bin location', 'The type of waste taken', 'The building entrance'], answer:0 },
-      { q:'Why should bags not be left on Monday?', options:['They would block the corridor', 'They attract animals', 'They will be fined', 'They may be stolen'], answer:0 },
+      { q:'Why should bags not be left on Monday?', options:['They would block the corridor', 'They attract unwelcome scavengers', 'They will be fined', 'They may be stolen'], answer:0 },
     ]},
     { context:'an announcement before a volunteer event', text:'Thanks for signing up, everyone. We meet at the park gates at nine on Saturday, not at the centre as the poster says — that was printed before the plan changed. Gloves and bags are provided. Wear something you do not mind ruining, and bring water, because the nearest tap is a fair walk from where we will be working.', questions:[
       { q:'What does the speaker correct?', options:['The meeting place', 'The starting time', 'The date of the event', 'The equipment provided'], answer:0 },
@@ -4768,7 +4768,7 @@ const ANNOUNCEMENT_BANK = {
       { q:'How should waiting passengers move?', options:['Across the footbridge', 'Along the platform', 'Through the main hall', 'Around the car park'], answer:0 },
     ]},
     { context:'an announcement in a residence building', text:'Evening, all. The lift in this building will be out of service from Monday to Wednesday for its annual inspection. Anyone who would struggle with the stairs should speak to the office before Friday and we will make other arrangements. Deliveries will be left at reception during those days rather than brought up to individual floors.', questions:[
-      { q:'What should residents who cannot use stairs do?', options:['Contact the office beforehand', 'Wait until Wednesday', 'Use the other staircase', 'Ask a neighbour for help'], answer:0 },
+      { q:'What should residents who cannot use stairs do?', options:['Contact the office beforehand', 'Wait until Wednesday', 'Use the other staircase', 'Ask another resident for assistance'], answer:0 },
       { q:'What happens to deliveries?', options:['They stay at reception', 'They are returned to sender', 'They are left outside', 'They arrive on Thursday'], answer:0 },
     ]},
   ],
@@ -4785,7 +4785,7 @@ const ANNOUNCEMENT_BANK = {
   housing: [
     { context:'an announcement to residents', text:'A short notice about the kitchens. From next week, each floor is responsible for its own cleaning rota, and a blank sheet will go up on every noticeboard. If nobody fills it in, the cleaning staff will not do it for you, and the kitchen will simply be closed until the floor sorts it out among themselves.', questions:[
       { q:'What will happen if the rota is empty?', options:['The kitchen will close', 'Cleaners will do it anyway', 'A fine will be charged', 'The floor loses access'], answer:0 },
-      { q:'Who is now responsible for cleaning?', options:['The residents themselves', 'The cleaning staff', 'The building manager', 'A hired company'], answer:0 },
+      { q:'Who is now responsible for cleaning?', options:['The residents themselves', 'The cleaning staff', 'The property management company', 'A hired company'], answer:0 },
     ]},
     { context:'an announcement on move-in day', text:'Welcome, everyone. Collect your keys from the desk behind me, and please check your room against the inventory sheet before you unpack anything. If something is already damaged, photograph it and email the office today. Anything reported later than this evening may be charged to you when the room is inspected at the end of the year.', questions:[
       { q:'Why should damage be reported today?', options:['To avoid later charges', 'To get a different room', 'To claim on insurance', 'To speed up repairs'], answer:0 },
@@ -4795,7 +4795,7 @@ const ANNOUNCEMENT_BANK = {
   travel: [
     { context:'an announcement at an airport', text:'Attention, passengers. Flight two four one to Lisbon is now boarding at gate twelve, which has changed from gate eight shown on your boarding pass. Passengers requiring assistance should make themselves known at the desk before boarding begins. The gate closes twenty minutes before departure and late passengers cannot be accepted.', questions:[
       { q:'What has changed?', options:['The boarding gate', 'The departure time', 'The destination city', 'The aircraft type'], answer:0 },
-      { q:'What happens twenty minutes before departure?', options:['The gate is closed', 'Boarding begins', 'Assistance ends', 'Bags are loaded'], answer:0 },
+      { q:'What happens twenty minutes before departure?', options:['The gate is closed', 'Passenger boarding commences', 'Assistance ends', 'Bags are loaded'], answer:0 },
     ]},
     { context:'an announcement on a coach', text:'Good morning, everyone. We will be stopping for twenty minutes at the service area at around eleven o\'clock. Please take your valuables with you when you leave the coach. We cannot wait for anyone who is late back, as the schedule is tight and we have a connection to make at the other end.', questions:[
       { q:'What are passengers warned about?', options:['The coach will not wait', 'The stop may be cancelled', 'Food is not available', 'The journey is delayed'], answer:0 },
@@ -4814,8 +4814,8 @@ const ANNOUNCEMENT_BANK = {
   ],
   innovation: [
     { context:'an announcement at a science museum', text:'Welcome, everyone. The robotics demonstration in the upper gallery runs every hour until four o\'clock today. Numbers are limited to about thirty, so if the room is full please come back for the next one rather than waiting in the doorway. The rest of the gallery stays open throughout, and everything there can be touched.', questions:[
-      { q:'What should visitors do if the room is full?', options:['Return for the next one', 'Queue in the doorway', 'Ask a member of staff', 'Book a place online'], answer:0 },
-      { q:'What are visitors told about the rest of the gallery?', options:['Exhibits may be touched', 'It closes at four', 'Photography is banned', 'Tickets are required'], answer:0 },
+      { q:'What should visitors do if the room is full?', options:['Return for the next one', 'Queue in the doorway', 'Ask a member of staff', 'Reserve a place electronically'], answer:0 },
+      { q:'What are visitors told about the rest of the gallery?', options:['Exhibits may be touched', 'It closes at four', 'Photography remains prohibited', 'Tickets are required'], answer:0 },
     ]},
     { context:'an announcement in a maker lab', text:'Right, listen carefully before you start. Safety glasses are worn at all times in this room, not just when a machine is running. If you have not used a particular machine before, book an induction rather than working it out yourself. Anything left overnight must carry a label with your name and the date you expect to finish.', questions:[
       { q:'When must safety glasses be worn?', options:['At all times inside', 'Only when machines run', 'Only near the cutters', 'When a supervisor asks'], answer:0 },
@@ -4874,7 +4874,7 @@ const CONVERSATION_BANK = {
       ["M", "That is worth knowing. Thanks."],
       ["W", "No trouble. The ones on the top floor are almost always empty."],
     ], questions:[
-      { q:"What does the woman say about the rooms?", options:["They are usually booked ahead", "They are free to everyone", "They close in the afternoon", "They are being repaired"], answer:0 },
+      { q:"What does the woman say about the rooms?", options:["They are usually booked ahead", "They are accessible to everybody", "They close in the afternoon", "They are being repaired"], answer:0 },
       { q:"What does the woman recommend?", options:["Trying the top floor", "Booking a week early", "Asking at the desk", "Coming back tomorrow"], answer:0 },
     ]},
   ],
@@ -4902,7 +4902,7 @@ const CONVERSATION_BANK = {
       ["M", "Do I hand it back afterwards?"],
       ["W", "Please. There is a box by the door on your way out."],
     ], questions:[
-      { q:"Why must the man wait?", options:["The meeting is delayed", "The room is occupied", "He arrived too early", "The badge is missing"], answer:0 },
+      { q:"Why must the man wait?", options:["The meeting is delayed", "The office is unavailable", "He arrived too early", "The badge is missing"], answer:0 },
       { q:"What should the man do with the badge?", options:["Return it when leaving", "Keep it for next time", "Show it at the door", "Sign it and hand it in"], answer:0 },
     ]},
   ],
@@ -4958,7 +4958,7 @@ const CONVERSATION_BANK = {
       ["M", "That might actually help. Thanks."],
       ["W", "Give it a fortnight before you decide it is not working."],
     ], questions:[
-      { q:"What does the woman say helped her?", options:["Listening rather than studying", "Repeating after the teacher", "Writing the forms out", "Reading them aloud"], answer:0 },
+      { q:"What does the woman say helped her?", options:["Listening rather than studying", "Repeating after the teacher", "Transcribing the irregular endings", "Reading them aloud"], answer:0 },
       { q:"What does the woman say about the recordings?", options:["The speed can be changed", "They are hard to find", "They are only for classes", "They cannot be repeated"], answer:0 },
     ]},
   ],
@@ -4986,7 +4986,7 @@ const CONVERSATION_BANK = {
       ["M", "Bring it up then. Nothing changes unless somebody says it out loud."],
       ["W", "Fair point. I will make a note before I forget again."],
     ], questions:[
-      { q:"What has the woman got wrong?", options:["The day of the meeting", "The time it starts", "The place it is held", "The topics discussed"], answer:0 },
+      { q:"What has the woman got wrong?", options:["The day of the meeting", "The time it starts", "The place it is held", "The information circulated"], answer:0 },
       { q:"Why does the man encourage her to attend?", options:["So she can raise the lock", "So the meeting has enough people", "So she meets the neighbours", "So she hears about the bins"], answer:0 },
     ]},
   ],
@@ -5030,7 +5030,7 @@ const CONVERSATION_BANK = {
       ["M", "I will ring them tomorrow morning, then."],
     ], questions:[
       { q:"Why has the man not seen anyone yet?", options:["The wait was too long", "He did not try to book", "The centre was closed", "He forgot the appointment"], answer:0 },
-      { q:"What does the woman suggest?", options:["Asking about phone consultations", "Going to a different clinic", "Waiting the two months", "Speaking to her friend"], answer:0 },
+      { q:"What does the woman suggest?", options:["Asking about phone consultations", "Transferring to an alternative practice", "Waiting the two months", "Speaking to her friend"], answer:0 },
     ]},
     { context:"a conversation at a sports centre", turns:[
       ["M", "Is the pool open this evening? The sign says something about cleaning."],
@@ -5043,7 +5043,7 @@ const CONVERSATION_BANK = {
       ["W", "They are quieter than here, too, if you go before seven."],
     ], questions:[
       { q:"What is the man's problem?", options:["The pool is shut on Friday", "He has lost his membership card", "The centre is much too far", "He cannot afford another visit"], answer:0 },
-      { q:"What does the woman say about the other pool?", options:["A single visit is possible", "Membership is required", "It is more expensive", "It closes at six as well"], answer:0 },
+      { q:"What does the woman say about the other pool?", options:["A single visit is possible", "Membership is required", "It is significantly costlier", "It closes at six as well"], answer:0 },
     ]},
   ],
   environment: [
@@ -5058,7 +5058,7 @@ const CONVERSATION_BANK = {
       ["W", "Two of us have. They said they would review it next term."],
     ], questions:[
       { q:"Why were the bins removed?", options:["They blocked the corridor", "They were rarely used", "They were being replaced", "They were often damaged"], answer:0 },
-      { q:"What does the woman suggest has happened?", options:["People stopped recycling entirely", "The bins were moved again", "Complaints were ignored", "The newsletter was wrong"], answer:0 },
+      { q:"What does the woman suggest has happened?", options:["People stopped recycling entirely", "The containers were repositioned again", "Complaints were ignored", "The newsletter was wrong"], answer:0 },
     ]},
     { context:"a conversation before a volunteer day", turns:[
       ["W", "Are you still coming to the park on Saturday?"],
@@ -5070,7 +5070,7 @@ const CONVERSATION_BANK = {
       ["W", "You would not have been the first. Bring water as well."],
       ["M", "Is there nowhere to fill up?"],
     ], questions:[
-      { q:"What has the man misunderstood?", options:["Where the group meets", "What time it begins", "What he should wear", "Which day it is on"], answer:0 },
+      { q:"What has the man misunderstood?", options:["Where the group meets", "What time it begins", "What clothing is necessary", "Which day it is on"], answer:0 },
       { q:"Why does the woman mention water?", options:["None is available nearby", "The weather will be hot", "It is not provided free", "The walk is very long"], answer:0 },
     ]},
   ],
@@ -5086,7 +5086,7 @@ const CONVERSATION_BANK = {
       ["W", "It is always the same driver, apparently."],
     ], questions:[
       { q:"What happened to the parcel?", options:["A neighbour passed it on", "It was never delivered", "It went back to the depot", "It arrived on Wednesday"], answer:0 },
-      { q:"Why does the woman say to complain anyway?", options:["The problem keeps repeating", "The parcel was damaged", "The company owes a refund", "The driver was rude"], answer:0 },
+      { q:"Why does the woman say to complain anyway?", options:["The problem keeps repeating", "The parcel was damaged", "The company owes a refund", "The courier was unprofessional"], answer:0 },
     ]},
     { context:"a conversation about a bus", turns:[
       ["W", "Do you know if the number eleven is running today?"],
@@ -5099,7 +5099,7 @@ const CONVERSATION_BANK = {
       ["M", "It should be back to normal by the end of the month."],
     ], questions:[
       { q:"Why has the route changed?", options:["There are roadworks", "The bus was cancelled", "The stop was removed", "A new route opened"], answer:0 },
-      { q:"What will the woman probably do?", options:["Walk to the library stop", "Take the hourly bus", "Wait until next month", "Find a different route"], answer:0 },
+      { q:"What will the woman probably do?", options:["Walk to the library stop", "Take the infrequent service", "Wait until next month", "Find a different route"], answer:0 },
     ]},
   ],
   money: [
@@ -5113,7 +5113,7 @@ const CONVERSATION_BANK = {
       ["M", "Where is the meter? I have never even seen it."],
       ["W", "Under the stairs, behind that cupboard door nobody opens."],
     ], questions:[
-      { q:"Why does the woman think the bill is high?", options:["It is based on an estimate", "Prices have gone up", "They used more heating", "A payment was missed"], answer:0 },
+      { q:"Why does the woman think the bill is high?", options:["It is based on an estimate", "Tariffs have increased substantially", "They used more heating", "A payment was missed"], answer:0 },
       { q:"What do they plan to do?", options:["Send a real meter reading", "Complain to the supplier", "Change to another company", "Pay it and move on"], answer:0 },
     ]},
     { context:"a conversation about a bank account", turns:[
@@ -5154,7 +5154,7 @@ const CONVERSATION_BANK = {
       ["W", "That was going to be my suggestion, yes."],
       ["M", "Fine by me. It is cheaper for everyone anyway."],
     ], questions:[
-      { q:"What is the woman's main concern?", options:["Buying the same things twice", "The washing-up not done", "The kitchen being dirty", "Food being taken"], answer:0 },
+      { q:"What is the woman's main concern?", options:["Buying the same things twice", "The washing-up not done", "The refrigerator being unhygienic", "Food being taken"], answer:0 },
       { q:"What do they agree to do?", options:["Share a shopping list", "Clean on a rota", "Buy less food overall", "Label their own items"], answer:0 },
     ]},
   ],
@@ -5169,8 +5169,8 @@ const CONVERSATION_BANK = {
       ["M", "Both, honestly. I have been caught out twice now."],
       ["W", "Then I will book something this weekend and stop watching."],
     ], questions:[
-      { q:"Why has the woman not booked?", options:["She is waiting for lower prices", "She has changed the dates", "She cannot decide where", "She is short of money"], answer:0 },
-      { q:"What does the man warn her about?", options:["Prices rise close to the date", "Rooms are already full", "The flights may change", "The area gets busy"], answer:0 },
+      { q:"Why has the woman not booked?", options:["She is waiting for lower prices", "She has cancelled the accommodation", "She cannot decide where", "She is short of money"], answer:0 },
+      { q:"What does the man warn her about?", options:["Prices rise close to the date", "Accommodation is already unavailable", "The flights may change", "The area gets busy"], answer:0 },
     ]},
     { context:"a conversation at a station", turns:[
       ["W", "Excuse me, is this the platform for the city train?"],
@@ -5183,7 +5183,7 @@ const CONVERSATION_BANK = {
       ["M", "Take it while you can. Mine was cancelled outright."],
     ], questions:[
       { q:"What has changed this morning?", options:["The departure platform", "The train's destination", "The ticket arrangement", "The departure time"], answer:0 },
-      { q:"Why is the woman not worried?", options:["The train is running late", "She has another ticket", "There is a later train", "The bridge is quick"], answer:0 },
+      { q:"Why is the woman not worried?", options:["The train is running late", "She has alternative transport", "There is a later train", "The bridge is quick"], answer:0 },
     ]},
   ],
   media: [
@@ -5210,7 +5210,7 @@ const CONVERSATION_BANK = {
       ["W", "Ten minutes in the morning. Less than I used to spend scrolling."],
       ["M", "Then it is not really more work at all, is it."],
     ], questions:[
-      { q:"What is the woman's concern about the man's habit?", options:["He does not choose his news", "He reads too little of it", "He trusts a single source", "He spends too much time"], answer:0 },
+      { q:"What is the woman's concern about the man's habit?", options:["He does not choose his news", "He reads too little of it", "He trusts one publication exclusively", "He spends too much time"], answer:0 },
       { q:"What does the man realise at the end?", options:["Her method saves time", "She reads far more", "His phone is unreliable", "He should read less"], answer:0 },
     ]},
   ],
@@ -5225,7 +5225,7 @@ const CONVERSATION_BANK = {
       ["M", "That sounds like more work than writing it myself."],
       ["W", "Sometimes it is. That is rather the point."],
     ], questions:[
-      { q:"What does the woman say the tool is good for?", options:["Improving existing sentences", "Generating new ideas", "Checking factual claims", "Structuring an argument"], answer:0 },
+      { q:"What does the woman say the tool is good for?", options:["Improving existing sentences", "Generating original suggestions", "Checking factual claims", "Structuring an argument"], answer:0 },
       { q:"What is the woman's rule?", options:["Verify anything factual", "Use it only for drafts", "Avoid it for coursework", "Declare it every time"], answer:0 },
     ]},
     { context:"a conversation at an exhibition", turns:[
@@ -5239,7 +5239,7 @@ const CONVERSATION_BANK = {
       ["M", "And you can touch most of it, which the sign did not make clear."],
     ], questions:[
       { q:"Why did the man miss the demonstration?", options:["The room was already full", "It had already finished", "He arrived on the wrong day", "He could not find it"], answer:0 },
-      { q:"What does the woman say about the second half?", options:["It largely repeats the first", "It is the best part", "It is much shorter", "It is often cancelled"], answer:0 },
+      { q:"What does the woman say about the second half?", options:["It largely repeats the first", "It contains the strongest material", "It is much shorter", "It is often cancelled"], answer:0 },
     ]},
   ],
 };
@@ -5378,7 +5378,7 @@ const PASSAGE_BANK = {
       text:"The university lecture began as a solution to a shortage. Before printing, a book was copied by hand and cost more than most scholars could earn in a year, so a text existed in one or two copies in the whole of a city. The only practical way to transmit it was for someone who held a copy to read it aloud while everyone else wrote it down. The word lecture comes from the Latin for reading, and that is precisely what it was.\n\nPrinting removed the shortage within a few decades. Books became cheap enough that a student could own the text being read to them, which ought to have made the reading aloud redundant. It did not. The lecture survived, and by the nineteenth century it had been reinterpreted as something other than transcription: a performance in which a scholar explained, argued, and modelled how to think about a subject rather than simply delivering its contents.\n\nWhat is striking is that the form outlived its original justification by five hundred years without anyone deciding it should. Institutions rarely abolish a practice merely because its reason has gone. They find it a new one.",
       questions:[
       { q:"What is this passage mainly about?", options:["A practice outlived the reason for it", "Printing made universities far cheaper to run", "Lectures have always been performances", "Medieval scholars preferred reading aloud"], answer:0 },
-      { q:"Why were books so scarce before printing?", options:["Each was copied by hand", "Few people could read them", "They were deliberately restricted", "Paper was almost unobtainable"], answer:0 },
+      { q:"Why were books so scarce before printing?", options:["Each was copied by hand", "Few people could read them", "Kings banned them", "Paper was almost unobtainable"], answer:0 },
       { q:"The word \"redundant\" is closest in meaning to", options:["no longer needed", "far too expensive", "poorly organised", "widely available"], answer:0 },
       { q:"What can be inferred about the nineteenth-century lecture?", options:["Its purpose had been redefined", "It was shorter than before", "It was attended by fewer students", "It returned to reading aloud"], answer:0 },
       { q:"Why does the author mention the Latin origin of \"lecture\"?", options:["To show it once meant reading aloud", "To date the first universities", "To contrast Latin with modern usage", "To explain why lectures are formal"], answer:0 },
@@ -5387,10 +5387,10 @@ const PASSAGE_BANK = {
       text:"Students who take notes on a laptop record more words than students writing by hand. On any measure of completeness, typing wins, and it is not close. Yet when both groups are tested a week later on the ideas rather than the wording, the handwriting group tends to do better.\n\nThe explanation appears to lie in what typing makes possible. A fast typist can keep pace with a speaker almost word for word, and doing so requires no decisions at all: the hands transcribe while the mind stays largely uninvolved. Writing by hand is far too slow for that. The writer must decide, continuously and under pressure, what matters enough to record — and that decision is itself an act of understanding.\n\nThe finding is therefore not about paper. It is about the gap between the speed of speech and the speed of the hand, and what a learner is forced to do inside it. This has an awkward implication for anyone designing tools for study: making a task easier can make the learning worse, and the students themselves will usually prefer the easier version, because the effort that helps them does not feel like progress while it is happening.",
       questions:[
       { q:"What is the passage mainly about?", options:["Why slower note-taking aids understanding", "Why laptops should be banned in class", "How students prefer to take notes", "Which subjects suit handwritten notes"], answer:0 },
-      { q:"What do laptop users do better?", options:["They record more words", "Remember ideas a week later", "Organise their notes more clearly", "Ask more questions in class"], answer:0 },
+      { q:"What do laptop users do better?", options:["They record more words", "Remember ideas a week later", "Organise their notes more clearly", "Ask staff for help"], answer:0 },
       { q:"The word \"continuously\" is closest in meaning to", options:["without stopping", "with great care", "in advance", "from memory"], answer:0 },
       { q:"What does the author suggest about students' preferences?", options:["They prefer the weaker method", "They rarely notice any difference", "They change with more experience", "They match what teachers advise"], answer:0 },
-      { q:"What is the purpose of the final paragraph?", options:["To draw a wider lesson", "To summarise the study's method", "To recommend banning laptops", "To question the study's findings"], answer:0 },
+      { q:"What is the purpose of the final paragraph?", options:["To draw a wider lesson", "To summarise the study's method", "To name the authors", "To question the study's findings"], answer:0 },
     ]},
   ],
   register: [
@@ -5409,8 +5409,8 @@ const PASSAGE_BANK = {
       { q:"What is the passage mainly concerned with?", options:["How speakers adjust to listeners", "Why politicians avoid direct answers", "How pitch changes with emotion", "Why second languages are hard"], answer:0 },
       { q:"What does the telephone example demonstrate?", options:["Speech changes with the listener", "Friends speak faster than strangers", "Banks require formal language", "Recording alters how people speak"], answer:0 },
       { q:"The word \"measurably\" is closest in meaning to", options:["enough to be detected", "in an obvious way", "from time to time", "in every case"], answer:0 },
-      { q:"What does the author say about the politician?", options:["The viewers are the audience", "The journalist controls the exchange", "The answer is prepared beforehand", "The camera changes their accent"], answer:0 },
-      { q:"What is the purpose of the last paragraph?", options:["To apply it to learners", "To summarise the research method", "To criticise indirect speech", "To introduce a second theory"], answer:0 },
+      { q:"What does the author say about the politician?", options:["The viewers are the audience", "The journalist controls the exchange", "The answer is prepared beforehand", "The studio is very small"], answer:0 },
+      { q:"What is the purpose of the last paragraph?", options:["To apply it to learners", "To summarise the research method", "To list the sources", "To introduce a second theory"], answer:0 },
     ]},
   ],
   current: [
@@ -5457,7 +5457,7 @@ const PASSAGE_BANK = {
     { context:"a passage from a social science course", title:"The Size of a Village", vocab:"thresholds",
       text:"Across very different societies, human groups tend to break apart at similar sizes. Villages split, army units are organised, and workplaces reorganise at thresholds that recur far too often to be coincidence. One influential proposal ties this to the limits of memory: a person can hold in mind only so many relationships, each one requiring a sense of who that person is and how they stand towards everyone else.\n\nBelow that limit, a group can be held together by knowing one another. Nobody needs a written rule about who does what, because everybody can keep track. Above it, informal knowledge stops being enough, and something else has to take its place — a hierarchy, a written procedure, a title that tells strangers how to treat one another.\n\nThis reframes bureaucracy, which is usually described as a symptom of decline. On this account it is not a failure of a large organisation but the condition of being one. The alternative to written rules is not a friendlier organisation; it is a smaller one, and most organisations are unwilling to make that trade.",
       questions:[
-      { q:"What is the central point?", options:["Size forces a change", "Villages are healthier than cities", "Memory improves in small groups", "Bureaucracy always signals decline"], answer:0 },
+      { q:"What is the central point?", options:["Size forces a change", "Villages are healthier than cities", "Memory improves in small groups", "Groups avoid rules"], answer:0 },
       { q:"What holds a small group together?", options:["Everyone knowing everyone", "A clear written procedure", "A single strong leader", "Shared physical space"], answer:0 },
       { q:"The word \"thresholds\" is closest in meaning to", options:["points where something changes", "sizes of typical villages", "limits set by a leader", "stages of development"], answer:0 },
       { q:"How does the author reinterpret bureaucracy?", options:["As what being large requires", "As a sign of poor leadership", "As a modern invention", "As a cause of group splitting"], answer:0 },
@@ -5477,7 +5477,7 @@ const PASSAGE_BANK = {
     { context:"a passage from an economics course", title:"The Cost of Being Certain", vocab:"inflate",
       text:"Firms hiring for skilled work face a problem they cannot solve directly: they cannot observe how good a candidate is. They can observe things that correlate with it — a degree, a previous employer, a reference — and they treat those as evidence. Economists describe the resulting behaviour as signalling.\n\nWhat makes a signal work is not the information it contains but its cost. A qualification is informative to an employer only if it would have been harder for a weaker candidate to obtain than for a stronger one. If everyone can get it with equal ease, it distinguishes nobody, and the employer must look for a different signal. This is why credentials tend to inflate over time: as more people obtain a given qualification, its value as a signal falls, and the level required rises.\n\nThe uncomfortable implication is that a good deal of education may be purchased for reasons unrelated to what is learned in it. That does not make the learning worthless. It does mean that the private return to a qualification and the social value of the knowledge behind it are different quantities, and that policies which confuse them will tend to produce more certificates rather than more skill.",
       questions:[
-      { q:"What is the main argument of the passage?", options:["A signal works by costing", "Employers should ignore qualifications", "Education is worth less than claimed", "Degrees predict performance well"], answer:0 },
+      { q:"What is the main argument of the passage?", options:["A signal works by costing", "Employers should ignore qualifications", "Education is worth less than claimed", "Degrees are cheap now"], answer:0 },
       { q:"What problem do employers face?", options:["They cannot observe ability directly", "They receive too few applications", "They cannot verify references", "They must decide too quickly"], answer:0 },
       { q:"The word \"inflate\" is closest in meaning to", options:["rise in required level", "lose all their value", "become more expensive", "spread to new fields"], answer:0 },
       { q:"Why does a widely held qualification lose value?", options:["It no longer separates candidates", "It becomes cheaper to obtain", "Employers stop recognising it", "It takes less time to complete"], answer:0 },
@@ -5489,7 +5489,7 @@ const PASSAGE_BANK = {
       { q:"What is the main point of the passage?", options:["Measures distort what they omit", "Hospitals and schools resist measurement", "Dishonesty explains most failures", "Waiting times are poorly recorded"], answer:0 },
       { q:"What does the school example illustrate?", options:["Effort moves to where numbers change", "Examinations are unfair to some students", "Teaching quality is hard to measure", "Boundaries should be abolished"], answer:0 },
       { q:"The word \"aggregate\" is closest in meaning to", options:["overall result", "final decision", "published figure", "original intention"], answer:0 },
-      { q:"Why does the author stress that nobody acts dishonestly?", options:["To show drift needs no fraud", "To defend managers from criticism", "To argue measurement is harmless", "To distinguish two kinds of fraud"], answer:0 },
+      { q:"Why does the author stress that nobody acts dishonestly?", options:["To show drift needs no fraud", "To blame the whole team", "To argue measurement is harmless", "To distinguish two kinds of fraud"], answer:0 },
       { q:"What does the author recommend?", options:["Checking a measure still fits", "Abandoning numerical targets", "Measuring more things at once", "Publishing results less often"], answer:0 },
     ]},
   ],
@@ -5508,9 +5508,9 @@ const PASSAGE_BANK = {
       questions:[
       { q:"What is this passage concerned with?", options:["Internal clocks that run in every cell", "Why people need eight hours of sleep", "How daylight controls the body", "Why some drugs stop working"], answer:0 },
       { q:"What do isolated cells demonstrate?", options:["The rhythm is generated internally", "Light is required to keep time", "Cells die without a day cycle", "The clock slows outside the body"], answer:0 },
-      { q:"The word \"conflicting\" is closest in meaning to", options:["disagreeing", "arriving too late", "difficult to detect", "repeated too often"], answer:0 },
-      { q:"What does the author suggest about drug timing?", options:["It may matter as much", "It has been fully established", "It applies only to sleep drugs", "It is unrelated to the clocks"], answer:0 },
-      { q:"Why is jet lag mentioned?", options:["It is a familiar version", "It is the most serious clock disorder", "It explains why cells keep time", "It cannot be produced by screens"], answer:0 },
+      { q:"The word \"conflicting\" is closest in meaning to", options:["disagreeing", "arriving too late", "too rare", "repeated too often"], answer:0 },
+      { q:"What does the author suggest about drug timing?", options:["It may matter as much", "It is a known fact", "It applies only to sleep drugs", "It is unrelated to the clocks"], answer:0 },
+      { q:"Why is jet lag mentioned?", options:["It is a familiar version", "It is the most serious clock disorder", "It explains why cells keep time", "It is due to bad food"], answer:0 },
     ]},
   ],
   environment: [
@@ -5518,7 +5518,7 @@ const PASSAGE_BANK = {
       text:"Trees in a forest are connected underground by fungi. The threads are far too fine to see without magnification, but they wrap around and penetrate the roots of nearly every tree, and they link separate trees to one another across considerable distances.\n\nThe arrangement is a trade. The fungus cannot make sugar and takes it from the tree; the tree cannot easily extract phosphorus and nitrogen from soil and takes them from the fungus, whose threads reach into spaces roots cannot enter. Both sides do better than either would alone.\n\nWhat surprised researchers was that material also moves between trees. A tree in deep shade, unable to make enough sugar, can receive some from a neighbour in full sun through the shared network. Whether this is generosity in any meaningful sense is disputed, and a simpler account is available: the fungus may be moving resources to wherever they serve the fungus best, with the trees as ports rather than partners in an exchange.\n\nThe caution matters. A finding described as trees helping one another travels much further than one described as fungal resource allocation, and the second may be closer to what is happening.",
       questions:[
       { q:"What does this passage examine?", options:["Underground links between trees", "How fungi damage forest roots", "Why shaded trees grow slowly", "How forests store nitrogen"], answer:0 },
-      { q:"What does the tree give the fungus?", options:["Sugar it lacks", "Water from deep soil", "Nitrogen from the air", "Shelter from sunlight"], answer:0 },
+      { q:"What does the tree give the fungus?", options:["Sugar it lacks", "Water from deep soil", "Nitrogen from the air", "Old bark"], answer:0 },
       { q:"The word \"disputed\" is closest in meaning to", options:["argued about", "widely accepted", "recently proved", "poorly recorded"], answer:0 },
       { q:"What alternative explanation is offered?", options:["The fungus allocates resources", "Shaded trees make more sugar", "The threads are simply passive", "Roots connect without fungi"], answer:0 },
       { q:"Why does the author end with a caution?", options:["The vivid version spreads faster", "The research may be repeated", "Forests differ by region", "The threads are hard to see"], answer:0 },
@@ -5537,8 +5537,8 @@ const PASSAGE_BANK = {
     { context:"a passage from a psychology course", title:"The Memory That Rewrites Itself", vocab:"absorbed",
       text:"A memory feels like a recording that is played back. The evidence suggests it is closer to a reconstruction assembled fresh each time, using fragments and filling gaps with what seems plausible — and the filling is not experienced as filling. It feels exactly like the rest.\n\nThis becomes visible when the reconstruction can be checked. Participants asked to recall a public event years later report vivid, confident, specific memories that differ substantially from what they wrote down the day after it happened. Confidence does not track accuracy: the most certain recollections are not the most correct ones.\n\nMore troubling for anything that depends on testimony, a memory can be altered by the act of recalling it. Ask a question that contains a false detail and the detail may be absorbed, appearing in later accounts as something the person saw. It is not lying, and the person cannot tell the difference afterwards.\n\nCourts and interviewers have adjusted procedures in response, mainly by avoiding questions that supply information rather than asking for it. The underlying problem cannot be removed, because it is not a defect in the system but how the system works.",
       questions:[
-      { q:"What does the passage establish?", options:["Memory rebuilds each time", "Most people have poor memories", "Witnesses often lie deliberately", "Old memories fade the fastest"], answer:0 },
-      { q:"What do the recall studies show?", options:["Confidence misleads", "Written accounts are also wrong", "Memory improves with practice", "Vivid memories last longest"], answer:0 },
+      { q:"What does the passage establish?", options:["Memory rebuilds each time", "Most people have poor memories", "Police notes are exact", "Old memories fade the fastest"], answer:0 },
+      { q:"What do the recall studies show?", options:["Confidence misleads", "Written accounts are also wrong", "Memory improves with practice", "Memory is exact"], answer:0 },
       { q:"The word \"absorbed\" is closest in meaning to", options:["taken up", "rejected", "repeated", "questioned"], answer:0 },
       { q:"What have interviewers changed?", options:["They avoid supplying details", "They record every session", "They interview witnesses sooner", "They ask fewer questions"], answer:0 },
       { q:"What does the last sentence suggest?", options:["The flaw cannot be removed", "Memory research is nearly finished", "Courts have solved the problem", "Testimony should not be used"], answer:0 },
@@ -5557,7 +5557,7 @@ const PASSAGE_BANK = {
     { context:"a passage from an economics course", title:"The Money That Was Never There", vocab:"obscured",
       text:"On the island of Yap, large stone discs served as money for centuries. Some were bigger than a person and weighed several tonnes, and the largest were quarried on another island and carried across open sea. Once in place they were rarely moved. Ownership changed; the stone did not.\n\nThis is less strange than it sounds, and closer to modern money than it appears. What made a stone valuable was not the rock but the shared record of who owned it, held in the community's collective memory. A transaction was an announcement, and everyone updated their understanding accordingly.\n\nThe most quoted case concerns a stone that never arrived. It was lost at sea during transport, and the crew reported its size and quality on returning home. The community accepted that it existed, and its owner traded with it for generations. The object was at the bottom of the ocean and the wealth was entirely functional.\n\nEconomists cite Yap because it isolates something obscured by coins and notes: money is a ledger, and the physical token is a way of keeping it. When the ledger is reliable enough, the token can be dispensed with altogether.",
       questions:[
-      { q:"What is the main point of the passage?", options:["Money is a record", "Stone money was impractical to use", "Yap traded mainly with neighbours", "Large stones were hard to quarry"], answer:0 },
+      { q:"What is the main point of the passage?", options:["Money is a record", "Stone money was impractical to use", "Yap ran a bank", "Large stones were hard to quarry"], answer:0 },
       { q:"What changed when a stone was traded?", options:["Only the recorded owner", "The location of the stone", "The size recorded for it", "The community's memory of it"], answer:0 },
       { q:"The word \"obscured\" is closest in meaning to", options:["hidden", "explained", "recorded", "reduced"], answer:0 },
       { q:"Why is the lost stone significant?", options:["Its value survived without it", "It was the largest ever made", "It ended the use of stone money", "It was later recovered"], answer:0 },
@@ -5566,7 +5566,7 @@ const PASSAGE_BANK = {
     { context:"a passage from an economics course", title:"Why Prices End in Nine", vocab:"anchors",
       text:"A price of 4.99 is one penny below five, and buyers know this. The convention nevertheless persists across countries, currencies and centuries, which suggests it survives for reasons stronger than the small deception it seems to rest on.\n\nOne account concerns how a number is read. Reading runs left to right, and the leftmost digit arrives first and anchors the impression before the rest is processed. Four-point-something is registered before the something. The effect is small for any single purchase and reliable enough across many to be worth keeping.\n\nA second account is historical and has nothing to do with psychology. In shops with mechanical tills, a price ending in nine forced the assistant to open the drawer to make change, which recorded the sale. A round price could be pocketed. The convention may have begun as a control on staff rather than a lever on customers.\n\nBoth may be true, and the second is a useful reminder: a practice that persists is not necessarily persisting for the reason we currently give. It may have been kept for one purpose and later explained by another.",
       questions:[
-      { q:"What is the passage mainly about?", options:["Why prices end in nine", "How shops calculate their profits", "Why buyers ignore small differences", "How tills recorded early sales"], answer:0 },
+      { q:"What is the passage mainly about?", options:["Why prices end in nine", "How shops calculate their profits", "Why buyers ignore small differences", "How tills were made"], answer:0 },
       { q:"What does the first account rest on?", options:["The leftmost digit anchors", "Buyers cannot do arithmetic", "Nine looks smaller than zero", "Prices are rarely compared"], answer:0 },
       { q:"The word \"anchors\" is closest in meaning to", options:["fixes", "hides", "raises", "delays"], answer:0 },
       { q:"How did a price ending in nine affect staff?", options:["It forced the till open", "It slowed each transaction", "It reduced counting errors", "It made theft easier to hide"], answer:0 },
@@ -5621,15 +5621,15 @@ const PASSAGE_BANK = {
       { q:"What did the first audience actually hear?", options:["Sounds around them", "A very quiet performance", "Nothing at all", "Recorded background noise"], answer:0 },
       { q:"The word \"filtered\" is closest in meaning to", options:["screened out", "made quieter", "written down", "passed along"], answer:0 },
       { q:"What does removing the performance achieve?", options:["Attention turns outward", "The hall becomes silent", "The audience leaves early", "The score becomes clearer"], answer:0 },
-      { q:"What does the author say about the debate?", options:["It is misframed", "It has now been settled", "It began with the composer", "It concerns only critics"], answer:0 },
+      { q:"What does the author say about the debate?", options:["It is misframed", "It has now been settled", "It began with the composer", "It is minor"], answer:0 },
     ]},
     { context:"a passage from an art history course", title:"Paint in a Tube", vocab:"practicable",
       text:"Until the middle of the nineteenth century a painter mixed pigment with oil by hand, in the studio, on the day it was to be used. The mixture dried quickly and could not be carried, which is why painting outdoors was largely restricted to sketching and the finished work was made indoors from those notes.\n\nThe collapsible metal tube changed the arrangement. Paint could be prepared in a factory, sealed, carried, and opened weeks later still workable. What had been a studio craft became portable, and a painter could stand in front of a subject and finish the picture there.\n\nThe stylistic consequences followed quickly. Working outdoors rewards speed, because the light moves; it favours visible brushwork over the slow blending that a studio permits; and it makes the changing appearance of a scene, rather than its permanent form, a reasonable subject. The movements that followed are usually explained by ideas about perception, and those ideas were real. They were also made practicable by a container.\n\nOne of the movement's own painters is said to have remarked that without the tube there would have been none of them.",
       questions:[
-      { q:"What is the main point of the passage?", options:["A container changed painting", "Outdoor painting was always common", "Factory paint was of poorer quality", "Sketching replaced finished work"], answer:0 },
+      { q:"What is the main point of the passage?", options:["A container changed painting", "Outdoor painting was always common", "Factory paint was of poorer quality", "Studios grew much larger"], answer:0 },
       { q:"Why was earlier painting done indoors?", options:["Paint could not travel", "Studios had better light", "Canvases were too heavy", "Pigment was sold only there"], answer:0 },
       { q:"The word \"practicable\" is closest in meaning to", options:["achievable", "widely accepted", "easy to explain", "commercially useful"], answer:0 },
-      { q:"Why does working outdoors reward speed?", options:["The light moves", "Paint dries more quickly", "Subjects rarely stay still", "Materials are limited"], answer:0 },
+      { q:"Why does working outdoors reward speed?", options:["The light moves", "Paint dries more quickly", "Subjects rarely stay still", "Tools are few"], answer:0 },
       { q:"How does the author treat the ideas of the movement?", options:["Real, but tool-enabled", "Invented after the fact", "Less important than technique", "Borrowed from earlier painters"], answer:0 },
     ]},
   ],
@@ -5649,8 +5649,8 @@ const PASSAGE_BANK = {
       { q:"What is the main point of the passage?", options:["Production mattered more than discovery", "The discovery was not really accidental", "Mould was already known to help", "The first patient was poorly chosen"], answer:0 },
       { q:"What did the researcher notice?", options:["A ring of dead bacteria", "A new kind of mould", "A change in the dish's colour", "An unusually fast infection"], answer:0 },
       { q:"The word \"lapsed\" is closest in meaning to", options:["faded away", "grew steadily", "became urgent", "was recorded"], answer:0 },
-      { q:"Why did the first patient die?", options:["The supply ran out", "The treatment was too strong", "The infection returned later", "The dose was miscalculated"], answer:0 },
-      { q:"Why is the accident remembered instead?", options:["It tells better", "It was published first", "It was easier to repeat", "It came from one person"], answer:0 },
+      { q:"Why did the first patient die?", options:["The supply ran out", "The treatment was too strong", "He was too old", "The dose was miscalculated"], answer:0 },
+      { q:"Why is the accident remembered instead?", options:["It tells better", "It was filmed", "It was easier to repeat", "It came from one person"], answer:0 },
     ]},
   ],
 };
@@ -5677,13 +5677,13 @@ const DAILY_READ_BANK = {
       body:["Out of order. Engineer booked for Thursday morning.", "Please do not leave washing inside; anything left will be removed so the repair can go ahead. Machines 1, 2 and 4 are working normally."],
       questions:[
       { q:"Why was this notice written?", options:["To warn that one machine is unusable", "To announce a change in laundry hours", "To ask residents to clean the room", "To advertise a new machine"], answer:0 },
-      { q:"What should residents do?", options:["Take their washing out of machine 3", "Book a slot for Thursday morning", "Use only machines 1 and 2", "Report the fault to the engineer"], answer:0 },
+      { q:"What should residents do?", options:["Take their washing out of machine 3", "Book a slot for Thursday morning", "Use only machines 1 and 2", "Report the malfunction to the caretaker"], answer:0 },
     ]},
     { context:"a chain of text messages between two students", layout:"messages", title:"Marisol",
       msgs:[["Marisol", "are you coming to the library thing at 4"], ["Me", "thought that was tomorrow?"], ["Marisol", "moved. tutor emailed last night"], ["Me", "never got it. what do i need to bring"], ["Marisol", "just the draft. she's marking them there"], ["Me", "mine's not finished 😩"], ["Marisol", "bring what you have, she said that's fine"]],
       questions:[
       { q:"Why did the reply say \"never got it\"?", options:["They did not receive the email", "They forgot the meeting entirely", "They went to the wrong building", "They thought it was cancelled"], answer:0 },
-      { q:"What does Marisol say about the draft?", options:["An unfinished one is acceptable", "It must be printed beforehand", "It should be emailed instead", "It is due the following week"], answer:0 },
+      { q:"What does Marisol say about the draft?", options:["An unfinished one is acceptable", "It requires a supervisor\'s signature", "It should be emailed instead", "It is due the following week"], answer:0 },
     ]},
   ],
   register: [
@@ -5705,7 +5705,7 @@ const DAILY_READ_BANK = {
       body:["The trial bus lane on Prospect Avenue will stay in place until March, the city said on Tuesday.", "Journey times for buses fell by an average of four minutes during the first three months. Traffic on nearby residential streets rose slightly, which the council says it will monitor before deciding whether to make the lane permanent."],
       questions:[
       { q:"What has the city decided?", options:["To continue the trial for now", "To make the bus lane permanent", "To remove the bus lane in March", "To open a second bus lane"], answer:0 },
-      { q:"What concern is mentioned?", options:["More traffic on nearby streets", "Buses becoming more crowded", "The cost of the new lane", "Longer journeys for drivers"], answer:0 },
+      { q:"What concern is mentioned?", options:["More traffic on nearby streets", "Buses becoming increasingly overcrowded", "The cost of the new lane", "Longer journeys for drivers"], answer:0 },
       { q:"How much faster were the buses?", options:["About four minutes", "About three minutes", "About ten minutes", "About half an hour"], answer:0 },
     ]},
     { context:"a post on a community page", layout:"notice", title:"Anyone else without water?",
@@ -5726,7 +5726,7 @@ const DAILY_READ_BANK = {
       rows:[["Length", "900–1,100 words"], ["Deadline", "Friday 17:00, week 6"], ["Submission", "Online only"], ["Late", "−5% per day, up to 5 days"], ["After 5 days", "Not accepted"], ["Extensions", "Apply before the deadline, not after"]],
       questions:[
       { q:"What happens to work submitted six days late?", options:["It will not be accepted", "It loses thirty percent", "It is marked as normal", "It needs an extension form"], answer:0 },
-      { q:"When must an extension be requested?", options:["Before the deadline passes", "Within five days after", "At the start of week 6", "At any point during term"], answer:0 },
+      { q:"When must an extension be requested?", options:["Before the deadline passes", "Within five days after", "At the start of week 6", "At any point during the semester"], answer:0 },
     ]},
   ],
   social: [
@@ -5748,7 +5748,7 @@ const DAILY_READ_BANK = {
       body:["Saturdays and Sundays, 8am–3pm. No experience needed — training given.", "We are looking for someone reliable who can talk to customers comfortably. Apply in person with a short note about your availability; please do not email, as the inbox is not checked at weekends."],
       questions:[
       { q:"How should someone apply?", options:["By going there in person", "By sending an email", "By calling at the weekend", "By filling in a form online"], answer:0 },
-      { q:"What quality is the employer looking for?", options:["Being reliable and sociable", "Previous café experience", "Availability on weekdays", "A formal qualification"], answer:0 },
+      { q:"What quality is the employer looking for?", options:["Being reliable and sociable", "Previous café experience", "Availability on weekdays", "A recognised professional qualification"], answer:0 },
     ]},
     { context:"an email confirming an interview", layout:"notice", title:"Interview — Thursday 14 March, 10:30",
       body:["Please arrive by 10:15 and report to the second-floor desk, not the main reception.", "The interview will last about forty minutes and includes a short task; nothing to prepare, but bring photo identification. If you cannot make this time, reply today and we will offer another slot."],
@@ -5776,7 +5776,7 @@ const DAILY_READ_BANK = {
     { context:"a collection schedule on a bin lid", layout:"rows", title:"Collections — Elm Row",
       rows:[["Green bin", "Every Wednesday"], ["Blue bin", "Alternate Wednesdays, even weeks"], ["Glass", "First Saturday of the month"], ["Garden waste", "April to October only"], ["Missed?", "Report within 48 hours"], ["Bins out by", "6:30am"]],
       questions:[
-      { q:"How often is the blue bin collected?", options:["Once a fortnight", "Once a week", "Once a month", "Twice a month"], answer:0 },
+      { q:"How often is the blue bin collected?", options:["Once a fortnight", "Once a week", "Once a month", "Three times a month"], answer:0 },
       { q:"What is true of garden waste?", options:["It is seasonal only", "It goes in the green bin", "It is collected on Saturdays", "It must be reported first"], answer:0 },
     ]},
     { context:"a sign at a nature reserve", layout:"notice", title:"Ground-nesting birds — April to July",
@@ -5791,7 +5791,7 @@ const DAILY_READ_BANK = {
       sections:[["Breakfast — until 11:30", [["Porridge with fruit", "4.20"], ["Two eggs on toast", "5.50"], ["Full breakfast", "8.90"]]], ["All day", [["Soup of the day", "5.00"], ["Sandwich + soup", "7.50"], ["Jacket potato", "6.20"]]]],
       note:"Student discount 10% with card, weekdays before 4pm only.",
       questions:[
-      { q:"When can a student get the discount?", options:["Weekday afternoons before four", "At any time with a card", "Only during breakfast hours", "At weekends before four"], answer:0 },
+      { q:"When can a student get the discount?", options:["Weekday afternoons before four", "At any time with a card", "Exclusively during breakfast hours", "At weekends before four"], answer:0 },
       { q:"What is available after 11:30?", options:["Soup and a sandwich", "Two eggs on toast", "Porridge with fruit", "The full breakfast"], answer:0 },
     ]},
     { context:"a parcel delivery card", layout:"rows", title:"Sorry we missed you",
@@ -5799,7 +5799,7 @@ const DAILY_READ_BANK = {
       questions:[
       { q:"When can the parcel be collected?", options:["From Wednesday morning", "On Tuesday afternoon", "After ten days", "Any time from now"], answer:0 },
       { q:"What is needed to collect it?", options:["This card and photo ID", "Only this card", "A signature from a neighbour", "Proof of purchase"], answer:0 },
-      { q:"What happens after ten days?", options:["It goes back to the sender", "It is delivered again", "It is held at the depot", "A charge is added"], answer:0 },
+      { q:"What happens after ten days?", options:["It goes back to the sender", "It is delivered again", "It is retained at the warehouse", "A charge is added"], answer:0 },
     ]},
   ],
   money: [
@@ -5857,8 +5857,8 @@ const DAILY_READ_BANK = {
     { context:"a message thread about a podcast", layout:"messages", title:"Dani",
       msgs:[["Dani", "did you finish that episode i sent"], ["Me", "halfway. the first bit is so slow"], ["Dani", "yes but stick with it, 20 mins in it changes completely"], ["Me", "that's a lot of faith to ask for 😄"], ["Dani", "i know. i nearly gave up too"], ["Me", "ok fine. is it the one about the flood?"], ["Dani", "no that's episode 4. this is the one after"]],
       questions:[
-      { q:"What does Dani advise?", options:["To keep listening past the slow start", "To skip the first twenty minutes", "To start with episode 4 instead", "To listen at a faster speed"], answer:0 },
-      { q:"Which episode are they discussing?", options:["The one after the flood episode", "The episode about the flood", "The first of the series", "The one B has finished"], answer:0 },
+      { q:"What does Dani advise?", options:["To keep listening past the slow start", "To ignore the entire introductory section", "To start with episode 4 instead", "To listen at a faster speed"], answer:0 },
+      { q:"Which episode are they discussing?", options:["The one after the flood episode", "The episode about the flood", "The introductory episode of the series", "The one B has finished"], answer:0 },
     ]},
   ],
   innovation: [
@@ -5871,9 +5871,9 @@ const DAILY_READ_BANK = {
     { context:"an announcement about an app update", layout:"notice", title:"Version 4.2 — what changed",
       body:["Offline mode now keeps the last thirty days instead of seven, so a week without signal no longer wipes what you saved.", "We also removed the automatic weekly email. Several of you said it arrived at the same time as everything else on a Monday and was ignored; you can switch it back on under Settings if you liked it.", "Two people reported the app closing when opening a large file. We have not reproduced that yet — if it happens to you, please send the report from inside the app rather than by email, because that version includes the details we need."],
       questions:[
-      { q:"What is the main change to offline mode?", options:["It stores more days than before", "It works without an account", "It saves files more quickly", "It has been removed entirely"], answer:0 },
+      { q:"What is the main change to offline mode?", options:["It stores more days than before", "It works without an account", "It saves files more quickly", "It has been discontinued altogether"], answer:0 },
       { q:"Why was the weekly email removed?", options:["Users said they ignored it", "It arrived at the wrong address", "It was expensive to send", "It contained an error"], answer:0 },
-      { q:"What do the developers ask users to do?", options:["Report the crash inside the app", "Avoid opening large files", "Reinstall the latest version", "Email a copy of the file"], answer:0 },
+      { q:"What do the developers ask users to do?", options:["Report the crash inside the app", "Avoid opening large files", "Reinstall the latest available version", "Email a copy of the file"], answer:0 },
     ]},
   ],
 };
@@ -5905,7 +5905,7 @@ const TALK_BANK = {
     { context:"a talk in an education class",
       text:"Ask a room of students how they revise and most will say they read their notes again. It feels productive, because the material grows familiar with every pass. But familiarity is not knowledge, and this is where a great deal of revision time quietly disappears. Picture a student who reads a chapter four times the night before an exam. The text becomes easy to move through, so confidence climbs. Then the questions arrive and there is nothing to pull the material out with. Now picture a second student, who reads the chapter once, closes it, and tries to write down what was in it. That student finds the process uncomfortable and leaves obvious gaps. Yet a week later it is the second one who remembers more, and the difference grows wider as the weeks pass. The explanation seems to be that the act of retrieving something is what strengthens it, rather than exposure to it. For your own revision the lesson is blunt: the moment a page starts to feel easy is the moment it has stopped teaching you anything at all. Next time I want to look at what happens when those attempts are spread across several days instead of crammed into one evening.",
       questions:[
-      { q:"What is this talk mainly about?", options:["Why rereading revises weakly", "How students should organise their notes", "Why examinations favour confident students", "How reading speed affects comprehension"], answer:0 },
+      { q:"What is this talk mainly about?", options:["Why rereading revises weakly", "How students should organise their notes", "Why examinations favour confident students", "Why some texts seem hard"], answer:0 },
       { q:"What happens to the student who rereads?", options:["Confidence rises but recall does not", "Recall improves for about a week", "Both confidence and recall improve", "Neither confidence nor recall changes"], answer:0 },
       { q:"Why does the speaker describe two students?", options:["To contrast two ways of revising", "To show that students differ widely", "To explain why exams feel unfair", "To criticise a common teaching method"], answer:0 },
       { q:"What will the speaker turn to next?", options:["Spreading practice across several days", "Writing better notes in lectures", "Measuring confidence before an exam", "Choosing which chapters to revise"], answer:0 },
@@ -5913,7 +5913,7 @@ const TALK_BANK = {
     { context:"a talk in an education class",
       text:"I want to talk about what happens when a lecture is recorded and put online. When universities began doing this at scale, the worry was obvious: if the lecture is available afterwards, why would anyone come? And attendance did fall, in some courses by half. What surprised people was the effect on results, which was close to nothing overall. Averages hide a great deal, though. Break the students apart and two very different stories appear. Those who were already doing well used the recordings the way you would hope, going back to the three minutes they had not followed and watching them twice. Those who were struggling tended to save the recordings for the end of term, then attempt to watch nine hours of material in two days. For that group, results fell. So the recording is not good or bad in itself. It is a tool that rewards a student who already knows how to study and punishes one who does not, which is a pattern you will meet again and again in educational technology. That is worth holding on to, because it explains why so many promising tools produce disappointing averages while quietly widening the gap underneath them.",
       questions:[
-      { q:"What is the main point of the talk?", options:["Recordings favour strong students", "Recordings should replace live lectures", "Attendance matters more than results", "Universities record lectures too cheaply"], answer:0 },
+      { q:"What is the main point of the talk?", options:["Recordings favour strong students", "Recordings should replace live lectures", "Notes are better than video", "Universities record lectures too cheaply"], answer:0 },
       { q:"What did recorded lectures do to attendance?", options:["It fell sharply in some courses", "It stayed almost exactly the same", "It rose among struggling students", "It fell only in the first term"], answer:0 },
       { q:"Why does the speaker mention nine hours?", options:["To show how struggling students used them", "To argue that courses are too long", "To compare two universities' policies", "To explain why recordings are expensive"], answer:0 },
       { q:"What does the speaker suggest about averages?", options:["They can hide opposite effects underneath", "They are the fairest measure available", "They should be reported more often", "They exaggerate small differences badly"], answer:0 },
@@ -5924,7 +5924,7 @@ const TALK_BANK = {
       text:"Nobody speaks one single way. You have already changed how you speak several times today, and almost certainly without noticing. Linguists call these varieties registers, and moving between them is something every competent speaker does automatically. Here is the part students find surprising. We tend to assume the formal register is the correct one and the rest is sloppiness. That is not what the evidence shows. Each register is fully rule-governed, and using the wrong one is what gets noticed. Read a wedding speech in the register of a legal contract and everybody in the room will feel that something has gone wrong, even if not one word is ungrammatical. Consider a doctor explaining a diagnosis. With a colleague she will use technical terms and drop most of the connecting words, because both of them can fill the gaps. With a patient she will slow down, name things twice, and check understanding. She has not simplified because the patient is less intelligent. She has selected the register that transfers the meaning. What learners of a second language often lack is not vocabulary or grammar but this range, and it is much harder to teach because almost nobody can explain the rules they are following.",
       questions:[
       { q:"What is this talk mainly about?", options:["How speakers shift between speech varieties", "Why formal language is usually clearer", "How doctors explain diagnoses to patients", "Why second languages are hard to learn"], answer:0 },
-      { q:"What does the speaker say about registers?", options:["Each one follows its own rules", "The formal one is the correct one", "They are learned late in childhood", "They vary little between professions"], answer:0 },
+      { q:"What does the speaker say about registers?", options:["Each one follows its own rules", "The formal one is the correct one", "They are learned late in childhood", "They are hard to teach"], answer:0 },
       { q:"Why does the speaker mention a wedding speech?", options:["To show a mismatched register jars", "To argue that speeches are too formal", "To give an example of technical terms", "To describe how registers are taught"], answer:0 },
       { q:"What does the speaker imply about learners?", options:["Their difficulty is range, not grammar", "They should study formal English first", "They rarely notice their own errors", "They learn faster than young children"], answer:0 },
     ]},
@@ -5934,7 +5934,7 @@ const TALK_BANK = {
       { q:"What is the talk mainly concerned with?", options:["How politeness differs across languages", "Why English grammar is often indirect", "How learners acquire new vocabulary", "Why fluent speakers misuse verb endings"], answer:0 },
       { q:"How is politeness often marked in English?", options:["By making requests less direct", "By adding endings to the verb", "By lowering the speaker's voice", "By repeating the request twice"], answer:0 },
       { q:"Why does the speaker mention the window?", options:["To show how much padding requests carry", "To give an example of a grammar error", "To describe a common classroom activity", "To contrast spoken and written English"], answer:0 },
-      { q:"What does the speaker say about advanced learners?", options:["Their slips are judged harshly", "They rarely make politeness errors", "They learn politeness before grammar", "They avoid indirect requests entirely"], answer:0 },
+      { q:"What does the speaker say about advanced learners?", options:["Their slips are judged harshly", "They learn slang from films", "They learn politeness before grammar", "They avoid indirect requests entirely"], answer:0 },
     ]},
   ],
   current: [
@@ -5943,7 +5943,7 @@ const TALK_BANK = {
       questions:[
       { q:"What is the main topic of this talk?", options:["Why corrections work less well than expected", "How newspapers decide what to publish", "Why false claims spread more quickly", "How readers choose which paper to trust"], answer:0 },
       { q:"What do people often forget about a claim?", options:["Where they originally encountered it", "Whether it was ever corrected", "How strongly it was worded", "Who else was discussing it"], answer:0 },
-      { q:"Why does the speaker mention familiarity?", options:["It is treated as truth", "It fades faster than the claim itself", "It explains why corrections are short", "It varies between different readers"], answer:0 },
+      { q:"Why does the speaker mention familiarity?", options:["It is treated as truth", "It fades faster than the claim itself", "It explains why corrections are short", "It is easy to test"], answer:0 },
       { q:"What does the speaker recommend to publications?", options:["Stating the accurate version first", "Repeating the correction several times", "Avoiding corrections on small errors", "Publishing corrections within two days"], answer:0 },
     ]},
     { context:"a talk in a media studies class",
@@ -5952,14 +5952,14 @@ const TALK_BANK = {
       { q:"What is this talk mainly about?", options:["How captions change what images mean", "Why photographs are edited before publication", "How newspapers select their front pages", "Why images travel faster than text"], answer:0 },
       { q:"What does the speaker say viewers report?", options:["The impression came from the image", "The caption seemed more convincing", "The image looked slightly altered", "The headline contradicted the photograph"], answer:0 },
       { q:"Why does the speaker mention two headlines?", options:["To show one image reading two ways", "To compare two styles of journalism", "To explain how captions are written", "To argue that headlines are too short"], answer:0 },
-      { q:"What question does the speaker say matters?", options:["Whether the words match the image", "Whether the photograph has been altered", "Whether the photographer can be traced", "Whether the event was widely reported"], answer:0 },
+      { q:"What question does the speaker say matters?", options:["Whether the words match the image", "Whether the photograph has been altered", "Whether the photographer can be traced", "Whether the photo won a prize"], answer:0 },
     ]},
   ],
   grammar: [
     { context:"a talk in a linguistics class",
       text:"Every generation is convinced the language is falling apart, and every generation is wrong in the same way. The complaints are remarkably stable. Read a letter to a newspaper from a hundred years ago and you will find someone furious about a usage that is now completely unremarkable, and often one that the writer's own grandparents had objected to as well. What is actually happening is change, and change in a language is not decay. Take the word nice. It once meant foolish, then precise, and only later pleasant. Nobody today mourns the loss of foolish. The reason we notice some changes and not others is timing. A shift completed before you were born is simply the language. A shift happening around you is an error, committed by people younger than you. That is not a linguistic judgement, it is a biographical one. None of this means anything goes. Every variety has rules, and a speaker who breaks them is immediately noticed by other speakers of that variety. The point is only that the rules answer to the community using them rather than to a book, which is why the book has to be rewritten every few decades.",
       questions:[
-      { q:"What is the main argument of the talk?", options:["Language change is not language decay", "Older speakers use grammar more carefully", "Dictionaries should be revised less often", "Written English changes faster than spoken"], answer:0 },
+      { q:"What is the main argument of the talk?", options:["Language change is not language decay", "Spoken English is easier to learn", "Dictionaries should be revised less often", "Written English changes faster than spoken"], answer:0 },
       { q:"What does the speaker say about complaints?", options:["They repeat across many generations", "They focus on written English", "They come mostly from teachers", "They have grown louder recently"], answer:0 },
       { q:"Why does the speaker mention the word nice?", options:["To show a meaning shifting repeatedly", "To give an example of a misspelling", "To explain how dictionaries are written", "To contrast formal and informal usage"], answer:0 },
       { q:"What does the speaker say determines the rules?", options:["The community that uses them", "The oldest surviving written records", "A committee of trained linguists", "The dictionary in widest use"], answer:0 },
@@ -6021,7 +6021,7 @@ const TALK_BANK = {
     { context:"a talk in a life science class",
       text:"Pain is not a measurement. That statement bothers people, so let me be precise about what it means. It does not mean pain is imagined. It means pain is not a signal sent up from the injury and read off like a temperature. What arrives from the tissue is information about damage. What you experience is the brain's conclusion about how much trouble you are in, and that conclusion draws on far more than the incoming signal. This is why the same injury hurts differently on different days, and why soldiers have walked considerable distances on fractures without noticing. It also explains something that seems paradoxical at first. Expecting pain makes pain worse, reliably and measurably, because expectation is one of the inputs the brain is using. And in long-term pain the system can become sensitive enough that the experience continues after the tissue itself has healed. The patient is not exaggerating. Their alarm has simply been turned up and left there. Understanding this changes what treatment looks like, because if you treat only the tissue in a case like that, you are treating something that is no longer the problem.",
       questions:[
-      { q:"What is this talk mainly about?", options:["How the brain builds pain", "Why some injuries heal more slowly", "How doctors measure a patient's pain", "Why soldiers ignore serious injuries"], answer:0 },
+      { q:"What is this talk mainly about?", options:["How the brain builds pain", "Why some injuries heal more slowly", "How doctors measure a patient's pain", "Why we sleep when ill"], answer:0 },
       { q:"What does the speaker say pain is not?", options:["A direct reading of tissue damage", "A useful signal about the body", "A common reason for seeing doctors", "A subject of recent research"], answer:0 },
       { q:"Why does the speaker mention expectation?", options:["It is one input among several", "It explains why treatments often fail", "It reduces pain in most patients", "It varies little between individuals"], answer:0 },
       { q:"What does the speaker imply about long-term pain?", options:["Treating the tissue alone may miss it", "It usually resolves once healing finishes", "It is less severe than sudden pain", "It affects mainly older patients"], answer:0 },
@@ -6031,7 +6031,7 @@ const TALK_BANK = {
     { context:"a talk in an environmental science class",
       text:"A city can be several degrees warmer than the countryside around it, and on a still summer night the gap is at its widest. The reason is not mainly the heat that cars and buildings give off, although that contributes. It is what the surfaces do. Dark roofs and roads absorb sunlight through the day and release it slowly after dark, so the city never cools the way open ground does. Concrete and asphalt also shed rain rather than holding it, and a surface that cannot evaporate water cannot cool itself, which is the same reason you feel cooler when you are damp. Now, the interesting part is how cheap the remedies are relative to the problem. Painting a roof a pale colour reflects a substantial share of what a dark one absorbs. A street of mature trees can be markedly cooler than the identical street without them, partly from shade and partly from the water the leaves release. Neither of those requires new technology. What they require is a decision taken decades in advance, because the tree that cools a street in twenty years has to be planted now, and that is a harder thing for a city to do than to buy a machine.",
       questions:[
-      { q:"What is the main topic of this talk?", options:["Why cities stay warmer", "How air conditioning affects city temperatures", "Why summer nights are becoming warmer", "How cities measure their own climates"], answer:0 },
+      { q:"What is the main topic of this talk?", options:["Why cities stay warmer", "How air conditioning affects city temperatures", "Why summer nights are becoming warmer", "How air cools at sea"], answer:0 },
       { q:"What does the speaker say about hard surfaces?", options:["They shed water rather than hold", "They cool faster than open ground", "They reflect most of the sunlight", "They release heat during the day"], answer:0 },
       { q:"Why does the speaker mention pale roofs?", options:["To give an inexpensive existing remedy", "To describe a new building material", "To explain how heat is measured", "To compare two kinds of city"], answer:0 },
       { q:"What does the speaker suggest is difficult?", options:["Acting decades before the benefit arrives", "Finding space for new street trees", "Persuading residents to accept change", "Measuring how much shade trees give"], answer:0 },
@@ -6039,20 +6039,20 @@ const TALK_BANK = {
     { context:"a talk in an environmental science class",
       text:"When a species is removed from a system, the effects rarely stop where you expect. The clearest illustrations come from cases where a predator disappeared and somebody kept records. Remove the predator and the animals it fed on increase, which sounds obvious enough. What follows is less obvious. Those animals graze harder, and the plants they favour thin out along the water's edge. With fewer roots holding it, the bank erodes, the channel widens, and the water warms. Fish that needed cold, shaded water decline, and birds that fed on those fish move elsewhere. None of that was visible when the decision was taken, because nobody was looking at the riverbank while thinking about a predator. Ecologists call this a trophic cascade, and the term matters less than the habit of mind it encourages. The lesson is not that every intervention ends badly. It is that a system with many connections will pass an effect along several of them, and the ones that carry it are frequently not the ones anybody was watching. Which is a decent argument for monitoring more than you think you need to, and for being modest about predictions.",
       questions:[
-      { q:"What is this talk mainly about?", options:["How one removal spreads", "Why predators are difficult to reintroduce", "How rivers change shape over time", "Why some fish need cold water"], answer:0 },
+      { q:"What is this talk mainly about?", options:["How one removal spreads", "Why predators are difficult to reintroduce", "How rivers change shape over time", "Why elk feed at dawn"], answer:0 },
       { q:"What happens to the riverbank in the example?", options:["It erodes once plants thin out", "It becomes shaded by new growth", "It narrows as the channel deepens", "It stays stable for many years"], answer:0 },
       { q:"Why does the speaker mention birds?", options:["To show the effect travelling further still", "To identify the original cause", "To describe how records were kept", "To give an example of a predator"], answer:0 },
-      { q:"What does the speaker conclude?", options:["Effects appear unwatched", "Interventions usually end in damage", "Predators should never be removed", "Systems recover given enough time"], answer:0 },
+      { q:"What does the speaker conclude?", options:["Effects appear unwatched", "Interventions usually end in damage", "Rivers need more study", "Systems recover given enough time"], answer:0 },
     ]},
   ],
   daily: [
     { context:"a talk in a psychology class",
       text:"Habits are not built out of willpower, and studying them makes that unusually clear. A habit has three parts: something that triggers it, the behaviour itself, and whatever the behaviour delivers. Most people trying to change one attack the middle part, which is the hardest place to intervene, because by the time the behaviour has begun the decision was already made somewhere upstream. The trigger is usually far easier to reach. It is often a time, a place, or the end of another action rather than a craving, which is why the same person can be entirely uninterested in a snack at their desk and reach for one automatically the moment they sit down at home. Change the setting and you have removed the cue without needing to resist anything. There is a second finding worth having. Habits form fastest when the behaviour follows the trigger immediately and reliably, so making a desired action easier to begin does far more work than motivating yourself to want it. Putting the running shoes by the door sounds trivial. In this framework it is the whole intervention, because it shortens the distance between the cue and the act to almost nothing.",
       questions:[
-      { q:"What is the main topic of this talk?", options:["How habits form and can be changed", "Why some people have stronger willpower", "How snacking affects concentration at work", "Why exercise routines are hard to keep"], answer:0 },
+      { q:"What is the main topic of this talk?", options:["How habits form and can be changed", "Why some people have stronger willpower", "How snacking affects concentration at work", "Why we eat when we are bored"], answer:0 },
       { q:"Which part do most people try to change?", options:["The behaviour in the middle", "The trigger that starts it", "The reward that follows it", "The setting it happens in"], answer:0 },
       { q:"Why does the speaker mention running shoes?", options:["To show a cue made easier", "To describe a common excuse", "To compare two kinds of exercise", "To explain how rewards work"], answer:0 },
-      { q:"What does the speaker say about triggers?", options:["They are often a place", "They are usually a strong craving", "They differ little between people", "They weaken after several weeks"], answer:0 },
+      { q:"What does the speaker say about triggers?", options:["They are often a place", "They are usually a strong craving", "They differ little between people", "They fade in a year"], answer:0 },
     ]},
     { context:"a talk in a psychology class",
       text:"Interruptions cost more than the time they take, and the accounting is worse than most people assume. Suppose you are working on something demanding and a message arrives. You deal with it in thirty seconds and return. The obvious cost is thirty seconds. The real cost includes rebuilding the state you were in, which for genuinely complex work is measured in minutes rather than seconds, and it is not simply lost time. Something else is going on. The interrupted task leaves a residue: part of your attention stays with the message while you attempt to resume, so the work you do in the following minutes is done at reduced capacity even though you feel fully returned to it. That last part is what makes this hard to notice from the inside. You cannot perceive the difference, because the faculty you would use to judge it is the one that has been degraded. Which is why people consistently report that they handle interruptions well, and consistently perform as though they do not. The remedy that survives testing is unglamorous: not resisting interruption better, but arranging not to be reachable for defined stretches.",
@@ -6088,12 +6088,12 @@ const TALK_BANK = {
       { q:"What is the main topic of this talk?", options:["How physical layout affects neighbourly ties", "Why older residents prefer quiet streets", "How planners decide where to build", "Why some neighbourhoods are safer"], answer:0 },
       { q:"How does the speaker say weak ties form?", options:["Through repeated unplanned contact", "Through organised community events", "Through shared childhood friendships", "Through long residence in one place"], answer:0 },
       { q:"Why does the speaker mention a private garage?", options:["To show a layout removing chance meetings", "To describe a popular housing feature", "To explain why car use has risen", "To compare two kinds of development"], answer:0 },
-      { q:"What does the speaker mean by the final remark?", options:["The result was unintended", "The design was deliberately antisocial", "The planners ignored the research", "The residents chose the arrangement"], answer:0 },
+      { q:"What does the speaker mean by the final remark?", options:["The result was unintended", "The design was deliberately antisocial", "The cost was too high", "The residents chose the arrangement"], answer:0 },
     ]},
     { context:"a talk in an urban studies class",
       text:"When a new road is opened to relieve congestion, traffic on it fills the new capacity, often within a few years, and the original congestion returns. This has been observed often enough that it has a name, induced demand, and it is not a failure of construction. It is a consequence of how people decide. Nobody has a fixed quantity of driving they must do. What they have is a tolerance for how long a journey should take, and journeys that were previously not worth making become worth making once the road is quicker. Somebody who took the train switches to driving. Somebody who shopped locally now drives further for a better shop. Somebody who lived near work moves further out, because the commute is now acceptable. Each of those is a reasonable individual decision and together they consume the new capacity. The same logic runs in reverse, which people find much harder to accept. Where road space has been removed, the traffic does not simply relocate to the next street in the volume expected. A portion of it disappears, because those journeys were only ever worth making while they were easy.",
       questions:[
-      { q:"What is this talk mainly about?", options:["Why new roads fill up again", "How congestion is measured in cities", "Why public transport use is falling", "How road building costs are estimated"], answer:0 },
+      { q:"What is this talk mainly about?", options:["Why new roads fill up again", "How congestion is measured in cities", "Why cars now cost so much", "How road building costs are estimated"], answer:0 },
       { q:"What does the speaker say people have?", options:["A tolerance for journey length", "A fixed amount of necessary driving", "A preference for familiar routes", "A strong dislike of public transport"], answer:0 },
       { q:"Why does the speaker mention moving further out?", options:["To show capacity being consumed again", "To explain why housing costs rise", "To describe a decline in local shops", "To compare commuting with shopping"], answer:0 },
       { q:"What does the speaker say people find hard to accept?", options:["Removing road space removes traffic", "New roads take years to fill", "Congestion returns to former levels", "Individual decisions are reasonable ones"], answer:0 },
@@ -6114,7 +6114,7 @@ const TALK_BANK = {
       { q:"What is this talk mainly about?", options:["Why old cities grew at transfer points", "How rivers were used for early trade", "Why mountain passes were hard to cross", "How modern railways were first planned"], answer:0 },
       { q:"What does the speaker say creates the settlement?", options:["The need to transfer cargo", "The presence of fertile land", "The safety of a river mouth", "The meeting of two cultures"], answer:0 },
       { q:"Why does the speaker mention a new bridge?", options:["To show the original reason disappearing", "To describe how towns were connected", "To explain why rivers were bridged late", "To compare road and rail transport"], answer:0 },
-      { q:"What will the speaker examine next time?", options:["Towns that recovered and why", "How cargo was moved historically", "Where the oldest cities were founded", "Why some residents chose to stay"], answer:0 },
+      { q:"What will the speaker examine next time?", options:["Towns that recovered and why", "Why some ports grew fast", "Where the oldest cities were founded", "Why some residents chose to stay"], answer:0 },
     ]},
   ],
   media: [
@@ -6130,7 +6130,7 @@ const TALK_BANK = {
       text:"An audience will accept an enormous amount of impossibility and then refuse something small, and directors have to understand which is which. Nobody objects to a story in which people fly. They will object, loudly, if a character behaves in a way the film has not prepared them for. That tells you the rule is not about realism. It is about consistency with what the work has already established. Early scenes are doing work most viewers never notice, which is setting the terms: this is a world where that is possible, this is a person who would do that. Break those terms later and the audience feels cheated, not because the event is unlikely but because the agreement has been broken. There is a common failure that follows from misreading this. A film in trouble adds spectacle, on the reasoning that the audience was insufficiently gripped. Usually the audience was gripped and then had the terms changed on them, and more spectacle makes it worse rather than better, because it is answering a question nobody asked.",
       questions:[
       { q:"What is this talk mainly about?", options:["Why audiences accept some impossibilities", "How special effects are created today", "Why films are often too long", "How directors choose their actors"], answer:0 },
-      { q:"What does the speaker say early scenes do?", options:["They set the world's terms", "They introduce the main characters quickly", "They explain the story's historical setting", "They show the most expensive effects"], answer:0 },
+      { q:"What does the speaker say early scenes do?", options:["They set the world's terms", "They introduce the main characters quickly", "They explain the story's historical setting", "They are shot in order"], answer:0 },
       { q:"Why does the speaker mention people flying?", options:["To show impossibility is readily accepted", "To describe a popular kind of film", "To criticise an overused visual effect", "To explain why budgets have grown"], answer:0 },
       { q:"What does the speaker say about adding spectacle?", options:["It answers a question nobody asked", "It usually rescues a weak film", "It appeals to younger audiences", "It costs less than rewriting scenes"], answer:0 },
     ]},
@@ -6141,7 +6141,7 @@ const TALK_BANK = {
       questions:[
       { q:"What is the main argument of this talk?", options:["Inventions depend on surrounding systems", "The light bulb was invented too early", "Single inventors deserve more credit", "Testing materials is the key method"], answer:0 },
       { q:"What was the real difficulty with the lamp?", options:["Making a filament that lasted", "Producing enough light to see", "Finding investors willing to pay", "Manufacturing the glass cheaply"], answer:0 },
-      { q:"Why does the speaker mention meters and wiring?", options:["To show the system needed", "To list the inventor's other patents", "To explain why electricity was expensive", "To compare two competing designs"], answer:0 },
+      { q:"Why does the speaker mention meters and wiring?", options:["To show the system needed", "To list the inventor's other patents", "To explain why electricity was expensive", "To name his main rival"], answer:0 },
       { q:"What does the speaker say about sudden arrivals?", options:["The last piece takes the credit", "They happen more often than expected", "They usually follow a single insight", "They depend on public enthusiasm"], answer:0 },
     ]},
     { context:"a talk in a physical science class",
