@@ -56,6 +56,28 @@ assert('every host the app really loads from is allowed',
 [['object-src', "'none'"], ['base-uri', "'self'"], ['form-action', "'self'"], ['frame-ancestors', "'none'"]]
   .forEach(([d, v]) => assert('the CSP sets ' + d + ' ' + v, csp.indexOf(d + ' ' + v) > -1));
 
+/* APP CHECK AND THE CSP HAVE TO AGREE, and getting the order wrong takes the
+   class offline. App Check makes Firestore refuse any request without a token
+   proving it came from this app — the answer to anonymous sign-ins in a loop
+   running up the bill. The token comes from reCAPTCHA, which loads from
+   google.com and draws an invisible iframe. The CSP shipped this morning
+   allowed neither, so enforcing App Check first would have refused every
+   request and nobody could practise.
+   These assert the CSP is ready BEFORE the switch is thrown. */
+assert('the CSP admits the reCAPTCHA script App Check needs',
+  /script-src[^;]*www\.google\.com\/recaptcha/.test(csp));
+assert('and its invisible frame, which default-src would otherwise block',
+  /frame-src[^;]*www\.google\.com\/recaptcha/.test(csp));
+assert('and the App Check endpoint itself',
+  /connect-src[^;]*firebaseappcheck\.googleapis\.com/.test(csp));
+// Off by default. A key committed here is not a secret, but switching this on
+// is a sequence (register, key, deploy, watch, THEN enforce) and the default
+// must never be the middle of it.
+assert('App Check is wired but not switched on by default',
+  /appCheckSiteKey: ''/.test(html));
+assert('and it is loaded only when a key exists, so no key costs nothing',
+  /if\(CONFIG\.appCheckSiteKey\)\{/.test(html));
+
 // eval is not needed by anything in this app, and a CSP that allows it has
 // usually been widened to make an unrelated problem go away.
 assert('the CSP does not allow eval', csp.indexOf('unsafe-eval') === -1);

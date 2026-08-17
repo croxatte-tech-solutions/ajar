@@ -51,7 +51,7 @@
   #
   # The googleapis hosts are what Firebase Auth and Firestore actually talk to:
   # identitytoolkit (sign-in), securetoken (refresh), firestore (data).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; worker-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://real-life-english.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; worker-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://real-life-english.firebaseapp.com https://content-firebaseappcheck.googleapis.com; object-src 'none'; base-uri 'self'; frame-src https://www.google.com/recaptcha/; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 
   # WHY 'unsafe-inline' IS IN script-src, stated rather than hidden.
   #

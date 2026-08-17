@@ -680,6 +680,19 @@ const CONFIG = {
   // runs Monday to Thursday, so week N day D is a date you can work out.
   termStart: '2026-08-17',
 
+  // App Check: the reCAPTCHA v3 site key from the Firebase console.
+  //
+  // EMPTY MEANS OFF, and off is the safe default. App Check makes Firestore
+  // refuse requests that do not carry a token proving they came from this app,
+  // which is the answer to anyone signing in anonymously in a loop and running
+  // up the bill. It is also the one setting that can take the whole class
+  // offline if it is switched on in the wrong order, so it is opt-in here and
+  // the order is written down in README.
+  //
+  // This key is public, like the apiKey above — it identifies the site to
+  // reCAPTCHA and proves nothing on its own.
+  appCheckSiteKey: '',
+
   // TODO(auth): there is no authentication anywhere in this app.
   // Anyone holding a share link can write to the classroom document,
   // INCLUDING the teacher-approval path in shareApproved(). That is a
@@ -12432,6 +12445,31 @@ loadSharedClassroomContent().then(()=>{
 
   try {
     const app = initializeApp(firebaseConfig);
+
+    /* App Check, only if a key is configured.
+       ------------------------------------
+       Imported dynamically rather than at the top, so a project with no key
+       does not fetch a module it will never use — and so a failure to load it
+       cannot stop the app starting. If this throws, practice still works; only
+       the abuse protection is missing, and that is the right way round.
+
+       NOTE FOR WHOEVER TURNS THIS ON: the Content-Security-Policy in _headers
+       must already allow www.google.com/recaptcha and www.gstatic.com/recaptcha
+       before you enforce. It does now. Enforcing first and widening the CSP
+       afterwards means every request is refused and nobody can practise. */
+    if(CONFIG.appCheckSiteKey){
+      try{
+        const { initializeAppCheck, ReCaptchaV3Provider } =
+          await import("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-check.js");
+        initializeAppCheck(app, {
+          provider: new ReCaptchaV3Provider(CONFIG.appCheckSiteKey),
+          isTokenAutoRefreshEnabled: true,
+        });
+      }catch(e){
+        console.warn('App Check did not start — the app still works, abuse protection does not:', e);
+      }
+    }
+
     const auth = getAuth(app);
     const db = getFirestore(app);
 
