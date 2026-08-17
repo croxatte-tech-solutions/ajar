@@ -40,7 +40,7 @@ Também: **não há back-end de aplicação.** Só Firestore. Então "validaçã
 | UX | 4 sugestões |
 | Qualidade de código | 3 (2 corrigidos) |
 
-**Suite:** 2.811 → **2.817 checagens, verde.** Três arquivos de verificação novos.
+**Suite:** 2.732 → **2.812 checagens, verde**, em 24 arquivos. Três verificadores novos (79 checagens) mais uma asserção adicionada ao painel.
 
 ---
 
