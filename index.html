@@ -579,6 +579,10 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <div>No exercises approved yet. Check back after your teacher reviews this week's batch.</div>
     </div>
     <div id="scenario-list" class="scenario-list"></div>
+    <!-- Sits above the exercise, not inside it: every renderer overwrites
+         practice-wrap, and a warning that vanishes on the next question is
+         worse than none. -->
+    <div id="sync-warning"></div>
     <div id="practice-wrap" tabindex="-1"></div>
   </div>
   </main>
@@ -11623,12 +11627,47 @@ function logUsage(type, theme, outcome01, name){
     // sandbox, works on a real domain). Missing or offline = local-only,
     // exactly like before this existed. Never blocks the UI on network.
     if(key !== '_anon'){
-      window.CloudSync?.pushAttempt(rawName, entry).catch(()=>{});
-      // Refresh the summary the teacher's class view reads. Fire-and-forget
-      // like everything else here: a failed sync must never block practice.
-      window.CloudSync?.pushSummary?.(rawName, progressSummary(rawName)).catch(()=>{});
+      // Fire-and-forget, still — a failed sync must never block practice, and
+      // that part was right. What was wrong is that it also never told
+      // anyone. Both writes carried an empty catch, so a student could finish
+      // an exercise, see it counted on their own phone, and have nothing at
+      // all reach their teacher's class panel. This is the same shape as the
+      // roster and the classroom item: the local write happens first, so the
+      // screen in front of the person looks correct either way.
+      //
+      // It is not hypothetical. schools/*/students held one document, and
+      // that document was a test — no way to tell, from the outside, whether
+      // nobody had practised or whether every save had failed in silence.
+      window.CloudSync?.pushAttempt(rawName, entry)
+        .then(() => setSyncState('live'))
+        .catch(err => { console.error('Ajar: this attempt did not reach your teacher —', err);
+                        setSyncState('failed'); });
+      window.CloudSync?.pushSummary?.(rawName, progressSummary(rawName))
+        .catch(err => console.error('Ajar: the progress summary did not reach your teacher —', err));
     }
-  }catch(e){}
+  }catch(e){
+    console.error('Ajar: logging this attempt failed —', e);
+  }
+}
+/* Whether this device's work is reaching the teacher.
+   Deliberately one flag rather than a per-attempt queue: the student does not
+   need a delivery report, they need to know whether to mention it to her
+   before the lesson ends. 'failed' is sticky until a later write succeeds,
+   because the one that matters is the last one that did not arrive. */
+let SYNC_STATE = null;               // null | 'live' | 'failed'
+function setSyncState(v){
+  if(SYNC_STATE === v) return;
+  SYNC_STATE = v;
+  try{ renderSyncWarning(); }catch(e){ console.error('Ajar: sync notice —', e); }
+}
+function syncState(){ return SYNC_STATE; }
+function renderSyncWarning(){
+  const el = document.getElementById('sync-warning');
+  if(!el) return;
+  if(SYNC_STATE !== 'failed'){ el.innerHTML = ''; return; }
+  el.innerHTML = '<p class="small-note" role="alert" style="color:var(--amber);font-weight:600;margin:.4rem 0">' +
+    '\u26a0 Your answers are saved on this phone, but they are not reaching your teacher. ' +
+    'Keep practising \u2014 tell her before the lesson ends.</p>';
 }
 // Combine this device's local history with whatever came back from the
 // cloud for this name, de-duped by timestamp (a fresh Date.now() per
