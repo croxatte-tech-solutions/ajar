@@ -26,7 +26,7 @@ By type: 25 `feat`, 14 `fix`, 4 `docs`, 4 `chore`, 1 each `test`, `refactor`, `b
 | | |
 |---|---|
 | App | 11,008 lines, single file, no build step |
-| Tests | 17 files, **2,442 checks**, all green |
+| Tests | 19 files, **2,473 checks**, all green |
 | Content | 464 distinct exercises across 14 themes |
 | Audio | 672 clips, content-addressed |
 | Copyright audit | 3,970 strings vs 16 ETS documents, zero 7-word overlaps |
@@ -34,13 +34,16 @@ By type: 25 `feat`, 14 `fix`, 4 `docs`, 4 `chore`, 1 each `test`, `refactor`, `b
 
 ### What was built
 
-**The mock exam** — three of four sections, sat under test conditions with
-one clock each and no going back.
+**The mock exam** — all four sections, sat under test conditions with one
+clock each and no going back. 120 items, 90 minutes together.
 
 - Reading: 50 questions / 30 min
 - Listening: 47 / 29, **audio plays once** where practice gives two
 - Writing: 12 / 23, band covers the ten sentences only
-- Speaking (11 / 8) not built — it depends on the speech engine
+- Speaking: 11 / 8. Built with what exists rather than waiting for the
+  speech engine. Repeat Accuracy is marked — the target sentence is known,
+  so a transcript can be aligned against it — and the interview is not,
+  because length and word variety are pacing hints, not a mark.
 
 A sat section cannot reach the practice log: `logUsage` returns early, so
 a rehearsal physically cannot land in the day's best score.
@@ -100,6 +103,9 @@ Worth recording separately, because each marks a blind spot:
    left the footer offering to skip work already done.
 4. **The teacher panel opened with no sign-in.** Found in an anonymous tab.
 5. **Typing the address landed on the teacher panel.**
+6. **A Listening section promised two listens and gave one.** Found in the
+   iOS simulator: `maxListens()` was right, and the sentence describing it
+   was three separate hardcoded strings. The student reads the sentence.
 
 ### Mistakes worth not repeating
 
@@ -118,12 +124,14 @@ Worth recording separately, because each marks a blind spot:
 
 ### Open at the end of the session
 
-- Speaking section (needs the speech engine)
 - Speech engine: pace and pauses from local audio analysis. Pronunciation
   is out of reach without an acoustic model, and is never to be claimed.
 - Recording the graded session on the teacher's device
 - Backup, a separate test environment, monitoring
 - Whitepaper (deliberately last)
-- **Untested on real iOS.** The in-app preview browser hits a per-function
-  bytecode ceiling this app exceeds, so browser verification was only
-  partly trustworthy all session.
+- **Tested on real iOS at the end of the session** (iPhone 17 Pro, Safari):
+  front door, language detection, section clock, briefs and footers all
+  correct. It found the listens bug in twenty minutes. The in-app preview
+  browser hits a per-function bytecode ceiling this app exceeds, so use the
+  simulator, not the preview, for anything visual.
+- **iPad not yet checked.**
