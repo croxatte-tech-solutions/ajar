@@ -11942,6 +11942,26 @@ function usageSummary(name){
            trend, streak, activeDays: dayKeys.length, recentLog: log.slice(-8).reverse() };
 }
 function setStudentName(name){ localStorage.setItem('ajar_student_name', name.trim()); }
+/* THE WAY IN TO AN ACCOUNT, AND THE WAY OUT OF ONE.
+
+   It goes in the masthead, beside whoever is signed in, for both roles — not
+   as a third button in the Teacher/Student switcher. Those two are MODES: the
+   same person moves between them, and a third button there would read as a
+   third mode rather than as identity. Every app the students already use puts
+   identity in the top corner, and that is where a person goes looking for the
+   way out.
+
+   It had no home at all until now, which is worse than it sounds: the account
+   view, the signup form, the age gate and the approval queue were all built
+   and none of them were reachable, because nothing anywhere called
+   setView('account'). A student had no way to sign out. */
+function accountEntryHtml(){
+  const on = currentView === 'account';
+  return `<button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
+            aria-current="${on ? 'page' : 'false'}"
+            onclick="setView('${on ? (teacherIsSignedIn() ? 'teacher' : 'student') : 'account'}')">${
+            on ? '&larr; Back' : '👤 Account'}</button>`;
+}
 function renderWhoAmI(){
   const el = document.getElementById('who-am-i');
   if(!el) return;
@@ -11957,16 +11977,22 @@ function renderWhoAmI(){
       // rather than on a record anyone could look up.
       el.innerHTML = `${escapeHtml(teacherDisplayName(u))}
         <button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
-                onclick="teacherSignOut()">Sign out</button>${u.schoolName
+                onclick="teacherSignOut()">Sign out</button>${accountEntryHtml()}${u.schoolName
           ? `<div class="small-note" style="font-weight:600;margin-top:.1rem">${escapeHtml(u.schoolName)}</div>`
           : ''}
     <div id="roster-status"></div>`;
   renderRosterStatus();
     } else {
-      el.textContent = TEACHER_NAME;
+      el.innerHTML = escapeHtml(TEACHER_NAME) + accountEntryHtml();
     }
   }
-  else { const n = getStudentName(); el.textContent = n ? `Hi, ${n}` : ''; }
+  else {
+    // Signed out, signed in, named or not — the door is always there. A
+    // student who cannot find how to sign out has no way to hand the phone
+    // to the next person, and that is the moment it matters.
+    const n = getStudentName();
+    el.innerHTML = (n ? escapeHtml('Hi, ' + n) : '') + accountEntryHtml();
+  }
 }
 
 // Never 'teacher': that is a sign-in wall now, so anything reaching the
