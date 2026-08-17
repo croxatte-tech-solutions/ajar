@@ -139,7 +139,10 @@ ${combined}
   // --- the student screen ---
   const item = { id:'dr1', type:'daily-read', tag:'Read in Daily Life',
                  theme:'campus', status:'approved', data:g };
-  saveBatch([item]); selectedId='dr1'; practiceOverride=null; window._drState=null;
+  saveBatch([item]); selectedId='dr1';
+  // An exercise arrives closed now — the student presses Start, which is
+  // what reveals it. This file is about what is behind that, so open it.
+  startedItems().add('dr1'); practiceOverride=null; window._drState=null;
   setStudentName('Ana');
   renderPractice();
   const html = () => document.getElementById('practice-wrap').innerHTML;

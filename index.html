@@ -7713,11 +7713,33 @@ function submitName(){
    bookmarked link with no class session loaded. No name gate,
    no lock, no QR needed: "motivate without forcing anything."
    ========================================================= */
+// Is there anything here for a student to be asked their name about?
+//
+// This gates the name prompt, so it has to answer the same question
+// getStudentBatch() does. When it did not, a student opening the address
+// plainly was asked to type their name and then shown an empty shelf,
+// because the class batch counted here and not there.
 function hasAnyTeacherContent(){
-  if(loadBatch().some(i=>i.status==='approved')) return true;
+  if(arrivedThroughSharedCode() && loadBatch().some(i=>i.status==='approved')) return true;
   try{
     const map = JSON.parse(localStorage.getItem('cse_individual') || '{}');
     return Object.values(map).some(items => Array.isArray(items) && items.some(i=>i.status==='approved'));
+  }catch(e){ return false; }
+}
+// Did THIS page load arrive through a code the teacher shared?
+//
+// It decides whether the whole-class list is the student's business at all,
+// so it reads the address bar rather than storage: scanning is an act, not a
+// state a phone remembers. A student who scanned yesterday and types the
+// address today did not scan today.
+//
+// A function rather than the const below, because getStudentBatch() runs
+// during start-up and a const in a later script block would still be in its
+// temporal dead zone — a thrown ReferenceError, not a false.
+function arrivedThroughSharedCode(){
+  try{
+    const p = new URLSearchParams(location.search);
+    return p.get('s') === '1' || !!p.get('ex');
   }catch(e){ return false; }
 }
 function isIndividuallyAssigned(){
@@ -7754,6 +7776,22 @@ function isMyTurnToSpeak(){
   if(!name) return true;
   return turn.includes(name);
 }
+// What this student should see, which is not the same as what the teacher
+// approved.
+//
+// The whole-class set is a thing on the classroom screen. Each student opens
+// the one they want by scanning its code, so on their own phone it is not a
+// list of exercises "released to them" — showing it there was the bug: a
+// student opening the app at home saw the class's set as if it were theirs.
+//
+// Two ways in, and only two. A code the teacher shared, which is this visit
+// arriving through it. Or her naming this student, which is theirs alone and
+// therefore survives any visit at all — that set is the only thing a plain
+// "I'm a student" tap is allowed to reach.
+//
+// Note the class batch keeps being pulled in the background either way: the
+// named assignments ride along in the same payload, so the pull has to
+// happen even when its main cargo is not for this screen.
 function getStudentBatch(){
   const name = getStudentName().toLowerCase();
   if(name){
@@ -7762,6 +7800,7 @@ function getStudentBatch(){
       if(map[name]) return map[name].filter(i=>i.status==='approved');
     }catch(e){}
   }
+  if(!arrivedThroughSharedCode()) return [];
   return loadBatch().filter(i=>i.status==='approved');
 }
 function renderSelfPractice(){
@@ -7870,8 +7909,14 @@ function renderStudent(){
     selectedId = batch[0].id;
     practiceOverride = null;
   }
+  // The list used to print the title, the topic, the course — which handed
+  // over the theme before the student pressed Start, undoing the gate one
+  // screen earlier. For a set she picked by name it says the task type and
+  // stops there.
+  const hideTheme = isIndividuallyAssigned();
   batch.forEach(item=>{
-    const preview = item.type==='email' ? item.data.prompt.split('\n')[0]
+    const preview = hideTheme ? 'Tap to open — the clock starts when you press Start'
+      : item.type==='email' ? item.data.prompt.split('\n')[0]
       : item.type==='discussion' ? (item.data.course ? 'Class discussion · ' + item.data.course : item.data.professor)
       : item.type==='sentence' ? 'Reorder the scrambled words'
       : item.type==='complete-words' ? 'Fill in the missing letters'
@@ -8741,6 +8786,9 @@ function backToMyPage(){
   practiceOverride = null;
   window._lrState = null; window._interviewState = null; window._crState = null;
   window._anState = null; window._cvState = null; window._tkState = null;
+  // Walking out closes the exercise again, so coming back is a fresh start
+  // rather than a clock the student is already behind on.
+  window._startedItems = null;
   clearPracticeTimer();
   const wrap = document.getElementById('practice-wrap');
   if(wrap) wrap.innerHTML = '';
@@ -8782,11 +8830,80 @@ function renderPractice(){
   mountBackBar();
 }
 
+/* NOTHING STARTS UNTIL THE STUDENT SAYS SO
+   ========================================
+   The clock used to start when the screen drew. Build a Sentence gives 41
+   seconds and Take an Interview 45, so a student still finding their phone —
+   or still looking up at the classroom screen — lost a real part of it
+   before reading a word. Thirteen phones drawing at slightly different
+   moments made that unequal as well as unfair, which is exactly the
+   complaint worth not having.
+
+   So an exercise arrives closed. The student sees WHAT it is — the task
+   type, what the real test does with it, how long it runs — and nothing
+   else. Not the theme, not the prompt, not the words. Pressing Start is
+   what reveals it, and is the same moment the clock begins.
+
+   That the reveal and the clock are the same act is the point. Time you can
+   spend reading the screen is time you cannot be losing.
+
+   Two exemptions:
+   - A section. It has its own confirmation and its own clock, and a second
+     gate before every one of fifty questions would be absurd.
+   - Practice you started yourself. Pressing "Start practicing" already was
+     the gesture; asking again is asking twice.
+
+   Started items live on window, not in storage, so a refresh closes them
+   again. That is right: a reloaded page cannot honestly resume a 41-second
+   clock, and re-reading the card costs nothing. */
+function startedItems(){
+  if(!window._startedItems) window._startedItems = new Set();
+  return window._startedItems;
+}
+function needsStartGate(item){
+  if(!item) return false;
+  if(examActive()) return false;
+  if(selectedId === '__self__') return false;
+  return !startedItems().has(item.id);
+}
+function startExercise(id){
+  startedItems().add(id);
+  renderPractice();
+}
+function startGateHtml(item){
+  const secs = TASK_TIME_LIMITS[item.type];
+  // Saying the length up front is not a leak — the real test tells you too,
+  // and a student deciding whether they are ready needs to know what they
+  // are agreeing to.
+  const clock = secs
+    ? `<p class="small-note">⏱ This one is timed: <b>${formatTime(secs)}</b>, and the clock starts when you press Start.</p>`
+    : `<p class="small-note">⏱ No clock on this one — take the time you need.</p>`;
+  const called = isIndividuallyAssigned()
+    ? `<p class="small-note" style="color:var(--accent)">📣 ${escapeHtml(TEACHER_NAME)} picked this one for you.</p>`
+    : '';
+  return `<div class="compose">
+      <div class="ex-body" style="text-align:center">
+        <div class="tag" style="font-size:.95rem">${item.tag}</div>
+        <p style="margin:.8rem 0 0">Ready when you are.</p>
+      </div>
+      ${called}
+      ${clock}
+      ${taskBriefHtml(item.type)}
+      <div class="ex-actions" style="margin-top:.9rem"><button class="btn" onclick="startExercise('${item.id}')">▶ Start</button></div>
+      <p class="small-note" style="margin-top:.6rem">Nobody is waiting on you — everyone in the room starts their own.</p>
+    </div>`;
+}
+
 function renderPracticeInner(){
   const wrap = document.getElementById('practice-wrap');
   const item = currentItem();
   clearPracticeTimer();
   if(!item){ wrap.innerHTML=''; return; }
+
+  // One guard, above all twelve branches. Putting it in each renderer is how
+  // the footer and the section clock went missing from some screens and not
+  // others.
+  if(needsStartGate(item)){ wrap.innerHTML = startGateHtml(item); return; }
 
   if(item.type==='email' || item.type==='discussion'){
     wrap.innerHTML = `
@@ -11061,8 +11178,7 @@ if('serviceWorker' in navigator){
 // was a share link. setView() itself flips the visible Teacher/Student
 // toggle classes before it renders anything, so running it first means
 // the correct tab is showing no matter what happens afterward.
-const sharedParams = new URLSearchParams(location.search);
-const openedFromSharedLink = sharedParams.get('s') === '1' || !!sharedParams.get('ex');
+const openedFromSharedLink = arrivedThroughSharedCode();
 // Typing the address always lands on the welcome screen. Scanning a QR
 // code never does.
 //

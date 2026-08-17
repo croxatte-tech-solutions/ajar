@@ -107,7 +107,10 @@ ${combined}
   // --- the student screen ---
   const item = { id:'pg1', type:'passage', tag:'Read an Academic Passage',
                  theme:'campus', status:'approved', data:g };
-  saveBatch([item]); selectedId='pg1'; practiceOverride=null; window._pgState=null;
+  saveBatch([item]); selectedId='pg1';
+  // An exercise arrives closed now — the student presses Start, which is
+  // what reveals it. This file is about what is behind that, so open it.
+  startedItems().add('pg1'); practiceOverride=null; window._pgState=null;
   setStudentName('Ana');
   renderPractice();
   const html = () => document.getElementById('practice-wrap').innerHTML;

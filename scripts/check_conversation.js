@@ -113,7 +113,10 @@ ${combined}
   // --- the student screen: heard, never read ---
   const item = { id:'cv1', type:'conversation', tag:'Listen to a Conversation',
                  theme:'campus', status:'approved', data:g };
-  saveBatch([item]); selectedId='cv1'; practiceOverride=null; window._cvState=null;
+  saveBatch([item]); selectedId='cv1';
+  // An exercise arrives closed now — the student presses Start, which is
+  // what reveals it. This file is about what is behind that, so open it.
+  startedItems().add('cv1'); practiceOverride=null; window._cvState=null;
   setStudentName('Ana');
   renderPractice();
   const shown = t => document.getElementById('practice-wrap').innerHTML.indexOf(escapeHtml(t)) > -1;

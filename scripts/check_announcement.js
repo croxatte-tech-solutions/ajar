@@ -93,7 +93,10 @@ ${combined}
   // --- the student screen: heard, never read ---
   const item = { id:'an1', type:'announcement', tag:'Listen to an Announcement',
                  theme:'campus', status:'approved', data:g };
-  saveBatch([item]); selectedId='an1'; practiceOverride=null; window._anState=null;
+  saveBatch([item]); selectedId='an1';
+  // An exercise arrives closed now — the student presses Start, which is
+  // what reveals it. This file is about what is behind that, so open it.
+  startedItems().add('an1'); practiceOverride=null; window._anState=null;
   setStudentName('Ana');
   renderPractice();
   const a0 = g.set[0];

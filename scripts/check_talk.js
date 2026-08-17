@@ -106,7 +106,10 @@ ${combined}
   // --- the student screen: heard, never read ---
   const item = { id:'tk1', type:'talk', tag:'Listen to an Academic Talk',
                  theme:'campus', status:'approved', data:g };
-  saveBatch([item]); selectedId='tk1'; practiceOverride=null; window._tkState=null;
+  saveBatch([item]); selectedId='tk1';
+  // An exercise arrives closed now — the student presses Start, which is
+  // what reveals it. This file is about what is behind that, so open it.
+  startedItems().add('tk1'); practiceOverride=null; window._tkState=null;
   setStudentName('Ana');
   renderPractice();
   const shown = t => document.getElementById('practice-wrap').innerHTML.indexOf(escapeHtml(t)) > -1;
