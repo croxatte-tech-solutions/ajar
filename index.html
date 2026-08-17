@@ -633,6 +633,17 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
 /* `.empty svg{opacity:.5}` existia para apagar o iconezinho de 32px do estado
    antigo. Aplicado ao mascote ele lava a marca e o verde vira cinza. */
 .empty.state .state-mascot{ opacity:1; }
+
+/* Cabecalho do "My patterns" dentro do modal (max-width 560px): anel a
+   esquerda, grade a direita. Abaixo de 430px a grade nao cabe ao lado do
+   anel sem espremer os quadradinhos, entao empilha. */
+.insights-head{ display:flex; gap:1.1rem; align-items:center; flex-wrap:wrap;
+  background:var(--surface-alt); border:1px solid var(--border);
+  border-radius:var(--r-md); padding:.9rem 1rem; margin:.2rem 0 1rem; }
+.insights-side{ flex:1; min-width:210px; }
+.insights-head .streak{ grid-auto-flow:column; grid-template-rows:repeat(7,1fr); gap:3px; }
+.insights-head .small-note{ margin-bottom:0; }
+@media (max-width:430px){ .insights-head{ justify-content:center; } }
 .state-mascot{ width:104px; height:104px; margin:0 auto .9rem; display:block; }
 .state h3{ font-family:var(--font-display); font-size:1.12rem; margin:0 0 .35rem; }
 .state p{ color:var(--text-dim); font-size:.9rem; line-height:1.55;
@@ -11673,8 +11684,18 @@ function usageSummary(name){
   let streak = 0;
   for(let d = new Date(); days.has(d.toDateString()); d.setDate(d.getDate()-1)) streak++;
 
+  // byDay ja existia aqui dentro e nao saia. O anel e a grade precisam do
+  // resultado dia a dia, e recentLog so guarda os ultimos 8 registros — nao
+  // da para reconstruir semanas a partir dele.
+  // `overall` e a media de byDay: a MESMA base de melhor-do-dia que esta
+  // funcao ja usa e que o texto do modal ja explica ao aluno. Nao e uma
+  // metrica nova, e a que ja existe aplicada ao conjunto.
+  const overall = dayKeys.length
+    ? dayKeys.reduce((a,d)=>a+byDay[d], 0) / dayKeys.length
+    : null;
   return { total: log.length, rows, weakest: weakestList[0] || null, weakestList, strongestList,
-           trend, streak, activeDays: dayKeys.length, recentLog: log.slice(-8).reverse() };
+           trend, streak, activeDays: dayKeys.length, recentLog: log.slice(-8).reverse(),
+           byDay, overall };
 }
 function setStudentName(name){ localStorage.setItem('ajar_student_name', name.trim()); }
 function renderWhoAmI(){
@@ -12307,6 +12328,53 @@ function snoozeFeedbackNudge(){
    mail client does the actual sending, and only after the
    person reviews and hits send themselves.
    ========================================================= */
+/* Cabecalho visual do "My patterns": anel com o percentual geral e grade de
+   12 semanas. A intensidade da grade e o RESULTADO do dia, nao o volume de
+   tentativas — num app de estudo "praticou 9 vezes" nao e melhor que
+   "acertou", e o proprio app ja decidiu contar por melhor-do-dia. A legenda
+   diz isso em palavras para ninguem ler como numero de exercicios. */
+function practiceGridHtml(byDay){
+  const end = new Date(); end.setHours(0,0,0,0);
+  // Comeca num domingo para que cada LINHA seja um dia da semana, que e como
+  // esse tipo de grade se le. 12 colunas contando a semana corrente.
+  const start = new Date(end);
+  start.setDate(end.getDate() - (11 * 7 + end.getDay()));
+  let cells = '';
+  for(let i = 0; i < 84; i++){
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    if(d > end){ cells += '<i style="visibility:hidden"></i>'; continue; }
+    const v = byDay[d.toDateString()];
+    const n = v === undefined ? 0 : v >= .9 ? 4 : v >= .75 ? 3 : v >= .5 ? 2 : 1;
+    const label = v === undefined
+      ? d.toLocaleDateString() + ' — no practice'
+      : d.toLocaleDateString() + ' — best ' + Math.round(v * 100) + '%';
+    cells += '<i data-n="' + n + '" title="' + label + '"></i>';
+  }
+  return cells;
+}
+function insightsHeaderHtml(s){
+  const pct = s.overall === null ? null : Math.round(s.overall * 100);
+  const ring = pct === null ? '' :
+    '<div class="ring" style="--pct:' + pct + '; --circ:245" role="progressbar" aria-valuenow="' + pct +
+    '" aria-valuemin="0" aria-valuemax="100" aria-label="Overall best-of-day average">' +
+      '<svg viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"></circle>' +
+      '<circle class="ring-fill" cx="43" cy="43" r="39"></circle></svg>' +
+      '<span class="ring-label">' + pct + '%</span></div>';
+  const streakLine = s.streak >= 2
+    ? '<b>' + s.streak + '-day streak</b> &middot; '
+    : '';
+  return '<div class="insights-head">' + ring +
+    '<div class="insights-side">' +
+      '<div class="streak" aria-label="Practice over the last twelve weeks">' + practiceGridHtml(s.byDay) + '</div>' +
+      '<div class="streak-legend">lower' +
+        '<i style="background:color-mix(in oklab, var(--accent) 26%, var(--surface-alt))"></i>' +
+        '<i style="background:color-mix(in oklab, var(--accent) 52%, var(--surface-alt))"></i>' +
+        '<i style="background:color-mix(in oklab, var(--accent) 76%, var(--surface-alt))"></i>' +
+        '<i style="background:var(--accent)"></i>higher</div>' +
+      '<p class="small-note" style="margin-top:.45rem">' + streakLine +
+        s.activeDays + ' day(s) practised &middot; shade is that day\'s best score, not how many times you tried.</p>' +
+    '</div></div>';
+}
 function showInsights(name){
   const activeName = (name !== undefined ? name : getStudentName()).trim();
   const s = usageSummary(activeName);
@@ -12331,7 +12399,7 @@ function showInsights(name){
   const trendHtml = s.trend
     ? `<p class="small-note">${s.trend==='up' ? '📈 Trending up over the last few attempts — nice.' : s.trend==='down' ? '📉 Dipped a bit over the last few attempts — normal, keep going.' : '➡️ Holding steady over the last few attempts.'}</p>`
     : '';
-  const streakHtml = s.streak >= 2 ? `<div class="rule">🔥 ${s.streak}-day practice streak — keep it going!</div>` : '';
+  const streakHtml = insightsHeaderHtml(s);   // anel + grade; a streak virou uma linha dentro dele
   const historyHtml = s.recentLog.map(e=>`<li>${new Date(e.ts).toLocaleDateString()} — ${tagFor(e.type)} (${THEME_LABELS[e.theme]||e.theme}): ${Math.round(e.outcome*100)}%</li>`).join('');
   modal.innerHTML = `<h2>📈 ${who} practice patterns</h2>
     <div class="sub">${s.total} attempt(s) logged${activeName ? ' under this name' : ' on this device'}</div>
