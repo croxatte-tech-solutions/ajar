@@ -6414,7 +6414,11 @@ function teacherDisplayName(u){
 // only decides whether to mention that a surname is missing.
 function teacherNameLooksPartial(u){
   const n = (u && u.name || '').trim();
-  return n.length > 0 && n.split(/\s+/).length < 2;
+  // Empty counts as incomplete too — a record with no name at all is the
+  // case that most needs asking, and returning false for it meant the one
+  // account that needed the prompt never got it.
+  if(!n) return true;
+  return n.split(/\s+/).length < 2;
 }
 
 function saveTeacherDisplayName(){
@@ -6572,7 +6576,31 @@ function teacherSignOut(){
 }
 // Fired by the auth listener in the module script, including on the
 // initial anonymous sign-in.
-window.__onAuthChanged = () => { renderTeacherSignIn(); renderWhoAmI(); renderTeacher(); };
+window.__onAuthChanged = () => {
+  renderTeacherSignIn(); renderWhoAmI(); renderTeacher();
+  // If only one name is on file, ask for the rest on the way in.
+  //
+  // The header shows whatever her record holds, and the record was created
+  // by hand in the console with a first name only — so the app displayed
+  // "Michelle" and there was nowhere the surname would ever arrive from.
+  // Code was correct; the data was half written, and a field nobody is
+  // pointed at does not get filled.
+  //
+  // She is the authority in the room and the app names her in front of her
+  // class, so it asks once rather than waiting to be corrected.
+  try{
+    const u = window.CloudSync && window.CloudSync.currentUser
+      ? window.CloudSync.currentUser() : null;
+    if(u && u.isTeacher && (!u.name || teacherNameLooksPartial(u))){
+      showSection(null, 'grp-account', true);
+      const input = document.getElementById('teacher-name-input');
+      if(input){ input.focus(); }
+      const msg = document.getElementById('teacher-name-msg');
+      if(msg) msg.innerHTML = '<p class="small-note" style="color:var(--accent);font-weight:600">'
+        + 'Your class sees this name — please add your surname.</p>';
+    }
+  }catch(e){}
+};
 
 function renderShareBox(){
   const box = document.getElementById('share-box');

@@ -54,9 +54,13 @@ assert('the gate runs first, before the panel is drawn', rt.indexOf('applyTeache
 assert('and a signed-out visitor gets no further', /applyTeacherGate\(\)\)\{[^}]*return/.test(rt));
 // Signing out has to take the class off the screen, not just swap the
 // sign-in card — otherwise the panel stays open behind it.
-const authLine = (html.split('\n').find(l => l.indexOf('__onAuthChanged =') > -1) || '');
+// Block, not line: the handler grew to several lines when it started
+// asking for the surname, and a line-based check then failed text that had
+// simply moved down two rows.
+const authStart = html.indexOf('window.__onAuthChanged =');
+const authAll = html.slice(authStart, authStart + 1400);
 assert('signing in or out redraws the panel, not just the card',
-  authLine.indexOf('renderTeacher()') > -1);
+  authAll.indexOf('renderTeacher()') > -1);
 
 // --- signing out is reachable from anywhere ---
 //
@@ -179,6 +183,31 @@ assert('it warns them it will feel easy, and why that is fine',
 assert('it asks for bluntness rather than politeness', /blunt/i.test(brief));
 assert('it tells them one section is timed, not all four',
   /ONE of them/.test(brief) && /cannot go back/.test(brief));
+
+// --- the surname is asked for, not waited for ---
+//
+// The header showed "Michelle" because her record was created by hand in
+// the console with a first name only. The code was right; the data was
+// half written, and a field nobody is pointed at does not get filled. She
+// is the authority in the room and the app names her in front of her
+// class, so it asks once on the way in.
+const authBlock = html.slice(html.indexOf('window.__onAuthChanged ='),
+                             html.indexOf('window.__onAuthChanged =') + 1400);
+assert('signing in checks whether the name is complete',
+  authBlock.indexOf('teacherNameLooksPartial') > -1);
+assert('an incomplete name lands her on the field',
+  authBlock.indexOf("showSection(null, 'grp-account'") > -1);
+assert('with the field focused rather than merely present',
+  /getElementById\('teacher-name-input'\)[\s\S]{0,80}focus\(\)/.test(authBlock));
+assert('and a reason, not just a nudge', /Your class sees this name/.test(authBlock));
+
+// An empty record is the case that most needs asking. Returning false for
+// it meant the one account needing the prompt never got it.
+const partialFn = html.slice(html.indexOf('function teacherNameLooksPartial'),
+                             html.indexOf('function saveTeacherDisplayName'));
+assert('a record with no name at all counts as incomplete',
+  /if\(!n\) return true;/.test(partialFn));
+assert('a single name counts as incomplete', /split\(.+\)\.length < 2/.test(partialFn));
 
 // --- the class-day flow lives on one screen ---
 //
