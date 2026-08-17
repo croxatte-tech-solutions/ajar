@@ -566,6 +566,10 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
   </div>
 
   <!-- STUDENT VIEW -->
+  <div id="view-account" class="view">
+    <div id="account-box"></div>
+  </div>
+
   <div id="view-student" class="view">
     <!-- The same line as the cover, and for the same reason: their date,
          their time, their zone, no week. -->
@@ -11979,10 +11983,12 @@ function setView(v){
   });
   document.getElementById('view-teacher').classList.toggle('active', v==='teacher');
   document.getElementById('view-student').classList.toggle('active', v==='student');
+  document.getElementById('view-account').classList.toggle('active', v==='account');
   document.getElementById('btn-teacher').classList.toggle('active', v==='teacher');
   document.getElementById('btn-student').classList.toggle('active', v==='student');
   if(v==='welcome'){ renderWelcome(); return; }
   if(v==='student') renderStudent();
+  if(v==='account'){ renderAccount(); renderWhoAmI(); return; }
   renderWhoAmI();
   if(!localStorage.getItem('ajar_guide_seen_'+v)) showGuide(v);
 }
@@ -12140,6 +12146,421 @@ function taskBriefHtml(type){
     <summary><b>On the real test:</b> ${escapeHtml(b.real)}</summary>
     <p>${escapeHtml(ours)}</p>
   </details>`;
+}
+
+/* =========================================================
+   ACCOUNTS
+   ========================================================= */
+
+/* THE AGE GATE.
+
+   Sixteen, not thirteen. The laws disagree — COPPA says 13, GDPR says 16
+   across much of Europe — and these students are international, so the only
+   number that is correct for all of them at once is the higher one. It also
+   avoids verifiable parental consent entirely, which is expensive, slow, and
+   easy to get wrong.
+
+   Two things the research is blunt about and this comment should not soften.
+   A tick-box saying "I am over 13" is not compliance, and an age gate does
+   not protect a product that is clearly designed for children — Ajar prepares
+   people for a university admissions exam, which is what makes the declared
+   gate the appropriate control here rather than a fig leaf. And the law makes
+   room for a SCHOOL to provide consent in an educational setting, which is
+   the path this app is actually on.
+
+   A refused date is never written down. Storing the birth date of somebody we
+   have just told we will not accept would be collecting a minor's data at the
+   exact moment of saying we do not. */
+const MIN_AGE = 16;
+function ageOn(birthISO, todayISO){
+  const b = String(birthISO || '').split('-').map(Number);
+  const t = String(todayISO || '').split('-').map(Number);
+  if(b.length !== 3 || t.length !== 3 || b.some(isNaN) || t.some(isNaN)) return null;
+  let age = t[0] - b[0];
+  // Birthday not reached yet this year. Compared as month-then-day rather
+  // than by building Dates, so a 29 February birth date cannot become a
+  // different day in a non-leap year on the way through a Date constructor.
+  if(t[1] < b[1] || (t[1] === b[1] && t[2] < b[2])) age -= 1;
+  return age;
+}
+function ageGate(birthISO, todayISO){
+  const iso = /^\d{4}-\d{2}-\d{2}$/;
+  if(!iso.test(String(birthISO || ''))) return { ok:false, reason:'format' };
+  const today = todayISO || new Date().toISOString().slice(0, 10);
+  const age = ageOn(birthISO, today);
+  if(age === null) return { ok:false, reason:'format' };
+  if(age < 0 || age > 120) return { ok:false, reason:'impossible' };
+  if(age < MIN_AGE) return { ok:false, reason:'too-young', age };
+  return { ok:true, age };
+}
+// MM-DD, which is the whole point: the class can wish someone a happy
+// birthday and cannot work out how old they are.
+function birthdayFrom(birthISO){
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(birthISO || '')) ? birthISO.slice(5) : '';
+}
+
+// Every country, because the students are international and a shortlist is a
+// list of people who have to pick "Other" to use the app.
+const COUNTRIES = ('Afghanistan,Albania,Algeria,Andorra,Angola,Antigua and Barbuda,Argentina,Armenia,Australia,Austria,Azerbaijan,'
++'Bahamas,Bahrain,Bangladesh,Barbados,Belarus,Belgium,Belize,Benin,Bhutan,Bolivia,Bosnia and Herzegovina,Botswana,Brazil,Brunei,Bulgaria,Burkina Faso,Burundi,'
++'Cabo Verde,Cambodia,Cameroon,Canada,Central African Republic,Chad,Chile,China,Colombia,Comoros,Congo,Costa Rica,Croatia,Cuba,Cyprus,Czechia,'
++'Democratic Republic of the Congo,Denmark,Djibouti,Dominica,Dominican Republic,Ecuador,Egypt,El Salvador,Equatorial Guinea,Eritrea,Estonia,Eswatini,Ethiopia,'
++'Fiji,Finland,France,Gabon,Gambia,Georgia,Germany,Ghana,Greece,Grenada,Guatemala,Guinea,Guinea-Bissau,Guyana,Haiti,Honduras,Hungary,'
++'Iceland,India,Indonesia,Iran,Iraq,Ireland,Israel,Italy,Ivory Coast,Jamaica,Japan,Jordan,Kazakhstan,Kenya,Kiribati,Kosovo,Kuwait,Kyrgyzstan,'
++'Laos,Latvia,Lebanon,Lesotho,Liberia,Libya,Liechtenstein,Lithuania,Luxembourg,Madagascar,Malawi,Malaysia,Maldives,Mali,Malta,Marshall Islands,Mauritania,Mauritius,Mexico,Micronesia,Moldova,Monaco,Mongolia,Montenegro,Morocco,Mozambique,Myanmar,'
++'Namibia,Nauru,Nepal,Netherlands,New Zealand,Nicaragua,Niger,Nigeria,North Korea,North Macedonia,Norway,Oman,'
++'Pakistan,Palau,Palestine,Panama,Papua New Guinea,Paraguay,Peru,Philippines,Poland,Portugal,Qatar,Romania,Russia,Rwanda,'
++'Saint Kitts and Nevis,Saint Lucia,Saint Vincent and the Grenadines,Samoa,San Marino,Sao Tome and Principe,Saudi Arabia,Senegal,Serbia,Seychelles,Sierra Leone,Singapore,Slovakia,Slovenia,Solomon Islands,Somalia,South Africa,South Korea,South Sudan,Spain,Sri Lanka,Sudan,Suriname,Sweden,Switzerland,Syria,'
++'Taiwan,Tajikistan,Tanzania,Thailand,Timor-Leste,Togo,Tonga,Trinidad and Tobago,Tunisia,Turkey,Turkmenistan,Tuvalu,'
++'Uganda,Ukraine,United Arab Emirates,United Kingdom,United States,Uruguay,Uzbekistan,Vanuatu,Vatican City,Venezuela,Vietnam,Yemen,Zambia,Zimbabwe').split(',');
+
+let ACCOUNT_MODE = 'choose';     // choose | create | password | profile
+let ACCOUNT_MSG = null;          // { text, ok }
+let ACCOUNT_BUSY = false;
+let ACCOUNT_PROFILE = null;      // the loaded users/{uid} record, or null
+
+function accountMsg(text, ok){ ACCOUNT_MSG = text ? { text, ok:!!ok } : null; renderAccount(); }
+function accountMode(m){ ACCOUNT_MODE = m; ACCOUNT_MSG = null; renderAccount(); }
+function accountBusy(v){ ACCOUNT_BUSY = v; renderAccount(); }
+
+function accountUser(){
+  try{
+    const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
+    return (u && !u.isAnonymous) ? u : null;
+  }catch(e){ return null; }
+}
+
+// Firebase writes its error codes for developers. "auth/popup-blocked" in
+// front of a student is worse than useless, and the two that matter most —
+// a blocked popup and an unauthorised domain — are things somebody can only
+// act on if they are told in words what happened.
+function authErrorText(e){
+  const c = (e && e.code) || '';
+  if(c === 'auth/popup-blocked')
+    return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.';
+  if(c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request')
+    return 'The sign-in window closed before it finished. Try again when you are ready.';
+  if(c === 'auth/unauthorized-domain')
+    return 'Sign-in is not switched on for this address yet. Tell the developer — it is a one-line setting.';
+  if(c === 'auth/email-already-in-use')
+    return 'There is already an account with that email. Sign in instead.';
+  if(c === 'auth/weak-password')
+    return 'That password is too short. Use at least six characters.';
+  if(c === 'auth/invalid-email') return 'That does not look like an email address.';
+  if(c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found')
+    return 'That email and password do not match an account.';
+  if(c === 'auth/too-many-requests')
+    return 'Too many attempts. Wait a few minutes and try again.';
+  if(c === 'auth/network-request-failed')
+    return 'No connection. Check the network and try again.';
+  return 'Something went wrong signing in. Try again.';
+}
+
+function renderAccount(){
+  const box = document.getElementById('account-box');
+  if(!box) return;
+  if(!window.CloudSync || typeof window.CloudSync.signInWithGoogle !== 'function'){
+    box.innerHTML = '<div class="panel"><b>Accounts are not available here.</b>' +
+      '<p class="small-note">This copy of the app is running without its sign-in service. ' +
+      'Everything else works, and your practice is saved on this device.</p></div>';
+    return;
+  }
+  const u = accountUser();
+  const msg = ACCOUNT_MSG
+    ? `<div class="result-msg ${ACCOUNT_MSG.ok ? 'ok' : 'no'}" role="alert" style="margin:.6rem 0">${escapeHtml(ACCOUNT_MSG.text)}</div>` : '';
+
+  if(u && ACCOUNT_PROFILE) { box.innerHTML = accountSignedInHtml(u) ; return; }
+  if(u) { box.innerHTML = msg + profileFormHtml(u); return; }
+  if(ACCOUNT_MODE === 'create')   { box.innerHTML = msg + createFormHtml(); return; }
+  if(ACCOUNT_MODE === 'password') { box.innerHTML = msg + passwordFormHtml(); return; }
+  box.innerHTML = msg + chooseHtml();
+}
+
+function chooseHtml(){
+  const busy = ACCOUNT_BUSY ? ' disabled' : '';
+  return `
+    <div class="panel">
+      <h2 style="margin-top:0">Sign in</h2>
+      <p class="small-note" style="margin:.2rem 0 .9rem">
+        An account keeps your practice with you — on your phone, on a laptop, on
+        the computer in the lab. Without one, everything still works and stays on
+        this device only.</p>
+      <button class="btn" style="width:100%;margin-bottom:.5rem" onclick="accountGoogle()"${busy}>
+        Continue with Google</button>
+      <button class="btn ghost" style="width:100%" onclick="accountMode('password')"${busy}>
+        Sign in with an email and password</button>
+      <p class="small-note" style="margin:.9rem 0 0">
+        New here? <a href="#" onclick="accountMode('create');return false">Create an account</a>
+      </p>
+    </div>`;
+}
+
+function countryOptions(selected){
+  return '<option value="">Choose…</option>' + COUNTRIES.map(c =>
+    `<option value="${escapeHtml(c)}"${c === selected ? ' selected' : ''}>${escapeHtml(c)}</option>`).join('');
+}
+
+// Everything the account needs that a sign-in provider cannot give us.
+// Google returns a name and an email and never a country or a date of birth,
+// so asking for those on a second screen is the ordinary shape of this flow
+// rather than a workaround.
+function profileFieldsHtml(prefillName){
+  const today = new Date().toISOString().slice(0,10);
+  return `
+      <div class="field" style="margin-bottom:.7rem">
+        <label for="acct-name">Full name</label>
+        <input type="text" id="acct-name" autocomplete="name" maxlength="80"
+               value="${escapeHtml(prefillName || '')}" placeholder="As your teacher would write it">
+      </div>
+      <div class="field-row" style="margin-bottom:.4rem">
+        <div class="field">
+          <label for="acct-country">Country of origin</label>
+          <select id="acct-country">${countryOptions('')}</select>
+        </div>
+        <div class="field">
+          <label for="acct-dob">Date of birth</label>
+          <input type="date" id="acct-dob" autocomplete="bday" max="${today}">
+        </div>
+      </div>
+      <p class="small-note" style="margin:0 0 .7rem">
+        Your date of birth is used once, to check you are ${MIN_AGE} or older.
+        Nobody else can see it — not your classmates, not your teacher.</p>
+      <label style="display:block;margin-bottom:.7rem">
+        <input type="checkbox" id="acct-share-bday" checked>
+        <span class="small-note">Let my class see the day and month, so they know
+        when to say happy birthday. The year is never shared.</span></label>
+      <fieldset style="border:0;padding:0;margin:0 0 .5rem">
+        <legend class="small-note" style="padding:0;margin-bottom:.3rem">I am a…</legend>
+        <label style="margin-right:1rem"><input type="radio" name="acct-role" value="student"
+          checked onchange="toggleSchoolField()"> Student</label>
+        <label><input type="radio" name="acct-role" value="teacher"
+          onchange="toggleSchoolField()"> Teacher</label>
+      </fieldset>
+      <div id="acct-school-wrap" style="display:none">
+        <div class="field" style="margin-bottom:.4rem">
+          <label for="acct-school">Name of your school</label>
+          <input type="text" id="acct-school" maxlength="120" placeholder="The school where you teach">
+        </div>
+        <p class="small-note" style="margin:0 0 .7rem">
+          A teacher account has to be approved before it can see a class, so this
+          creates a request rather than access. You can practise while you wait.</p>
+      </div>
+      <label style="display:block;margin-bottom:.2rem">
+        <input type="checkbox" id="acct-consent">
+        <span class="small-note">I have read how my information is used and stored.
+        <a href="#" onclick="showPrivacy();return false">Read it</a></span></label>`;
+}
+
+function createFormHtml(){
+  const busy = ACCOUNT_BUSY ? ' disabled' : '';
+  return `
+    <div class="panel">
+      <h2 style="margin-top:0">Create an account</h2>
+      ${profileFieldsHtml('')}
+      <div class="field-row" style="margin:.7rem 0 0">
+        <div class="field"><label for="acct-email">Email</label>
+          <input type="email" id="acct-email" autocomplete="email" maxlength="200"></div>
+        <div class="field"><label for="acct-pass">Password</label>
+          <input type="password" id="acct-pass" autocomplete="new-password"></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:.6rem" onclick="accountCreate()"${busy}>
+        ${ACCOUNT_BUSY ? 'Creating…' : 'Create my account'}</button>
+      <p class="small-note" style="margin:.9rem 0 0">
+        <a href="#" onclick="accountMode('choose');return false">Back</a></p>
+    </div>`;
+}
+
+function profileFormHtml(u){
+  const busy = ACCOUNT_BUSY ? ' disabled' : '';
+  return `
+    <div class="panel">
+      <h2 style="margin-top:0">Almost there</h2>
+      <p class="small-note" style="margin:.2rem 0 .9rem">
+        Signed in as ${escapeHtml(u.email || 'your account')}. Two things Google
+        does not tell us, and one choice.</p>
+      ${profileFieldsHtml(u.name || '')}
+      <button class="btn" style="width:100%;margin-top:.6rem" onclick="accountSaveProfile()"${busy}>
+        ${ACCOUNT_BUSY ? 'Saving…' : 'Finish'}</button>
+    </div>`;
+}
+
+function passwordFormHtml(){
+  const busy = ACCOUNT_BUSY ? ' disabled' : '';
+  return `
+    <div class="panel">
+      <h2 style="margin-top:0">Sign in</h2>
+      <div class="field-row">
+        <div class="field"><label for="acct-email">Email</label>
+          <input type="email" id="acct-email" autocomplete="email"></div>
+        <div class="field"><label for="acct-pass">Password</label>
+          <input type="password" id="acct-pass" autocomplete="current-password"></div>
+      </div>
+      <button class="btn" style="width:100%;margin-top:.6rem" onclick="accountPasswordSignIn()"${busy}>
+        ${ACCOUNT_BUSY ? 'Signing in…' : 'Sign in'}</button>
+      <p class="small-note" style="margin:.9rem 0 0">
+        <a href="#" onclick="accountMode('choose');return false">Back</a></p>
+    </div>`;
+}
+
+function accountSignedInHtml(u){
+  const p = ACCOUNT_PROFILE || {};
+  const pending = p.role === 'teacher' && !u.isTeacher;
+  return `
+    <div class="panel">
+      <h2 style="margin-top:0">Your account</h2>
+      <p style="margin:.2rem 0"><b>${escapeHtml(p.displayName || u.name || '')}</b></p>
+      <p class="small-note" style="margin:0">${escapeHtml(u.email || '')} · ${escapeHtml(p.country || '')}</p>
+      ${pending ? `<div class="panel" style="border-color:var(--amber);margin-top:.8rem">
+        <b style="color:var(--amber)">⏳ Your teacher account is waiting to be approved.</b>
+        <p class="small-note" style="margin:.3rem 0 0">Until it is, you can practise
+        like any student. Nothing about a class is visible to you yet.</p></div>` : ''}
+      <button class="btn ghost sm" style="margin-top:.9rem" onclick="accountSignOut()">Sign out</button>
+    </div>`;
+}
+
+function toggleSchoolField(){
+  const wrap = document.getElementById('acct-school-wrap');
+  if(wrap) wrap.style.display = pickedRole() === 'teacher' ? '' : 'none';
+}
+function pickedRole(){
+  const el = document.querySelector('input[name="acct-role"]:checked');
+  return (el && el.value) || 'student';
+}
+function readProfileForm(){
+  const val = id => ((document.getElementById(id) || {}).value || '').trim();
+  const on  = id => !!((document.getElementById(id) || {}).checked);
+  return { name: val('acct-name'), country: val('acct-country'), dob: val('acct-dob'),
+           shareBirthday: on('acct-share-bday'), role: pickedRole(),
+           school: val('acct-school'), consent: on('acct-consent'),
+           email: val('acct-email'), pass: val('acct-pass') };
+}
+
+/* One validator for both routes. The rules refuse a bad profile anyway, but a
+   refusal arriving from the database is a screen that says "something went
+   wrong" — the person needs to be told which field, before anything is sent. */
+function validateProfileForm(f){
+  if(!f.name) return 'Type your full name.';
+  if(!f.country) return 'Choose your country.';
+  if(!f.dob) return 'Enter your date of birth.';
+  const gate = ageGate(f.dob);
+  if(gate.reason === 'format' || gate.reason === 'impossible') return 'That date does not look right.';
+  if(gate.reason === 'too-young')
+    return `Ajar is for people aged ${MIN_AGE} and over, so we cannot create an account. ` +
+           `You can still practise here without one — nothing is saved about you.`;
+  if(f.role === 'teacher' && !f.school) return 'Type the name of your school.';
+  if(!f.consent) return 'Please read how your information is used, and tick the box.';
+  return null;
+}
+
+
+/* The four things the buttons do.
+
+   All of them share one shape: put the app in a busy state so nothing can be
+   submitted twice, do the work, and on failure say in words what happened.
+   None of them swallow. That is not a style preference in this codebase — a
+   swallowed write is what emptied the class list, killed the QR codes, and
+   hid every student's practice from their teacher, all in one day. */
+async function accountGoogle(){
+  if(ACCOUNT_BUSY) return;
+  accountBusy(true);
+  try{
+    await window.CloudSync.signInWithGoogle();
+    await refreshAccountProfile();
+    accountMsg(null);
+  }catch(e){
+    console.error('Ajar: Google sign-in failed —', e);
+    accountMsg(authErrorText(e), false);
+  }finally{ accountBusy(false); }
+}
+
+async function accountCreate(){
+  if(ACCOUNT_BUSY) return;
+  const f = readProfileForm();
+  const bad = validateProfileForm(f);
+  if(bad){ accountMsg(bad, false); return; }
+  if(!f.email){ accountMsg('Enter an email address.', false); return; }
+  if((f.pass || '').length < 6){ accountMsg('Choose a password of at least six characters.', false); return; }
+  accountBusy(true);
+  try{
+    await window.CloudSync.createAccount(f.email, f.pass, f.name);
+    await finishProfile(f);
+  }catch(e){
+    console.error('Ajar: creating the account failed —', e);
+    accountMsg(authErrorText(e), false);
+  }finally{ accountBusy(false); }
+}
+
+async function accountPasswordSignIn(){
+  if(ACCOUNT_BUSY) return;
+  const f = readProfileForm();
+  if(!f.email || !f.pass){ accountMsg('Type your email and password.', false); return; }
+  accountBusy(true);
+  try{
+    await window.CloudSync.signInWithPassword(f.email, f.pass, true);
+    await refreshAccountProfile();
+    accountMsg(null);
+  }catch(e){
+    console.error('Ajar: sign-in failed —', e);
+    accountMsg(authErrorText(e), false);
+  }finally{ accountBusy(false); }
+}
+
+async function accountSaveProfile(){
+  if(ACCOUNT_BUSY) return;
+  const f = readProfileForm();
+  const bad = validateProfileForm(f);
+  if(bad){ accountMsg(bad, false); return; }
+  accountBusy(true);
+  try{ await finishProfile(f); }
+  catch(e){
+    console.error('Ajar: saving the profile failed —', e);
+    accountMsg('Your account exists, but the details did not save. Try Finish again.', false);
+  }finally{ accountBusy(false); }
+}
+
+/* Writing the profile, and the split that keeps it private.
+
+   Two documents, on purpose. users/{uid} carries the email, the country and
+   the full date of birth, and its rules let nobody read it but its owner.
+   What the class sees is written separately and carries MM-DD at most, so a
+   birthday can be wished without an age being published.
+
+   A teacher does not become a teacher here. They file a request. */
+async function finishProfile(f){
+  await window.CloudSync.saveProfile({
+    displayName: f.name, country: f.country, birthDate: f.dob,
+    role: f.role, schoolId: currentSchool() || '',
+  });
+  setStudentName(f.name);
+  if(f.role === 'teacher'){
+    await window.CloudSync.requestTeacherAccess(f.name, f.school);
+  }
+  // Best effort, and deliberately not fatal: the class-visible record is a
+  // convenience, and failing to share a birthday must not undo an account
+  // that already exists.
+  if(f.shareBirthday && window.CloudSync.pushSummary){
+    try{ await window.CloudSync.shareBirthday(f.name, birthdayFrom(f.dob)); }
+    catch(e){ console.warn('Ajar: the birthday was not shared —', e); }
+  }
+  await refreshAccountProfile();
+  accountMsg(f.role === 'teacher'
+    ? 'Account created. Your teacher access is waiting to be approved — you can practise in the meantime.'
+    : 'You are all set.', true);
+}
+
+async function refreshAccountProfile(){
+  try{ ACCOUNT_PROFILE = await window.CloudSync.loadProfile(); }
+  catch(e){ console.error('Ajar: could not read your profile —', e); ACCOUNT_PROFILE = null; }
+  renderAccount();
+  renderWhoAmI();
+}
+
+function accountSignOut(){
+  if(!window.CloudSync) return;
+  window.CloudSync.signOutTeacher()
+    .then(() => { ACCOUNT_PROFILE = null; ACCOUNT_MODE = 'choose'; renderAccount(); renderWhoAmI(); })
+    .catch(e => { console.error('Ajar: sign-out failed —', e);
+                  accountMsg('Could not sign out. Check the connection.', false); });
 }
 
 function renderWelcome(){
@@ -12392,6 +12813,76 @@ function guideContent(role){
 
     <p>Pick anything and go.</p>`;
 }
+/* WHAT WE HOLD, AND WHAT WE DO NOT.
+
+   Not optional any more. The moment this app asks for an email address, a
+   country and a date of birth, it is processing personal data, and the law
+   that covers that requires the person to be told — plainly, before they
+   agree, and in a place they can go back to.
+
+   Written to be read by a seventeen-year-old studying in a second language,
+   which rules out the usual page of clauses. Every line here is a claim the
+   code actually keeps, and each one is asserted somewhere in scripts/ or in
+   the emulator. A privacy notice that describes a different app than the one
+   running is worse than none: it is a promise nobody is keeping. */
+function privacyText(){
+  return `
+    <h2 style="margin-top:0">What Ajar keeps about you</h2>
+    <p class="small-note">Last updated 17 August 2026.</p>
+
+    <h3>What we ask for, and why</h3>
+    <ul>
+      <li><b>Your name</b> — so your teacher knows whose work she is looking at.</li>
+      <li><b>Your email</b> — so you can sign in, and get back in if you forget your password.</li>
+      <li><b>Your country</b> — so the school can see where its class comes from.</li>
+      <li><b>Your date of birth</b> — used once, to check you are ${MIN_AGE} or older.
+        We are not allowed to hold accounts for people younger than that.</li>
+    </ul>
+
+    <h3>Who can see it</h3>
+    <p>Your email, your country and your date of birth are readable by
+      <b>you and nobody else</b>. Not your classmates. Not your teacher. Not the
+      person who runs the app. That is enforced by the database itself, not by
+      a screen that hides a button.</p>
+    <p>What your class can see is your <b>name</b>, how much you have practised
+      and how you did — and, only if you tick the box, <b>the day and month of
+      your birthday</b>. Never the year, so nobody can work out your age from it.</p>
+
+    <h3>What your teacher can see</h3>
+    <p>Your name, your practice results, and any note she writes about your work.
+      She does not receive your date of birth, your country or your email,
+      because she does not need them in order to teach you.</p>
+
+    <h3>What we never do</h3>
+    <ul>
+      <li>We do not sell anything about you, to anyone, ever.</li>
+      <li>There is no advertising in Ajar, so nothing here is tracking you for one.</li>
+      <li>We do not record your voice. Speaking practice happens on your device
+        and is not sent anywhere.</li>
+    </ul>
+
+    <h3>Getting it back, or getting rid of it</h3>
+    <p>Ask, and we will send you everything held about you, or delete it. Write to
+      <b>${escapeHtml(CONFIG.devEmail || '')}</b> from the address you signed up with.
+      Deleting your account removes your profile and your practice history.</p>
+
+    <h3>Practising without an account</h3>
+    <p>You do not need one. Everything works signed out — your practice is then
+      saved on that device only, and nothing about you leaves it.</p>
+
+    <h3>Who is responsible</h3>
+    <p>Ajar is built and run by Croxatte Tech Solutions. Questions, complaints and
+      requests all go to <b>${escapeHtml(CONFIG.devEmail || '')}</b>.</p>`;
+}
+function showPrivacy(){
+  document.getElementById('guide-modal').innerHTML = privacyText() +
+    `<div class="guide-close"><button class="btn" onclick="closePrivacy()">Close</button></div>`;
+  openModal();
+}
+// Not closeGuide(): that one records a guide as seen for a role, and reusing
+// it here would mark a guide read that nobody has read.
+function closePrivacy(){ closeModal(); }
+
 function showGuide(role){
   document.getElementById('guide-modal').innerHTML = guideContent(role) + `<div class="guide-close"><button class="btn" onclick="closeGuide('${role}')">Got it</button></div>`;
   openModal();
@@ -13168,6 +13659,15 @@ loadSharedClassroomContent().then(()=>{
           schoolId: profile.schoolId || '',
           createdAt: Date.now(),
         });
+        return true;
+      },
+      // MM-DD and nothing else — the rules refuse anything carrying a year,
+      // and this is the only writer of that field.
+      async shareBirthday(name, mmdd) {
+        const u = auth.currentUser;
+        if(!u || noSchool() || !/^[0-9]{2}-[0-9]{2}$/.test(String(mmdd || ''))) return NO_SCHOOL;
+        await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
+          { displayName: name, birthday: mmdd }, { merge: true });
         return true;
       },
       async loadProfile() {
