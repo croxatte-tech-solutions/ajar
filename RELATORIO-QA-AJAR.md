@@ -409,3 +409,74 @@ Testei quebrando o contraste de propósito: o hook recusou o commit e nomeou o a
 Achei três falso-positivos **nos meus próprios verificadores** enquanto os escrevia — a regra de comentários disparou no comentário que documentava o erro que ela procura, a de rede disparou na palavra "fetch" numa frase e em quatro URLs de atribuição, a de L1 contou duas ocorrências numa linha como dois lugares. Estreitei as três, com o motivo escrito no código.
 
 Registro porque é a mesma lição do item 13, do outro lado: **um verificador que grita sem motivo ensina quem lê a ignorá-lo.** Preferi 79 checagens que significam algo a 120 que ninguém olha.
+---
+
+# Terceira passada — varredura autônoma, 17/08 manhã
+
+Ele saiu a caminho da escola e pediu para eu revisar tudo por completo e corrigir
+sozinho. Isto é o que a varredura encontrou **depois** de tudo acima já estar verde.
+
+## 🔴 Um bug novo, e era o pior tipo: beco sem saída
+
+**Onde:** `renderListenRepeatStep` · **Ângulo:** bug funcional / UX · **Status:** ✅ corrigido
+
+Onze dos doze renderizadores terminam em `wrap.innerHTML += practiceFooter()`.
+Listen and Repeat atribui `innerHTML` e retorna. Consequência:
+
+- **Prática livre:** nada oferecido depois da sétima frase.
+- **Seção de Speaking:** é o primeiro de dois itens, e **não havia botão nenhum para
+  avançar.** Um aluno fazendo Speaking chegava na frase 1 e parava.
+
+É o mesmo beco relatado antes como *"o botao sumiu e nao foi para o proximo
+exercicio"* — foi corrigido no caminho que foi relatado e ficou vivo na única
+seção que ninguém havia feito.
+
+**Sobreviveu a 2897 checagens verdes.** Foi achado exercitando o app no navegador,
+não lendo código.
+
+**Corrigido no invólucro, não no ramo.** `renderPractice` agora roda
+`ensureWayForward()`: se a tela não tem saída, uma é acrescentada. Remendar o
+décimo-segundo ramo consertaria hoje; um décimo-terceiro reintroduziria — e o
+comentário do `mountBackBar` já avisava exatamente isso.
+
+**Teste novo:** `check_no_dead_ends.js` percorre os 12 tipos e as 4 seções questão
+por questão (37 itens). Verificado desligando a rede de propósito: `listen-repeat`
+e `speaking q2` voltam a ser becos.
+
+## 🟠 Tela da sala inalcançável em tela baixa
+
+**Status:** ✅ corrigido
+
+`.tv` é flex fixo, e flex fixo **corta** o que transborda em vez de rolar. Em 393px
+de altura as setas e o "1 of 3" ficavam inalcançáveis. `overflow-y:auto` mais o
+código cedendo espaço aos controles (nunca abaixo de 180px, que é o mínimo para
+escanear de longe).
+
+Medido: iPhone retrato 204px · iPhone paisagem 183px e rola · iPad nas duas
+orientações 426px e cabe.
+
+## ✅ O que foi verificado e está limpo
+
+| Verificação | Resultado |
+|---|---|
+| 12 tipos de exercício | Todos renderizam, passam pelo portão, oferecem saída |
+| 4 seções, questão por questão | 37 itens, **zero** becos sem saída |
+| QR codes | 12 tipos, 12 códigos distintos, **um por exercício**, todos lidos pelo Vision da Apple |
+| Direitos autorais | 3970 strings, **nenhuma** sobreposição de 7+ palavras com material da ETS |
+| Nome com apóstrofo | `Michelle O'Connell` e `Ana O'Brien` intactos em 8 caminhos |
+| Migração de chaves | 8 de 8 atravessaram, histórico preservado, nada órfão |
+| Dispositivos (4 combinações) | Zero rolagem horizontal, zero alvo abaixo de 40px na navegação, Start visível, relógio visível ao escrever |
+| Ciclo da capa | Cronometrado: 18s inglês → 18s idioma → inglês permanente |
+
+## Duas sondas minhas que estavam erradas antes de estarem certas
+
+Ambas leram o app pelas minhas suposições em vez do código dele, e ambas
+reportaram **12 de 12 quebrados** quando nada estava:
+
+- Procurei "Next exercise" na prática livre, onde o rodapé é "Try another one like
+  this" — aqueles rótulos só existem dentro de uma seção.
+- Procurei `data-speak` na tela do aluno, onde ele vive no cartão da professora; o
+  aluno ouve por `new Audio(audioUrlFor(...))`.
+
+Registro porque uma sonda que grita falso é pior que sonda nenhuma: a segunda vez
+que ela grita, ninguém olha.
