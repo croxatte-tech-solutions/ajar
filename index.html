@@ -156,6 +156,43 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 
 .compose{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.1rem; box-shadow:var(--shadow); }
 .wordcount{ font-size:.76rem; color:var(--text-dim); margin-top:.4rem; font-variant-numeric:tabular-nums; }
+/* Teacher section nav. A phone gets a sticky horizontal strip; a laptop or
+   the classroom projector gets a real rail beside the column, which is what
+   the dashboard brief asked for. Deliberately one component with a media
+   query rather than a drawer: a drawer that covers a 375px screen mid-class
+   would be worse than the scrolling it replaces. */
+#teacher-nav{ display:flex; gap:.35rem; overflow-x:auto; position:sticky; top:0; z-index:5;
+  background:var(--bg); padding:.5rem 0 .6rem; margin-bottom:.4rem;
+  border-bottom:1px solid var(--border); scrollbar-width:none; }
+#teacher-nav::-webkit-scrollbar{ display:none; }
+#teacher-nav a{ flex-shrink:0; font-size:.78rem; font-weight:700; text-decoration:none;
+  color:var(--text-dim); background:var(--surface); border:1px solid var(--border);
+  border-radius:999px; padding:.35rem .7rem; white-space:nowrap; }
+#teacher-nav a.here{ color:#fff; background:var(--accent); border-color:var(--accent); }
+#teacher-nav a .n{ opacity:.65; font-weight:600; margin-left:.3rem; }
+/* The rail sits left of a 960px centred column, so it needs
+   50vw - 480 - 184(rail) - 16(gap) >= 16, i.e. a viewport of ~1400px.
+   Below that it stays the sticky strip; a rail that does not fit is a rail
+   half off the screen, which is how this was written the first time. */
+@media (min-width:1400px){
+  #teacher-nav{ position:fixed; top:6.5rem; left:calc(50% - 480px - 12.5rem); width:11.5rem;
+    display:block; overflow:visible; background:none; border:none; padding:0; margin:0; }
+  #teacher-nav a{ display:flex; justify-content:space-between; align-items:center;
+    border-radius:9px; margin-bottom:.3rem; padding:.45rem .7rem; }
+}
+/* Writing feedback as a short conversation rather than one block that gets
+   overwritten. Checking a draft twice is the normal way to use this, and
+   keeping the previous reply visible is what lets a student SEE that the
+   revision worked -- which a single replaced panel actively hides. */
+.fb-thread{ margin-top:1rem; display:flex; flex-direction:column; gap:.6rem; }
+.fb-msg{ background:var(--amber-soft); border:1px solid var(--border); border-radius:12px 12px 12px 4px; padding:.8rem .95rem; }
+.fb-msg.older{ opacity:.62; }
+.fb-head{ display:flex; align-items:baseline; gap:.5rem; flex-wrap:wrap; margin-bottom:.4rem; }
+.fb-who{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--amber); }
+.fb-time{ font-size:.68rem; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+.fb-msg ul{ margin:0; padding-left:1.1rem; }
+.fb-msg li{ margin:.2rem 0; }
+.fb-note{ font-size:.72rem; color:var(--text-dim); margin:.45rem 0 0; }
 .feedback{ margin-top:1rem; border-radius:10px; padding:.9rem 1rem; background:var(--amber-soft); border:1px solid var(--border); }
 .feedback-label{ font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--amber); display:block; margin-bottom:.4rem; }
 .feedback ul{ margin:.4rem 0 0; padding-left:1.1rem; font-size:.84rem; }
@@ -230,9 +267,14 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 
   <!-- TEACHER VIEW -->
   <div id="view-teacher" class="view active">
-    <div id="progress-box"></div>
+    <!-- Jump between the panels below instead of scrolling past them. On a
+         phone this is a sticky strip; from 1220px up there is room beside
+         the 960px column, so it becomes a rail pinned to the left. -->
+    <nav id="teacher-nav" aria-label="Teacher sections"></nav>
 
-    <div class="panel">
+    <div id="sec-progress"><div id="progress-box"></div></div>
+
+    <div class="panel" id="sec-generate">
       <h2>Generate today's batch</h2>
       <p class="small-note" style="margin-top:0">Generate and share a fresh set every class day — the weekly theme keeps you on the 12-week plan, but each day gets its own link and QR code.</p>
       <div class="type-tabs" id="type-tabs"></div>
@@ -260,7 +302,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="sec-individual">
       <h2>🎯 Assign to one student (optional)</h2>
       <p class="small-note" style="margin-top:0">Pick a task type and theme just for this student — independent of what's selected above, so you're free to give someone a different focus than the rest of the class right now. Uses only the first name you type here; nothing is stored beyond this session.</p>
       <div class="field-row">
@@ -284,9 +326,9 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <div id="individual-list"></div>
     </div>
 
-    <div id="teacher-signin"></div>
-    <div id="share-box"></div>
-    <div id="batch" class="batch-grid"></div>
+    <div id="sec-account"><div id="teacher-signin"></div></div>
+    <div id="sec-share"><div id="share-box"></div></div>
+    <div id="sec-review"><div id="batch" class="batch-grid"></div></div>
     <div id="teacher-empty" class="empty">
       <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 19V6a2 2 0 012-2h9l5 5v10a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5"/><path d="M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
       <div>Pick a task type and theme, then generate a batch to begin.</div>
@@ -6162,10 +6204,67 @@ function cardBody(item){
   return '';
 }
 
+// The teacher's sections, in the order they appear. Counts come from real
+// state rather than being decorative: "Review 4" is the number actually
+// waiting for her, which is the one number this panel exists to show.
+const TEACHER_SECTIONS = [
+  { id:'sec-progress',   label:'Progress' },
+  { id:'sec-generate',   label:'Generate' },
+  { id:'sec-individual', label:'Students' },
+  { id:'sec-account',    label:'Account' },
+  { id:'sec-share',      label:'Share' },
+  { id:'sec-review',     label:'Review' },
+];
+function renderTeacherNav(){
+  const nav = document.getElementById('teacher-nav');
+  if(!nav) return;
+  const batch = loadBatch();
+  const counts = {
+    'sec-review': batch.filter(i => i.status === 'pending').length,
+    'sec-share': batch.filter(i => i.status === 'approved').length,
+    'sec-individual': Object.keys(individualForShare()).length,
+  };
+  nav.innerHTML = TEACHER_SECTIONS.map(sec => {
+    const n = counts[sec.id];
+    return `<a href="#${sec.id}" onclick="jumpToSection(event,'${sec.id}')">${sec.label}${n ? `<span class="n">${n}</span>` : ''}</a>`;
+  }).join('');
+  markSectionInView();
+}
+function jumpToSection(ev, id){
+  ev.preventDefault();
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+// Which section the teacher is actually looking at. Without this the nav
+// is a row of dead links -- it tells you where you can go but never where
+// you are, which is worse than no nav at all.
+function markSectionInView(){
+  const nav = document.getElementById('teacher-nav');
+  if(!nav) return;
+  // Highlighting is decoration. It runs inside renderTeacher(), so an
+  // exception here would blank the teacher's whole panel to save a
+  // coloured pill — a trade nobody would take. Degrade to "no highlight".
+  try{
+    let current = TEACHER_SECTIONS[0].id;
+    for(const sec of TEACHER_SECTIONS){
+      const el = document.getElementById(sec.id);
+      if(el && el.getBoundingClientRect().top <= 120) current = sec.id;
+    }
+    nav.querySelectorAll('a').forEach(a => {
+      a.classList.toggle('here', a.getAttribute('href') === '#' + current);
+    });
+  }catch(e){}
+}
+window.addEventListener('scroll', () => {
+  if(document.getElementById('view-teacher')?.classList.contains('active')) markSectionInView();
+}, { passive:true });
+
 function renderTeacher(){
   const batch = loadBatch();
   const wrap = document.getElementById('batch');
   const empty = document.getElementById('teacher-empty');
+  renderTeacherNav();
   renderTeacherSignIn();
   renderProgressBox();
   renderIndividualList();
@@ -7551,8 +7650,35 @@ function checkWriting(){
     notes.push(`<b>Elaboration & Support:</b> ${n>=target[0] && n<=target[1] ? `length is on target (${n} words) — likely enough room to support your point.` : n<target[0] ? `a bit short (${n} words, target ${target[0]}–${target[1]}) — add a reason or example to support your view.` : `a bit long (${n} words, target ${target[0]}–${target[1]}) — tighten your explanation.`}`);
   }
   notes.push('<b>Grammar & Vocabulary / Syntactic Variety:</b> not checked by this free prototype yet — needs real language analysis, planned for the hosted upgrade.');
-  document.getElementById('feedback').innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback (our own criteria, covering roughly half of what the official exam judges) — your teacher reviews this before it counts as a grade</span><ul>${notes.map(x=>`<li>${x}</li>`).join('')}</ul></div>`;
+  pushWritingFeedback(notes, n);
   logUsage(item.type, item.theme, (n>=target[0] && n<=target[1]) ? 1 : 0);
+}
+
+// Feedback arrives as a reply in a short thread, newest at the bottom, so a
+// student who revises and checks again can compare the two answers instead
+// of watching the first one vanish. Capped at three: beyond that it is
+// scrolling, not context.
+const FB_MAX = 3;
+function pushWritingFeedback(notes, wordCount){
+  const box = document.getElementById('feedback');
+  if(!box) return;
+  const thread = (window._fbThread = window._fbThread || []);
+  thread.push({ notes, wordCount, at: new Date() });
+  while(thread.length > FB_MAX) thread.shift();
+
+  box.innerHTML = `<div class="fb-thread">${thread.map((m, i) => {
+    const last = i === thread.length - 1;
+    const time = m.at.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    return `<div class="fb-msg${last ? '' : ' older'}">
+      <div class="fb-head">
+        <span class="fb-who">Assistant draft feedback</span>
+        <span class="fb-time">${time} &middot; ${m.wordCount} words</span>
+      </div>
+      <ul>${m.notes.map(x => `<li>${x}</li>`).join('')}</ul>
+      ${last ? '<p class="fb-note">Our own criteria, covering roughly half of what the official exam judges. Your teacher reviews this before it counts as a grade. Edit your draft and press <b>Check draft</b> again to compare.</p>' : ''}
+    </div>`;
+  }).join('')}</div>`;
+  box.lastElementChild?.lastElementChild?.scrollIntoView?.({ behavior:'smooth', block:'nearest' });
 }
 
 // The teacher identity is fixed (this prototype is for one section, one
