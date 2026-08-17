@@ -134,6 +134,41 @@ const testScript = `
   assert('every task type appears in the student guide', missing.length === 0);
   if(missing.length) results.push('  missing: ' + missing.map(t => t.tag).join(', '));
 
+  // --- feedback about the app reaches somebody ---
+  //
+  // Two screens send it and they disagreed. The panel read the teacher's
+  // saved address; the end-of-section review read CONFIG.feedbackEmail,
+  // which was never defined anywhere. That built a mailto: with an empty
+  // recipient, so a student who wrote a review and pressed send opened a
+  // blank mail window and reasonably concluded the app was broken.
+  const DEV_EMAIL = 'croxattetechsolutions@gmail.com';
+  assert('the developer address lives in the config block',
+    CONFIG.devEmail === DEV_EMAIL);
+  assert('nothing still reads the address that never existed',
+    __html.indexOf('CONFIG.feedbackEmail') === -1);
+  assert('the section review resolves its recipient through the one helper',
+    __html.indexOf('const to = feedbackTo();') > -1);
+  assert('and so does the feedback panel',
+    __html.indexOf('const email = feedbackTo();') > -1);
+
+  // Run it. Both branches matter: hers when she has set one, the
+  // developer's when she has not.
+  localStorage.removeItem('cse_teacher_email');
+  assert('with nothing set it goes to the developer', feedbackTo() === DEV_EMAIL);
+  localStorage.setItem('cse_teacher_email', '   ');
+  assert('a blank saved address still goes to the developer', feedbackTo() === DEV_EMAIL);
+  localStorage.setItem('cse_teacher_email', 'ms@school.example');
+  assert('a teacher who set her own address reads it first',
+    feedbackTo() === 'ms@school.example');
+  localStorage.removeItem('cse_teacher_email');
+
+  // The panel used to promise a copy-this-yourself box when no address was
+  // set. There is always an address now, so that sentence was a lie.
+  assert('the panel no longer promises a copyable note instead',
+    __html.indexOf("they'll just get a copyable note instead") === -1);
+  assert('and it names where feedback actually goes',
+    __html.indexOf('Feedback about the app goes to the developer at') > -1);
+
   console.log(results.join('\\n'));
   const fails = results.filter(r => r.includes('FAIL'));
   console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
@@ -148,7 +183,14 @@ const sandbox = {
   document: { getElementById:()=>el(), createElement:()=>el(), querySelector:()=>el(),
               querySelectorAll:()=>[], addEventListener(){}, body: el() },
   window: { addEventListener(){} },
-  localStorage: { getItem:()=>null, setItem(){}, removeItem(){} },
+  // A real store rather than a stub that always answers null: feedbackTo()
+  // has two branches and only one of them is reachable with an empty store.
+  localStorage: (() => {
+    const m = {};
+    return { getItem: k => (k in m ? m[k] : null),
+             setItem: (k, v) => { m[k] = String(v); },
+             removeItem: k => { delete m[k]; } };
+  })(),
   location: { origin:'https://example.com', pathname:'/app', hash:'', search:'' },
   navigator: { language:'en-US', languages:['en-US'] },
   confirm: () => true,
@@ -162,6 +204,7 @@ const sandbox = {
 };
 sandbox.self = sandbox.window;
 sandbox.globalThis = sandbox;
+sandbox.__html = html;   // the probe checks a few things that are text, not behaviour
 vm.createContext(sandbox);
 vm.runInContext(blocks.join('\n;\n') + '\n;\n' + testScript, sandbox)
   .catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });

@@ -533,6 +533,18 @@ const CONFIG = {
   // anyone and would undo every rule in firestore.rules.
   teacherEmail: '',
 
+  // Where feedback ABOUT THE APP goes when nobody has set an address.
+  //
+  // This is the developer's, not a teacher's, and the distinction is the
+  // whole point: the feedback panel says out loud that it is about the app
+  // and not about grades or classroom matters, so a bug report should reach
+  // the person who can fix it rather than the teacher who cannot. A teacher
+  // can still redirect it to herself in the Account card, and that wins.
+  //
+  // Unlike teacherEmail above, this belongs in a public file: it is a
+  // published contact address for the app, not a person's login.
+  devEmail: 'croxattetechsolutions@gmail.com',
+
   // TODO(auth): there is no authentication anywhere in this app.
   // Anyone holding a share link can write to the classroom document,
   // INCLUDING the teacher-approval path in shareApproved(). That is a
@@ -567,6 +579,26 @@ function currentSchool(){
 // GitHub Pages, on localhost, and on a future custom domain unchanged.
 function appBaseUrl(){
   return CONFIG.baseUrl || (location.origin + location.pathname);
+}
+
+// The one place feedback about the app gets an address.
+//
+// Two screens send it — the app feedback panel and the review at the end of
+// a section — and they disagreed. The panel read the teacher's saved address
+// and fell back to a copy-this-yourself box; the section review read
+// a config field that was never defined anywhere, so it built a mailto: with
+// an empty recipient. A student who filled in that review and pressed send
+// opened a blank mail window and reasonably concluded the app was broken.
+//
+// A teacher's own address wins when she has set one, because she may have
+// reasons to read it first. Otherwise it reaches the developer, which is
+// what the panel promises in writing.
+function feedbackTo(){
+  try{
+    const own = (localStorage.getItem('cse_teacher_email') || '').trim();
+    if(own) return own;
+  }catch(e){}   // private-mode Safari throws on localStorage; the address below still works
+  return CONFIG.devEmail || '';
 }
 </script>
 
@@ -6701,14 +6733,14 @@ function paintShareBox(link, statusNote, s){
         : "Everyone's mic is active by default. In a full room, naming 1-3 students per round avoids everyone talking at once and phones picking up each other's voices."}</p>
       <div class="field-row" style="margin-top:.8rem">
         <div class="field">
-          <label for="teacher-email">📧 App feedback goes to (optional — developer's email, or yours)</label>
-          <input type="email" id="teacher-email" placeholder="dev@example.com" value="${escapeHtml(s.teacherEmailRaw)}" onchange="onTeacherEmailChange()">
+          <label for="teacher-email">📧 App feedback goes to (optional — leave empty to send it to the developer)</label>
+          <input type="email" id="teacher-email" placeholder="${escapeHtml(CONFIG.devEmail)}" value="${escapeHtml(s.teacherEmailRaw)}" onchange="onTeacherEmailChange()">
         </div>
         <button class="btn ghost sm" onclick="clearTeacherEmail()">Remove</button>
       </div>
       <p class="small-note">${s.teacherEmailRaw
         ? `Students' "💬 Feedback" button opens their own mail app pre-addressed here — every Thursday, plus anytime they choose to use it.`
-        : `Add an email so students' "💬 Feedback" button knows where to send app suggestions — without it, they'll just get a copyable note instead.`}</p>
+        : `Feedback about the app goes to the developer at ${escapeHtml(CONFIG.devEmail)}. Put your own address here to read it first instead — but it is about the app rather than about the class, so the default is usually the right one.`}</p>
       <div class="field-row" style="margin-top:.8rem">
         <div class="field">
           <label for="announcement-text">📣 Message to students (optional — shown as a banner when they open this link)</label>
@@ -8636,7 +8668,7 @@ function submitReview(section){
 }
 
 function mailReview(body){
-  const to = (CONFIG && CONFIG.feedbackEmail) || '';
+  const to = feedbackTo();
   location.href = 'mailto:' + encodeURIComponent(to) +
     '?subject=' + encodeURIComponent('Ajar — section review') +
     '&body=' + encodeURIComponent(body);
@@ -10981,17 +11013,19 @@ function sendFeedback(){
       s.rows.forEach(r => body += `- ${tagFor(r.type)} / ${r.theme}: ${Math.round(r.avg*100)}% (${r.n} attempt${r.n>1?'s':''})\n`);
     }
   }
-  const email = (localStorage.getItem('cse_teacher_email') || '').trim();
+  const email = feedbackTo();
   const subject = `${PRODUCT_NAME} — app feedback from ${name}`;
   // Either path below means the student actually engaged with feedback
   // this cycle, so the weekly nudge stays quiet for another 7 days.
   localStorage.setItem('cse_feedback_last_prompt', String(Date.now()));
   if(email){
     location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    document.getElementById('fb-result').innerHTML = '<p class="small-note">Opening your mail app…</p>';
+    document.getElementById('fb-result').innerHTML = `<p class="small-note">Opening your mail app, addressed to ${escapeHtml(email)}…</p>`;
   } else {
+    // Only reachable if devEmail is emptied too. Kept because a student who
+    // has written something deserves a way to keep it either way.
     document.getElementById('fb-result').innerHTML = `
-      <p class="small-note">No teacher email on file yet — copy this and send it however you'd like.</p>
+      <p class="small-note">No address on file — copy this and send it however you'd like.</p>
       <textarea id="fb-copy-text" rows="6" readonly onclick="this.select()">${escapeHtml(body)}</textarea>
       <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="copyFeedbackText()">Copy</button></div>`;
   }
