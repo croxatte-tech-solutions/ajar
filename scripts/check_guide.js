@@ -97,7 +97,12 @@ const testScript = `
   // Computed from the text now, so rewriting the copy moves the timing with
   // it rather than leaving a stale constant behind.
   const enText = (WELCOME_TEXT.en.lede || '') + ' ' + (WELCOME_TEXT.en.meaning || '');
-  const enWords = enText.split(/\s+/).filter(Boolean).length;
+  // \\s+, not \s+. This probe is a template literal, so a single backslash is
+  // eaten before the regex is ever compiled — it split on the letter "s",
+  // counted 31 pieces instead of 61 words, and made four assertions below
+  // pass while the real numbers said they should fail. Seventh time this
+  // exact escape has bitten me in this project.
+  const enWords = enText.split(/\\s+/).filter(Boolean).length;
   const delayMs = welcomeSwapDelay(WELCOME_TEXT.en.lede, WELCOME_TEXT.en.meaning);
 
   assert('the swap delay is computed, not a constant',
@@ -105,16 +110,35 @@ const testScript = `
   assert('the delay grows with the text',
     welcomeSwapDelay('one two three four five') < welcomeSwapDelay(enText + ' ' + enText));
 
-  // Every reading rate measured has to finish, including the slowest.
-  [['native adult', 238], ['fluent L2', 180], ['intermediate L2', 120], ['slower L2', 90]]
-    .forEach(([who, wpm]) => {
-      const needed = (enWords / wpm) * 60000;
-      assert('a ' + who + ' reader can finish the English', needed <= delayMs);
-    });
+  assert('the word count is the real one, not an artefact', enWords === 61);
 
-  assert('and it is nowhere near the old seven seconds', delayMs > 20000);
-  assert('but not so long it reads as broken', delayMs <= 60000);
+  // THREE PHASES: English, their language for the same length, then English
+  // again and it stays. The third phase is why the first can be halved — it is
+  // no longer anybody's only chance to read the English.
+  assert('the first phase is half the reading estimate',
+    Math.abs(delayMs - welcomeReadMs(enText) / 2) < 1200);
+  assert('and it is not the whole estimate any more',
+    delayMs < welcomeReadMs(enText) * 0.6);
+
+  // Who finishes inside the first phase, stated rather than assumed. The two
+  // who do not are the reason English comes back permanently.
+  const finishes = wpm => (enWords / wpm) * 60000 <= delayMs;
+  assert('a native adult finishes the English in the first phase', finishes(238));
+  assert('so does a fluent second-language reader', finishes(180));
+  assert('an intermediate reader does not, by design', !finishes(120));
+  assert('nor does a slower one', !finishes(90));
+
+  // So the third phase has to exist, and has to be the last word.
+  const wel = __html.slice(__html.indexOf('function renderWelcome'),
+                           __html.indexOf('function welcomeReadMs'));
+  assert('their language is shown for the same length as English',
+    /paintWelcomeCopy\\(local, true\\);\\s*window\\._welcomeReturn = setTimeout\\(\\(\\) => paintWelcomeCopy\\(en, true\\), phase\\)/
+      .test(wel.replace(/\\n/g, ' ').replace(/\\s+/g, ' ')));
+  assert('and English comes back with no timer after it',
+    (wel.match(/setTimeout/g) || []).length === 2);
+
   assert('a very short translation still gets a floor', welcomeSwapDelay('hi') >= 12000);
+  assert('and a very long one is capped', welcomeSwapDelay(enText.repeat(20)) <= 30000);
 
   // --- the numbers come from the app, not from prose ---
   // A guide that hard-codes "50 questions" goes wrong the day the section

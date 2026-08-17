@@ -640,8 +640,8 @@ const CONFIG = {
   // Without an anchor, "Week 8 · Monday" was a pointer the teacher moved by
   // hand with no connection to any real day, so the app could not say
   // whether it was showing today or a week she had left it on. This is that
-  // connection, and it is one line because the schedule is fixed: CSE runs
-  // Monday to Thursday, so week N day D is a date you can work out.
+  // connection, and it is one line because the schedule is fixed: the class
+  // runs Monday to Thursday, so week N day D is a date you can work out.
   termStart: '2026-08-17',
 
   // TODO(auth): there is no authentication anywhere in this app.
@@ -752,7 +752,7 @@ function schoolTimeLabel(now){ return timeLabel(now, SCHOOL_TZ()); }
 
 // Which week and class day today is, from the anchor in CONFIG.
 //
-// CSE runs Monday to Thursday, so a class day is day 1 to 4 and the weekend
+// The class runs Monday to Thursday, so a class day is day 1 to 4 and the weekend
 // is not a class day at all — this returns null then rather than pretending
 // Saturday is Day 6. Also null before the term starts, and outside the
 // 12-week plan, since inventing a Week 19 would be worse than saying nothing.
@@ -3139,7 +3139,7 @@ var qrcode = function() {
    does not publish an official topic list): Technology &
    Modern Life, Education Methods, Social Issues & Globalization,
    Communication & Relationships, Work & Career. "Campus &
-   F1 Student Life" is CSE-specific — not part of any generic
+   F1 Student Life" is specific to this school — not part of any generic
    TOEFL bank, added because it's what actually happens here.
    ========================================================= */
 
@@ -7277,7 +7277,7 @@ function generateBatch(){
    teacher navigates freely in both directions, including back into
    already-completed weeks (a calendar doesn't go blank for the past);
    nothing here auto-generates content without her pressing the button.
-   CSE classes run Monday–Thursday (per the Student Handbook), so a
+   Classes run Monday–Thursday (per the school's student handbook), so a
    week is 4 class days.
 
    All 12 weeks are covered, split across the 6 real TOEFL task types
@@ -11431,13 +11431,27 @@ function renderWelcome(){
     // Everything else opens in English too, then hands over to the reader's
     // own language after a moment. English first is the symbolic order —
     // the translation arrives as help, not as a replacement.
+    // English, then their language, then English again — and it stays.
+    //
+    // Three phases rather than a one-way swap. The first two are the same
+    // length, so their language gets exactly as long as English got; the
+    // third has no end, because English is what the course is in and it is
+    // what should be on screen when somebody finally reads the thing.
+    //
+    // This is what made halving the time safe. A one-way swap had to be long
+    // enough for the slowest reader to finish the English, because after it
+    // the English was gone. Now it comes back and stays, so a slower reader
+    // who did not finish gets it permanently instead of at 43 seconds.
     paintWelcomeCopy(en, false);
     if(local !== en){
       clearTimeout(window._welcomeSwap);
+      clearTimeout(window._welcomeReturn);
       // Timed off the English actually on screen, not a constant.
-      const en = WELCOME_TEXT.en || {};
-      window._welcomeSwap = setTimeout(() => paintWelcomeCopy(local, true),
-        welcomeSwapDelay(en.lede, en.meaning));
+      const phase = welcomeSwapDelay(en.lede, en.meaning);
+      window._welcomeSwap = setTimeout(() => {
+        paintWelcomeCopy(local, true);
+        window._welcomeReturn = setTimeout(() => paintWelcomeCopy(en, true), phase);
+      }, phase);
     }
   }catch(e){ /* the buttons still work, which is what the screen is for */ }
 }
@@ -11472,12 +11486,35 @@ function renderWelcome(){
 const WELCOME_WPM = 90;
 const WELCOME_EXTRA_MS = 3000;
 const WELCOME_SWAP_MIN_MS = 12000;
-const WELCOME_SWAP_MAX_MS = 60000;
+// Halved with the delay itself. A whole minute on one phase read as broken
+// when the phase was the only chance to read the English; now that English
+// returns and stays, a long phase is just waiting.
+const WELCOME_SWAP_MAX_MS = 30000;
 
-function welcomeSwapDelay(...texts){
+/* HALF the reading estimate, and the halving is only safe because of the
+   third phase.
+   -------------------------------------------------------------------
+   The estimate below is how long the English takes to read at 90 wpm. It used
+   to be the delay outright, because the swap was one-way: whatever a reader
+   had not finished when it turned, they had lost. That made 43.7 seconds the
+   honest number and 7 seconds a real bug.
+
+   With English returning permanently, the first phase is no longer somebody's
+   only chance at it. So it is halved — about 21.9 seconds for the text as it
+   stands. A native adult (15.4s) and a fluent second-language reader (20.3s)
+   still finish inside it. An intermediate reader (30.5s) and a slower one
+   (40.7s) do not, and that is the deliberate trade: they finish it in the
+   third phase, which never ends.
+
+   Still computed from the text, so rewriting the copy moves both phases with
+   it rather than leaving a stale number behind. */
+function welcomeReadMs(...texts){
   const words = texts.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
-  const read = Math.round((words / WELCOME_WPM) * 60000) + WELCOME_EXTRA_MS;
-  return Math.min(WELCOME_SWAP_MAX_MS, Math.max(WELCOME_SWAP_MIN_MS, read));
+  return Math.round((words / WELCOME_WPM) * 60000) + WELCOME_EXTRA_MS;
+}
+function welcomeSwapDelay(...texts){
+  const half = Math.round(welcomeReadMs(...texts) / 2);
+  return Math.min(WELCOME_SWAP_MAX_MS, Math.max(WELCOME_SWAP_MIN_MS, half));
 }
 function paintWelcomeCopy(t, animate){
   try{
