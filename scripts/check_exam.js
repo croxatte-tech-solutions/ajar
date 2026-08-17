@@ -235,6 +235,97 @@ const testScript = `
   assert('the raw constant is referenced only where it is defined and returned',
     (HTML_SOURCE.match(/PRACTICE_AGAIN_BTN/g) || []).length === 2);
 
+  // =====================================================
+  // WRITING — where the app must admit what it cannot mark
+  // =====================================================
+  const wr = EXAM_SECTIONS.writing;
+
+  assert('the Writing section is 12 items', wr.items === 12);
+  assert('the Writing section is 23 minutes', wr.seconds === 23 * 60);
+  assert('the brief quotes the same Writing figures',
+    TASK_BRIEF.sentence.ours.indexOf('12 items') > -1);
+  assert('ten sentences, one email, one discussion',
+    wr.fixed.sentence === 10 && wr.fixed.email === 1 && wr.fixed.discussion === 1);
+
+  // The heart of it: prose is delivered, not scored.
+  assert('Build a Sentence is markable by this app', examIsScored(wr, 'sentence'));
+  assert('an email is not', !examIsScored(wr, 'email'));
+  assert('a discussion post is not', !examIsScored(wr, 'discussion'));
+  assert('the band is out of the ten it can mark, not twelve',
+    examScoredItems(wr) === 10);
+  assert('sections that can mark everything are unaffected',
+    examScoredItems(EXAM_SECTIONS.reading) === 50 &&
+    examScoredItems(EXAM_SECTIONS.listening) === 47);
+  assert('and they score every type', examIsScored(EXAM_SECTIONS.reading, 'passage'));
+
+  let wrTotals = {};
+  for(let i = 0; i < 30; i++){
+    const items = buildExamItems(wr);
+    wrTotals[items.reduce((s, it) => s + examQuestionCount(it), 0)] = 1;
+  }
+  assert('every Writing section totals exactly 12 (30 builds)',
+    Object.keys(wrTotals).length === 1 && wrTotals[12] === 1);
+
+  // What arrives for an email is whether its word count sat in range —
+  // a pacing hint. Letting that into the band would put a number on prose
+  // nobody read, and teach students to write to a length.
+  localStorage.removeItem('ajar_exam_current');
+  startExam('writing');
+  const wrItems = JSON.parse(localStorage.getItem('ajar_exam_current')).items;
+
+  const sentIdx = wrItems.findIndex(i => i.type === 'sentence');
+  let wrSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  wrSt.idx = sentIdx; localStorage.setItem('ajar_exam_current', JSON.stringify(wrSt));
+  logUsage('sentence', wrItems[sentIdx].theme, 1);
+  let wrAfter = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  assert('a correct sentence counts towards the band', wrAfter.correct === 1);
+  assert('and counts as answered', wrAfter.answered === 1);
+
+  const emailIdx = wrItems.findIndex(i => i.type === 'email');
+  wrSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  wrSt.idx = emailIdx; localStorage.setItem('ajar_exam_current', JSON.stringify(wrSt));
+  logUsage('email', wrItems[emailIdx].theme, 1);   // "in range" — not a mark
+  wrAfter = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  assert('a delivered email adds nothing to the score', wrAfter.correct === 1);
+  assert('and nothing to the answered count', wrAfter.answered === 1);
+  assert('but it is kept rather than dropped', (wrAfter.written || []).length === 1);
+  // Defensive: with the separation removed nothing is stored, and this
+  // should report a clean failure rather than crash and stop the suite.
+  assert('kept with which task it answers', ((wrAfter.written || [])[0] || {}).type === 'email');
+  assert('and counted as delivered', wrAfter.delivered === 1);
+
+  const discIdx = wrItems.findIndex(i => i.type === 'discussion');
+  wrSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  wrSt.idx = discIdx; localStorage.setItem('ajar_exam_current', JSON.stringify(wrSt));
+  logUsage('discussion', wrItems[discIdx].theme, 0);  // "out of range" — also not a mark
+  wrAfter = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  assert('a short discussion post is not marked down either', wrAfter.correct === 1);
+  assert('it is kept too', (wrAfter.written || []).length === 2);
+
+  // A perfect Writing sitting is band 6 out of ten, not out of twelve —
+  // scoring out of twelve would cap an honest student at 5.
+  wrSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  wrSt.correct = 10; localStorage.setItem('ajar_exam_current', JSON.stringify(wrSt));
+  assert('all ten sentences right is band 6',
+    examBand(10, examScoredItems(wr)) === 6);
+  assert('scoring it out of twelve would have capped it below 6',
+    examBand(10, wr.items) < 6);
+
+  finishExam('completed');
+  const wrDone = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  assert('the writing survives to the results screen', (wrDone.written || []).length === 2);
+
+  // The results screen counts the words of what it hands back. A regex
+  // written as /\\\\s+/ inside a template literal matches a literal
+  // backslash, not whitespace, and reports every essay as one word — the
+  // same escaping trap that has bitten this file's own checks twice.
+  const wordCount = HTML_SOURCE.indexOf("w.text.split(/") > -1;
+  assert('the results screen counts the words it hands back', wordCount);
+  assert('and splits on whitespace, not on a literal backslash',
+    HTML_SOURCE.indexOf("w.text.split(/" + String.fromCharCode(92) + String.fromCharCode(92) + "s+/)") === -1);
+
+  localStorage.removeItem('ajar_exam_current');
+
   // --- each item must be its own exercise, not the previous one's leftovers ---
   //
   // Reported from a real sitting: in Listening the next audio did not come
@@ -315,17 +406,24 @@ const testScript = `
       goToNextExercise();
     }
     const end = JSON.parse(localStorage.getItem('ajar_exam_current'));
+    // Writing marks ten of its twelve, so the yardstick is what the
+    // section can mark, not how many items it holds.
+    const markable = examScoredItems(sec);
     assert('a full ' + k + ' sitting reaches the end on its own', end.finished === true);
     assert('a full ' + k + ' sitting ends because it was completed', end.reason === 'completed');
-    assert('every question in ' + k + ' was reached', end.answered === sec.items);
-    assert('all-correct in ' + k + ' scores the full section', end.correct === sec.items);
-    assert('all-correct in ' + k + ' is band 6', examBand(end.correct, sec.items) === 6);
+    assert('every markable question in ' + k + ' was reached', end.answered === markable);
+    assert('all-correct in ' + k + ' scores everything markable', end.correct === markable);
+    assert('all-correct in ' + k + ' is band 6', examBand(end.correct, markable) === 6);
     assert('a full ' + k + ' sitting left the practice log alone',
       localStorage.getItem('cse_usage_log_by_name') === null);
+    if(sec.scored){
+      assert('the unmarkable work in ' + k + ' was kept, not lost',
+        (end.written || []).length === sec.items - markable);
+    }
   });
 
   // --- both sections offered, and both reachable ---
-  assert('two sections can now be sat', Object.keys(EXAM_SECTIONS).length === 2);
+  assert('three sections can now be sat', Object.keys(EXAM_SECTIONS).length === 3);
   Object.keys(EXAM_SECTIONS).forEach(k => {
     localStorage.removeItem('ajar_exam_current');
     startExam(k);

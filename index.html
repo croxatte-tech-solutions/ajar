@@ -7400,6 +7400,7 @@ function renderSelfPractice(){
           ${Object.keys(EXAM_SECTIONS).map(k => `<button class="btn" onclick="confirmStartExam('${k}')">${EXAM_SECTIONS[k].label} &middot; ${EXAM_SECTIONS[k].items} questions, ${Math.round(EXAM_SECTIONS[k].seconds/60)} min</button>`).join(' ')}
         </div>
         <p class="small-note" style="margin:.6rem 0 0">🎧 In the Listening section the audio plays <b>once</b>, as on test day — practice gives you two.</p>
+        <p class="small-note" style="margin:.3rem 0 0">✍️ Writing gives you one clock for all 23 minutes; the real test splits that time per task, so pace yourself. The email and the discussion post are not marked here — nothing in this app reads writing — so they go to your teacher and the score covers the ten sentences.</p>
       </div>
       <p class="small-note" style="margin-top:.8rem">💡 Tip: save this page to your browser's favorites/bookmarks to come back anytime.</p>
     </div>`;
@@ -7758,7 +7759,40 @@ const EXAM_SECTIONS = {
     fixed: { 'choose-response': 3, 'talk': 4, 'announcement': 2, 'conversation': 4 },
     fill: null,
   },
+  writing: {
+    label: 'Writing',
+    items: 12,
+    seconds: 23 * 60,
+    fixed: { 'sentence': 10, 'email': 1, 'discussion': 1 },
+    fill: null,
+    // `scored` names the types this app can actually mark. Absent on the
+    // other sections, where every type is markable.
+    //
+    // Build a Sentence is exact word order, all or nothing — a machine can
+    // judge that. An email and a discussion post are prose, and nothing
+    // here reads prose. What the app currently does with them is check the
+    // word count sits in range, which is a pacing hint and emphatically
+    // not a mark: a student could hit the count with nonsense.
+    //
+    // So the band covers the ten sentences and says so, and the two pieces
+    // of writing go to the teacher whole. Judging them by length and
+    // calling the result a score would be worse than not scoring them —
+    // it would teach students to write to a word count.
+    scored: ['sentence'],
+  },
 };
+
+// How many of a section's items feed the band. Everything, unless the
+// section names a narrower set.
+function examScoredItems(cfg){
+  if(!cfg.scored) return cfg.items;
+  return Object.keys(cfg.fixed)
+    .filter(t => cfg.scored.includes(t))
+    .reduce((n, t) => n + cfg.fixed[t], 0);
+}
+function examIsScored(cfg, type){
+  return !cfg.scored || cfg.scored.includes(type);
+}
 
 // How many questions one generated exercise of each type is worth.
 //
@@ -7919,8 +7953,27 @@ function stopExamClock(){
 function recordExamOutcome(type, theme, outcome01){
   const ex = loadExam();
   if(!ex || ex.finished) return;
+  const cfg = EXAM_SECTIONS[ex.section];
   const item = ex.items[ex.idx];
   const n = item ? examQuestionCount(item) : 1;
+
+  // A type this app cannot mark is kept, not scored.
+  //
+  // The outcome arriving here for an email is whether its word count sat
+  // in range. Letting that into the band would put a number on prose
+  // nobody read, and would teach a student that length is the thing being
+  // measured. So the writing is stored to hand over and the band is left
+  // alone.
+  if(!examIsScored(cfg, type)){
+    let text = '';
+    try{ text = (document.getElementById('response') || {}).value || ''; }catch(e){}
+    ex.written = ex.written || [];
+    ex.written.push({ type, theme, text: text.trim(), at: Date.now() });
+    ex.delivered = (ex.delivered || 0) + n;
+    saveExam(ex);
+    return;
+  }
+
   ex.correct += Math.round(Math.max(0, Math.min(1, outcome01)) * n);
   ex.answered += n;
   saveExam(ex);
@@ -7969,11 +8022,15 @@ function examBand(correct, total){
 
 function renderExamResult(ex){
   const cfg = EXAM_SECTIONS[ex.section];
-  const total = cfg.items;
+  // The band covers what this app can mark, which in Writing is ten of the
+  // twelve items. Scoring out of twelve would quietly count two pieces of
+  // writing nobody read.
+  const total = examScoredItems(cfg);
   const band = examBand(ex.correct, total);
   const mins = Math.floor((ex.finishedAt - ex.startedAt) / 60000);
   const ranOut = ex.reason === 'time';
   const unanswered = Math.max(0, total - ex.answered);
+  const written = ex.written || [];
 
   const wrap = document.getElementById('practice-wrap');
   wrap.innerHTML = `
@@ -7982,15 +8039,32 @@ function renderExamResult(ex){
       <div class="sub">${ranOut ? 'The clock ran out.' : 'You finished with time in hand.'}</div>
       <div class="panel" style="margin-top:.9rem">
         <div style="font-size:2rem;font-weight:700">${ex.correct} / ${total}</div>
-        <div class="small-note">correct &middot; ${mins} minute${mins===1?'':'s'} used${unanswered ? ` &middot; ${unanswered} never reached` : ''}</div>
+        <div class="small-note">correct${cfg.scored ? ' on the marked items' : ''} &middot; ${mins} minute${mins===1?'':'s'} used${unanswered ? ` &middot; ${unanswered} never reached` : ''}</div>
       </div>
+      ${written.length ? `
+        <div class="panel" style="margin-top:.7rem">
+          <b>✍️ ${written.length} piece${written.length===1?'':'s'} of writing to hand in</b>
+          <p class="small-note" style="margin:.35rem 0 .7rem">
+            Nothing here reads your writing, so these are not marked and are not in the
+            score above — your teacher reads them. They are saved on this device until
+            you leave this screen, so copy them out now.
+          </p>
+          ${written.map((w, i) => `
+            <div class="email-head" style="margin-bottom:.5rem">
+              <div><span class="email-field">${escapeHtml(tagFor(w.type) || w.type)}</span>
+                ${w.text ? (w.text.split(/\s+/).length + ' words') : '<b>nothing written</b>'}</div>
+            </div>
+            ${w.text ? `<textarea rows="5" readonly onclick="this.select()" style="width:100%;margin-bottom:.6rem">${escapeHtml(w.text)}</textarea>` : ''}
+          `).join('')}
+        </div>` : ''}
       <div class="panel" style="margin-top:.7rem;background:var(--accent-soft);border:none">
         <b>Estimated band ${band.toFixed(1)}</b>
         <p class="small-note" style="margin:.35rem 0 0">
           This is <b>our</b> estimate, not an ETS score. ETS does not publish how a raw
           ${cfg.label} score converts to a band, so this is a straight proportion across
           the 1&ndash;6 range — useful for tracking your own progress, and not a prediction
-          of test day.
+          of test day.${cfg.scored ? ` It covers the ${total} marked items only. The
+          writing above is not in it, and a real ${cfg.label} score would be.` : ''}
         </p>
       </div>
       <div class="ex-actions" style="margin-top:1rem">

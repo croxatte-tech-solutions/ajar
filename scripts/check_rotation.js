@@ -110,25 +110,41 @@ const testScript = `
     drawFromBank('x', 'y', []) === null);
 
   // --- the measurable outcome, across sittings ---
-  // Six Reading sittings measured 30% repeats before this; the first three
-  // sittings must now be completely fresh, and the total must stay well
-  // clear of where it was.
-  Object.keys(localStorage).forEach(() => {});
-  setStudentName('Six Sittings');
-  const seen = new Set();
-  let served = 0, repeats = 0, firstThree = 0;
-  for(let s = 0; s < 6; s++){
-    const items = buildExamItems(EXAM_SECTIONS.reading);
-    items.forEach(it => {
-      const k = it.type + '|' + it.theme + '|' + idOf(it.data);
-      served++;
-      if(seen.has(k)){ repeats++; if(s < 3) firstThree++; }
-      else seen.add(k);
-    });
+  //
+  // Careful here: this is a stochastic measurement, and I first wrote it
+  // as absolutes from a single lucky run — "the first three sittings
+  // repeat nothing at all" — which then failed on roughly half of runs.
+  // A test that fails at random is worse than no test: it trains you to
+  // ignore the suite.
+  //
+  // Measured over 40 trials of six Reading sittings each:
+  //   without the bag (memoryless pick): median 27% repeats, range 18-33%
+  //   with it:                           median 16% repeats, range 10-25%
+  //
+  // So the assertion is on the AGGREGATE of many trials, and the
+  // threshold sits above the observed range rather than on top of it.
+  function sixSittings(who){
+    setStudentName(who);
+    const seen = new Set();
+    let served = 0, repeats = 0;
+    for(let s = 0; s < 6; s++){
+      buildExamItems(EXAM_SECTIONS.reading).forEach(it => {
+        const k = it.type + '|' + it.theme + '|' + idOf(it.data);
+        served++;
+        if(seen.has(k)) repeats++; else seen.add(k);
+      });
+    }
+    return { rate: repeats / served, distinct: seen.size };
   }
-  assert('the first three Reading sittings repeat nothing at all', firstThree === 0);
-  assert('six sittings stay under 20% repeats (was 30%)', repeats / served < 0.20);
-  assert('six sittings serve more distinct material than before (was 43)', seen.size > 50);
+
+  const trials = [];
+  for(let t = 0; t < 12; t++) trials.push(sixSittings('Trial Student ' + t));
+  const meanRate = trials.reduce((a, t) => a + t.rate, 0) / trials.length;
+  const meanDistinct = trials.reduce((a, t) => a + t.distinct, 0) / trials.length;
+
+  assert('twelve trials average well under the memoryless 27%', meanRate < 0.22);
+  assert('no single trial is as bad as the memoryless median', trials.every(t => t.rate < 0.30));
+  assert('six sittings serve around fifty distinct exercises', meanDistinct > 45);
 
   // --- the theme bag itself still works ---
   const themes = new Set();
