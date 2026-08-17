@@ -87,7 +87,13 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
    Fixed and above everything: while this is up, nothing else is on the wall. */
 .tv{ position:fixed; inset:0; z-index:200; background:var(--bg); color:var(--text);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:1.2rem; padding:2vmin; text-align:center; }
+  gap:1.2rem; padding:2vmin; text-align:center;
+  /* A fixed flex column CLIPS what does not fit — it does not scroll — so on a
+     short screen the arrows and the count became unreachable rather than
+     merely cramped. A classroom TV is never 393px tall, but she can open this
+     on her phone in landscape, and a control you cannot reach is worse than
+     one you have to scroll to. */
+  overflow-y:auto; }
 .tv-who{ font-size:clamp(1rem, 2.6vmin, 1.6rem); font-weight:700; }
 .tv-when{ font-size:clamp(.8rem, 2vmin, 1.15rem); color:var(--text-dim);
   font-variant-numeric:tabular-nums; }
@@ -7051,8 +7057,14 @@ function tvMove(delta){
 // and fully visible; sizing off the width alone overflows a short landscape TV,
 // which is the shape most classroom screens are.
 function tvCodeSize(){
-  const side = Math.min(window.innerWidth || 800, window.innerHeight || 600);
-  return Math.max(180, Math.round(side * 0.52));
+  const w = window.innerWidth || 800, h = window.innerHeight || 600;
+  // Square, so the shorter side is the ceiling. Then held back to what is left
+  // after the name, the date, the task type and the arrows — measured at about
+  // 210px of furniture — so on a short screen the code gives up room instead of
+  // pushing the controls off. Never below 180: smaller than that stops being
+  // scannable from a room, which is the entire point of this screen.
+  const TV_FURNITURE_PX = 210;
+  return Math.max(180, Math.min(Math.round(Math.min(w, h) * 0.52), h - TV_FURNITURE_PX));
 }
 function renderClassroomScreen(){
   const el = document.getElementById('tv-screen');

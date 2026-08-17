@@ -233,6 +233,21 @@ const testScript = `
   // The code is sized for a room, not for a card. The review card renders 150px.
   assert('the code is far larger than the one on the card', tvCodeSize() > 150);
 
+  // On a short screen the code gives up room rather than pushing the arrows
+  // off. A fixed flex column CLIPS what does not fit — it does not scroll — so
+  // before this the controls became unreachable on a phone in landscape.
+  const wasH = window.innerHeight, wasW = window.innerWidth;
+  window.innerWidth = 852; window.innerHeight = 393;
+  const short = tvCodeSize();
+  window.innerWidth = 1180; window.innerHeight = 820;
+  const roomy = tvCodeSize();
+  window.innerWidth = wasW; window.innerHeight = wasH;
+  assert('a short screen gets a smaller code', short < roomy);
+  assert('but never one too small to scan from a room', short >= 180);
+  assert('and a classroom screen gets a big one', roomy > 400);
+  assert('and it can always be scrolled to if it still does not fit',
+    __html.indexOf('overflow-y:auto; }') > -1);
+
   closeClassroomScreen();
   assert('it closes', tvIsOpen() === false);
   assert('and leaves nothing behind in the page', tv.innerHTML === '');
@@ -293,6 +308,7 @@ const cloudStub = new Proxy({}, {
 });
 sandbox.window.CloudSync = cloudStub;
 sandbox.CloudSync = cloudStub;
+sandbox.__html = html;   // duas asserções olham o CSS, não o comportamento
 vm.createContext(sandbox);
 vm.runInContext(blocks.join('\n;\n') + '\n;\n' + testScript, sandbox)
   .catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
