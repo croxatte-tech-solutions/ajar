@@ -309,7 +309,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <div class="brand-mark"><img src="logo.svg" alt="Ajar logo"></div>
       <div class="brand-text">
         <h1>Ajar <span style="font-weight:400;color:var(--text-dim)">by Croxatte Tech Solutions</span></h1>
-        <span>Prototype for a language school &middot; fictional data &middot; not connected to the school's own system</span>
+        <span>Working prototype &middot; not a system of record</span>
       </div>
     </div>
     <!-- wrap: on a phone these five controls overflow the viewport, which
@@ -400,7 +400,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <div class="field-row">
         <div class="field">
           <label for="indiv-name">Student's first name</label>
-          <input type="text" id="indiv-name" placeholder="e.g. Alex">
+          <input type="text" id="indiv-name" placeholder="First name">
         </div>
         <button class="btn ghost sm" onclick="peekIndividualInsights()" title="See this student's practice patterns before deciding">📈 Check patterns first</button>
       </div>
@@ -492,16 +492,17 @@ const CONFIG = {
   // the fallback for someone opening the bare address.
   defaultSchool: 'cse-den-8f3a91',
 
-  // The teacher account's address, pre-filled on the sign-in form so the
-  // teacher only types a password. This is an account that belongs to the
-  // APP, not to the person: a teacher should never have to put her
-  // personal Google account on a shared school computer to use a
-  // classroom tool. Change it here if the address changes.
+  // The teacher account's address, pre-filled on the sign-in form so she
+  // only types a password. This is an account belonging to the APP rather
+  // than to the person: a teacher should never have to put her personal
+  // Google account on a shared school computer to use a classroom tool.
+  // Empty means the field starts blank and she types it — which is what a
+  // second school would want. Set it only where one address is expected.
   //
   // The password is deliberately absent and must stay that way. This
   // repository is public, so a password written here would be readable by
   // anyone and would undo every rule in firestore.rules.
-  teacherEmail: 'teacher@example.com',
+  teacherEmail: '',
 
   // TODO(auth): there is no authentication anywhere in this app.
   // Anyone holding a share link can write to the classroom document,
@@ -2909,9 +2910,9 @@ function drawFromBag(bagKey, allItems, studentKey){
 // used to make 3 of 4 items in a batch read as near-duplicates.
 // Real TOEFL 2026 emails always list exactly 3 required details as a
 // numbered list in the prompt — every entry below follows that pattern.
-// Word count stays 80-120 (confirmed by Teacher, the class's own teacher,
-// as what the real test asks for — takes precedence over the 130-140
-// figure a few web guides suggested).
+// Word count stays 80-120: what a practising teacher reports the real
+// test asks for, which takes precedence over the 130-140 figure a few web
+// guides suggest. ETS itself publishes no number for this task.
 // Write an Email — rebuilt to the real ETS task shape, taken from the
 // official practice tests (toefl-ibt-full-length-practice-test-1/2 and the
 // five teacher-resources tests). Every real item has four parts, and the
@@ -6491,7 +6492,7 @@ function paintShareBox(link, statusNote, s){
       <div class="field-row" style="margin-top:.8rem">
         <div class="field">
           <label for="speak-turn">🎤 Who's speaking this round? (Listen &amp; Repeat / Take an Interview — first names, comma-separated, optional)</label>
-          <input type="text" id="speak-turn" placeholder="e.g. Alex, Sam, Robin" value="${escapeHtml(s.speakTurnRaw)}" onchange="onSpeakTurnChange()">
+          <input type="text" id="speak-turn" placeholder="First names, comma-separated" value="${escapeHtml(s.speakTurnRaw)}" onchange="onSpeakTurnChange()">
         </div>
         <button class="btn ghost sm" onclick="clearSpeakTurn()">Everyone can speak</button>
       </div>
@@ -7124,7 +7125,7 @@ function renderRoster(){
       <div class="field-row" style="margin-top:.7rem">
         <div class="field">
           <label for="roster-name">Student's first name</label>
-          <input type="text" id="roster-name" placeholder="e.g. Alex" onkeydown="if(event.key==='Enter'){event.preventDefault();rosterAddStudent();}">
+          <input type="text" id="roster-name" placeholder="First name" onkeydown="if(event.key==='Enter'){event.preventDefault();rosterAddStudent();}">
         </div>
         <button class="btn sm" onclick="rosterAddStudent()">Add</button>
       </div>
@@ -8822,7 +8823,10 @@ function pushWritingFeedback(notes, wordCount){
 // The teacher identity is fixed (this prototype is for one section, one
 // teacher). Student identity is just a typed first name, kept only in that
 // student's own browser storage — never sent anywhere, never synced.
-const TEACHER_NAME = "Teacher";
+// No teacher's name lives in the source. A signed-in teacher is shown the
+// name in her own /teachers record; before she signs in there is nobody to
+// name, so the app says "Teacher" rather than guessing at a real person.
+const TEACHER_NAME = 'Teacher';
 function getStudentName(){ return localStorage.getItem('cse_student_name') || ''; }
 
 </script>
@@ -9308,7 +9312,7 @@ function guideContent(role){
         <li>Only what you approve becomes visible to students, in the Student view.</li>
       </ol>
       <h3>What's still a prototype</h3>
-      <p>No real student data, no connection to the school's own system, no grade is ever recorded anywhere real — this is a working sketch of the idea for you to react to, not a finished product.</p>`;
+      <p>No grade is ever recorded here, and nothing here feeds a school's official records — this is a working sketch of the idea for you to react to, not a finished product.</p>`;
   }
   return `
     <h2>How this works — for students</h2>
@@ -9316,7 +9320,7 @@ function guideContent(role){
     <p>This is extra practice, in the same format as the real TOEFL 2026 test, built around real-life topics — the goal is vocabulary you'll actually use, not just test tricks.</p>
     <div class="rule">🛡️ Your teacher reviews everything first. You will only ever see exercises your teacher has already approved — nothing appears here without her checking it.</div>
     <h3>Does this affect my grade?</h3>
-    <p>No. Practicing here never changes your official grade in the school's own system. Any feedback you see is a draft, meant to help you improve — your teacher decides what actually counts.</p>
+    <p>No. Practising here never changes your official grade anywhere. Any feedback you see is a draft, meant to help you improve — your teacher decides what actually counts.</p>
     <!-- Count comes from TASK_TYPES so adding a task type can't leave this
          text claiming a number that is no longer true. -->
     <h3>The ${TASK_TYPES.length} task types, matching the real exam</h3>

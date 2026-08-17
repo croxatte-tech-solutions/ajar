@@ -4,7 +4,7 @@
 
 🔗 **Live app:** https://hiajar.com
 
-Built by **Croxatte Tech Solutions** for the TOEFL Preparation class at [a language school](https://example.com) (Denver, CO), and free for anyone to use.
+Built by **Croxatte Tech Solutions** — a student project, developed while preparing for the exam himself — and free for any teacher or learner to use.
 
 ## The name
 
