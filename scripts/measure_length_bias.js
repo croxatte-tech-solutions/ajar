@@ -8,7 +8,7 @@
 //
 //   node scripts/measure_length_bias.js
 const fs=require('fs'),vm=require('vm');
-const html=fs.readFileSync('index.html','utf8');
+const html=fs.readFileSync(process.argv[2]||'index.html','utf8');
 const blocks=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)].filter(m=>!/type\s*=\s*["']module["']/.test(m[1])).map(m=>m[2]);
 const nodes={};const el=id=>{if(id&&nodes[id])return nodes[id];const n={style:{},innerHTML:'',textContent:'',value:'',id:id||'',children:[],classList:{toggle(){},add(){},remove(){},contains:()=>false},addEventListener(){},querySelector:()=>el(),querySelectorAll:()=>[],closest:()=>null,select(){},focus(){},remove(){},insertBefore(){},scrollIntoView(){},getBoundingClientRect:()=>({top:0,left:0,width:0,height:0})};n.appendChild=c=>n.children.push(c);n.parentNode={insertBefore(){},removeChild(){}};if(id)nodes[id]=n;return n;};
 const store={};

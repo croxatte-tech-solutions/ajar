@@ -3,9 +3,16 @@
 # and it refuses anything that does not match exactly once — a fix that lands
 # in the wrong question is worse than a fix that does not land.
 #
-#   python3 scripts/apply_option_fixes.py fixes.json
+#   python3 scripts/apply_option_fixes.py fixes.json           writes index.html
+#   python3 scripts/apply_option_fixes.py --into copy.html f.json   writes elsewhere
+#
+# Use scripts/try_option_fixes.sh instead of calling this directly: it applies
+# to a copy first and runs the checks against the copy, so a bad batch never
+# reaches index.html.
 import io,json,sys,re
-p='index.html'; src=io.open(p,encoding='utf-8').read(); lines=src.split('\n')
+args=sys.argv[1:]; p='index.html'; src_p='index.html'
+if args[:1]==['--into']: p=args[1]; args=args[2:]
+src=io.open(src_p,encoding='utf-8').read(); lines=src.split('\n')
 BANKS={'choose-response':'CHOOSE_RESPONSE_BANK','announcement':'ANNOUNCEMENT_BANK',
        'conversation':'CONVERSATION_BANK','talk':'TALK_BANK',
        'daily-read':'DAILY_READ_BANK','passage':'PASSAGE_BANK'}
@@ -16,7 +23,7 @@ for k,v in BANKS.items():
     rng[k]=(st,en)
 applied=skipped=[]
 applied=[];skipped=[]
-for f in sys.argv[1:]:
+for f in args:
     for x in json.load(io.open(f,encoding='utf8')):
         st,en=rng[x['bank']]
         # The source escapes apostrophes inside single-quoted JS strings.
