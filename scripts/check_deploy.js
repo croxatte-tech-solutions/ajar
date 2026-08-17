@@ -70,6 +70,12 @@ assert('and its invisible frame, which default-src would otherwise block',
   /frame-src[^;]*www\.google\.com\/recaptcha/.test(csp));
 assert('and the App Check endpoint itself',
   /connect-src[^;]*firebaseappcheck\.googleapis\.com/.test(csp));
+// THREE directives, not two. The first version had recaptcha in script-src and
+// frame-src and not in connect-src, so the script loaded, the frame drew, and
+// the token exchange to api2/clr was refused. Invisible until App Check is
+// enforced — and then it refuses everything. Caught by loading the live site.
+assert('and reCAPTCHA can actually exchange the token it fetches',
+  /connect-src[^;]*www\.google\.com\/recaptcha/.test(csp));
 // Off by default. A key committed here is not a secret, but switching this on
 // is a sequence (register, key, deploy, watch, THEN enforce) and the default
 // must never be the middle of it.
