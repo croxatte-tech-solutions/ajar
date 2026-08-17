@@ -7237,8 +7237,8 @@ function renderTeacherSignIn(){
       </label>
       <p class="small-note" style="margin:.25rem 0 0">Leave that unticked on a shared school computer — closing the browser then signs you out, so nobody else can publish to your class.</p>
       <div class="ex-actions" style="margin-top:.7rem">
-        <button class="btn" onclick="teacherSignIn()">Sign in</button>
-        <button class="btn ghost sm" onclick="teacherResetPassword()">Forgot password</button>
+        <button class="btn" id="teacher-signin-btn" onclick="teacherSignIn()">Sign in</button>
+        <button class="btn ghost sm" id="teacher-reset-btn" onclick="teacherResetPassword()">Forgot password</button>
       </div>
       <div id="teacher-signin-msg"></div>
     </div>`;
@@ -7248,6 +7248,31 @@ function renderTeacherSignIn(){
 // stays free of anyone's real address.
 function lastTeacherEmail(){
   return localStorage.getItem('ajar_teacher_login_email') || CONFIG.teacherEmail || '';
+}
+/* Marca um botao como ocupado enquanto a promessa nao assenta.
+   Busca o botao por id e nao por event.currentTarget porque estas acoes
+   tambem disparam pelo Enter no campo de senha, onde nao ha botao no evento.
+
+   Congela a largura antes de esconder o texto: sem isso o botao encolhe
+   para o tamanho do disco e a linha inteira dança no instante do clique.
+
+   Isto nao e enfeite. teacherSignIn ja trata 'auth/too-many-requests' — ou
+   seja, professora clicando de novo porque nada aconteceu na tela ja e um
+   modo de falha conhecido deste codigo. A classe .is-busy poe
+   pointer-events:none, entao o segundo clique deixa de existir de fato. */
+function busyWhile(btnId, promise){
+  const b = document.getElementById(btnId);
+  if(!b) return promise;
+  b.style.minWidth = b.getBoundingClientRect().width + 'px';
+  b.classList.add('is-busy');
+  const done = () => {
+    const el = document.getElementById(btnId);   // o painel pode ter sido redesenhado
+    if(el){ el.classList.remove('is-busy'); el.style.minWidth = ''; }
+  };
+  return promise.then(
+    v => { done(); return v; },
+    e => { done(); throw e; }
+  );
 }
 function teacherSignInMsg(text, ok){
   const el = document.getElementById('teacher-signin-msg');
@@ -7259,7 +7284,7 @@ function teacherSignIn(){
   const pass = (document.getElementById('teacher-signin-pass')||{}).value || '';
   const stay = !!(document.getElementById('teacher-stay')||{}).checked;
   if(!pass){ teacherSignInMsg('Type the password first.', false); return; }
-  window.CloudSync.signInTeacher(email.trim(), pass, stay)
+  busyWhile('teacher-signin-btn', window.CloudSync.signInTeacher(email.trim(), pass, stay))
     .then(()=>{
       // Remembered only once a sign-in actually succeeded — a typo should
       // never become the value she is handed next time.
@@ -7287,7 +7312,7 @@ function teacherResetPassword(){
   if(!window.CloudSync) return;
   const email = ((document.getElementById('teacher-signin-email')||{}).value || '').trim();
   if(!email){ teacherSignInMsg('Type the email address first.', false); return; }
-  window.CloudSync.resetTeacherPassword(email)
+  busyWhile('teacher-reset-btn', window.CloudSync.resetTeacherPassword(email))
     .then(()=> teacherSignInMsg('A reset link is on its way to ' + email + '.', true))
     .catch(()=> teacherSignInMsg('Could not send a reset link to that address.', false));
 }
