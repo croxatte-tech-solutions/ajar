@@ -460,6 +460,138 @@ select,textarea,input[type=text]{ border-radius:var(--r-sm); }
   .mc-option:active:not(:disabled),.scenario-pick:active,
   .word-chip:active:not(:disabled){ transform:none; }
 }
+
+/* ==========================================================================
+   PEÇA 1 — FONTES + CASCA DE APP EM DUAS DENSIDADES
+   --------------------------------------------------------------------------
+   Duas densidades, não uma casca só:
+     PORTA DE ENTRADA (.welcome) — expressiva, gráfica, generosa. É a única
+       tela sem trabalho a fazer, então pode respirar. O comentário que já
+       existe neste arquivo diz a mesma coisa: "the front door is the one
+       screen with room to spare".
+     TELAS DE TRABALHO — casca enxuta e fixa, canvas em tom distinto, ritmo
+       vertical apertado. Aqui espaço gasto é exercício empurrado pra baixo.
+
+   TRÊS CAMADAS DE FUNDO, que é o que dá sensação de estrutura em vez de
+   cartão flutuando: casca (--shell) > canvas (--bg) > cartão (--surface).
+
+   FONTES self-hosted em ./fonts. Variable: um arquivo por família cobre
+   todos os pesos. 64KB no total, entram no SHELL_FILES do sw.js — o app
+   continua abrindo offline no wi-fi da escola, que era a razão de não
+   existir webfont aqui até agora.
+   ========================================================================== */
+@font-face{
+  font-family:'Baloo 2'; font-style:normal; font-weight:400 800;
+  font-display:swap; src:url('./fonts/baloo2-latin.woff2') format('woff2');
+}
+@font-face{
+  font-family:'Nunito Sans'; font-style:normal; font-weight:200 1000;
+  font-display:swap; src:url('./fonts/nunitosans-latin.woff2') format('woff2');
+}
+
+:root{
+  --font-display:'Baloo 2', ui-rounded, 'SF Pro Rounded', -apple-system, sans-serif;
+  --font-body:'Nunito Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* A casca é um degrau mais saturada que o canvas; o cartão é o mais claro.
+     Três tons, não dois — é a diferença entre "tem estrutura" e "tem um card". */
+  --shell:#eaf2ee;
+  --shell-line:#cfdfd8;
+  --shell-h:3.5rem;       /* constante: ver a nota em .masthead */
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){ --shell:#131d1a; --shell-line:#25322d; }
+}
+:root[data-theme="dark"]{ --shell:#131d1a; --shell-line:#25322d; }
+
+body{ font-family:var(--font-body); }
+.brand-text h1,.welcome-name,.panel h2,.tv-tag,.pg-title,.dl-title,
+.guide-modal h2,.guide-modal h3,.dl-sec{ font-family:var(--font-display); }
+/* Baloo 2 tem altura-x grande e desce mais que a sans; -.02em fecha as
+   palavras curtas do produto ("Ajar") sem apertar as frases longas. */
+.welcome-name,.tv-tag{ letter-spacing:-.02em; }
+
+/* ============================ CASCA (telas de trabalho) =================== */
+/* ALTURA CONSTANTE, e é uma decisão, não um detalhe. A primeira versão media
+   a barra em runtime e empurrava os sticky por variável CSS; o app reconstrói
+   telas com innerHTML, o nó observado virava órfão e a medida congelava em 0 —
+   o nav passava por baixo da casca. Com altura fixa o offset é constante em
+   CSS e não há script nenhum para envelhecer. Por isso também nowrap: uma
+   barra que quebra em duas linhas não tem altura constante, e casca que muda
+   de altura não é casca. */
+.masthead{
+  position:sticky; top:0; z-index:30; height:var(--shell-h);
+  flex-wrap:nowrap; align-items:center;
+  background:var(--shell); border-bottom:1px solid var(--shell-line);
+  /* sangra até a borda da janela mesmo dentro do .app centrado de 960px:
+     casca que para no meio da tela não lê como casca. */
+  margin:0 -1rem 1rem; padding:0 1rem;
+}
+.brand{ min-width:0; }
+.brand-text h1{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Telefone estreito: a marca sozinha basta. Some o texto, não a barra. */
+@media (max-width:420px){ .brand-text{ display:none; } }
+.brand-mark{ width:34px; height:34px; }          /* 44 -> 34: barra é chrome, não conteúdo */
+.brand-text h1{ font-size:1rem; }
+.brand-text span{ display:none; }                 /* "Working prototype" some da barra */
+.app{ background:var(--bg); }
+
+/* Os dois sticky que JÁ existiam assumiam topo de tela livre. A casca ocupa
+   esse topo agora, então descem exatamente a altura dela. */
+#teacher-nav{ top:var(--shell-h); }
+.timer-row{ top:var(--shell-h); }
+
+/* Tela baixa (celular deitado — o caso que este arquivo já documenta): a
+   casca encolhe em vez de comer a área onde o aluno digita. */
+@media (max-height:520px){
+  :root{ --shell-h:2.6rem; }   /* muda a barra e os dois offsets de uma vez */
+  .brand-mark{ width:26px; height:26px; }
+  .brand-text h1{ font-size:.88rem; }
+}
+
+/* ============================ PORTA DE ENTRADA =========================== */
+/* Fora do fluxo da casca: a boas-vindas não tem barra, tem cena. */
+.welcome{ position:relative; margin-top:1.5rem; padding-top:1rem; }
+/* O gesto gráfico: um arco chapado atrás da marca, com o raio da língua do
+   mascote — largo em cima, fechando embaixo. Cor sólida, sem gradiente, sem
+   vidro, sem sombra colorida. É forma, não efeito. */
+.welcome::before{
+  content:''; position:absolute; z-index:0;
+  left:50%; transform:translateX(-50%); top:-1.5rem;
+  /* Contém marca E nome. Mais baixo que isso, o arco corta o "Ajar" ao meio
+     e lê como erro de alinhamento em vez de forma deliberada. */
+  width:min(100%, 26rem); height:19.5rem;
+  background:var(--accent-soft);
+  border-radius:50% 50% 44% 44% / 30% 30% 70% 70%;
+}
+.welcome > *{ position:relative; z-index:1; }
+.welcome-mark{ width:132px; height:132px; }       /* 109 -> 132: a cena comporta */
+.welcome-name{ font-size:2.6rem; font-weight:800; margin:.35rem 0 .1rem; }
+.welcome-lede{ font-size:1.02rem; max-width:26rem; margin-left:auto; margin-right:auto; }
+.welcome-meaning{ border-radius:20px; }
+.welcome-door{ padding:1rem 1.15rem; font-size:1.05rem; font-weight:700; }
+
+@media (prefers-reduced-motion:no-preference){
+  .welcome-door{ transition:transform 180ms cubic-bezier(.2,.7,.3,1), box-shadow 180ms ease; }
+  .welcome-door:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(15,30,25,.16); }
+}
+
+/* ---- conserto de um bug PRÉ-EXISTENTE, não introduzido por esta peça ----
+   O seletor de campo do projeto é `select,textarea,input[type=text]`. O login
+   da professora usa type="email" e type="password", que não casam com ele —
+   então esses dois campos nunca receberam estilo: 147px de largura, cantos
+   retos e borda padrão do navegador, na primeira tela que ela toca.
+   Corrigido pela causa (todos os tipos textuais), não pelos dois do sintoma.
+   O mesmo conserto vale para o main. */
+input[type=email],input[type=password],input[type=number],
+input[type=search],input[type=tel],input[type=url]{
+  width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem;
+  border-radius:var(--r-sm); border:1px solid var(--border);
+  background:var(--bg); color:var(--text);
+}
+input[type=email]:focus,input[type=password]:focus,input[type=number]:focus,
+input[type=search]:focus,input[type=tel]:focus,input[type=url]:focus{
+  outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);
+}
 </style>
 </head>
 <body>
@@ -12441,6 +12573,7 @@ loadSharedClassroomContent().then(()=>{
      the rest of it projected. Living outside the three views on purpose — no
      setView() path can reach in and change it. -->
 <div id="tv-screen" class="tv" style="display:none" role="dialog" aria-modal="true" aria-label="Classroom screen"></div>
+
 
 </body>
 </html>
