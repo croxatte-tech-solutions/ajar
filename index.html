@@ -311,25 +311,32 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 /* =========================================================
    AJAR — CONFIG
    Everything that changes when the infrastructure changes lives
-   here and nowhere else. Today the app is a static page on GitHub
-   Pages with no server and no login; the domain (tryajar.com) and
-   a real backend are planned but do not exist yet.
+   here and nowhere else. Today the app is a static page on
+   Cloudflare Pages at hiajar.com, with no backend of our own:
+   Firestore holds the data, and the teacher signs in through
+   Firebase Auth. A server of our own may come later, for things
+   the browser cannot do safely — minting a token for a
+   pronunciation-scoring API, for one.
 
-   The point of this block is that moving to them is a config edit,
-   not a search-and-replace through the app.
+   The point of this block is that moving to it is a config edit,
+   not a search-and-replace through the app. Everything below was
+   proved by moving the app from GitHub Pages to a real domain
+   without touching a single line outside these few fields.
    ========================================================= */
 const CONFIG = {
-  // Product name. "Ajar" is the product everywhere a person can see
-  // it; the "tryajar" prefix belongs to the domain and handles only,
-  // because "ajar" alone was already taken. It must never appear as
+  // Product name. "Ajar" is the product everywhere a person can see it.
+  // The domain is hiajar.com — "ajar" alone was long gone — and that
+  // "hi" belongs to the address only. It must never appear as part of
   // the product's name in the UI, the manifest, or a store listing.
   productName: 'Ajar',
 
-  // Where the app is served from. Empty means "wherever this page
-  // happens to be", which is what a static deploy needs. When
-  // tryajar.com exists, set it to 'https://tryajar.com/' and every
-  // share link and QR code follows without touching the code.
-  baseUrl: '',
+  // Where the app is served from. Every share link and QR code is built
+  // from this, so it is stated outright rather than inferred: a QR code
+  // is printed or projected once and scanned for weeks, and it must not
+  // depend on which address the teacher happened to have open when she
+  // generated it. Empty would mean "wherever this page happens to be",
+  // which was right while the app lived at a temporary address.
+  baseUrl: 'https://hiajar.com/',
 
   // No API of our own yet — the app runs entirely in the browser.
   // When a server exists, endpoints go here.

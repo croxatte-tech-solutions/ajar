@@ -2,7 +2,7 @@
 
 **TOEFL 2026 practice, built around real student life — not textbook drills.**
 
-🔗 **Live app:** https://croxatte-tech-solutions.github.io/ajar/
+🔗 **Live app:** https://hiajar.com
 
 Built by **Croxatte Tech Solutions** for the TOEFL Preparation class at [a language school](https://example.com) (Denver, CO), and free for anyone to use.
 
@@ -12,7 +12,7 @@ Built by **Croxatte Tech Solutions** for the TOEFL Preparation class at [a langu
 
 The name was chosen after several candidates were dropped for real trademark collisions in the language-teaching market (Real Life English, Levo, Utter, Bocca, Bravo, among others). *Ajar* came through that check clean.
 
-**Product name vs. address.** The product is called **Ajar** — in the app, in the logo, in any store listing, everywhere a person can see it. The domain and social handles use the **`tryajar`** prefix (e.g. `tryajar.com`) only because `ajar` alone was already taken. That prefix belongs to the address and must never leak into the product's name in code, UI text, or a store listing.
+**Product name vs. address.** The product is called **Ajar** — in the app, in the logo, in any store listing, everywhere a person can see it. The address is **hiajar.com**, because `ajar.com` has been taken since 2004 and `ajar.link` turned out to be a premium registration at thirteen times the price of a `.com`. That `hi` belongs to the address and must never leak into the product's name in code, UI text, or a store listing.
 
 ## What this is
 
@@ -55,7 +55,7 @@ Early pilot. No official grades or scores are ever recorded here — this is a p
 
 ## Tech
 
-Static HTML/CSS/JS, no build step, no framework — one `index.html`. Data sync is Firebase (Firestore + anonymous auth), configured for a free-tier pilot at classroom scale. Deployed via GitHub Pages.
+Static HTML/CSS/JS, no build step, no framework — one `index.html`. Data sync is Firebase (Firestore, anonymous for students and email sign-in for the teacher). Hosted on Cloudflare Pages, which unlike GitHub Pages allows the cache policy in `_headers` — the audio is content-addressed and therefore genuinely immutable, while the page itself must never be stale.
 
 One identifier deliberately keeps the pre-rebrand string because it is infrastructure rather than brand: the Firebase project id (`real-life-english`). Renaming it means creating a new Firebase project, so it stays until there is a reason to migrate. Everything else — including the service-worker cache keys — now uses the `ajar` prefix.
 
