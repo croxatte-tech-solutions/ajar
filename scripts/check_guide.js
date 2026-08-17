@@ -67,7 +67,9 @@ const testScript = `
   });
 
   assert('the student guide explains the paste limit', /paste/i.test(student));
-  assert('and says why rather than just forbidding it', /only help you if the words are yours|your own words/i.test(student));
+  // Match the reason, not one phrasing of it: the guide gets reworded and
+  // a literal string turns an accurate sentence into a failing check.
+  assert('and says why rather than just forbidding it', /only help you/i.test(student));
   assert('the student guide points at the per-exercise briefs', /On the real test/.test(student));
 
   // --- the teacher guide covers what she has to act on ---
