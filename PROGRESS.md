@@ -163,3 +163,87 @@ mid-lesson.
   overflow.
 - **The teacher panel signed IN is still unverified by eye** — it needs her
   password, which is not mine to type.
+---
+
+## Session 2 — 17 Aug 2026, 02:31 → 07:39 · 29 commits
+
+Measured from the commit timestamps, not estimated. Session 1 ended at 02:07 the
+same night; this picked up shortly after and ran until he left for school.
+
+### What he asked for, in order
+
+1. **His school out of the code.** `cse-den-8f3a91` in CONFIG, then `CSE` in four
+   comments, then the `cse_` prefix on all 22 storage keys. The first two were text.
+   The third was a data migration — see below.
+2. **The byline off the app.** Masthead, tab title, meta description, manifest.
+   Only the developer's address in the feedback panel remains.
+3. **A classroom screen** showing nothing but the QR code — HIS idea, better than
+   the panel-wide switch I had proposed, and the reasons are in the commit for
+   `b7fc699`.
+4. **The welcome copy**: less melancholy, student to student, and legally careful
+   about ETS. Ended as three phases of 18 seconds each, and a door explained in
+   two sentences instead of four.
+5. **A full autonomous sweep** while he travelled.
+
+### The three findings that mattered
+
+- **The Speaking section had no way off its first screen.** Listen and Repeat never
+  appended its footer. Same dead end reported in session 1, fixed then in the path
+  that was reported, still alive in the one section nobody had sat. It survived
+  2897 green checks and was found by USING the app. Fixed in the wrapper so a
+  thirteenth renderer cannot bring it back.
+- **The primary button measured 2.01:1 in dark mode** — white on light mint, below
+  AA at any size, on Start, Approve and Generate. The contrast checker written
+  right after found three more of the same class, all "selected" states: the
+  role switch, the chosen task type, the current panel tab.
+- **Assigning to one student published without approval.** The whole-class path
+  always required approving each item; naming a student marked them approved at
+  creation, so it sent an exercise she had never read.
+
+### The migration, because renaming a key is not free
+
+All 22 keys went `cse_` to `ajar_`. On a device already in use, the app would have
+looked for `ajar_student_name`, found nothing, and asked a student who had been
+practising for weeks to introduce themselves again — losing the name their whole
+history is filed under. So old keys are copied forward once and removed.
+Enumerated rather than listed, because two are prefixes with an id or role
+appended and no hand-written list can know every suffix on every device.
+
+### Numbers at the end
+
+- **2911 checks across 27 files**, green. Session 1 ended at 2524 in 19 files.
+- Six new check files: contrast (reads the palette out of the app), hygiene,
+  conformance (the four untouchable rules), school clock, names, migration,
+  no-dead-ends.
+- `sh scripts/qa.sh` runs everything; a pre-commit hook refuses a red commit.
+- QR: 12 types, 12 distinct codes, all decoded by Apple Vision.
+- Copyright audit: 3970 strings, no 7-word overlap with ETS material.
+
+### Mistakes worth not repeating
+
+- **A backslash inside a template literal, seven times.** The worst was
+  `split(/\s+/)` becoming `split(/s+/)` — it split the welcome text on the letter
+  "s", counted 31 pieces instead of 61 words, and made FOUR reading-rate
+  assertions pass while the real numbers said they should fail. The two files
+  written after that (`check_names.js`, `check_migration.js`) have no template
+  literal at all, deliberately.
+- **Four of my own new checker rules were false positives on their first run**,
+  and three of them fired on the comment documenting the very mistake they hunt.
+  A checker that cries wolf teaches its reader to skim it.
+- **An aria-label read `v` where the variable was `a`**, which takes the whole
+  panel down, and it shipped past 2811 green checks because nothing ever called
+  `renderIndividualList`. Green is not the same as exercised.
+- **Two probes reported "12 of 12 broken" when nothing was**, both because they
+  read the app through my assumptions rather than its code.
+- **Arithmetic written by hand, three times wrong** in the QA report alone.
+
+### Open at the end
+
+- **`firestore.rules` needs republishing in the console.** The `schoolName` field
+  does not save without it. This is the only open item that can affect a class.
+- The report's item 20 (the answer field sitting 1440px down on a phone) is a
+  product decision, not a bug.
+- The "read more about the project" link still carries the org name in its href.
+  Removing it removes a feature rather than a credit, so it was left.
+- The teacher panel signed IN is still unverified by eye — it needs her password.
+
