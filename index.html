@@ -7651,6 +7651,7 @@ function renderPractice(){
       <div class="compose">
         ${timerBadgeHtml(item.type)}
         <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
+        ${taskBriefHtml('sentence')}
         <div class="ex-body">Tap the words in the correct order to build the sentence:</div>
         <div class="assembled" id="assembled"></div>
         <div class="word-bank" id="word-bank"></div>
@@ -8165,6 +8166,7 @@ function renderChooseResponseStep(item){
   wrap.innerHTML = `
     <div class="compose">
       <div class="wordcount">Exchange ${st.step+1} of ${total}</div>
+      ${taskBriefHtml('choose-response')}
       <p class="small-note">You will only <b>hear</b> this — it is never written down, exactly as on the real test. Choose the reply that fits what was said.</p>
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0 && !answered
@@ -8265,6 +8267,7 @@ function renderInterviewStep(item){
       <div class="compose">
         ${head}
         ${item.data.scenario ? `<div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>${escapeHtml(item.data.scenario)}</div>` : ''}
+        ${taskBriefHtml('interview')}
         <p class="small-note">Just like the real test, you will only <b>hear</b> this question — you won't see it written while you answer. Here you get up to ${INTERVIEW_MAX_LISTENS} listens instead of 1, and replaying pauses the clock. Your 45 seconds start the moment the question finishes.</p>
         ${turnBanner}
         <div class="ex-actions" style="margin-top:.8rem">
@@ -8435,6 +8438,7 @@ function completeWordsHtml(item){
     <div class="compose">
       ${timerBadgeHtml(item.type)}
       <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
+      ${taskBriefHtml('complete-words')}
       <div class="ex-body cw-passage">${item.data.display}</div>
       <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type only the missing words, in order — capitalization and punctuation don't matter</label>
       <div class="cw-inputs">${inputsHtml}</div>
@@ -8646,6 +8650,7 @@ function renderListenRepeatStep(item){
     <div class="compose">
       <div class="wordcount">Sentence ${s.index} of 7 &middot; recording window: ${s.seconds}s (official ${RECORD_SECONDS_OFFICIAL[s.index-1]}s + ${PRACTICE_BUFFER_SECONDS}s buffer for natural speaking pace)</div>
       ${item.data.situation ? `<div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>${escapeHtml(item.data.situation)} Listen and repeat what you hear.</div>` : ''}
+      ${taskBriefHtml('listen-repeat')}
       ${turnBanner}
       <div class="scene-thumb" style="max-width:280px">${getScene(s.scene)}</div>
       <div class="ex-actions" style="margin-top:.7rem">
