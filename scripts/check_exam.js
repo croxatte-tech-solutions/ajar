@@ -108,6 +108,118 @@ const testScript = `
   const mid = JSON.parse(localStorage.getItem('ajar_exam_current'));
   assert('the exam counted those answers instead', mid.answered > 0);
 
+  // =====================================================
+  // LISTENING
+  // =====================================================
+  const lis = EXAM_SECTIONS.listening;
+
+  assert('the Listening section is 47 items', lis.items === 47);
+  assert('the Listening section is 29 minutes', lis.seconds === 29 * 60);
+  assert('Listening needs no variable-size fill', lis.fill === null);
+
+  // Two listening types nest their questions inside a set. Counting one
+  // of those as a single item would build a section far short of 47 while
+  // still calling itself 47.
+  const anItem = { data: generateOne('announcement', 'campus').data };
+  const crItem = { data: generateOne('choose-response', 'campus').data };
+  assert('an announcement set counts every question inside it', examQuestionCount(anItem) === 4);
+  assert('a Choose a Response set counts every exchange', examQuestionCount(crItem) === 5);
+  assert('a set is not counted as one item', examQuestionCount(anItem) > 1);
+
+  let lisTotals = {};
+  for(let i = 0; i < 40; i++){
+    const items = buildExamItems(lis);
+    lisTotals[items.reduce((s, it) => s + examQuestionCount(it), 0)] = 1;
+  }
+  assert('every Listening section totals exactly 47 (40 builds)',
+    Object.keys(lisTotals).length === 1 && lisTotals[47] === 1);
+
+  const lisBuilt = buildExamItems(lis);
+  const lisKinds = [...new Set(lisBuilt.map(i => i.type))].sort();
+  assert('only the four Listening task types appear',
+    JSON.stringify(lisKinds) === JSON.stringify(['announcement','choose-response','conversation','talk']));
+  assert('no Reading task appears in Listening',
+    !lisBuilt.some(i => ['complete-words','passage','daily-read'].includes(i.type)));
+  assert('Reading and Listening share no task type',
+    !Object.keys(EXAM_SECTIONS.reading.fixed).some(t => Object.keys(lis.fixed).includes(t)));
+
+  // --- one listen in a section, two in practice ---
+  // The single fact a Listening rehearsal exists to teach.
+  localStorage.removeItem('ajar_exam_current');
+  assert('practice gives two listens for an announcement', maxListens('announcement') === 2);
+  assert('practice gives two listens for a talk', maxListens('talk') === 2);
+  assert('practice gives two listens for a conversation', maxListens('conversation') === 2);
+  assert('practice gives two listens for Choose a Response', maxListens('choose-response') === 2);
+
+  startExam('listening');
+  assert('a section gives one listen for an announcement', maxListens('announcement') === 1);
+  assert('a section gives one listen for a talk', maxListens('talk') === 1);
+  assert('a section gives one listen for a conversation', maxListens('conversation') === 1);
+  assert('a section gives one listen for Choose a Response', maxListens('choose-response') === 1);
+  assert('the out-of-listens note does not claim two were given',
+    listensSpentNote('answer').indexOf('Both listens') === -1);
+  assert('and says there was one listen, as on test day',
+    listensSpentNote('answer').indexOf('One listen') > -1);
+
+  // The brief must stop promising a second listen while the section is
+  // taking it away, or it contradicts the screen it sits on.
+  const briefInExam = taskBriefHtml('talk');
+  assert('the brief drops the two-listen promise during a section',
+    briefInExam.indexOf('Two listens here') === -1);
+  assert('the brief says the audio plays once instead', briefInExam.indexOf('once') > -1);
+
+  finishExam('completed');
+  assert('two listens return once the section is over', maxListens('talk') === 2);
+  assert('and so does the practice brief', taskBriefHtml('talk').indexOf('Two listens here') > -1);
+
+  // A Reading section must not quietly change the audio rules, since it
+  // has no audio to change.
+  localStorage.removeItem('ajar_exam_current');
+  startExam('reading');
+  assert('a Reading section still limits listening to one, not two',
+    maxListens('talk') === 1);
+  finishExam('completed');
+
+  // --- sit each section end to end ---
+  // Building a section and finishing one are separate things. This walks
+  // every item the way a student does — answer, advance — and checks it
+  // arrives at the end by itself rather than running out of items, or
+  // looping, or stopping one short.
+  Object.keys(EXAM_SECTIONS).forEach(k => {
+    const sec = EXAM_SECTIONS[k];
+    localStorage.removeItem('ajar_exam_current');
+    localStorage.removeItem('cse_usage_log_by_name');
+    startExam(k);
+    let steps = 0;
+    while(steps++ < 200){
+      const cur = JSON.parse(localStorage.getItem('ajar_exam_current'));
+      if(!cur || cur.finished) break;
+      const it = cur.items[cur.idx];
+      logUsage(it.type, it.theme, 1);
+      goToNextExercise();
+    }
+    const end = JSON.parse(localStorage.getItem('ajar_exam_current'));
+    assert('a full ' + k + ' sitting reaches the end on its own', end.finished === true);
+    assert('a full ' + k + ' sitting ends because it was completed', end.reason === 'completed');
+    assert('every question in ' + k + ' was reached', end.answered === sec.items);
+    assert('all-correct in ' + k + ' scores the full section', end.correct === sec.items);
+    assert('all-correct in ' + k + ' is band 6', examBand(end.correct, sec.items) === 6);
+    assert('a full ' + k + ' sitting left the practice log alone',
+      localStorage.getItem('cse_usage_log_by_name') === null);
+  });
+
+  // --- both sections offered, and both reachable ---
+  assert('two sections can now be sat', Object.keys(EXAM_SECTIONS).length === 2);
+  Object.keys(EXAM_SECTIONS).forEach(k => {
+    localStorage.removeItem('ajar_exam_current');
+    startExam(k);
+    const built = JSON.parse(localStorage.getItem('ajar_exam_current'));
+    assert('the ' + k + ' section builds to its published size',
+      built.items.reduce((s, it) => s + examQuestionCount(it), 0) === EXAM_SECTIONS[k].items);
+    finishExam('completed');
+  });
+  localStorage.removeItem('ajar_exam_current');
+
   // --- the day's exercise must not steal the section ---
   // renderStudent lands a student straight on the day's task when exactly
   // one is approved, by treating "selectedId is not in the batch" as

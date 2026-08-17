@@ -7372,9 +7372,12 @@ function renderSelfPractice(){
         <button class="btn" onclick="startSurprisePractice()">🎲 Surprise practice</button>
       </div>
       <div class="panel" style="background:var(--accent-soft);border:none;margin-top:1rem">
-        <b>📝 Sit a full Reading section</b>
-        <p class="small-note" style="margin:.3rem 0 .7rem">${EXAM_SECTIONS.reading.items} questions, one clock of ${Math.round(EXAM_SECTIONS.reading.seconds/60)} minutes for the whole section — the way test day works. You cannot go back, and it does not count towards your practice patterns.</p>
-        <button class="btn" onclick="confirmStartExam('reading')">Start the Reading section</button>
+        <b>📝 Sit a full section</b>
+        <p class="small-note" style="margin:.3rem 0 .7rem">One clock for the whole section, the way test day works. You cannot go back, and it does not count towards your practice patterns.</p>
+        <div class="ex-actions">
+          ${Object.keys(EXAM_SECTIONS).map(k => `<button class="btn" onclick="confirmStartExam('${k}')">${EXAM_SECTIONS[k].label} &middot; ${EXAM_SECTIONS[k].items} questions, ${Math.round(EXAM_SECTIONS[k].seconds/60)} min</button>`).join(' ')}
+        </div>
+        <p class="small-note" style="margin:.6rem 0 0">🎧 In the Listening section the audio plays <b>once</b>, as on test day — practice gives you two.</p>
       </div>
       <p class="small-note" style="margin-top:.8rem">💡 Tip: save this page to your browser's favorites/bookmarks to come back anytime.</p>
     </div>`;
@@ -7676,26 +7679,49 @@ function advanceInterviewQuestion(){
    exam answer physically cannot reach the practice log, because the one
    funnel that writes it returns early. */
 
+// Item counts and section times are ETS's, and are already stated in the
+// task briefs shipped to students — held here so a brief and a section
+// can never quote different figures.
+//
+// The split across task types is OURS. ETS publishes the section total,
+// not the composition, so `fixed` is a defensible arrangement of our own
+// banks rather than a claim about test day.
+//
+// `fill` names the one type whose size varies, drawn until the remainder
+// is met exactly. Reading needs it because a daily-life text carries two
+// questions or three. Every Listening type is a fixed size, so that
+// section is built from `fixed` alone and needs no fill at all.
 const EXAM_SECTIONS = {
   reading: {
     label: 'Reading',
-    // Both numbers are ETS's, and they are already stated in the task
-    // briefs shipped to students — kept in one place so the brief and
-    // the exam can never quote different figures.
     items: 50,
     seconds: 30 * 60,
-    // The split across task types is OURS. ETS publishes the section
-    // total, not the composition, so this is a defensible arrangement
-    // of our own banks rather than a claim about test day.
-    plan: { 'complete-words': 2, 'passage': 4, 'daily-read': 10 },
+    fixed: { 'complete-words': 2, 'passage': 4 },   // 20 + 20
+    fill: { type: 'daily-read', questions: 10 },
+  },
+  listening: {
+    label: 'Listening',
+    items: 47,
+    seconds: 29 * 60,
+    // 15 + 16 + 8 + 8. Choose a Response is the only odd-sized draw, so
+    // an odd number of those sets is what makes an odd total reachable.
+    fixed: { 'choose-response': 3, 'talk': 4, 'announcement': 2, 'conversation': 4 },
+    fill: null,
   },
 };
 
 // How many questions one generated exercise of each type is worth.
-// complete-words is marked per gap, so its ten gaps are ten items.
+//
+// Three shapes, because the banks grew at different times. complete-words
+// is marked per gap, so its ten gaps are ten items. Most types carry a
+// flat `questions` array. The two listening types built as sets — a run
+// of announcements, a run of exchanges — nest their questions one level
+// down, and counting those as a single item each would have quietly built
+// a 47-question section out of far fewer.
 function examQuestionCount(item){
   const d = item.data;
   if(d.words) return d.words.length;
+  if(d.set) return d.set.reduce((n, s) => n + (s.questions ? s.questions.length : 1), 0);
   if(d.questions) return d.questions.length;
   return 1;
 }
@@ -7713,26 +7739,32 @@ function examQuestionCount(item){
 function buildExamItems(cfg, theme){
   const items = [];
   const themeOf = () => theme || drawFromBag('theme', ALL_THEMES, getStudentName());
+  const draw = type => {
+    const th = themeOf();
+    return { id:'__exam__', type, tag: tagFor(type), theme: th,
+             status:'approved', data: generateOne(type, th).data };
+  };
 
-  for(const type of ['complete-words', 'passage']){
-    for(let i = 0; i < cfg.plan[type]; i++){
-      const th = themeOf();
-      items.push({ id:'__exam__', type, tag: tagFor(type), theme: th,
-                   status:'approved', data: generateOne(type, th).data });
-    }
+  for(const type of Object.keys(cfg.fixed)){
+    for(let i = 0; i < cfg.fixed[type]; i++) items.push(draw(type));
   }
 
-  let remaining = cfg.plan['daily-read'];
-  let guard = 0;
-  while(remaining > 0 && guard++ < 200){
-    const th = themeOf();
-    const data = generateOne('daily-read', th).data;
-    const n = data.questions.length;
-    const after = remaining - n;
-    if(after !== 0 && after < 2) continue;   // would strand us on 1
-    items.push({ id:'__exam__', type:'daily-read', tag: tagFor('daily-read'),
-                 theme: th, status:'approved', data });
-    remaining = after;
+  // The variable-size type, drawn until the remainder is met exactly.
+  //
+  // The trap: filling a remainder with draws of 2 and 3 can strand you on
+  // 1, which no draw completes (10-3-3-3). So a draw is accepted only if
+  // it finishes the remainder or leaves at least 2 behind — which keeps
+  // the loop terminating and the section the size it claims to be.
+  if(cfg.fill){
+    let remaining = cfg.fill.questions;
+    let guard = 0;
+    while(remaining > 0 && guard++ < 200){
+      const item = draw(cfg.fill.type);
+      const after = remaining - examQuestionCount(item);
+      if(after !== 0 && after < 2) continue;
+      items.push(item);
+      remaining = after;
+    }
   }
 
   return shuffle(items);
@@ -8082,7 +8114,7 @@ function renderAnnouncementStep(item){
   const q = a.questions[st.q];
   const wrap = document.getElementById('practice-wrap');
   const answered = st.chosen !== null;
-  const listensLeft = ANN_MAX_LISTENS - st.listens;
+  const listensLeft = maxListens('announcement') - st.listens;
   const totalQ = item.data.set.reduce((n,x)=>n+x.questions.length, 0);
   const doneQ = item.data.set.slice(0, st.ann).reduce((n,x)=>n+x.questions.length, 0) + st.q;
 
@@ -8104,7 +8136,7 @@ function renderAnnouncementStep(item){
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0
           ? `<button class="btn sound" onclick="playAnnouncement()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
-          : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+          : listensSpentNote('answer')}
       </div>
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
@@ -8310,7 +8342,7 @@ function renderTalkStep(item){
   const q = d.questions[st.q];
   const wrap = document.getElementById('practice-wrap');
   const answered = st.chosen !== null;
-  const listensLeft = TALK_MAX_LISTENS - st.listens;
+  const listensLeft = maxListens('talk') - st.listens;
 
   const options = q.options.map((o,i)=>{
     let cls = 'mc-option';
@@ -8330,7 +8362,7 @@ function renderTalkStep(item){
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0
           ? `<button class="btn sound" onclick="playTalk()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
-          : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+          : listensSpentNote('answer')}
       </div>
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
@@ -8394,7 +8426,7 @@ function renderConversationStep(item){
   const q = d.questions[st.q];
   const wrap = document.getElementById('practice-wrap');
   const answered = st.chosen !== null;
-  const listensLeft = CONV_MAX_LISTENS - st.listens;
+  const listensLeft = maxListens('conversation') - st.listens;
 
   const options = q.options.map((o,i)=>{
     let cls = 'mc-option';
@@ -8414,7 +8446,7 @@ function renderConversationStep(item){
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0
           ? `<button class="btn sound" onclick="playConversation()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
-          : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+          : listensSpentNote('answer')}
       </div>
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
@@ -8483,7 +8515,7 @@ function renderChooseResponseStep(item){
   const wrap = document.getElementById('practice-wrap');
   const total = item.data.set.length;
   const answered = st.chosen !== null;
-  const listensLeft = CHOOSE_MAX_LISTENS - st.listens;
+  const listensLeft = maxListens('choose-response') - st.listens;
 
   const options = q.options.map((o,i)=>{
     let cls = 'mc-option';
@@ -8503,7 +8535,7 @@ function renderChooseResponseStep(item){
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0 && !answered
           ? `<button class="btn sound" onclick="playChoosePrompt()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
-          : (!answered ? '<span class="small-note">🔇 Both listens used — choose from what you heard.</span>' : '')}
+          : (!answered ? listensSpentNote('choose') : '')}
       </div>
       ${st.listens ? `<div class="mc-options">${options}</div>`
         : '<p class="small-note" style="margin-top:.8rem">Press listen to begin.</p>'}
@@ -8577,6 +8609,39 @@ function advanceChooseResponse(){
 // next to their answer, which is where the real learning happens: seeing
 // whether you actually understood what was asked).
 const INTERVIEW_MAX_LISTENS = 2;
+
+/* One listen inside a section, two in practice.
+   ---------------------------------------------
+   Practice allows two deliberately: a student still working out what a
+   question is asking should not be beaten by the audio on top of it. The
+   briefs say so plainly — "Two listens here, one on the real test."
+
+   Carrying that into a rehearsal would hide the single fact the rehearsal
+   exists to teach. A student who has only ever practised with a second
+   listen learns to rely on one that will not be there, and finds out on
+   test day. So a section plays it once, and says so.
+
+   Kept in one function rather than five conditionals: the per-type limits
+   below stay the practice values, and this is the only place that knows a
+   section overrides them. */
+const PRACTICE_MAX_LISTENS = {
+  announcement: ANN_MAX_LISTENS,
+  talk: TALK_MAX_LISTENS,
+  conversation: CONV_MAX_LISTENS,
+  'choose-response': CHOOSE_MAX_LISTENS,
+  interview: INTERVIEW_MAX_LISTENS,
+};
+function maxListens(type){
+  return examActive() ? 1 : PRACTICE_MAX_LISTENS[type];
+}
+// The note shown once they are out of listens has to match how many they
+// actually had, or it tells a student in a section they used two.
+function listensSpentNote(verb){
+  return examActive()
+    ? `<span class="small-note">🔇 One listen, as on test day — ${verb} from what you heard.</span>`
+    : `<span class="small-note">🔇 Both listens used — ${verb} from what you heard.</span>`;
+}
+
 function renderInterviewStep(item){
   const wrap = document.getElementById('practice-wrap');
   const st = window._interviewState;
@@ -8610,7 +8675,7 @@ function renderInterviewStep(item){
     return;
   }
 
-  const listensLeft = INTERVIEW_MAX_LISTENS - st.listens;
+  const listensLeft = maxListens('interview') - st.listens;
   wrap.innerHTML = `
     <div class="compose">
       ${head}
@@ -8619,7 +8684,7 @@ function renderInterviewStep(item){
       ${turnBanner}
       <div id="interview-question-reveal"></div>
       <div class="ex-actions" style="margin-top:.7rem">
-        ${listensLeft > 0 ? `<button class="btn sound" onclick="playInterviewQuestion()">🔊 Listen again (last time — pauses the clock)</button>` : '<span class="small-note">🔇 Both listens used — answer from what you heard.</span>'}
+        ${listensLeft > 0 ? `<button class="btn sound" onclick="playInterviewQuestion()">🔊 Listen again (last time — pauses the clock)</button>` : listensSpentNote('answer')}
         ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
       </div>
       ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
@@ -9665,9 +9730,16 @@ const TASK_BRIEF = {
 function taskBriefHtml(type){
   const b = TASK_BRIEF[type];
   if(!b) return '';
+  // The "ours" half exists to name where we differ from the real test, so
+  // during a section it must not still promise a second listen we are no
+  // longer giving. Saying it plainly is the point: the student should
+  // notice that the rehearsal took something away.
+  const ours = (examActive() && PRACTICE_MAX_LISTENS[type])
+    ? 'In this section the audio plays once, as on test day — practice gives you two.'
+    : b.ours;
   return `<details class="brief">
     <summary><b>On the real test:</b> ${escapeHtml(b.real)}</summary>
-    <p>${escapeHtml(b.ours)}</p>
+    <p>${escapeHtml(ours)}</p>
   </details>`;
 }
 
