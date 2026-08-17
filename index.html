@@ -6281,7 +6281,36 @@ function itemShareLink(item){
 // modules on a white box, kept white regardless of app theme, since a QR
 // code needs strong contrast to scan reliably — that's not a themeable
 // choice, it's a physical requirement of the camera reading it).
+// The largest string a version-40 QR holds at error-correction M, in
+// bytes. Past this the generator does not degrade — it throws.
+const QR_MAX_BYTES = 2331;
+
 function renderQRSvg(text, pxSize){
+  // Refuse politely instead of throwing.
+  //
+  // Found while building the QR verifier, and it is the worst bug of the
+  // day. itemShareLink has two shapes: with Firebase loaded it is a short
+  // '?ex=' link, about 55 characters. WITHOUT Firebase it falls back to
+  // packing the whole exercise into the URL — measured at 3276 characters
+  // — which does not fit in any QR and made the generator throw, taking
+  // down whatever was rendering it.
+  //
+  // Firebase loads from a CDN. School wifi blocking gstatic.com, a flat
+  // connection, or any CDN hiccup was therefore enough to break every QR
+  // code in the middle of a lesson.
+  //
+  // This is also what those "code length overflow" errors in the preview
+  // browser were. I read them as a JS engine bytecode ceiling and said so
+  // out loud; they were this, because the preview does not load Firebase
+  // either. The evidence was on screen for hours and I diagnosed it wrong.
+  if(!text || text.length > QR_MAX_BYTES){
+    return `<div style="width:${pxSize}px;height:${pxSize}px;display:flex;align-items:center;
+                 justify-content:center;text-align:center;padding:8px;box-sizing:border-box;
+                 border:1px dashed var(--border);border-radius:8px;font-size:.68rem;
+                 color:var(--text-dim);line-height:1.35">
+      No QR while offline &mdash; the link is too long to fit one. Copy the link below instead.
+    </div>`;
+  }
   const qr = qrcode(0, 'M');
   qr.addData(text);
   qr.make();
