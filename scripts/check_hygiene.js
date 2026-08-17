@@ -111,10 +111,44 @@ assert('every input has a label or an aria-label',
 assert('keyboard focus is visible on buttons', /\.btn:focus-visible/.test(html));
 assert('and on the panel navigation', /#teacher-nav a:focus-visible/.test(html));
 
-// A clock that changes on its own says nothing to a screen reader unless the
-// region is live.
-assert('the task clock is announced', /id="task-timer"[^>]*aria-live/.test(html));
-assert('the section clock is announced', /id="exam-clock"[^>]*aria-live/.test(html));
+// A clock that changes on its own has to reach a screen-reader user — but NOT
+// by making the ticking number a live region, which is what this check used to
+// demand and what I had actually built. aria-live on a value that changes every
+// second announces four hundred times in a seven-minute task, read over the
+// student's own typing. Worse than silence, and the rule was enforcing it.
+//
+// The correct shape: the badge is visual, and a separate normally-empty region
+// speaks at thresholds. So this now asserts the opposite of what it did.
+assert('the ticking clock is NOT a live region',
+  !/id="task-timer"[^>]*aria-live/.test(html) && !/id="exam-clock"[^>]*aria-live/.test(html));
+assert('but each clock has a threshold announcer beside it',
+  /id="timer-announce"[^>]*aria-live/.test(html) && /id="exam-announce"[^>]*aria-live/.test(html));
+assert('and the thresholds are few enough to be useful',
+  /const TIMER_ANNOUNCE_AT = \[([^\]]+)\]/.test(html)
+  && (html.match(/const TIMER_ANNOUNCE_AT = \[([^\]]+)\]/)[1].split(',').length <= 6));
+assert('the announcer is only read, not seen', /\.sr-only\{/.test(html));
+
+// Every screen that reports an outcome has to announce it. Eight of the ten
+// result containers had no role at all — the multiple-choice and speaking
+// tasks, which is most of the app.
+['an-result','pg-result','dr-result','tk-result','cv-result','cr-result',
+ 'cw-result','lr-result','sentence-result','feedback'].forEach(id => {
+  assert('the ' + id + ' outcome is announced',
+    new RegExp('id="' + id + '"[^>]*(?:role="status"|aria-live)').test(html));
+});
+
+// A dialog has to say it is one, and give focus back when it closes.
+assert('the guide overlay is a labelled dialog',
+  /id="guide-modal"[^>]*role="dialog"/.test(html) && /aria-modal="true"/.test(html));
+assert('focus returns to whatever opened it', /window\._modalReturn/.test(html));
+assert('and Tab cycles inside it instead of the page behind',
+  /if\(e\.key !== 'Tab'\) return;/.test(html));
+
+// Landmarks and a way past the masthead.
+assert('there is a main landmark', /<main id="main"/.test(html));
+assert('the masthead is a header element', /<header class="masthead">/.test(html));
+assert('and a skip link is the first focusable thing',
+  /<a href="#main" class="skip-link">/.test(html));
 
 //=====================================================================
 // FRAGILE STRING BUILDING
@@ -172,7 +206,19 @@ assert('no comment asserts a breakpoint the stylesheet does not have',
 // Same known class as the other 21 — private-mode Safari throws, and there is
 // a working fallback on the next line. Moved by hand, which is the point of a
 // baseline rather than a ban.
-const SILENT_CATCH_BASELINE = 23;
+// 23 -> 24: hydrateAllNotesForTeacher swallows a per-name fetch failure, so
+// one student's note failing to load does not lose the other twelve. Same
+// known class, moved by hand.
+// 24 -> 25: closeGuide guards the focus() that returns focus to whatever
+// opened the modal — a detached element throws, and failing to restore focus
+// must not stop the modal closing.
+// 25 -> 26: restoreFocusAfterRender falls back to focus() without options when
+// focus({preventScroll}) is refused by an older WebView, and a failure to move
+// focus must never stop the exercise rendering.
+// 26 -> 30: GRADE_ON_EXPIRY wraps each type's own checker so a timed-out
+// attempt is marked instead of discarded. A checker throwing must not stop the
+// clock handing the student on to the next exercise, so each is guarded.
+const SILENT_CATCH_BASELINE = 30;
 const silent = [...html.matchAll(/catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g)].length;
 assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CATCH_BASELINE + ')',
   silent <= SILENT_CATCH_BASELINE,

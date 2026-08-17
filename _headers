@@ -30,3 +30,87 @@
 # itself cached, a bad version stays in charge and cannot be replaced.
 /sw.js
   Cache-Control: no-cache
+
+# ============================================================================
+# SECURITY HEADERS
+# ============================================================================
+# There were none. Everything below is new, and the honest part is what the
+# CSP does NOT do — see the note on script-src.
+#
+# Cloudflare Pages reads this file. It cannot be verified from a local static
+# server, so the values here were reasoned from what the app actually loads
+# (three modules from www.gstatic.com, Firebase Auth and Firestore over HTTPS,
+# audio from this origin, no external fonts, no analytics) and the CSP was
+# tested in the browser as a meta tag before being written here.
+
+/*
+  # An injected script cannot phone home. This is the header that earns its
+  # place in THIS app: script-src below cannot stop injected inline script
+  # (see why), but connect-src means such a script has nowhere to send what it
+  # steals. Exfiltration is the step that turns an XSS into a data breach.
+  #
+  # The googleapis hosts are what Firebase Auth and Firestore actually talk to:
+  # identitytoolkit (sign-in), securetoken (refresh), firestore (data).
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; worker-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://real-life-english.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+
+  # WHY 'unsafe-inline' IS IN script-src, stated rather than hidden.
+  #
+  # The app is one HTML file with nine inline <script> blocks, 233 inline
+  # style attributes and 129 inline event handlers. A CSP with nonces or
+  # hashes and no 'unsafe-inline' does not harden this app — it breaks it
+  # completely, and the version that "works" would be one somebody weakened
+  # by adding 'unsafe-inline' back without writing down why.
+  #
+  # So this is a partial CSP, and the parts that are real are real:
+  #   connect-src   an injected script cannot exfiltrate anywhere
+  #   object-src    no plugin embedding
+  #   base-uri      no <base> hijack redirecting every relative URL
+  #   form-action   no form posting to another origin
+  #   frame-ancestors  no clickjacking this into someone else's page
+  #   img/media/font/worker  nothing loads from anywhere unexpected
+  #
+  # What it does NOT do: stop an injected inline <script> from running. The
+  # defence there is the escaping (128 escapeHtml calls, tested with real
+  # injection payloads), not this header. Closing it for real means removing
+  # the inline handlers — a migration, not a header change. Do not "fix" this
+  # by adding a nonce and shipping a broken app.
+
+  # No sniffing a .txt into a script, no framing, and referrers that do not
+  # leak the school id in a URL to another site.
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # The microphone is needed — Speaking records the student. Everything else
+  # is denied, including camera and geolocation, which this app has no reason
+  # to touch and a school device has every reason to protect.
+  Permissions-Policy: microphone=(self), camera=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=(), midi=(), display-capture=()
+
+  # A year, subdomains included. NOT preload: preload is close to permanent
+  # and asserts that every present and future subdomain is HTTPS-only, which
+  # is not ours to promise on the strength of one audit.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+# Routes that must be their own type, not the app's HTML. The audit brief
+# reported robots.txt and sitemap.xml once answering with the application HTML
+# because of an SPA fallback; there is no _redirects file here, so Cloudflare
+# serves these as real files — and these headers make the type explicit rather
+# than inferred.
+/robots.txt
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+/sitemap.xml
+  Content-Type: application/xml; charset=utf-8
+  Cache-Control: public, max-age=3600
+
+# firestore.rules lives in the repo root so it is reviewable next to the code
+# it protects, which means Cloudflare also serves it at /firestore.rules.
+#
+# That is not a leak of anything secret — security rules are enforced by the
+# server and reveal only the shape of the data model, which the client code
+# already reveals in full. But it is served as an unknown type, it is not part
+# of the product, and a file nobody should be fetching should say so.
+/firestore.rules
+  Content-Type: text/plain; charset=utf-8
+  X-Robots-Tag: noindex
+

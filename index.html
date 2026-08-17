@@ -11,6 +11,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ajar">
+<!-- Canonical, and it is here for privacy before SEO.
+     Every share link is /?s=1&school=<id>, and that id is what separates one
+     school's material from another's for reading — a password that happens to
+     live in a URL. Without this, a crawler that reaches one indexes the
+     school's material under a searchable address. This points every
+     query-string variant back at the bare domain, so there is nothing to
+     index but the front door. robots.txt asks for the same thing; this one
+     does not depend on the crawler being polite. -->
+<link rel="canonical" href="https://hiajar.com/">
 <title>Ajar</title>
 <style>
 :root{
@@ -327,6 +336,15 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .welcome{ max-width:30rem; margin:2.5rem auto 0; text-align:center; padding:0 .5rem; }
 /* 84px -> 109px, the same 30%. The front door is the one screen with room
    to spare, so the mark can carry it. */
+/* Visible to a screen reader, invisible on screen. clip-path over
+   display:none because a hidden element is not announced at all. */
+.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+/* Off-screen until focused, then a real button at the top left. */
+.skip-link{ position:absolute; left:-9999px; top:0; z-index:300;
+  background:var(--accent); color:var(--btn-ink); padding:.7rem 1.1rem;
+  border-radius:0 0 9px 0; font-weight:700; text-decoration:none; }
+.skip-link:focus{ left:0; }
 .welcome-clock{ font-size:.82rem; color:var(--text-dim); margin:-.2rem 0 .9rem; font-variant-numeric:tabular-nums; }
 .welcome-clock b{ color:var(--text); font-weight:700; }
 .welcome-mark{ width:109px; height:109px; }
@@ -385,8 +403,12 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 </head>
 <body>
 
+<!-- A skip link, because the masthead plus the guide row is five controls
+     before any content. First focusable thing in the document, invisible
+     until it has focus. -->
+<a href="#main" class="skip-link">Skip to content</a>
 <div class="app">
-  <div class="masthead">
+  <header class="masthead">
     <div class="brand">
       <div class="brand-mark"><img src="logo.svg" alt="Ajar logo"></div>
       <div class="brand-text">
@@ -411,11 +433,18 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       </div>
       <span id="who-am-i" style="font-size:.78rem;color:var(--text-dim);font-weight:600"></span>
     </div>
+  </header>
+
+  <!-- The overlay sits outside <main>: it is a dialog over the page, not part
+       of the page's content. role/aria-modal/aria-labelledby are set here so
+       assistive tech knows it is a dialog before showGuide fills it — the
+       classroom screen already got this right and the guide had none of it. -->
+  <div id="guide-overlay" class="guide-overlay" style="display:none" onclick="if(event.target===this) closeGuide()">
+    <div class="guide-modal" id="guide-modal" role="dialog" aria-modal="true"
+         aria-labelledby="guide-modal-title" tabindex="-1"></div>
   </div>
 
-  <div id="guide-overlay" class="guide-overlay" style="display:none" onclick="if(event.target===this) closeGuide()">
-    <div class="guide-modal" id="guide-modal"></div>
-  </div>
+  <main id="main" tabindex="-1">
 
   <div class="padrao-c">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -543,8 +572,9 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <div>No exercises approved yet. Check back after your teacher reviews this week's batch.</div>
     </div>
     <div id="scenario-list" class="scenario-list"></div>
-    <div id="practice-wrap"></div>
+    <div id="practice-wrap" tabindex="-1"></div>
   </div>
+  </main>
 </div>
 
 <script>
@@ -4505,7 +4535,7 @@ const CHOOSE_RESPONSE_BANK = {
   ],
   grammar: [
     { prompt:'So how is that essay of yours coming along at the moment?', options:['Slowly — I\'m still completely stuck on the wretched introduction, I gather.', 'It\'s due in at the very end of the month, I think.', 'About fifteen hundred words altogether, if I remember the brief, I think.', 'Yes, she marked the last one rather harshly, I thought, I gather.'], answer:0 },
-    { prompt:'Did she happen to say what she wanted us to read?', options:['Only the whole first two chapters, as far as I remember it.', 'She\'s usually in her office on Thursday and Friday afternoons, I believe.', 'I found it in the whole library over on the second floor.', 'Yes, the whole seminar has been moved yet again, unfortunately, I believe.'], answer:0 },
+    { prompt:'Did she happen to say what she wanted us to read?', options:['Only the first two chapters, as far as I remember it.', 'She\'s usually in her office on Thursday and Friday afternoons, I believe.', 'I found it in the library over on the second floor.', 'Yes, the whole seminar has been moved yet again, unfortunately, I believe.'], answer:0 },
     { prompt:'You\'ve been along to the writing centre before, haven\'t you?', options:['A couple of times now — it\'s genuinely useful, I\'d say.', 'It stays open until six on weekdays during the term, actually.', 'No, I\'d honestly rather write the whole thing on my own.', 'Yes, I\'ll send you over the draft later this evening, actually.'], answer:0 },
     { prompt:'I still can\'t hear the difference between those two vowel sounds.', options:['It took me months, honestly — just keep listening to it.', 'There\'s a recording of it up on the class page, actually.', 'No, I\'m fairly sure that word has three syllables in it.', 'Yes, I\'d say her accent is remarkably clear to follow, though.'], answer:0 },
     { prompt:'Would it help at all if the two of us went over it together?', options:['It would, actually — are you free at any point after lunch?', 'I\'ve already read the whole thing twice this week alone, I suppose.', 'She explained it all again on Wednesday during the seminar, I suppose.', 'No, the exam only covers the first unit of the book, anyway.'], answer:0 },
@@ -4540,11 +4570,11 @@ const CHOOSE_RESPONSE_BANK = {
     { prompt:'Weren\'t there rather more of these bins here last term?', options:['There were — they took two of them away in December.', 'They\'re meant to be for paper and cardboard only, I believe.', 'It\'s on the far side of the courtyard by the wall.', 'Yes, I always separate mine out before taking it down, anyway.'], answer:0 },
     { prompt:'Do you ever cycle in rather than taking the bus each day?', options:['When the weather allows it, though not much lately, actually.', 'It takes about twenty-five minutes from door to door, really.', 'There\'s a rack for them near the main entrance, anyway.', 'Yes, the fares all went up again back in September.'], answer:0 },
     { prompt:'Somebody seems to have left all of these lights on again.', options:['They\'ve been on every single night this week, I\'ve noticed, I gather.', 'The switch for them is over by the far door, I think.', 'It\'s a good deal brighter in here than it needs to be.', 'Yes, the whole building closes at ten on weekdays, I would say.'], answer:0 },
-    { prompt:'Are you coming along to the park clean-up on Sunday morning?', options:['I\'d planned to, unless it absolutely pours down with rain, actually.', 'It\'s organised by the whole students\' union every year, I gather.', 'They start at nine in the morning, apparently, by the gate.', 'Yes, gloves and bags are provided free on the day, though.'], answer:0 },
+    { prompt:'Are you coming along to the park clean-up on Sunday morning?', options:['I\'d planned to, unless it absolutely pours down with rain, actually.', 'It\'s organised by the students\' union every year, I gather.', 'They start at nine in the morning, apparently, by the gate.', 'Yes, gloves and bags are provided free on the day, though.'], answer:0 },
     { prompt:'That seems an awful lot of packaging for one small thing.', options:['It is — and half of it isn\'t even recyclable, apparently.', 'It turned up the very day after I ordered the thing, actually.', 'There\'s a collection point right beside the shop on the corner there.', 'Yes, the whole delivery was free on anything over twenty pounds, anyway.'], answer:0 },
   ],
   daily: [
-    { prompt:'Did that parcel of yours ever turn up in the end?', options:['It did, eventually — a neighbour had taken it in for me.', 'It was sent second class, as far as I can remember, though.', 'There\'s a depot right out on the whole edge of town, apparently.', 'Yes, I ordered the whole thing nearly a fortnight ago, I gather.'], answer:0 },
+    { prompt:'Did that parcel of yours ever turn up in the end?', options:['It did, eventually — a neighbour had taken it in for me.', 'It was sent second class, as far as I can remember, though.', 'There\'s a depot right out on the edge of town, apparently.', 'Yes, I ordered the whole thing nearly a fortnight ago, I gather.'], answer:0 },
     { prompt:'Is the machine on the end still out of order?', options:['It is, and nobody has come to look at it yet.', 'They take coins as well as the mobile app, I believe.', 'A full cycle takes about forty minutes from start to finish.', 'Yes, I did all of mine right on Sunday evening instead.'], answer:0 },
     { prompt:'Weren\'t you meant to be at the bank earlier this morning?', options:['I was, but they cancelled on me at the last minute.', 'It stays open until four o\'clock right on weekdays, I think.', 'There\'s a branch just near the market square by the church.', 'Yes, I remembered to bring my passport along with me, really.'], answer:0 },
     { prompt:'How long does the number eleven usually take at this hour?', options:['Twenty minutes, unless the traffic on the bridge is bad, really.', 'It runs every quarter of an hour, more or less, really.', 'The stop is right outside the chemist on the corner, actually.', 'Yes, I bought a monthly pass at the start of term.'], answer:0 },
@@ -4573,20 +4603,20 @@ const CHOOSE_RESPONSE_BANK = {
     { prompt:'Have you ever been to that part of the country before?', options:['Never — this will be the very first time for me.', 'It\'s about two hundred miles north of here, apparently.', 'The train up there only runs twice a day, sadly, actually.', 'Yes, the hotel was reasonably priced for the area, I suppose.'], answer:0 },
     { prompt:'Is it worth taking the coach rather than the train up?', options:['It\'s cheaper, certainly, but it does take about twice as long.', 'It leaves from the station forecourt, round by the side, really.', 'There\'s a stop about halfway along for refreshments, I\'m told.', 'Yes, I usually try to book a window seat if possible.'], answer:0 },
     { prompt:'Did the hotel end up being alright in the end?', options:['Not quite — the room was a good deal smaller than advertised.', 'It\'s near the old part of the town, by the cathedral, really.', 'We stayed there for four nights altogether, I think.', 'Yes, breakfast was included in the price we paid, I would say.'], answer:0 },
-    { prompt:'You didn\'t manage to lose your luggage again, did you?', options:['Thankfully not, though it was very nearly last off the belt.', 'It weighed just under twenty kilos when they checked it, actually.', 'There\'s a desk for that in the whole arrivals hall, apparently.', 'Yes, I always keep hold of the tag just in case.'], answer:0 },
+    { prompt:'You didn\'t manage to lose your luggage again, did you?', options:['Thankfully not, though it was very nearly last off the belt.', 'It weighed just under twenty kilos when they checked it, actually.', 'There\'s a desk for that in the arrivals hall, apparently.', 'Yes, I always keep hold of the tag just in case.'], answer:0 },
   ],
   media: [
     { prompt:'Have you finished that series that everyone keeps talking about?', options:['Two episodes to go — please don\'t tell me anything at all.', 'It\'s on most evenings at nine, I think, on the second channel.', 'There are six seasons of it altogether, apparently.', 'Yes, I always watch it with the subtitles turned on, I suppose.'], answer:0 },
     { prompt:'Do you read very much in English outside of class?', options:['A little — mostly news articles at the moment, if I\'m honest.', 'The library has quite a good selection on the ground floor, really.', 'I usually read for a bit just before going to bed, actually.', 'Yes, it was translated from Spanish a few years ago, I gather.'], answer:0 },
     { prompt:'Weren\'t you going to cancel one of those services soon?', options:['I was, but then they added something that I actually wanted.', 'It costs about eight pounds a month, I think, or so.', 'They do have a free tier as well, with advertisements, actually.', 'Yes, I signed up while the introductory offer was running, though.'], answer:0 },
     { prompt:'So what did you make of the ending of that one?', options:['Honestly, I thought the whole thing felt rather rushed, I suppose.', 'It runs for just over two hours, which is rather long.', 'There\'s talk of another one being made next year, I gather.', 'Yes, I went and saw it at the cinema in town.'], answer:0 },
-    { prompt:'Do you ever listen to podcasts while you\'re travelling in?', options:['Constantly — it\'s the whole only way I get through the commute.', 'It\'s round about forty minutes each way, door to door, I think.', 'There\'s usually surprisingly good signal on that line, or so I gather.', 'Yes, I downloaded a single few of them only last night, actually.'], answer:0 },
+    { prompt:'Do you ever listen to podcasts while you\'re travelling in?', options:['Constantly — it\'s the only way I get through the commute.', 'It\'s round about forty minutes each way, door to door, I think.', 'There\'s usually surprisingly good signal on that line, or so I gather.', 'Yes, I downloaded a few of them only last night, actually.'], answer:0 },
     { prompt:'That advert seems to be following me absolutely everywhere.', options:['Mine too — and I only looked at the thing once.', 'It\'s on before every single video now, without fail, I think.', 'The company behind it is fairly new, I gather.', 'Yes, I turned all of the notifications off last week, actually.'], answer:0 },
   ],
   innovation: [
-    { prompt:'Have you tried any of those writing tools yourself yet?', options:['A couple of them, though I don\'t entirely trust the output, though.', 'They only came out in the last year or so, I think.', 'There\'s a free version and a paid one, apparently.', 'Yes, the department sent an email round about it, as I recall.'], answer:0 },
+    { prompt:'Have you tried any of those writing tools yourself yet?', options:['A couple of them, though I don\'t entirely trust the output, though.', 'They only came out in the last year or so, I think.', 'There\'s a free version and a paid one, apparently.', 'Yes, the department sent an email about it, as I recall.'], answer:0 },
     { prompt:'Do you think it actually understands the question you ask?', options:['Not really — it just predicts whatever sounds most plausible, anyway.', 'It answers within a second or two, which is impressive, actually.', 'There\'s a limit on how much you can ask each day.', 'Yes, I end up using it most days now, for something.'], answer:0 },
-    { prompt:'Weren\'t you rather sceptical about all of this a year ago?', options:['I was, and parts of it still worry me a single great deal.', 'It\'s changed an enormous amount since then, admittedly, as far as I recall.', 'There was an article round about exactly that quite recently, I do believe.', 'Yes, the whole course covers all of it in about week nine, really.'], answer:0 },
+    { prompt:'Weren\'t you rather sceptical about all of this a year ago?', options:['I was, and parts of it still worry me a great deal.', 'It\'s changed an enormous amount since then, admittedly, as far as I recall.', 'There was an article about exactly that quite recently, I do believe.', 'Yes, the whole course covers all of it in about week nine, really.'], answer:0 },
     { prompt:'Would you trust one of them to check your grammar for you?', options:['For small things, yes — but not for anything that matters.', 'It highlights the errors as you type, which is useful, though.', 'The department has its own guidance on all of that, anyway.', 'Yes, I installed it at the beginning of last term, anyway.'], answer:0 },
     { prompt:'Did the demonstration they gave actually work in the end?', options:['Half of it did, which was rather better than I expected.', 'It ran for about twenty minutes, including the questions, I believe.', 'There were around fifty people watching it, I\'d say, I suppose.', 'Yes, they\'re repeating the whole thing again on Friday, I think.'], answer:0 },
     { prompt:'How much of your work do these tools genuinely save you?', options:['An hour here and there, but nothing like what people claim.', 'It rather depends on which particular one you happen to use.', 'They\'ve become a good deal faster over recent months, I think.', 'Yes, the free version does have quite strict limits, I suppose.'], answer:0 },
@@ -5226,7 +5256,12 @@ function passageDocHtml(d, highlight){
     let html = escapeHtml(par);
     if(highlight && !done && d.vocab){
       const w = escapeHtml(d.vocab);
-      const at = html.indexOf(w);
+      // Word boundary, not a substring. `html.indexOf(w)` would highlight the
+      // wrong span whenever the vocabulary word appears inside a longer word
+      // earlier in the passage — vocab "act" landing on "practical" — and send
+      // the student to the wrong sentence. Latent today (0 of 28 passages hit
+      // it) and one regex away from staying that way.
+      const at = html.search(new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'));
       if(at > -1){
         html = html.slice(0, at) + '<span class="pg-vocab">' + w + '</span>' + html.slice(at + w.length);
         done = true;
@@ -8241,7 +8276,7 @@ function renderRoster(){
       </div>
       ${r.students.length ? `
         <p class="small-note" style="margin:.8rem 0 .4rem">${r.students.length} student(s) &middot; ${present.length} here today</p>
-        <div class="mc-options">${r.students.map(n => `
+        <div class="mc-options" role="group">${r.students.map(n => `
           <div class="mc-option" style="cursor:default">
             <label style="display:flex;align-items:center;gap:.55rem;flex:1;cursor:pointer;margin:0">
               <input type="checkbox" style="width:auto;margin:0" ${present.includes(n)?'checked':''} onchange="rosterTogglePresent('${n.replace(/'/g,"\\'")}')">
@@ -8272,7 +8307,9 @@ function saveTeacherNote(name, text){
   const t = (text || '').trim();
   if(t) notes[name] = t; else delete notes[name];
   localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes));
-  if(window.CloudSync && window.CloudSync.pushNotes) window.CloudSync.pushNotes(notes).catch(()=>{});
+  // Only the note that changed, to its own document. Pushing the whole object
+  // is what put every student's note on every student's phone.
+  if(window.CloudSync && window.CloudSync.pushNote) window.CloudSync.pushNote(name, t).catch(()=>{});
 }
 function noteFieldId(name){ return 'note-' + name.replace(/[^a-zA-Z0-9]/g,''); }
 function onTeacherNoteChange(name){
@@ -8298,6 +8335,20 @@ async function refreshClassProgress(){
     _classProgress = (await window.CloudSync.pullClassSummaries(roster)) || {};
     if(currentView === 'teacher') renderClassProgress();
   }catch(e){ /* offline — the panel keeps whatever it last showed */ }
+}
+// Her own device needs every note, because she writes them. Fetched one per
+// roster name — the same shape as pullClassSummaries — rather than by reading
+// one shared document that students could read too.
+async function hydrateAllNotesForTeacher(){
+  if(!teacherIsSignedIn() || !window.CloudSync || !window.CloudSync.pullNote) return;
+  const roster = loadRoster().students || [];
+  if(!roster.length) return;
+  const notes = loadTeacherNotes();
+  await Promise.all(roster.map(async n => {
+    try{ const t = await window.CloudSync.pullNote(n); if(t) notes[n] = t; }catch(e){}
+  }));
+  localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes));
+  if(currentView === 'teacher') renderClassProgress();
 }
 function renderClassProgress(){
   const box = document.getElementById('class-progress');
@@ -8384,7 +8435,7 @@ function renderNamePrompt(){
   document.getElementById('practice-wrap').innerHTML = roster.length ? `
     <div class="compose">
       <div class="ex-body"><b>Welcome!</b> Tap your name.</div>
-      <div class="mc-options" style="margin-top:.6rem">${roster.map(n => `
+      <div class="mc-options" role="group" style="margin-top:.6rem">${roster.map(n => `
         <button class="mc-option" onclick="pickName('${n.replace(/'/g,"\\'")}')">
           <span>${escapeHtml(n)}</span></button>`).join('')}</div>
       <div class="ex-actions" style="margin-top:.7rem">
@@ -8758,7 +8809,16 @@ function markExerciseAnswered(){
    published by ETS — these are practical pacing targets from
    third-party prep guides, marked as such in the UI.
    ========================================================= */
-const TASK_TIME_LIMITS = { email:420, discussion:600, sentence:41, 'complete-words':90, interview:45 };
+/* 'complete-words' was 90 seconds, and the app's own arithmetic said 360.
+   The Reading brief promises 50 items in 30 minutes — 36 s an item — and
+   examQuestionCount credits this exercise as TEN items, because it is marked
+   per gap. So ten gaps are ten items and deserve 360 s. Meanwhile the work is
+   reading a 70–96 word passage and typing 53–92 characters: at an L2 silent
+   reading rate and phone typing, 75–95 s with no thinking time at all, and
+   7 of the 42 passages need more than 90 even so. The app's own coaching tip
+   says "read the whole passage once before filling any blank", which spends
+   half the old budget by itself. */
+const TASK_TIME_LIMITS = { email:420, discussion:600, sentence:41, 'complete-words':360, interview:45 };
 const OFFICIAL_TIMING = { email:true, discussion:true, sentence:false, 'complete-words':false, interview:true };
 
 function formatTime(s){
@@ -8790,10 +8850,19 @@ function timerBadgeHtml(type){
   const colourNote = GRADED_TIMER[type]
     ? '. The clock here turns amber with 2 minutes left and red with 45 seconds — the real one does not, so watch the number too.'
     : '';
-  // aria-live="polite" and not "assertive": the number changes every second,
-  // and an assertive region would interrupt the student mid-sentence once a
-  // second, which is worse than saying nothing. Polite waits for a pause.
-  return `<div class="timer-row"><div class="timer-badge" id="task-timer" role="timer" aria-live="polite" aria-atomic="true">⏱ ${formatTime(total)}</div></div><div class="timer-note">${note}${colourNote}</div>`;
+  // NO aria-live ON THE TICKING NUMBER. I put it here and I was wrong.
+  //
+  // The reasoning was that "polite" waits for a pause, unlike "assertive". It
+  // does — and then announces anyway, every single second, for the length of
+  // the task. On a seven-minute writing task that is four hundred
+  // interruptions read over the student's own typing. aria-atomic made it
+  // worse by re-reading the whole string instead of the changed digit.
+  //
+  // A clock that shouts is worse than a clock that is silent, so the badge is
+  // now visual only and a separate, normally-empty region speaks at
+  // thresholds. Announcing four times beats announcing four hundred.
+  return `<div class="timer-row"><div class="timer-badge" id="task-timer" role="timer">⏱ ${formatTime(total)}</div>
+      <div id="timer-announce" class="sr-only" role="status" aria-live="polite"></div></div><div class="timer-note">${note}${colourNote}</div>`;
 }
 // onExpire lets a task decide what "time's up" actually advances into —
 // most types move to the next exercise in the batch (the default), but
@@ -8810,7 +8879,25 @@ function startTaskTimer(type, onExpire){
   // paused and resumed mid-task. Take an Interview needs this: replaying
   // the question must not eat the student's 45 seconds of answer time, or
   // nobody would ever use the replay even when they genuinely need it.
-  window._timerState = { type, left: TASK_TIME_LIMITS[type], onExpire: onExpire || goToNextExercise };
+  /* "Scored as-is" now actually scores it.
+     ------------------------------------
+     On expiry the screen says "on the real test this item would be scored
+     as-is now" and then called goToNextExercise, which grades nothing: no
+     logUsage, no exam credit, and in a section the item never entered
+     ex.answered, so the denominator quietly shrank. The message promised a
+     score and the attempt was discarded.
+     Each type's own checker runs first where one exists, so whatever the
+     student had typed is marked, and only then does it move on. */
+  const GRADE_ON_EXPIRY = {
+    'complete-words': () => { try{ checkCompleteWords(); }catch(e){} },
+    'sentence':       () => { try{ checkSentence(); }catch(e){} },
+    'email':          () => { try{ checkWriting(); }catch(e){} },
+    'discussion':     () => { try{ checkWriting(); }catch(e){} },
+  };
+  const grade = GRADE_ON_EXPIRY[type];
+  const move = onExpire || goToNextExercise;
+  window._timerState = { type, left: TASK_TIME_LIMITS[type],
+    onExpire: grade ? (() => { grade(); move(); }) : move };
   renderTaskTimer();
   runTaskTimer();
 }
@@ -8822,11 +8909,22 @@ function startTaskTimer(type, onExpire){
 const GRADED_TIMER = { email:true, discussion:true };
 const TIMER_CAUTION_S = 120;  // still time to finish a sentence and reread
 const TIMER_URGENT_S = 45;    // only time to reread
+/* Announced at thresholds, not on every tick.
+   Five moments in a whole task, chosen for what a student can still act on:
+   five minutes is time to change plan, two minutes to finish the paragraph,
+   one to reread, thirty seconds to stop writing, ten to submit. */
+const TIMER_ANNOUNCE_AT = [300, 120, 60, 30, 10];
+function announceTimeLeft(id, seconds){
+  if(TIMER_ANNOUNCE_AT.indexOf(seconds) === -1) return;
+  const box = document.getElementById(id);
+  if(box) box.textContent = formatTime(seconds) + ' left';
+}
 function renderTaskTimer(){
   const st = window._timerState;
   const el = document.getElementById('task-timer');
   if(!st || !el) return;
   el.textContent = '⏱ ' + formatTime(st.left);
+  announceTimeLeft('timer-announce', st.left);
   if(GRADED_TIMER[st.type]){
     el.classList.toggle('caution', st.left <= TIMER_CAUTION_S && st.left > TIMER_URGENT_S);
     el.classList.toggle('urgent', st.left <= TIMER_URGENT_S);
@@ -9476,7 +9574,8 @@ function examBannerHtml(ex){
   const cfg = EXAM_SECTIONS[ex.section];
   return `
     <div class="timer-row">
-      <div class="timer-badge" id="exam-clock" role="timer" aria-live="polite" aria-atomic="true">⏱ ${formatTime(examSecondsLeft(ex))}</div>
+      <div class="timer-badge" id="exam-clock" role="timer">⏱ ${formatTime(examSecondsLeft(ex))}</div>
+      <div id="exam-announce" class="sr-only" role="status" aria-live="polite"></div>
       <span class="small-note" style="margin-left:.6rem" id="exam-progress">
         ${cfg.label} section &middot; question ${Math.min(ex.answered + 1, cfg.items)} of ${cfg.items}
       </span>
@@ -9562,6 +9661,7 @@ function renderPractice(){
   ensureWayForward();
   mountBackBar();
   bringPracticeIntoView();
+  restoreFocusAfterRender();
 }
 
 /* NOTHING STARTS UNTIL THE STUDENT SAYS SO
@@ -9682,6 +9782,74 @@ function bringPracticeIntoView(){
    renderer that knows it is finished has already emitted the finished footer,
    which this then leaves alone. Detected by the two things a footer actually
    contains rather than by asking each renderer to declare itself. */
+/* THE SCREEN SCROLLS AND THE FOCUS DOES NOT FOLLOW
+   ==============================================
+   Every renderer replaces #practice-wrap wholesale. When the element holding
+   focus is removed from the document, focus falls to <body> — so a keyboard
+   user who answers a question, taps a word, or presses Start is thrown back to
+   the top of the page and has to Tab through the masthead, the guide row, the
+   role switcher and the list to return to the task. On a timed task the clock
+   is running while they do it.
+
+   bringPracticeIntoView() was half a fix and it hid the other half: the page
+   scrolls to the right place, so on a monitor with a mouse nothing looks wrong.
+
+   One call in the wrapper, because the cause is one — the shared re-render —
+   and twelve patches would be twelve places to forget. Focus lands on the
+   exercise container, so the next Tab enters the task instead of the document.
+   preventScroll because scrolling was already handled a line earlier. */
+function restoreFocusAfterRender(){
+  if(!selectedId) return;
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap) return;
+  // Only when focus was actually LOST. Never steal it from something the
+  // student is using — re-rendering while they type in the answer box happens
+  // on every word-count update.
+  const a = document.activeElement;
+  if(a && a !== document.body) return;
+  // The gate's whole job is its button, so that is where focus belongs.
+  const gate = document.getElementById('start-gate-btn');
+  const target = gate || wrap;
+  try{ target.focus({ preventScroll: true }); }
+  catch(e){ try{ target.focus(); }catch(e2){} }
+}
+
+/* AND THE SAME FIX FOR THE PATHS THAT SKIP THE WRAPPER.
+   =================================================
+   Calling restoreFocusAfterRender from renderPractice covers opening an
+   exercise and pressing Start. It does NOT cover answering a question:
+   answerPassage, answerAnnouncement, answerTalk, answerConversation,
+   answerDailyRead and answerChooseResponse each call their own step renderer
+   directly, which replaces #practice-wrap without going through the wrapper.
+   Verified in the browser — focus was still on <body> after answering.
+
+   Six more call sites would work and would be six more places for a seventh to
+   be forgotten, which is the mistake this file has now made three times. So
+   this watches the container instead: whatever replaces its contents, from
+   wherever, if focus fell to <body> it is put back. One observer, and a
+   thirteenth renderer is covered before it is written.
+
+   requestAnimationFrame so it runs after the browser has settled the removal,
+   not in the middle of it. */
+(function watchPracticeFocus(){
+  if(typeof MutationObserver !== 'function') return;
+  const start = () => {
+    const wrap = document.getElementById('practice-wrap');
+    if(!wrap) return;
+    // No early guard here. Inside a MutationObserver callback the focused
+    // element may not have settled yet — it can still report the node being
+    // removed — so checking activeElement at this moment returned "focus is
+    // fine" and scheduled nothing. Verified in the browser: focus was still
+    // lost after answering. The decision belongs in the frame after, where
+    // restoreFocusAfterRender already makes it correctly.
+    new MutationObserver(() => {
+      requestAnimationFrame(restoreFocusAfterRender);
+    }).observe(wrap, { childList: true, subtree: true });
+  };
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+
 function ensureWayForward(){
   const wrap = document.getElementById('practice-wrap');
   if(!wrap || !wrap.innerHTML || !selectedId) return;
@@ -9728,7 +9896,19 @@ function renderPracticeInner(){
         ${timerBadgeHtml(item.type)}
         <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
         ${taskBriefHtml('sentence')}
-        <div class="ex-body">Tap the words in the correct order to build the sentence:</div>
+        <div class="ex-body">Tap the words in the correct order to build the sentence:${
+          (() => {
+            // Fifteen of the forty-four sentences carry a word that is not in
+            // the target — a distractor. The instruction never said so, so a
+            // student who used every chip was marked wrong and never told why.
+            // Said only when it is true, computed from the data rather than
+            // written into the copy, so it cannot go stale.
+            const extra = item.data.scrambled.length - item.data.target.replace(/[.,!?;:]/g,'').split(/\s+/).filter(Boolean).length;
+            return extra > 0
+              ? ` <b>${extra === 1 ? 'One word does not belong' : extra + ' words do not belong'} — leave ${extra === 1 ? 'it' : 'them'} out.</b>`
+              : '';
+          })()
+        }</div>
         <div class="assembled" id="assembled"></div>
         <div class="word-bank" id="word-bank"></div>
         <div class="ex-actions">
@@ -9852,9 +10032,9 @@ function renderAnnouncementStep(item){
       </div>
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
-        <div class="mc-options">${options}</div>`
+        <div class="mc-options" role="group">${options}</div>`
         : listensAheadNote()}
-      <div id="an-result"></div>
+      <div id="an-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceAnnouncement()">${doneQ < totalQ-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
@@ -9936,8 +10116,8 @@ function renderPassageStep(item){
       ${taskBriefHtml('passage')}
       ${passageDocHtml(d, isVocab)}
       <div class="ex-body">${escapeHtml(q.q)}</div>
-      <div class="mc-options">${options}</div>
-      <div id="pg-result"></div>
+      <div class="mc-options" role="group">${options}</div>
+      <div id="pg-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advancePassage()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
@@ -10003,8 +10183,8 @@ function renderDailyReadStep(item){
       ${taskBriefHtml('daily-read')}
       ${dailyDocHtml(d)}
       <div class="ex-body">${escapeHtml(q.q)}</div>
-      <div class="mc-options">${options}</div>
-      <div id="dr-result"></div>
+      <div class="mc-options" role="group">${options}</div>
+      <div id="dr-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceDailyRead()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
@@ -10078,9 +10258,9 @@ function renderTalkStep(item){
       </div>
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
-        <div class="mc-options">${options}</div>`
+        <div class="mc-options" role="group">${options}</div>`
         : listensAheadNote(' It runs about a minute.') + '<p class="small-note">All four questions come from this one talk.</p>'}
-      <div id="tk-result"></div>
+      <div id="tk-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceTalk()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
@@ -10162,9 +10342,9 @@ function renderConversationStep(item){
       </div>
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
-        <div class="mc-options">${options}</div>`
+        <div class="mc-options" role="group">${options}</div>`
         : listensAheadNote()}
-      <div id="cv-result"></div>
+      <div id="cv-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceConversation()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
@@ -10249,9 +10429,9 @@ function renderChooseResponseStep(item){
           ? `<button class="btn sound" onclick="playChoosePrompt()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
           : (!answered ? listensSpentNote('choose') : '')}
       </div>
-      ${st.listens ? `<div class="mc-options">${options}</div>`
+      ${st.listens ? `<div class="mc-options" role="group">${options}</div>`
         : '<p class="small-note" style="margin-top:.8rem">Press listen to begin.</p>'}
-      <div id="cr-result"></div>
+      <div id="cr-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceChooseResponse()">${st.step < total-1 ? 'Next exchange →' : 'Finish →'}</button>
       </div>` : ''}
@@ -10641,7 +10821,7 @@ function completeWordsHtml(item){
       <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type only the missing words, in order — capitalization and punctuation don't matter</label>
       <div class="cw-inputs">${inputsHtml}</div>
       <div class="ex-actions"><button class="btn sm" onclick="checkCompleteWords()">Check</button></div>
-      <div id="cw-result"></div>
+      <div id="cw-result" role="status" aria-live="polite"></div>
     </div>`;
 }
 
@@ -10659,7 +10839,22 @@ function checkCompleteWords(){
   words.forEach((w,i) => {
     const el = document.getElementById('cw-blank-'+i);
     const answerEl = document.getElementById('cw-answer-'+i);
-    const isOk = normWord(el.value) === normWord(w);
+    // BOTH SPELLINGS ARE ACCEPTED, and this was the bug in the audit brief.
+    //
+    // The written instruction says "you type only the missing letters", and
+    // the screen shows `doz___`. The checker compared against the WHOLE word,
+    // so a student who did exactly what the brief told them — typing "ens" —
+    // was marked wrong. Confirmed with the real inputs: doz___ + "ens",
+    // comp____ + "lete", cam___ + "pus", all rejected.
+    //
+    // Accepting either is the fix rather than rewriting the brief, because
+    // both readings of `doz___` are reasonable and neither should cost a mark.
+    // A student who types the whole word has understood the exercise; so has
+    // one who types the tail. blankInfo() already knows where the split is.
+    const typed = normWord(el.value);
+    const whole = normWord(w);
+    const tail = normWord(w.slice(blankInfo(w).shown.length));
+    const isOk = typed.length > 0 && (typed === whole || typed === tail);
     if(isOk) correctCount++;
     el.classList.toggle('cw-ok', isOk);
     el.classList.toggle('cw-no', !isOk);
@@ -10670,7 +10865,12 @@ function checkCompleteWords(){
   });
   const ok = correctCount === words.length;
   document.getElementById('cw-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! All missing words matched.' : `${correctCount}/${words.length} correct — the highlighted words need another look.`}</div>`;
-  logUsage('complete-words', item.theme, ok ? 1 : 0);
+  // PROPORTIONAL, not all-or-nothing. Nine of ten gaps right used to score
+  // zero, on an exercise the section counts as TEN items — so a student one
+  // letter from perfect recorded the same as one who typed nothing, and every
+  // pattern the teacher reads was built on that. The screen always said
+  // "9/10"; only the number kept did not.
+  logUsage('complete-words', item.theme, words.length ? correctCount / words.length : 0);
 }
 
 // -- Listen and Repeat: 7-step walkthrough matching the real task rhythm --
@@ -10858,7 +11058,7 @@ function renderListenRepeatStep(item){
         ? '<p class="small-note">Press play, then repeat the sentence out loud — recording starts by itself the moment the sentence ends, with no extra tap, exactly like the real test.</p>'
         : '<p class="small-note">This browser cannot record your voice, so your repetition will not be scored — you can still play each sentence and practise out loud, then use "Mark as practiced" to move on.</p>')}
       <div id="lr-timer" class="wordcount"></div>
-      <div id="lr-result"></div>
+      <div id="lr-result" role="status" aria-live="polite"></div>
       <div class="ex-actions" style="margin-top:.8rem">
         <button class="btn ghost sm" onclick="lrSkip()">${(myTurn && supportsSTT()) ? 'Skip' : 'Mark as practiced'} →</button>
       </div>
@@ -10955,7 +11155,7 @@ function checkInterviewAnswer(){
   const uniqueRatio = new Set(words.map(w=>w.toLowerCase().replace(/[^a-z']/g,''))).size / wordCount;
 
   const notes = [];
-  notes.push(`<b>Organization:</b> ${wordCount>=80 && wordCount<=220 && sentenceCount>=3 ? `good length (${wordCount} words, ~${sentenceCount} sentences) — close to the ~150-word, 4–6 sentence target.` : `${wordCount} words in ~${sentenceCount} sentence(s) — aim for about 150 words across 4–6 sentences to fully develop your answer.`}`);
+  notes.push(`<b>Organization:</b> ${wordCount>=80 && wordCount<=220 && sentenceCount>=3 ? `good length (${wordCount} words, ~${sentenceCount} sentences) — close to the ~150-word, 4–6 sentence target.` : `${wordCount} words in ~${sentenceCount} sentence(s) — aim for about 110 words across 4–6 sentences to fully develop your answer.`}`);
   notes.push(`<b>Language Use (vocabulary proxy):</b> ${uniqueRatio>0.6 ? `good word variety (${Math.round(uniqueRatio*100)}% unique words) — you're not just repeating the same few words.` : `${Math.round(uniqueRatio*100)}% unique words — try varying your vocabulary a bit more instead of repeating the same words.`} Grammar accuracy itself isn't checked yet — that needs real language analysis.`);
   if(window._interviewTiming){
     const wpm = Math.round(wordCount / (window._interviewTiming.elapsedSec/60));
@@ -11006,7 +11206,16 @@ function checkWriting(){
   }
   notes.push('<b>Grammar & Vocabulary / Syntactic Variety:</b> not checked by this free prototype yet — needs real language analysis, planned for the hosted upgrade.');
   pushWritingFeedback(notes, n);
-  logUsage(item.type, item.theme, (n>=target[0] && n<=target[1]) ? 1 : 0);
+  // A FLOOR, NOT A BAND. ETS publishes "at least 100 words" for the discussion
+  // post; the upper number here is our own pacing advice. Scoring on the band
+  // meant a 141-word post recorded ZERO — the same as writing nothing — for
+  // being thorough. The advice above still says "tighten your explanation",
+  // which is what advice is for; it should not cost a mark.
+  //
+  // Under the floor is scored proportionally rather than zero, because 90
+  // words is most of an answer and 10 words is not, and one number for both
+  // told the teacher nothing.
+  logUsage(item.type, item.theme, n >= target[0] ? 1 : Math.max(0, Math.min(1, n / target[0])));
 }
 
 // Feedback arrives as a reply in a short thread, newest at the bottom, so a
@@ -11163,12 +11372,42 @@ async function hydrateFromCloud(name){
 // app finds the weak spot, she writes what to do about it, and it has to
 // actually reach the student or the loop never closes.
 async function hydrateNotesFromCloud(){
-  if(!window.CloudSync || !window.CloudSync.pullNotes) return;
+  if(!window.CloudSync || !window.CloudSync.pullNote) return;
+  const name = getStudentName();
+  // A device with no name asks for nothing. It used to download every note in
+  // the class regardless, before anyone had even said who they were.
+  if(!name) return;
   try{
-    const notes = await window.CloudSync.pullNotes();
-    localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes || {}));
+    const note = await window.CloudSync.pullNote(name);
+    // Only this student's own note is ever stored on this device now. Written
+    // as a one-key object rather than a bare string so loadTeacherNotes() and
+    // teacherNoteHtml() keep working unchanged.
+    const mine = {};
+    if(note) mine[name] = note;
+    localStorage.setItem('ajar_teacher_notes', JSON.stringify(mine));
     if(currentView === 'student') renderStudent();
   }catch(e){ /* offline — nothing to show, and nothing breaks */ }
+}
+
+/* WHAT ALREADY LEAKED, CLEANED UP
+   =============================
+   The old build wrote the whole class's notes into ajar_teacher_notes on every
+   device that opened the app. Fixing the write path does not remove what is
+   already sitting in those phones' storage, so this does.
+   Runs on a student's device only. On the teacher's own device that object IS
+   her working copy of every note, and deleting it would destroy her work. */
+function pruneForeignNotes(){
+  try{
+    if(teacherIsSignedIn()) return 0;
+    const all = JSON.parse(localStorage.getItem('ajar_teacher_notes') || '{}');
+    const mine = getStudentName();
+    const foreign = Object.keys(all).filter(k => k !== mine);
+    if(!foreign.length) return 0;
+    const kept = {};
+    if(mine && all[mine]) kept[mine] = all[mine];
+    localStorage.setItem('ajar_teacher_notes', JSON.stringify(kept));
+    return foreign.length;
+  }catch(e){ return 0; }
 }
 function teacherNoteHtml(){
   const name = getStudentName();
@@ -11205,7 +11444,12 @@ window.__onCloudSyncReady = function(){
   // has not been chosen yet — replacing the screen under someone who is
   // already practising would be worse than a slightly stale list.
   hydrateRosterFromCloud();
+  // Order matters: prune first, so a device that still holds the old
+  // whole-class object is cleaned even if the fetch below never resolves.
+  const pruned = pruneForeignNotes();
+  if(pruned) console.info('Ajar: removed ' + pruned + " note(s) about other students that an older build had stored on this device.");
   hydrateNotesFromCloud();
+  hydrateAllNotesForTeacher();
   // Module scripts load AFTER classic scripts (deferred by spec), so on
   // ANY page load — first-ever visit or a later one — the very first
   // loadSharedClassroomContent() call in the init tail can run BEFORE
@@ -11763,11 +12007,45 @@ function guideContent(role){
 }
 function showGuide(role){
   document.getElementById('guide-modal').innerHTML = guideContent(role) + `<div class="guide-close"><button class="btn" onclick="closeGuide('${role}')">Got it</button></div>`;
-  document.getElementById('guide-overlay').style.display = 'flex';
+  openModal();
 }
+/* Focus goes in, and comes back out to where it started.
+   Neither happened. Opening the guide left focus on the button behind it, so
+   Tab walked through the page UNDER the modal — background controls a sighted
+   user can see are covered. Closing it dropped focus to <body>, so a keyboard
+   user landed at the top of the document instead of the button they pressed. */
+function openModal(){
+  window._modalReturn = document.activeElement;
+  const ov = document.getElementById('guide-overlay');
+  const md = document.getElementById('guide-modal');
+  if(!ov || !md) return;
+  ov.style.display = 'flex';
+  // The heading the injected content starts with, named for aria-labelledby.
+  const h = md.querySelector('h2');
+  if(h && !h.id) h.id = 'guide-modal-title';
+  md.focus();
+}
+// Tab cycles inside the dialog instead of walking the page behind it.
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Tab') return;
+  const ov = document.getElementById('guide-overlay');
+  if(!ov || ov.style.display !== 'flex') return;
+  const md = document.getElementById('guide-modal');
+  const stops = md ? [...md.querySelectorAll('a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])')] : [];
+  if(!stops.length) return;
+  const first = stops[0], last = stops[stops.length - 1];
+  if(e.shiftKey && (document.activeElement === first || document.activeElement === md)){
+    e.preventDefault(); last.focus();
+  } else if(!e.shiftKey && document.activeElement === last){
+    e.preventDefault(); first.focus();
+  }
+});
 function closeGuide(role){
   document.getElementById('guide-overlay').style.display = 'none';
   if(role) localStorage.setItem('ajar_guide_seen_'+role, '1');
+  const back = window._modalReturn;
+  window._modalReturn = null;
+  if(back && back.focus) { try{ back.focus(); }catch(e){} }
 }
 // Escape closes it. Tapping outside already did, and the button at the bottom
 // did, but on a short screen — 334px of window on iPhone landscape — the
@@ -11946,7 +12224,7 @@ function showInsights(name){
     modal.innerHTML = `<h2>📈 ${who} practice patterns</h2>
       <p>Nothing logged${activeName ? ' for ' + escapeHtml(activeName) : ' on this device'} yet. Complete a few exercises and check back — this fills in automatically as you go.</p>
       <div class="guide-close"><button class="btn" onclick="closeGuide()">Close</button></div>`;
-    document.getElementById('guide-overlay').style.display = 'flex';
+    openModal();
     return;
   }
   const bar = avg => `<div style="background:var(--border);border-radius:6px;height:6px;width:100%;overflow:hidden;margin-top:.25rem"><div style="background:var(--accent);height:100%;width:${Math.round(avg*100)}%"></div></div>`;
@@ -11974,7 +12252,7 @@ function showInsights(name){
     <h3>Recent history</h3><ul>${historyHtml}</ul>
     <p class="small-note">This only reflects practice logged under this name on this device — it can't see the whole class. Real classwide dashboards need a shared backend, which this free prototype doesn't have yet.</p>
     <div class="guide-close"><button class="btn" onclick="closeGuide()">Close</button></div>`;
-  document.getElementById('guide-overlay').style.display = 'flex';
+  openModal();
 }
 function showFeedback(){
   const modal = document.getElementById('guide-modal');
@@ -11993,7 +12271,7 @@ function showFeedback(){
     </label>
     <div id="fb-result" style="margin-top:.6rem"></div>
     <div class="guide-close" style="gap:.5rem"><button class="btn ghost" onclick="closeGuide()">Cancel</button><button class="btn" onclick="sendFeedback()">Send feedback</button></div>`;
-  document.getElementById('guide-overlay').style.display = 'flex';
+  openModal();
 }
 function sendFeedback(){
   const name = (document.getElementById('fb-name').value || '').trim() || 'A student';
@@ -12269,15 +12547,40 @@ loadSharedClassroomContent().then(()=>{
         await setDoc(doc(db, 'schools', school(), 'classroom', 'roster'),
           { ...roster, updatedAt: serverTimestamp() });
       },
-      async pushNotes(notes) {
+      // ONE DOCUMENT PER STUDENT, and this replaced one document holding all
+      // of them. The old shape was { notes: { Ana: "...", Bruno: "..." } } in
+      // classroom/notes, which classroom/{docId} lets any signed-in visitor
+      // read — and every visitor is signed in anonymously. Worse, the app
+      // fetched it on EVERY page load and wrote the whole object into
+      // localStorage, so a teacher's private written feedback about all
+      // thirteen students was sitting on each of their phones. Only the UI
+      // filtered it. Any student could read the rest from the browser's own
+      // storage inspector, with no exploit at all.
+      //
+      // Per-document is a rule change of exactly nothing: classroom/* is
+      // already teacher-write-only, and a device now fetches only the name it
+      // is asking about.
+      //
+      // What this does NOT achieve, said plainly: cryptographic privacy. A
+      // student who knows a classmate's name can still request that one
+      // document, the same accepted limit as attempts history — anonymous
+      // auth gives no identity to check a request against. What it removes is
+      // the automatic whole-class dump, which is a different thing entirely.
+      async pushNote(name, text) {
+        if(noSchool() || !name) return;
         await authReady;
-        await setDoc(doc(db, 'schools', school(), 'classroom', 'notes'),
-          { notes, updatedAt: serverTimestamp() });
+        const id = 'note_' + String(name).toLowerCase().slice(0, 60);
+        if(text) await setDoc(doc(db, 'schools', school(), 'classroom', id),
+          { note: text, forName: String(name), updatedAt: serverTimestamp() });
+        else await setDoc(doc(db, 'schools', school(), 'classroom', id),
+          { note: '', forName: String(name), updatedAt: serverTimestamp() });
       },
-      async pullNotes() {
+      async pullNote(name) {
+        if(noSchool() || !name) return '';
         await authReady;
-        const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'notes'));
-        return snap.exists() ? (snap.data().notes || {}) : {};
+        const id = 'note_' + String(name).toLowerCase().slice(0, 60);
+        const snap = await getDoc(doc(db, 'schools', school(), 'classroom', id));
+        return snap.exists() ? (snap.data().note || '') : '';
       },
       async pullRoster() {
         if(noSchool()) return null;

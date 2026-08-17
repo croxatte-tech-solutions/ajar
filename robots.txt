@@ -1,0 +1,20 @@
+# Ajar — https://hiajar.com/
+#
+# The front door is welcome to be indexed. The share links are not, and that is
+# a privacy matter rather than an SEO preference.
+#
+# A share link looks like /?s=1&school=<id>, and that id is what separates one
+# school's material from another's for reading — it is a password that happens
+# to live in a URL. If a crawler indexes one, the school's material becomes
+# searchable, which is the one outcome the long random id exists to prevent.
+#
+# Disallow is a request, not an enforcement, so the real defence is the
+# canonical link in index.html pointing every query-string URL back at the bare
+# domain. This file states the intent for crawlers that honour it.
+
+User-agent: *
+Allow: /$
+Disallow: /?
+Disallow: /*?
+
+Sitemap: https://hiajar.com/sitemap.xml
