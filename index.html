@@ -627,6 +627,12 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
 
 /* --- vazio / erro: o mascote em vez de "nada encontrado" ----------------- */
 .state{ text-align:center; padding:1.4rem 1.2rem .4rem; }
+/* .empty tambem tem padding e cor propria; quando os dois estao no mesmo
+   elemento, o do .state manda e o texto volta a ser texto de verdade. */
+.empty.state{ padding:1.4rem 1.2rem .4rem; font-size:inherit; color:inherit; }
+/* `.empty svg{opacity:.5}` existia para apagar o iconezinho de 32px do estado
+   antigo. Aplicado ao mascote ele lava a marca e o verde vira cinza. */
+.empty.state .state-mascot{ opacity:1; }
 .state-mascot{ width:104px; height:104px; margin:0 auto .9rem; display:block; }
 .state h3{ font-family:var(--font-display); font-size:1.12rem; margin:0 0 .35rem; }
 .state p{ color:var(--text-dim); font-size:.9rem; line-height:1.55;
@@ -870,9 +876,14 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     <div id="sec-share"><div id="share-box"></div></div>
     <div id="sec-review"><div id="batch" class="batch-grid"></div></div>
     <div id="sec-trial"><div id="review-panel"></div></div>
-    <div id="teacher-empty" class="empty">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M4 19V6a2 2 0 012-2h9l5 5v10a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.5"/><path d="M9 13h6M9 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <div>Pick a task type and theme, then generate a batch to begin.</div>
+    <div id="teacher-empty" class="empty state state-empty">
+      <svg class="state-mascot" viewBox="0 0 96 96" aria-hidden="true" style="color:var(--accent)">
+        <path d="M4 39 L27 20 C38 29 58 29 69 20 L92 39 C92 63 73 80 48 80 C23 80 4 63 4 39 Z" fill="currentColor"/>
+        <path d="M18 39c8-4 16-4 22 0 6 4 16 4 22 0" stroke="var(--surface)" stroke-width="5" fill="none"/>
+        <path d="M39 48h18v12a9 9 0 0 1-18 0Z" fill="currentColor" stroke="var(--surface)" stroke-width="4"/>
+      </svg>
+      <h3>No batch yet</h3>
+      <p>Pick a task type and a theme above, then generate a batch to begin.</p>
     </div>
   </div>
 
@@ -885,9 +896,21 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     <div id="student-note"></div>
     <div id="welcome-back"></div>
     <div id="feedback-nudge"></div>
-    <div id="student-empty" class="empty">
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 3v4M12 3l3 2M12 3L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="14" r="7" stroke="currentColor" stroke-width="1.5"/></svg>
-      <div>No exercises approved yet. Check back after your teacher reviews this week's batch.</div>
+    <!-- Este estado aparece num caso só: a professora TEM conteúdo publicado,
+         mas o lote deste aluno está vazio hoje. Quando ela não publicou nada,
+         renderStudent chama renderSelfPractice() e esconde este bloco. Por
+         isso a mensagem fala de "nada para você hoje" e não de "app vazio",
+         e por isso oferece a prática por conta: o aluno abriu o app para
+         estudar e não pode sair de mãos vazias. -->
+    <div id="student-empty" class="empty state state-empty">
+      <svg class="state-mascot" viewBox="0 0 96 96" aria-hidden="true" style="color:var(--accent)">
+        <path d="M4 39 L27 20 C38 29 58 29 69 20 L92 39 C92 63 73 80 48 80 C23 80 4 63 4 39 Z" fill="currentColor"/>
+        <path d="M18 39c8-4 16-4 22 0 6 4 16 4 22 0" stroke="var(--surface)" stroke-width="5" fill="none"/>
+        <path d="M39 48h18v12a9 9 0 0 1-18 0Z" fill="currentColor" stroke="var(--surface)" stroke-width="4"/>
+      </svg>
+      <h3>Nothing for you today</h3>
+      <p>Your teacher has not approved anything for you yet. You can still practice on your own — nothing here counts towards a grade.</p>
+      <button class="btn" onclick="renderSelfPractice()">Practice on your own</button>
     </div>
     <div id="scenario-list" class="scenario-list"></div>
     <div id="practice-wrap"></div>
