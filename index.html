@@ -7639,6 +7639,7 @@ function renderSelfPractice(){
           ${Object.keys(EXAM_SECTIONS).map(k => `<button class="btn" onclick="confirmStartExam('${k}')">${EXAM_SECTIONS[k].label} &middot; ${EXAM_SECTIONS[k].items} questions, ${Math.round(EXAM_SECTIONS[k].seconds/60)} min</button>`).join(' ')}
         </div>
         <p class="small-note" style="margin:.6rem 0 0">🎧 In the Listening section the audio plays <b>once</b>, as on test day — practice gives you two.</p>
+        <p class="small-note" style="margin:.3rem 0 0">🎙️ Speaking needs your microphone, and marks only the repeated sentences — the app can check those word by word. Your spoken interview answer goes to your teacher, because judging how someone sounds needs an ear this app does not have yet.</p>
         <p class="small-note" style="margin:.3rem 0 0">✍️ Writing gives you one clock for all 23 minutes; the real test splits that time per task, so pace yourself. The email and the discussion post are not marked here — nothing in this app reads writing — so they go to your teacher and the score covers the ten sentences.</p>
       </div>
       <p class="small-note" style="margin-top:.8rem">💡 Tip: save this page to your browser's favorites/bookmarks to come back anytime.</p>
@@ -8018,6 +8019,28 @@ const EXAM_SECTIONS = {
     fixed: { 'choose-response': 3, 'talk': 4, 'announcement': 2, 'conversation': 4 },
     fill: null,
   },
+  speaking: {
+    label: 'Speaking',
+    items: 11,
+    seconds: 8 * 60,
+    // 7 + 4, and that is not an arrangement — one Listen and Repeat set is
+    // seven sentences and one interview is four questions, which is
+    // exactly the eleven items the real section holds.
+    fixed: { 'listen-repeat': 1, 'interview': 1 },
+    fill: null,
+    // Repeat Accuracy is the one speaking dimension this app can honestly
+    // judge: the target sentence is known, so a transcript can be aligned
+    // against it word by word — that is repeatAccuracy(), scored against
+    // the published rubric.
+    //
+    // The interview is not scored. What the app measures there is length,
+    // sentence count and word variety, which are pacing hints, not a mark
+    // — a fluent answer and a padded one can look identical. Fluency,
+    // intelligibility and pronunciation need audio analysis that does not
+    // exist yet, so the section says what it judged and hands the rest to
+    // the teacher, exactly as Writing does with prose.
+    scored: ['listen-repeat'],
+  },
   writing: {
     label: 'Writing',
     items: 12,
@@ -8043,11 +8066,21 @@ const EXAM_SECTIONS = {
 
 // How many of a section's items feed the band. Everything, unless the
 // section names a narrower set.
-function examScoredItems(cfg){
+// How many QUESTIONS feed the band — not how many exercises.
+//
+// This summed cfg.fixed, which counts exercises, and got away with it in
+// Writing because ten Build a Sentence items are ten questions. Speaking
+// broke it: one Listen and Repeat set is ONE exercise and SEVEN sentences,
+// so the band came out of 1 and a perfect run scored 7/1.
+//
+// The exam's own items know their weight, so ask them. Same mistake as
+// examQuestionCount and set-shaped data, one level up.
+function examScoredItems(cfg, items){
   if(!cfg.scored) return cfg.items;
-  return Object.keys(cfg.fixed)
-    .filter(t => cfg.scored.includes(t))
-    .reduce((n, t) => n + cfg.fixed[t], 0);
+  if(!items) return cfg.items;   // caller has no sitting; do not invent one
+  return items
+    .filter(it => cfg.scored.includes(it.type))
+    .reduce((n, it) => n + examQuestionCount(it), 0);
 }
 function examIsScored(cfg, type){
   return !cfg.scored || cfg.scored.includes(type);
@@ -8278,8 +8311,16 @@ function recordExamOutcome(type, theme, outcome01){
   // measured. So the writing is stored to hand over and the band is left
   // alone.
   if(!examIsScored(cfg, type)){
+    // Two different fields hold a produced answer: the writing tasks use
+    // #response, the interview uses #interview-answer (spoken aloud, or
+    // typed when the microphone is not an option). Reading only the first
+    // would have handed the teacher an empty interview.
     let text = '';
-    try{ text = (document.getElementById('response') || {}).value || ''; }catch(e){}
+    try{
+      const field = document.getElementById('response') ||
+                    document.getElementById('interview-answer');
+      text = (field || {}).value || '';
+    }catch(e){}
     ex.written = ex.written || [];
     ex.written.push({ type, theme, text: text.trim(), at: Date.now() });
     ex.delivered = (ex.delivered || 0) + n;
@@ -8340,7 +8381,7 @@ function renderExamResult(ex){
   // The band covers what this app can mark, which in Writing is ten of the
   // twelve items. Scoring out of twelve would quietly count two pieces of
   // writing nobody read.
-  const total = examScoredItems(cfg);
+  const total = examScoredItems(cfg, ex.items);
   const band = examBand(ex.correct, total);
   const mins = Math.floor((ex.finishedAt - ex.startedAt) / 60000);
   const ranOut = ex.reason === 'time';

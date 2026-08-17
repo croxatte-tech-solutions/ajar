@@ -191,6 +191,70 @@ const testScript = `
     maxListens('talk') === 1);
   finishExam('completed');
 
+  // =====================================================
+  // SPEAKING — the section that admits most
+  // =====================================================
+  const sp = EXAM_SECTIONS.speaking;
+
+  assert('the Speaking section is 11 items', sp.items === 11);
+  assert('the Speaking section is 8 minutes', sp.seconds === 8 * 60);
+  assert('one repeat set and one interview', sp.fixed['listen-repeat'] === 1 && sp.fixed.interview === 1);
+  // 7 + 4 is not an arrangement of ours: a repeat set IS seven sentences
+  // and an interview IS four questions.
+  assert('which is exactly eleven without padding',
+    examQuestionCount({ data: generateOne('listen-repeat','campus').data }) +
+    examQuestionCount({ data: generateOne('interview','campus').data }) === 11);
+
+  let spTotals = {};
+  for(let i = 0; i < 25; i++){
+    spTotals[buildExamItems(sp).reduce((n, it) => n + examQuestionCount(it), 0)] = 1;
+  }
+  assert('every Speaking section totals exactly 11 (25 builds)',
+    Object.keys(spTotals).length === 1 && spTotals[11] === 1);
+
+  // Repeat Accuracy is judgeable: the target sentence is known, so a
+  // transcript can be aligned against it. How someone sounds is not.
+  assert('the repeated sentences are marked', examIsScored(sp, 'listen-repeat'));
+  assert('the interview is not', !examIsScored(sp, 'interview'));
+  assert('the band is out of the seven it can mark', examScoredItems(sp, buildExamItems(sp)) === 7);
+  assert('all seven right is band 6', examBand(7, examScoredItems(sp, buildExamItems(sp))) === 6);
+  assert('scoring out of eleven would have capped an honest student',
+    examBand(7, sp.items) < 6);
+
+  localStorage.removeItem('ajar_exam_current');
+  startExam('speaking');
+  const spItems = JSON.parse(localStorage.getItem('ajar_exam_current')).items;
+  let spSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  spSt.idx = spItems.findIndex(i => i.type === 'listen-repeat');
+  localStorage.setItem('ajar_exam_current', JSON.stringify(spSt));
+  logUsage('listen-repeat', 'campus', 1);
+  let spAfter = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  assert('a perfect repeat set scores all seven', spAfter.correct === 7);
+
+  spSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  spSt.idx = spItems.findIndex(i => i.type === 'interview');
+  localStorage.setItem('ajar_exam_current', JSON.stringify(spSt));
+  logUsage('interview', 'campus', 1);
+  spAfter = JSON.parse(localStorage.getItem('ajar_exam_current'));
+  assert('the interview adds nothing to the score', spAfter.correct === 7);
+  assert('but it is handed over rather than dropped', (spAfter.written || []).length === 1);
+  assert('kept as the interview it answers', spAfter.written[0].type === 'interview');
+  finishExam('completed');
+  localStorage.removeItem('ajar_exam_current');
+
+  // The interview answer lives in its own field, so the capture has to
+  // know about both — reading only #response handed over an empty answer.
+  assert('the capture reads the interview field too',
+    HTML_SOURCE.indexOf("getElementById('interview-answer')") > -1 &&
+    HTML_SOURCE.slice(HTML_SOURCE.indexOf('function recordExamOutcome'),
+                      HTML_SOURCE.indexOf('function advanceExam'))
+      .indexOf('interview-answer') > -1);
+
+  assert('all four sections can now be sat', Object.keys(EXAM_SECTIONS).length === 4);
+  assert('the four together are the full test',
+    Object.values(EXAM_SECTIONS).reduce((n, c) => n + c.items, 0) === 120 &&
+    Math.round(Object.values(EXAM_SECTIONS).reduce((n, c) => n + c.seconds, 0) / 60) === 90);
+
   // --- there must always be a way forward ---
   //
   // This is the one that got shipped broken. Every type ends its last
@@ -263,10 +327,10 @@ const testScript = `
   assert('an email is not', !examIsScored(wr, 'email'));
   assert('a discussion post is not', !examIsScored(wr, 'discussion'));
   assert('the band is out of the ten it can mark, not twelve',
-    examScoredItems(wr) === 10);
+    examScoredItems(wr, buildExamItems(wr)) === 10);
   assert('sections that can mark everything are unaffected',
-    examScoredItems(EXAM_SECTIONS.reading) === 50 &&
-    examScoredItems(EXAM_SECTIONS.listening) === 47);
+    examScoredItems(EXAM_SECTIONS.reading, buildExamItems(EXAM_SECTIONS.reading)) === 50 &&
+    examScoredItems(EXAM_SECTIONS.listening, buildExamItems(EXAM_SECTIONS.listening)) === 47);
   assert('and they score every type', examIsScored(EXAM_SECTIONS.reading, 'passage'));
 
   let wrTotals = {};
@@ -318,7 +382,7 @@ const testScript = `
   wrSt = JSON.parse(localStorage.getItem('ajar_exam_current'));
   wrSt.correct = 10; localStorage.setItem('ajar_exam_current', JSON.stringify(wrSt));
   assert('all ten sentences right is band 6',
-    examBand(10, examScoredItems(wr)) === 6);
+    examBand(10, examScoredItems(wr, buildExamItems(wr))) === 6);
   assert('scoring it out of twelve would have capped it below 6',
     examBand(10, wr.items) < 6);
 
@@ -456,7 +520,7 @@ const testScript = `
     const end = JSON.parse(localStorage.getItem('ajar_exam_current'));
     // Writing marks ten of its twelve, so the yardstick is what the
     // section can mark, not how many items it holds.
-    const markable = examScoredItems(sec);
+    const markable = examScoredItems(sec, end.items);
     assert('a full ' + k + ' sitting reaches the end on its own', end.finished === true);
     assert('a full ' + k + ' sitting ends because it was completed', end.reason === 'completed');
     assert('every markable question in ' + k + ' was reached', end.answered === markable);
@@ -465,13 +529,17 @@ const testScript = `
     assert('a full ' + k + ' sitting left the practice log alone',
       localStorage.getItem('cse_usage_log_by_name') === null);
     if(sec.scored){
+      // One entry per unscored EXERCISE, not per question: Speaking's
+      // single interview is worth four items but is one piece of work
+      // handed over. Counting questions here expected four and got one.
+      const handedOver = end.items.filter(it => !sec.scored.includes(it.type)).length;
       assert('the unmarkable work in ' + k + ' was kept, not lost',
-        (end.written || []).length === sec.items - markable);
+        (end.written || []).length === handedOver);
     }
   });
 
   // --- both sections offered, and both reachable ---
-  assert('three sections can now be sat', Object.keys(EXAM_SECTIONS).length === 3);
+
   Object.keys(EXAM_SECTIONS).forEach(k => {
     localStorage.removeItem('ajar_exam_current');
     startExam(k);
