@@ -4,7 +4,7 @@
 
 🔗 **Live app:** https://hiajar.com
 
-Built by **Croxatte Tech Solutions** — a student project, developed while preparing for the exam himself — and free for any teacher or learner to use.
+A student project by **@croxatte**, built while preparing for the exam himself, and free for any teacher or learner to use.
 
 ## The name
 
