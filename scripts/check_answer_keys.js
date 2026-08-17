@@ -149,6 +149,37 @@ ${blocks.join('\n;\n')}
   for(const type in byType){
     const list = byType[type], n = list.length;
     const rate = pickIdx => list.filter(q => pickIdx(q.options) === q.answer).length / n;
+
+    /* Word spread, alongside the character tells below, because the two pull
+       against each other and only one of them was ever guarded.
+
+       check_conversation.js has always required options to sit within about
+       a word of each other, and conversation passed it. The character tell in
+       that same bank was 48%. Both readings are true: the options are the
+       same LENGTH in words while the correct one uses longer words, and what
+       a student sees on a phone is the character line, not the word count.
+
+       The trap is that fixing either one by itself breaks the other. Padding a
+       distractor with a phrase kills the character tell and blows the word
+       spread; trimming to the word count re-creates the character tell. So
+       both are asserted here, on every bank, and a fix has to satisfy the
+       pair. Only conversation had the word half before this. */
+    const words = o => String(o).trim().split(/\s+/).length;
+    const spread = list.reduce((acc, q) => {
+      const W = q.options.map(words);
+      return acc + (Math.max(...W) - Math.min(...W));
+    }, 0) / n;
+    // Per bank, at what it measures today, so a fix for the character tell
+    // cannot be bought with padding. These are not targets — they are
+    // ceilings, and each may be lowered, never raised.
+    const WORD_SPREAD_MAX = {
+      'choose-response': 2.60, 'announcement': 1.65, 'conversation': 1.60,
+      'talk': 2.15, 'daily-read': 1.60, 'passage': 1.90,
+    };
+    const cap = WORD_SPREAD_MAX[type] || 2.0;
+    assert(type + ': options stay within about a word of each other (' +
+      spread.toFixed(2) + ' of ' + cap.toFixed(2) + ' words average spread, n=' + n + ')',
+      spread <= cap, 'a distractor padded to hide a length tell reads as padded');
     const longest  = rate(o => o.map(s=>s.length).indexOf(Math.max(...o.map(s=>s.length))));
     const shortest = rate(o => o.map(s=>s.length).indexOf(Math.min(...o.map(s=>s.length))));
     const ceiling = 0.25 + 3 * Math.sqrt(0.25 * 0.75 / n);
