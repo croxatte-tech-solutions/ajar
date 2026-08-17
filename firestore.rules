@@ -21,8 +21,9 @@ rules_version = '2';
 // --------------
 // Students stay anonymous. They never create an account, never type a
 // password, and can only append their own practice attempts. Only a
-// teacher — a real Google sign-in whose uid has been added by hand to
-// /teachers — can write anything students will read.
+// teacher — signed in to an account that belongs to the APP rather than
+// to the person, whose uid has been added by hand to /teachers — can
+// write anything students will read.
 //
 // Known limitation, stated rather than hidden: a student is identified by
 // the name they type, not by an account, so these rules cannot stop one
