@@ -89,7 +89,11 @@ service cloud.firestore {
       match /students/{studentId} {
 
         function validStudent() {
-          return request.resource.data.keys().hasOnly(['displayName', 'lastSeen'])
+          // 'summary' is the compact per-student record the teacher's
+          // class panel reads — five numbers, no raw history. Without it
+          // here every write from a practising student is refused, which
+          // is how this file and the console drifted apart once already.
+          return request.resource.data.keys().hasOnly(['displayName', 'lastSeen', 'summary'])
             && request.resource.data.displayName is string
             && request.resource.data.displayName.size() > 0
             && request.resource.data.displayName.size() <= 60;
