@@ -270,8 +270,8 @@ assert('the publicly readable school document stays read-only',
 const groups = html.slice(html.indexOf('const TEACHER_SECTIONS = ['),
                           html.indexOf('const TEACHER_PANELS'));
 assert('the nav is grouped, not one tab per panel', /panels:\s*\[/.test(groups));
-assert('there are five groups, not nine tabs',
-  (groups.match(/\{ id:'grp-/g) || []).length === 5);
+assert('there are six groups, not nine tabs',
+  (groups.match(/\{ id:'grp-/g) || []).length === 6);
 
 const today = groups.slice(groups.indexOf("id:'grp-today'"), groups.indexOf("id:'grp-class'"));
 ['sec-progress', 'sec-generate', 'sec-review', 'sec-share'].forEach(p => {
@@ -283,8 +283,18 @@ assert('so the plan, the picker, the cards and the codes share one screen',
 // The roster and the class view are rebuilt inside stable wrappers on every
 // change, so the tab has to hide the WRAPPER. Hiding the rebuilt child meant
 // adding a student made the roster reappear under Today.
-assert('the class group targets the stable wrappers, not the rebuilt children',
-  groups.indexOf("'roster-box','class-progress'") > -1);
+assert('the class group targets the stable wrapper, not the rebuilt children',
+  groups.indexOf("panels:['roster-box']") > -1);
+
+// How each student is doing has a tab of its own, away from Today, because
+// Today is the tab she mirrors to the classroom screen. Switching tabs is
+// what takes it off that screen — something a collapsed panel sharing a tab
+// with the QR codes could never do.
+assert('how the class is doing is a tab of its own',
+  groups.indexOf("id:'grp-private'") > -1
+  && groups.indexOf("panels:['class-progress']") > -1);
+assert('and it is not on the tab that goes on the TV',
+  today.indexOf('class-progress') === -1);
 assert('and the gate does too',
   /TEACHER_GATED = \[[^\]]*'roster-box'[^\]]*'class-progress'/.test(html));
 

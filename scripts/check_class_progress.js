@@ -20,7 +20,8 @@ const combined = blocks.join('\n;\n');
 function makeElStub(){
   return { style:{}, innerHTML:'', textContent:'', value:'', checked:false,
     classList:{toggle(){},add(){},remove(){}}, appendChild(){}, addEventListener(){},
-    querySelector(){return makeElStub();}, closest(){return null;}, select(){}, focus(){} };
+    querySelector(){return makeElStub();}, querySelectorAll(){return [];},
+    closest(){return null;}, select(){}, focus(){}, remove(){}, insertBefore(){} };
 }
 function makeDocStub(){
   const els = {};
@@ -83,12 +84,49 @@ ${combined}
   saveTeacherNote('Alex', '   ');
   assert('an emptied note is removed, not blanked', loadTeacherNotes()['Alex'] === undefined);
 
-  // --- the panel ---
+  // --- closed, because her screen is the classroom screen ---
+  // A student's weakest skill is theirs to know, not the room's, and she has
+  // one screen which is usually mirrored to the TV. So this arrives shut, and
+  // shut means the rows are not in the page at all — rendering them hidden
+  // would leave every student's weak spot there for anyone who opened the
+  // inspector or was handed the laptop.
   setStudentName('');
+  window._privateShown = null;
+  renderClassProgress();
+  const shut = document.getElementById('class-progress').innerHTML;
+  assert('the panel arrives closed', shut.indexOf('Show me how the class is doing') > -1);
+  assert('and no weak spot is anywhere in the page while it is',
+    shut.indexOf('Weakest so far') === -1);
+  assert('it says why, rather than just being locked',
+    shut.indexOf('theirs to know') > -1);
+  assert('but she can see there is something behind it',
+    shut.indexOf('2 students on your list') > -1);
+
+  // --- opened, which is the whole point of having it ---
+  // Be on the tab first. The clear below fires on a CHANGE of tab, so a test
+  // that opens the panel without ever having navigated to it is testing a
+  // switch that never happens.
+  showSection(null, 'grp-private');
+  togglePrivate(PRIVATE_INSIGHT_KEY);
   renderClassProgress();
   const html = document.getElementById('class-progress').innerHTML;
   assert('every student on the list appears', html.indexOf('Alex') > -1 && html.indexOf('Sam') > -1);
   assert('the panel says the advice is hers', html.indexOf('never writes it for you') > -1);
+  assert('and it warns her the room may be reading it',
+    html.indexOf('showing on this screen') > -1);
+  assert('with a way to put it away again', html.indexOf('Hide this again') > -1);
+
+  // Switching tabs has to take it off the screen, which means REDRAWING and
+  // not only forgetting. The first version cleared the flag and left the
+  // revealed markup in the page — the state was right and the page still had
+  // every weak spot on it.
+  showSection(null, 'grp-today');
+  const after = document.getElementById('class-progress').innerHTML;
+  assert('leaving the tab forgets it was open', privateShown().size === 0);
+  assert('and no weak spot is left sitting in the page',
+    after.indexOf('Weakest so far') === -1);
+  assert('so coming back finds it closed',
+    after.indexOf('Show me how the class is doing') > -1);
 
   // Two nav entries reading "Progress" is a menu nobody can use.
   const labels = TEACHER_SECTIONS.map(x => x.label);
@@ -105,7 +143,7 @@ const sandbox = {
   btoa: s=>Buffer.from(s,'binary').toString('base64'),
   atob: s=>Buffer.from(s,'base64').toString('binary'),
   document: makeDocStub(),
-  window: { addEventListener(){}, _lrState:null, _sentenceState:null },
+  window: { addEventListener(){}, scrollTo(){}, _lrState:null, _sentenceState:null },
   localStorage,
   location: { origin:'https://example.com', pathname:'/app', hash:'', search:'' },
   navigator: { language:'en-US', languages:['en-US'], clipboard:{writeText:()=>Promise.resolve()}, mediaDevices:undefined },
@@ -123,6 +161,16 @@ const sandbox = {
 };
 sandbox.self = sandbox.window;
 sandbox.globalThis = sandbox;
+// The panel refuses to render without a signed-in teacher, and showSection
+// bails for the same reason — so the tab-switching assertions below need one.
+const cloudStub = new Proxy({}, {
+  get(_, prop){
+    if(prop === 'currentUser') return () => ({ isTeacher: true, schoolId: 'check-school' });
+    return () => Promise.resolve();
+  },
+});
+sandbox.window.CloudSync = cloudStub;
+sandbox.CloudSync = cloudStub;
 vm.createContext(sandbox);
 vm.runInContext(testScript, sandbox).catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
 

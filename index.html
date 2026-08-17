@@ -7156,18 +7156,33 @@ function renderTypeTabs(){
    every one of them. It survives renderTeacher on purpose: approving an
    exercise re-renders the panel, and having the card slam shut under her
    while she was reading it would teach her to leave everything open. */
-function revealedCards(){
-  if(!window._revealedCards) window._revealedCards = new Set();
-  return window._revealedCards;
+// One mechanism, because there turned out to be two kinds of thing that must
+// not be on the TV: the exercises, and how each student is doing. A second
+// mechanism for the second kind would have been a second set of bugs.
+//
+// Keyed by an arbitrary string — an exercise id, or 'class-insight' for the
+// private panel — so a third kind needs a key, not a rewrite.
+function privateShown(){
+  if(!window._privateShown) window._privateShown = new Set();
+  return window._privateShown;
 }
-function toggleCardContent(id){
-  const open = revealedCards();
+function togglePrivate(id){
+  const open = privateShown();
   if(open.has(id)) open.delete(id); else open.add(id);
   renderTeacher();
 }
-function hideAllCardContent(){
-  window._revealedCards = null;
+function hideAllPrivate(){
+  window._privateShown = null;
   renderTeacher();
+}
+// The alarm, in one place, because it is the same warning either way and it
+// has to keep saying the same thing when a third panel needs it.
+function privateAlarmHtml(what){
+  return `<div class="panel" style="border-color:var(--red);margin-bottom:.8rem">
+      <b style="color:var(--red)">👁 ${what} showing on this screen</b>
+      <p class="small-note" style="margin:.3rem 0 .6rem">Hide it before this goes on the classroom screen.</p>
+      <button class="btn sm" onclick="hideAllPrivate()">🙈 Hide everything</button>
+    </div>`;
 }
 // What is safe to put on a screen the whole room is looking at.
 //
@@ -7287,7 +7302,12 @@ function cardBody(item){
    happens, and the rest are genuinely separate jobs. */
 const TEACHER_SECTIONS = [
   { id:'grp-today',      label:'Today',       panels:['sec-progress','sec-generate','sec-review','sec-share'] },
-  { id:'grp-class',      label:'My class',    panels:['roster-box','class-progress'] },
+  { id:'grp-class',      label:'My class',    panels:['roster-box'] },
+  // How each student is doing gets a tab of its own, away from Today, which
+  // is the tab she mirrors. Asked for as "another tab", and the tab is the
+  // useful half: switching away from it takes it off the screen, which is
+  // something a collapsed panel inside a shared tab could never do.
+  { id:'grp-private',    label:'Private',     panels:['class-progress'] },
   { id:'grp-individual', label:'One student', panels:['sec-individual'] },
   { id:'grp-trial',      label:'Trial run',   panels:['sec-trial'] },
   { id:'grp-account',    label:'Account',     panels:['sec-account'] },
@@ -7464,10 +7484,30 @@ function activeTeacherSection(){
 function showSection(ev, id, quiet){
   if(ev) ev.preventDefault();
   const group = TEACHER_SECTIONS.find(g => g.id === id) || TEACHER_SECTIONS[0];
+  // Read BEFORE the write below, and compared rather than assumed:
+  // renderTeacher ends by calling this with the tab she is already on, so
+  // clearing unconditionally would slam every panel shut the instant she
+  // opened one.
+  let was = null;
+  try{ was = localStorage.getItem(TEACHER_SECTION_KEY); }catch(e){}
   try{ localStorage.setItem(TEACHER_SECTION_KEY, group.id); }catch(e){}
 
   // Signed out, the gate owns visibility and must not be overridden here.
   if(!teacherIsSignedIn()) return;
+
+  // Changing tabs puts away anything she had opened — and REDRAWS, which the
+  // first version of this did not. Clearing the flag alone left the revealed
+  // markup exactly where it was, weak spots and all, because nothing had
+  // rebuilt the panel since. Caught by looking at the screen rather than by
+  // any of the assertions, which is its own lesson: the state was right and
+  // the page was wrong.
+  //
+  // The recursion terminates. renderTeacher ends by calling this again, and
+  // by then the stored value equals group.id, so the branch is not taken.
+  if(was && was !== group.id && window._privateShown){
+    window._privateShown = null;
+    renderTeacher();
+  }
 
   // Show every panel in the chosen group, hide every panel in the others.
   TEACHER_PANELS.forEach(pid => {
@@ -7504,13 +7544,10 @@ function renderTeacher(){
   // find it again after scrolling, before she puts the screen back on the
   // TV. It is absent entirely when nothing is showing, so it is a state and
   // not decoration.
-  if(revealedCards().size){
+  const openCards = loadBatch().filter(i => privateShown().has(i.id)).length;
+  if(openCards){
     const alarm = document.createElement('div');
-    alarm.className = 'panel';
-    alarm.style.cssText = 'border-color:var(--red);margin-bottom:.8rem';
-    alarm.innerHTML = `<b style="color:var(--red)">👁 ${revealedCards().size} exercise(s) are showing on this screen</b>
-      <p class="small-note" style="margin:.3rem 0 .6rem">Including their answers. Hide them before this goes on the classroom screen.</p>
-      <button class="btn sm" onclick="hideAllCardContent()">🙈 Hide all of them</button>`;
+    alarm.innerHTML = privateAlarmHtml(openCards + ' exercise(s) and their answers are');
     wrap.appendChild(alarm);
   }
   batch.forEach(item=>{
@@ -7522,12 +7559,12 @@ function renderTeacher(){
         <span class="ex-status ${item.status}">${item.status==='pending'?'Awaiting review':item.status==='approved'?'Approved':'Discarded'}</span>
       </div>
       <div class="ex-body">${escapeHtml(cardSummary(item))}</div>
-      ${revealedCards().has(item.id) ? `
+      ${privateShown().has(item.id) ? `
         <div class="small-note" style="color:var(--red);font-weight:600;margin-top:.5rem">👁 Showing the exercise — anyone watching this screen can read it, answers included.</div>
         ${cardBody(item)}
-        <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="toggleCardContent('${item.id}')">🙈 Hide it again</button></div>
+        <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="togglePrivate('${item.id}')">🙈 Hide it again</button></div>
       ` : `
-        <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="toggleCardContent('${item.id}')">👁 Show me the exercise</button>
+        <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="togglePrivate('${item.id}')">👁 Show me the exercise</button>
         <span class="small-note" style="margin-left:.4rem">Only if this screen is not on the TV — it shows the answers too</span></div>
       `}
       ${item.status==='approved' ? `
@@ -7715,14 +7752,40 @@ function renderClassProgress(){
       </div>`;
   }).join('');
 
+  // Closed by default, for the same reason the exercise cards are: she has
+  // one screen and it is on the TV. But this half is not about giving an
+  // answer away — it is naming, in front of the room, the thing each student
+  // is worst at. That is a harder thing to undo than a spoiled exercise, and
+  // it is the student's business rather than the class's.
+  //
+  // The rows are not even built into the DOM until she asks. Rendering them
+  // hidden would put every student's weak spot in the page for anyone who
+  // ever opened the inspector or handed the laptop over.
+  if(!privateShown().has(PRIVATE_INSIGHT_KEY)){
+    box.innerHTML = `
+      <div class="panel" id="sec-class">
+        <h2>📊 How the class is doing</h2>
+        <p class="small-note" style="margin-top:0">${roster.length} student${roster.length>1?'s':''} on your list. Behind this: what each one is weakest at, and the note you write them.</p>
+        <p class="small-note">🔒 It stays closed until you ask, because this screen is usually the classroom screen — and a student's weakest skill is theirs to know, not the room's.</p>
+        <div class="ex-actions" style="margin-top:.7rem"><button class="btn" onclick="togglePrivate('${PRIVATE_INSIGHT_KEY}')">👁 Show me how the class is doing</button></div>
+      </div>`;
+    return;
+  }
+
   box.innerHTML = `
+    ${privateAlarmHtml('Every student\'s weakest skill is')}
     <div class="panel" id="sec-class">
       <h2>📊 How the class is doing</h2>
       <p class="small-note" style="margin-top:0">Updates as students practise. The app points at the weak spot; the advice is yours — it knows a number, you know the student.</p>
-      <div class="ex-actions" style="margin:.6rem 0 .9rem"><button class="btn sm" onclick="refreshClassProgress()">↻ Refresh now</button></div>
+      <div class="ex-actions" style="margin:.6rem 0 .9rem">
+        <button class="btn sm" onclick="refreshClassProgress()">↻ Refresh now</button>
+        <button class="btn ghost sm" onclick="togglePrivate('${PRIVATE_INSIGHT_KEY}')">🙈 Hide this again</button>
+      </div>
       ${rows}
     </div>`;
 }
+// Not an exercise id, and it must never collide with one.
+const PRIVATE_INSIGHT_KEY = 'class-insight';
 // Slow on purpose. Every refresh is one read per student, and a lesson runs
 // an hour — a five-second poll would burn the free quota to show a teacher
 // something she would not notice arriving sooner.

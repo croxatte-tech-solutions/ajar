@@ -91,7 +91,7 @@ const testScript = `
     saveBatch([item]);
 
     // --- closed, which is how it arrives ---
-    window._revealedCards = null;
+    window._privateShown = null;
     box.children = [];
     renderTeacher();
     const closed = panelHtml();
@@ -124,7 +124,7 @@ const testScript = `
     // This half is what stops the file passing for the wrong reason. If the
     // walk above collected nothing, or the panel rendered empty, everything
     // passes and nothing was tested.
-    window._revealedCards = new Set([item.id]);
+    window._privateShown = new Set([item.id]);
     box.children = [];
     renderTeacher();
     const open = panelHtml();
@@ -143,24 +143,41 @@ const testScript = `
   // ONE WAY TO PUT IT ALL AWAY
   //=================================================================
   // A card left open scrolls out of sight and stays on the TV.
-  window._revealedCards = new Set(['card-passage']);
+  //
+  // The batch is whatever the loop above left behind, and the alarm counts
+  // open cards that are actually IN it — so it has to be set here rather
+  // than assumed. It counts from the batch on purpose: the private panel
+  // shares this reveal mechanism, and its key must not raise an alarm about
+  // exercises.
+  const one = { id: 'card-alarm', type: 'passage', tag: tagFor('passage'), theme: 'campus',
+                status: 'approved', data: generateOne('passage','campus').data };
+  saveBatch([one]);
+  window._privateShown = new Set([one.id]);
   box.children = [];
   renderTeacher();
   assert('an open card raises an alarm at the top of the panel',
     panelHtml().indexOf('are showing on this screen') > -1);
   assert('with one button that closes every one of them',
-    panelHtml().indexOf('hideAllCardContent()') > -1);
+    panelHtml().indexOf('hideAllPrivate()') > -1);
 
-  hideAllCardContent();
+  hideAllPrivate();
   box.children = [];
   renderTeacher();
   assert('and pressing it does', panelHtml().indexOf('are showing on this screen') === -1);
   assert('the alarm is absent when nothing is open, not just quiet',
-    revealedCards().size === 0);
+    privateShown().size === 0);
+
+  // The private panel's key is not an exercise, so it must not make the
+  // exercise alarm claim answers are on screen.
+  window._privateShown = new Set([PRIVATE_INSIGHT_KEY]);
+  box.children = [];
+  renderTeacher();
+  assert('opening the private panel does not cry wolf about exercises',
+    panelHtml().indexOf('answers are showing') === -1);
 
   // Nothing opens itself. This is the assertion the whole file exists for.
-  window._revealedCards = null;
-  assert('a fresh load has every card closed', revealedCards().size === 0);
+  window._privateShown = null;
+  assert('a fresh load has every card closed', privateShown().size === 0);
 
   console.log(results.join('\\n'));
   const fails = results.filter(r => r.includes('FAIL'));
