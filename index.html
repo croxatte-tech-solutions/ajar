@@ -246,6 +246,14 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
    front of someone who arrived by QR code — a shared link goes straight to
    the exercise, because a wall in front of the thing that works is a worse
    idea than no welcome at all. */
+/* Short by design. A student who came to practise will not read a
+   paragraph, so the first line carries the essential fact and the rest
+   folds away for whoever wants it. */
+.brief{ font-size:.78rem; color:var(--text-dim); margin:.5rem 0 .2rem; }
+.brief summary{ cursor:pointer; line-height:1.5; }
+.brief summary::marker{ color:var(--accent); }
+.brief b{ color:var(--accent); }
+.brief p{ margin:.4rem 0 0 .1rem; padding-left:.7rem; border-left:2px solid var(--border); line-height:1.5; }
 .welcome{ max-width:30rem; margin:2.5rem auto 0; text-align:center; padding:0 .5rem; }
 .welcome-mark{ width:84px; height:84px; }
 .welcome-name{ font-size:2.1rem; font-weight:800; margin:.5rem 0 .1rem; letter-spacing:-.02em; }
@@ -510,6 +518,13 @@ const CONFIG = {
 // a student who scans a QR from one school lands in that school's data
 // whichever address they opened.
 function currentSchool(){
+  // A signed-in teacher belongs to the school named in her own record, and
+  // that beats anything in the address bar — otherwise a teacher who opened
+  // a colleague's link would quietly publish into the wrong school.
+  try{
+    const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
+    if(u && u.isTeacher && u.schoolId) return u.schoolId;
+  }catch(e){}
   try{
     const fromUrl = new URLSearchParams(location.search).get('school');
     if(fromUrl) return fromUrl;
@@ -6321,7 +6336,7 @@ function renderTeacherSignIn(){
       <div class="panel" style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
         <span style="font-size:1.1rem">🔓</span>
         <div style="flex:1;min-width:210px">
-          <div style="font-weight:700">Signed in as ${escapeHtml(u.email || 'teacher')}</div>
+          <div style="font-weight:700">Signed in as ${escapeHtml(u.name || u.email || 'teacher')}</div>
           <div class="small-note" style="margin:.15rem 0 0">Approved sets publish to your class. Students still need no account and no password.</div>
         </div>
         <button class="btn ghost sm" onclick="teacherSignOut()">Sign out</button>
@@ -6372,7 +6387,7 @@ function teacherSignIn(){
   const stay = !!(document.getElementById('teacher-stay')||{}).checked;
   if(!pass){ teacherSignInMsg('Type the password first.', false); return; }
   window.CloudSync.signInTeacher(email.trim(), pass, stay)
-    .then(()=>{ renderTeacherSignIn(); renderShareBox(); })
+    .then(()=>{ renderTeacherSignIn(); renderShareBox(); renderWhoAmI(); })
     .catch(e => {
       // Say what actually went wrong. Firebase's own messages are written
       // for developers, and "auth/invalid-credential" in front of a
@@ -6400,11 +6415,11 @@ function teacherResetPassword(){
 }
 function teacherSignOut(){
   if(!window.CloudSync) return;
-  window.CloudSync.signOutTeacher().then(()=>{ renderTeacherSignIn(); renderShareBox(); });
+  window.CloudSync.signOutTeacher().then(()=>{ renderTeacherSignIn(); renderShareBox(); renderWhoAmI(); });
 }
 // Fired by the auth listener in the module script, including on the
 // initial anonymous sign-in.
-window.__onAuthChanged = () => { renderTeacherSignIn(); };
+window.__onAuthChanged = () => { renderTeacherSignIn(); renderWhoAmI(); };
 
 function renderShareBox(){
   const box = document.getElementById('share-box');
@@ -7605,6 +7620,7 @@ function renderPractice(){
       <div class="compose">
         ${timerBadgeHtml(item.type)}
         <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this task would end now. Moving to the next exercise…</div>
+        ${taskBriefHtml(item.type)}
         ${item.type==='email' ? emailPromptHtml(item.data) : discussionPromptHtml(item.data)}
         <textarea id="response" rows="6" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
         <div class="wordcount" id="wordcount">0 words</div>
@@ -7737,6 +7753,7 @@ function renderAnnouncementStep(item){
     <div class="compose">
       <div class="wordcount">Announcement ${st.ann+1} of ${item.data.set.length} &middot; question ${doneQ+1} of ${totalQ}</div>
       <div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>Listen to ${escapeHtml(a.context)}.</div>
+      ${taskBriefHtml('announcement')}
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0
           ? `<button class="btn sound" onclick="playAnnouncement()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
@@ -7825,6 +7842,7 @@ function renderPassageStep(item){
     <div class="compose">
       <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
       <div class="interview-scenario"><span class="interview-scenario-label">📖 The setup</span>Read ${escapeHtml(d.context)}. You do not need to know anything about the subject beforehand.</div>
+      ${taskBriefHtml('passage')}
       ${passageDocHtml(d, isVocab)}
       <div class="ex-body">${escapeHtml(q.q)}</div>
       <div class="mc-options">${options}</div>
@@ -7891,6 +7909,7 @@ function renderDailyReadStep(item){
     <div class="compose">
       <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
       <div class="interview-scenario"><span class="interview-scenario-label">📄 The setup</span>Read ${escapeHtml(d.context)}.</div>
+      ${taskBriefHtml('daily-read')}
       ${dailyDocHtml(d)}
       <div class="ex-body">${escapeHtml(q.q)}</div>
       <div class="mc-options">${options}</div>
@@ -7960,6 +7979,7 @@ function renderTalkStep(item){
     <div class="compose">
       <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
       <div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>Listen to ${escapeHtml(d.context)}. You do not need to know anything about the subject beforehand.</div>
+      ${taskBriefHtml('talk')}
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0
           ? `<button class="btn sound" onclick="playTalk()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
@@ -8043,6 +8063,7 @@ function renderConversationStep(item){
     <div class="compose">
       <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
       <div class="interview-scenario"><span class="interview-scenario-label">🎧 The setup</span>Listen to ${escapeHtml(d.context)}${/\bbetween\b/.test(d.context) ? '' : ' between a man and a woman'}.</div>
+      ${taskBriefHtml('conversation')}
       <div class="ex-actions" style="margin-top:.6rem">
         ${listensLeft > 0
           ? `<button class="btn sound" onclick="playConversation()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
@@ -9063,7 +9084,21 @@ function usageSummary(name){
 function setStudentName(name){ localStorage.setItem('cse_student_name', name.trim()); }
 function renderWhoAmI(){
   const el = document.getElementById('who-am-i');
-  if(currentView === 'teacher'){ el.textContent = TEACHER_NAME; }
+  if(!el) return;
+  if(currentView === 'teacher'){
+    // Signing out belongs in the header, next to who is signed in. It used
+    // to live only in the Account panel, which on a phone is a long way
+    // down a scrolling page — and the moment it matters most is a teacher
+    // leaving a shared school computer, when she is already walking away.
+    const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
+    if(u && u.isTeacher){
+      el.innerHTML = `${escapeHtml(u.name || u.email || TEACHER_NAME)}
+        <button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
+                onclick="teacherSignOut()">Sign out</button>`;
+    } else {
+      el.textContent = TEACHER_NAME;
+    }
+  }
   else { const n = getStudentName(); el.textContent = n ? `Hi, ${n}` : ''; }
 }
 
@@ -9141,6 +9176,65 @@ const WELCOME_TEXT = {
 function welcomeText(){
   return WELCOME_TEXT[detectStudentLanguage()] || WELCOME_TEXT.en;
 }
+/* =========================================================
+   WHAT THIS TASK IS ON THE REAL TEST
+   A student who has never sat the TOEFL does not know how many questions
+   are coming, how long they get, or what is being judged. One short line
+   answers that; a second, folded away, says where our version differs and
+   why. Both matter, and they are not the same thing — a practice tool that
+   quietly diverges from the exam teaches a habit that will not survive it.
+
+   Every number below comes from ETS's published material. Where our
+   version differs, it says so plainly rather than presenting a practice
+   choice as if it were the rule.
+   ========================================================= */
+const TASK_BRIEF = {
+  'complete-words': {
+    real: 'A short passage where the second half of every second word is missing. Ten gaps, and you type only the missing letters.',
+    ours: 'Same shape as the real task. Reading is 50 items in about 30 minutes on test day, so this is one small part of that section.' },
+  'daily-read': {
+    real: 'An everyday text — a sign, a receipt, a message thread — followed by two or three questions.',
+    ours: 'The real texts run from about 15 to 150 words, and so do these. You are meant to scan for the line that answers the question, not read it through.' },
+  'passage': {
+    real: 'About 200 words on an academic subject, then five questions. Background knowledge is never required — everything you need is on the page.',
+    ours: 'One of the five asks what a word means where it sits. The passage marks that word for you; on the real test it is underlined instead.' },
+  'choose-response': {
+    real: 'You hear a short question or statement once, and choose the best reply. Nothing is written on screen.',
+    ours: 'We allow two listens instead of one, because this is practice. The real test plays it once.' },
+  'conversation': {
+    real: 'Two people talking, then questions about what was said. The answer is often in the reply rather than in the line that prompted it.',
+    ours: 'Two listens here, one on the real test.' },
+  'announcement': {
+    real: 'A public notice read aloud, then questions. You never see the words.',
+    ours: 'Two listens here, one on the real test.' },
+  'talk': {
+    real: 'A short academic talk, then four questions: what it is about, something it stated, why the speaker mentioned a particular thing, and what follows.',
+    ours: 'ETS says these run about 100 to 250 words; the real ones we measured sit between 163 and 230, and ours match that. Two listens here, one on the test.' },
+  'sentence': {
+    real: 'Put scrambled words into the right order. Scoring is all or nothing — one word out of place is marked wrong.',
+    ours: 'Same scoring, deliberately. Writing is 12 items in about 23 minutes on test day.' },
+  'email': {
+    real: 'Reply to a situation in a complete email. ETS asks you to write as much as you can, in full sentences, and does not publish a word count.',
+    ours: 'The 80 to 120 words is this class\'s target, not an ETS rule. The clock turns amber at 2 minutes and red at 45 seconds; the real one does not change colour.' },
+  'discussion': {
+    real: 'Join an online class discussion. ETS states one number only: at least 100 words.',
+    ours: 'Same 100-word floor. The clock turns amber at 2 minutes and red at 45 seconds; the real one does not change colour.' },
+  'listen-repeat': {
+    real: 'You hear a sentence once and repeat it. Scoring is about how exactly you repeat it, down to small words and word order.',
+    ours: 'We score against the published rubric: missing function words, changed content words, and two words swapped each count differently.' },
+  'interview': {
+    real: 'Four questions on one topic, asked one after another, 45 seconds each and no preparation time.',
+    ours: 'Two listens per question here, none on the real test. Speaking is 11 items in about 8 minutes on test day.' },
+};
+function taskBriefHtml(type){
+  const b = TASK_BRIEF[type];
+  if(!b) return '';
+  return `<details class="brief">
+    <summary><b>On the real test:</b> ${escapeHtml(b.real)}</summary>
+    <p>${escapeHtml(b.ours)}</p>
+  </details>`;
+}
+
 function renderWelcome(){
   // Runs during start-up. Anything thrown here takes the whole app down
   // before a single screen renders, so the welcome — which is decoration
@@ -9612,13 +9706,27 @@ loadSharedClassroomContent().then(()=>{
     // is open to the world, so the approval gate was a hidden button
     // rather than a real restriction.
     let currentUser = null;
+    // The teacher's own /teachers document carries the name she wants to be
+    // called and the school she belongs to. Read once when she signs in:
+    // showing an email address in a header that gets projected onto a
+    // classroom wall is both impersonal and more than anyone needs to see.
+    let teacherRecord = null;
     const isTeacherAccount = u => !!u && !u.isAnonymous;
+    async function loadTeacherRecord(uid){
+      try{
+        const snap = await getDoc(doc(db, 'teachers', uid));
+        teacherRecord = snap.exists() ? snap.data() : null;
+      }catch(e){ teacherRecord = null; }
+      window.__onAuthChanged?.(window.CloudSync ? window.CloudSync.currentUser() : null);
+    }
     // Read at call time rather than captured once: a student can open a
     // link for a different school without reloading the page.
     const school = () => (typeof currentSchool === 'function' ? currentSchool() : 'cse-den-8f3a91');
     onAuthStateChanged(auth, user => {
       currentUser = user || null;
+      teacherRecord = null;
       if (user) authReadyResolve();
+      if (isTeacherAccount(user)) loadTeacherRecord(user.uid);
       // Let the UI redraw whenever sign-in state changes, including the
       // redirect back from Google.
       window.__onAuthChanged?.(window.CloudSync ? window.CloudSync.currentUser() : null);
@@ -9716,7 +9824,11 @@ loadSharedClassroomContent().then(()=>{
       currentUser() {
         return currentUser
           ? { uid: currentUser.uid, email: currentUser.email || null,
-              name: currentUser.displayName || null, isTeacher: isTeacherAccount(currentUser) }
+              // What she is called, and where she teaches — both from her
+              // own record rather than from the account.
+              name: (teacherRecord && teacherRecord.name) || currentUser.displayName || null,
+              schoolId: (teacherRecord && teacherRecord.schoolId) || null,
+              isTeacher: isTeacherAccount(currentUser) }
           : null;
       },
       // `staySignedIn` is the difference between a personal laptop and the
