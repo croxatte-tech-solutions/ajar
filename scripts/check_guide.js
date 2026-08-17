@@ -76,7 +76,13 @@ const testScript = `
   assert('the teacher guide explains the sign-in', /sign.?in/i.test(teacher));
   assert('and that students never sign in', /never sign in/i.test(teacher));
   assert('it explains that writing comes back to her', /does <b>not<\\/b> mark|hands|comes back/i.test(teacher));
-  assert('it says the score covers the sentences only', /ten sentences/i.test(teacher));
+  // Two sections now mark only part of what they contain, so the guide
+  // says so generally rather than naming Writing's ten sentences. What
+  // must survive is the admission itself: what it marks, and what it does
+  // not.
+  assert('it says what it marks', /marks Build a Sentence/i.test(teacher));
+  assert('and what it does not', /does not mark/i.test(teacher));
+  assert('and that the rest goes to her', /come back|hand you/i.test(teacher));
   assert('it keeps the final-word rule', /final word/i.test(teacher));
   assert('it still says it is a prototype', /prototype/i.test(teacher));
   assert('it warns the band is not an ETS score', /not an ETS score|our<\\/b> estimate|our.{0,15}estimate/i.test(teacher));
