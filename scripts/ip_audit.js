@@ -15,7 +15,7 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
 sb.self=sb.window;sb.globalThis=sb;vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`;globalThis.__c={
  lr:LISTEN_SETS, iv:INTERVIEW_BANK, em:EMAIL_BANK, di:DISCUSSION_BANK,
- cw:COMPLETE_WORDS_BANK, se:SENTENCE_BANK, cr:CHOOSE_RESPONSE_BANK, an:ANNOUNCEMENT_BANK, cv:CONVERSATION_BANK, tk:TALK_BANK, dr:DAILY_READ_BANK, themes:ALL_THEMES};`, sb);
+ cw:COMPLETE_WORDS_BANK, se:SENTENCE_BANK, cr:CHOOSE_RESPONSE_BANK, an:ANNOUNCEMENT_BANK, cv:CONVERSATION_BANK, tk:TALK_BANK, dr:DAILY_READ_BANK, pg:PASSAGE_BANK, themes:ALL_THEMES};`, sb);
 const c=sb.__c;
 
 // every user-facing string we ship
@@ -30,6 +30,8 @@ for(const th of c.themes){
   (c.an[th]||[]).forEach(a=>{ ours.push(a.text); a.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
   (c.cv[th]||[]).forEach(v=>{ v.turns.forEach(t=>ours.push(t[1])); v.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
   (c.tk[th]||[]).forEach(k=>{ ours.push(k.text); k.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
+  (c.pg[th]||[]).forEach(p=>{ ours.push(p.title); ours.push(p.text);
+    p.questions.forEach(q=>{ ours.push(q.q); q.options.forEach(o=>ours.push(o)); }); });
   (c.dr[th]||[]).forEach(d=>{ ours.push(d.title);
     (d.body||[]).forEach(x=>ours.push(x));
     (d.msgs||[]).forEach(x=>ours.push(x[1]));
@@ -83,6 +85,9 @@ for(const th of c.themes){
   (c.tk[th]||[]).forEach(k=>{ (areas['Talk text']=areas['Talk text']||[]).push(k.text);
                               k.questions.forEach(q=>{ (areas['Talk question']=areas['Talk question']||[]).push(q.q);
                                 q.options.forEach(o=>(areas['Talk option']=areas['Talk option']||[]).push(o)); }); });
+  (c.pg[th]||[]).forEach(p=>{ (areas['Passage text']=areas['Passage text']||[]).push(p.title+' '+p.text);
+    p.questions.forEach(q=>{ (areas['Passage question']=areas['Passage question']||[]).push(q.q);
+      q.options.forEach(o=>(areas['Passage option']=areas['Passage option']||[]).push(o)); }); });
   (c.dr[th]||[]).forEach(d=>{ (areas['Daily Life text']=areas['Daily Life text']||[]).push(
       [d.title].concat(d.body||[], (d.msgs||[]).map(x=>x[1]), (d.rows||[]).map(r=>r[0]+' '+r[1]), d.note?[d.note]:[]).join(' '));
     d.questions.forEach(q=>{ (areas['Daily Life question']=areas['Daily Life question']||[]).push(q.q);
