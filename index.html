@@ -416,6 +416,21 @@ const CONFIG = {
   // When a server exists, endpoints go here.
   apiBase: null,
 
+  // Which school's data this session reads and writes. Everything lives
+  // under schools/{id}/, so two schools using the same deployment can
+  // never see or overwrite each other.
+  //
+  // The id is deliberately a long random-looking string rather than "cse":
+  // a student joins by opening a share link, not by signing in, so there
+  // is no account to check them against. The id in the link is therefore
+  // what stands between one school's material and another's, and a
+  // guessable one would be no barrier at all. Treat it like a password
+  // that happens to live in a URL.
+  //
+  // A link may name a different school with ?school=<id>; this is only
+  // the fallback for someone opening the bare address.
+  defaultSchool: 'cse-den-8f3a91',
+
   // The teacher account's address, pre-filled on the sign-in form so the
   // teacher only types a password. This is an account that belongs to the
   // APP, not to the person: a teacher should never have to put her
@@ -437,6 +452,17 @@ const CONFIG = {
   // spread through the code.
   authRequired: false,
 };
+
+// Which school the current visitor belongs to. A share link carries it, so
+// a student who scans a QR from one school lands in that school's data
+// whichever address they opened.
+function currentSchool(){
+  try{
+    const fromUrl = new URLSearchParams(location.search).get('school');
+    if(fromUrl) return fromUrl;
+  }catch(e){}
+  return CONFIG.defaultSchool;
+}
 
 // The one place a share link or QR code gets its origin. Falls back to
 // wherever the page is actually served, so the app keeps working on
@@ -6128,7 +6154,7 @@ async function loadSharedClassroomContent(){
 // isn't reachable at all.
 function itemShareLink(item){
   return window.CloudSync
-    ? appBaseUrl() + '?ex=' + item.id
+    ? appBaseUrl() + '?ex=' + item.id + '&school=' + encodeURIComponent(currentSchool())
     : appBaseUrl() + '#batch=' + encodeBatchForShare([item], {}, [], '', '');
 }
 
@@ -6205,7 +6231,7 @@ function parseSpeakTurn(raw){
 // unreachable, this falls back to the old full-payload link so
 // sharing never simply breaks — it only gets denser as a QR code,
 // exactly like it always has.
-function shortShareLink(){ return appBaseUrl() + '?s=1'; }
+function shortShareLink(){ return appBaseUrl() + '?s=1&school=' + encodeURIComponent(currentSchool()); }
 function legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw){
   return appBaseUrl() + '#batch=' + encodeBatchForShare(approved, individual, speakTurn, teacherEmailRaw, announcementRaw);
 }
@@ -9060,6 +9086,9 @@ loadSharedClassroomContent().then(()=>{
     // rather than a real restriction.
     let currentUser = null;
     const isTeacherAccount = u => !!u && !u.isAnonymous;
+    // Read at call time rather than captured once: a student can open a
+    // link for a different school without reloading the page.
+    const school = () => (typeof currentSchool === 'function' ? currentSchool() : 'cse-den-8f3a91');
     onAuthStateChanged(auth, user => {
       currentUser = user || null;
       if (user) authReadyResolve();
@@ -9073,15 +9102,15 @@ loadSharedClassroomContent().then(()=>{
       async pullHistory(name) {
         await authReady;
         const key = name.toLowerCase();
-        const q = query(collection(db, 'students', key, 'attempts'), orderBy('ts', 'desc'), limit(60));
+        const q = query(collection(db, 'schools', school(), 'students', key, 'attempts'), orderBy('ts', 'desc'), limit(60));
         const snap = await getDocs(q);
         return snap.docs.map(d => d.data());
       },
       async pushAttempt(name, entry) {
         await authReady;
         const key = name.toLowerCase();
-        await setDoc(doc(db, 'students', key), { displayName: name, lastSeen: serverTimestamp() }, { merge: true });
-        await addDoc(collection(db, 'students', key, 'attempts'), entry);
+        await setDoc(doc(db, 'schools', school(), 'students', key), { displayName: name, lastSeen: serverTimestamp() }, { merge: true });
+        await addDoc(collection(db, 'schools', school(), 'students', key, 'attempts'), entry);
       },
       // The whole-class shared batch — one document, overwritten each
       // time the teacher shares. This is what lets the QR/link stay
@@ -9089,11 +9118,11 @@ loadSharedClassroomContent().then(()=>{
       // being encoded into the URL itself.
       async pushClassroomBatch(payload) {
         await authReady;
-        await setDoc(doc(db, 'classroom', 'current'), { ...payload, updatedAt: serverTimestamp() });
+        await setDoc(doc(db, 'schools', school(), 'classroom', 'current'), { ...payload, updatedAt: serverTimestamp() });
       },
       async pullClassroomBatch() {
         await authReady;
-        const snap = await getDoc(doc(db, 'classroom', 'current'));
+        const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'current'));
         return snap.exists() ? snap.data() : null;
       },
       // One doc per individually-approved exercise (same 'classroom'
@@ -9103,11 +9132,11 @@ loadSharedClassroomContent().then(()=>{
       // is or isn't in the current whole-class batch.
       async pushClassroomItem(id, payload) {
         await authReady;
-        await setDoc(doc(db, 'classroom', 'item_' + id), { ...payload, updatedAt: serverTimestamp() });
+        await setDoc(doc(db, 'schools', school(), 'classroom', 'item_' + id), { ...payload, updatedAt: serverTimestamp() });
       },
       async pullClassroomItem(id) {
         await authReady;
-        const snap = await getDoc(doc(db, 'classroom', 'item_' + id));
+        const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'item_' + id));
         return snap.exists() ? snap.data() : null;
       },
 

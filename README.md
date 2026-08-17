@@ -48,6 +48,18 @@ The app also never touches SEVIS/I-20 or any immigration data — its scope is s
 
 Early pilot. No official grades or scores are ever recorded here — this is a practice tool, not a system of record.
 
+## Multiple schools
+
+Everything a school owns lives under `schools/{schoolId}/`. A teacher's own
+document names the one school they may write to, and `firestore.rules`
+checks that comparison in the database, so a teacher at one school cannot
+publish into another's classroom whatever the client sends.
+
+Reading is separated differently, because students never sign in: the
+school id travels in the share link, so it is a long random string rather
+than a guessable name and should be treated as a password that happens to
+live in a URL.
+
 **Known gaps, deliberately open:**
 - No CEFR/GSE level scale yet. Exercises are organised by theme and task type; the school's A1–C2 scale is not modelled. When it is added, it must be the CSE's existing scale, never an invented one.
 - No L1 (native-language) support tiering yet. CSE policy is that beginners get L1 support which tapers to none at advanced levels.
