@@ -105,8 +105,39 @@ Acaso é 25%. **Conversation é mais que o dobro com o som desligado.** Isso inf
 ### 🟠 Nada executa o `firestore.rules`
 Nenhum teste roda as regras — são verificadas por leitura. É o único lugar onde um erro expõe dado real de aluno. Precisa do emulador do Firebase (npm + Java), o que contraria a ausência de toolchain. **Aqui o risco justifica.**
 
-### 🟡 Entropia do `schoolId` e ausência de App Check
-O `schoolId` é a fronteira de leitura entre escolas e nada no código garante que seja aleatório — é disciplina manual no console. E não há App Check nem limite de taxa: qualquer um pode logar anonimamente em laço e inflar a conta do Firebase.
+### ✅ App Check — resolvido no mesmo dia, falta só aplicar
+Chave de site no ar (`ef558b9`), verificada num navegador antes de subir: as duas
+chaves do reCAPTCHA têm 40 caracteres e começam com `6Le`, e só uma pode viver
+num repositório público. A CSP foi alargada **antes** (script-src, frame-src,
+connect-src do reCAPTCHA) — sem isso, aplicar o App Check recusaria toda
+requisição e derrubaria a turma sem causa aparente.
+
+**Falta um passo, e ele é de calendário, não de código:** deixar rodando um dia,
+conferir no painel do App Check que as requisições aparecem como verificadas, e
+só então clicar em aplicar no Firestore. Aplicar antes de ver o gráfico é o erro
+que esse produto não pode cometer no meio de uma aula.
+
+### 🟡 O id da escola ainda soletra a escola — ADIADO por decisão
+`schools/cse-den-8f3a91/` continua sendo o caminho real, e ele viaja em **todo
+link que os alunos recebem**. Tirar do código foi o pedido original (repositório
+público) e está feito; o caminho no banco sobrou.
+
+**O tamanho disso depende de um número que ainda não medimos:** quantos
+documentos existem em `schools/cse-den-8f3a91/students`. Quase tudo sob esse
+caminho se refaz sozinho — o lote do dia é regenerado, a lista da turma volta do
+aparelho dela ao salvar, e não há notas ainda. **Só `students` e seus `attempts`
+são insubstituíveis.**
+
+- **Poucos ou nenhum** → não é migração: id novo aleatório, um campo trocado no
+  registro dela, um documento criado. Cinco minutos.
+- **Vários com histórico real** → migração de verdade, com cópia documento a
+  documento e reemissão dos links.
+
+Adiado a pedido, com o método já definido para quando for a hora.
+
+### 🟡 Entropia do `schoolId`
+Nada no código garante que um id de escola seja aleatório — é disciplina manual
+no console. Vale virar passo escrito no runbook de criação de escola.
 
 ---
 
