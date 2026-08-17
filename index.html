@@ -486,6 +486,13 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
          The number is 1400. -->
     <nav id="teacher-nav" aria-label="Teacher sections"></nav>
 
+    <!-- The one line she reads before she starts. Every failure in the lesson
+         that broke was a write that failed quietly: her screen showed the
+         thirteen names and the approved exercises whether or not the class
+         ever got them, because both are written to this device first. So this
+         reports the far side only. -->
+    <div id="class-health" role="status" aria-live="polite"></div>
+
     <div id="sec-progress"><div id="progress-box"></div></div>
 
     <div class="panel" id="sec-generate">
@@ -8239,6 +8246,7 @@ function renderTeacher(){
   const wrap = document.getElementById('batch');
   const empty = document.getElementById('teacher-empty');
   renderTeacherNav();
+  renderClassHealth();
   renderTeacherSignIn();
   renderRoster();
   renderClassProgress();
@@ -8338,6 +8346,56 @@ let selectedId = null;
 /* Whether the class list actually reached the class.
    Her screen always showed the names, because they are written locally first.
    This is the part that says whether the students can see them. */
+// What the class can actually see right now, in one line.
+//
+// She found out the list had not arrived when a student put a hand up, and
+// found out a code was dead when thirteen of them did. Both were knowable
+// the whole time — nothing was looking. This looks, and it reports the far
+// side only: a name counts when Firestore acknowledged it, an exercise counts
+// when its own document is confirmed written. Approved-but-not-published is
+// its own state, because that is exactly the gap a QR falls into.
+function classHealth(){
+  const approved = loadBatch().filter(i => i.status === 'approved');
+  const live = approved.filter(i => publishState(i.id) === 'live').length;
+  const failed = approved.filter(i => publishState(i.id) === 'failed').length;
+  return {
+    names: ROSTER_STATE.status === 'live' ? ROSTER_STATE.count : 0,
+    namesStuck: ROSTER_STATE.status === 'denied' || ROSTER_STATE.status === 'failed',
+    namesSending: ROSTER_STATE.status === 'saving',
+    live, failed,
+    waiting: approved.length - live - failed,
+    ok: !failed && !(ROSTER_STATE.status === 'denied' || ROSTER_STATE.status === 'failed')
+        && approved.length === live,
+  };
+}
+function renderClassHealth(){
+  const el = document.getElementById('class-health');
+  if(!el) return;
+  if(!teacherIsSignedIn()){ el.innerHTML = ''; return; }
+  const h = classHealth();
+  const parts = [];
+  parts.push(h.namesStuck ? '<b>names did not arrive</b>'
+    : h.namesSending ? 'sending names…'
+    : h.names ? h.names + ' name' + (h.names === 1 ? '' : 's') + ' published'
+    : 'no names published');
+  parts.push(h.live + ' exercise' + (h.live === 1 ? '' : 's') + ' live');
+  if(h.waiting > 0) parts.push(h.waiting + ' still sending');
+  if(h.failed > 0) parts.push('<b>' + h.failed + ' failed</b>');
+  const tone = (h.failed || h.namesStuck) ? 'var(--red)'
+             : (h.waiting || h.namesSending) ? 'var(--amber)' : 'var(--accent)';
+  const mark = (h.failed || h.namesStuck) ? '\u26a0' : (h.waiting || h.namesSending) ? '\u23f3' : '\u2713';
+  el.innerHTML = '<p class="small-note" style="color:' + tone + ';font-weight:600;margin:.4rem 0">' +
+    mark + ' ' + parts.join(' \u00b7 ') +
+    (h.failed ? ' \u2014 <button class="btn sm" onclick="republishFailed()">Send the failed ones again</button>' : '') +
+    '</p>';
+}
+// Retries every exercise whose document is not confirmed written — the failed
+// ones and the ones still in flight from a page that was reloaded mid-publish.
+function republishFailed(){
+  loadBatch().filter(i => i.status === 'approved' && publishState(i.id) !== 'live')
+             .forEach(i => republishItem(i.id));
+}
+
 const ROSTER_STATE = { status: null, count: 0 };
 function renderRosterStatus(){
   const el = document.getElementById('roster-status');
@@ -8359,6 +8417,7 @@ function renderRosterStatus(){
       '<p class="small-note" style="margin:.3rem 0 .6rem">It saved on this device only. Check the network and try again — until then your students will have to type their names.</p>' +
       '<button class="btn sm" onclick="retryRoster()">Send the list again</button></div>';
   } else el.innerHTML = '';
+  renderClassHealth();
 }
 function retryRoster(){ saveRoster(loadRoster()); }
 
