@@ -7371,6 +7371,11 @@ function renderSelfPractice(){
         <p class="small-note" style="margin:.3rem 0 .7rem">Surprise practice picks a new task type <i>and</i> theme each time — it cycles through every combination before repeating any, so a full round always covers new ground.</p>
         <button class="btn" onclick="startSurprisePractice()">🎲 Surprise practice</button>
       </div>
+      <div class="panel" style="background:var(--accent-soft);border:none;margin-top:1rem">
+        <b>📝 Sit a full Reading section</b>
+        <p class="small-note" style="margin:.3rem 0 .7rem">${EXAM_SECTIONS.reading.items} questions, one clock of ${Math.round(EXAM_SECTIONS.reading.seconds/60)} minutes for the whole section — the way test day works. You cannot go back, and it does not count towards your practice patterns.</p>
+        <button class="btn" onclick="confirmStartExam('reading')">Start the Reading section</button>
+      </div>
       <p class="small-note" style="margin-top:.8rem">💡 Tip: save this page to your browser's favorites/bookmarks to come back anytime.</p>
     </div>`;
 }
@@ -7424,7 +7429,12 @@ function renderStudent(){
   // case), skip the extra "pick from a list of 1" tap and land the student
   // straight on the practice page — that's what scanning a QR should feel
   // like. With 2+ approved items there's a real choice to show instead.
-  if(batch.length===1 && !batch.some(i=>i.id===selectedId)){
+  // ...unless a section is being sat. '__exam__' is deliberately not a batch
+  // id, so this convenience reads it as "nothing selected" and drops the
+  // student onto the day's exercise mid-exam — losing the screen while the
+  // section clock keeps running. renderStudent runs again whenever shared
+  // classroom content resolves, which is well after the exam started.
+  if(batch.length===1 && !batch.some(i=>i.id===selectedId) && !examActive()){
     selectedId = batch[0].id;
     practiceOverride = null;
   }
@@ -7454,6 +7464,13 @@ function renderStudent(){
 // instance without touching the teacher-approved record in storage.
 let practiceOverride = null;
 function getBaseItem(){
+  // A section in progress owns the screen: the item comes from the exam
+  // rather than from the batch, so every practice renderer works on it
+  // unchanged.
+  if(selectedId === '__exam__'){
+    const ex = loadExam();
+    return (ex && !ex.finished) ? ex.items[ex.idx] : null;
+  }
   if(selectedId === '__self__') return window._selfItem || null;
   return getStudentBatch().find(i=>i.id===selectedId) || loadBatch().find(i=>i.id===selectedId);
 }
@@ -7505,6 +7522,13 @@ function clearPracticeTimer(){
   window._timerState = null;
 }
 function timerBadgeHtml(type){
+  // Inside a section the per-task clock is the wrong thing to pace against,
+  // and two countdowns on one screen is worse than either alone. The
+  // section clock is mounted separately (mountExamBar) because only four
+  // of the twelve renderers call this at all — the reading tasks are
+  // untimed in practice, so hanging the section clock here would have left
+  // it invisible for exactly the section that needed it.
+  if(examActive()) return '';
   const total = TASK_TIME_LIMITS[type];
   const note = OFFICIAL_TIMING[type] ? 'Official TOEFL time for this task' : 'Practice pacing target — ETS does not publish an official time for this task';
   // The real exam's clock does not change colour. Saying so keeps a
@@ -7520,6 +7544,11 @@ function timerBadgeHtml(type){
 // and only leave the item once all 4 are done.
 function startTaskTimer(type, onExpire){
   clearPracticeTimer();
+  // A section has one clock, and the student spends it however they like —
+  // longer on a hard passage, seconds on an easy sign. A per-task limit
+  // running underneath would drag them off a question they were still
+  // working on, which is the opposite of what a section does.
+  if(examActive()) return;
   // Timer state lives on window (not in a closure) so the countdown can be
   // paused and resumed mid-task. Take an Interview needs this: replaying
   // the question must not eat the student's 45 seconds of answer time, or
@@ -7587,6 +7616,7 @@ function resumePracticeTimer(){
 // self-practice item, in that mode) once a task's timer runs out. Stays
 // put on the last item — nothing queued to advance into.
 function goToNextExercise(){
+  if(selectedId === '__exam__'){ advanceExam(); return; }
   if(selectedId === '__self__'){ startSurprisePractice(); return; }
   const batch = getStudentBatch();
   const idx = batch.findIndex(i => i.id === selectedId);
@@ -7623,6 +7653,306 @@ function advanceInterviewQuestion(){
   }
 }
 
+/* =========================================================
+   MOCK EXAM — one section, sat under test conditions
+   =========================================================
+   Practice here is deliberately loose: repeat anything, any number of
+   times, and only the day's best counts. That is right for practice and
+   wrong for a rehearsal. The thing a student cannot get from practice is
+   the shape of the real thing — one clock over the whole section rather
+   than per task, no second attempt, and a number at the end that means
+   something against a target.
+
+   This reuses the practice renderers rather than reimplementing them.
+   The exam sets selectedId to '__exam__' the same way "surprise
+   practice" sets '__self__', so every exercise draws its markup, its
+   audio and its marking from the same audited path a student already
+   knows. Three small hooks do the rest: getBaseItem serves the current
+   exam item, goToNextExercise advances the exam, and logUsage diverts
+   the outcome into the exam instead of the practice log.
+
+   That last hook is why a mock never pollutes the patterns the teacher
+   reads. It is not a rule written somewhere and hopefully obeyed — an
+   exam answer physically cannot reach the practice log, because the one
+   funnel that writes it returns early. */
+
+const EXAM_SECTIONS = {
+  reading: {
+    label: 'Reading',
+    // Both numbers are ETS's, and they are already stated in the task
+    // briefs shipped to students — kept in one place so the brief and
+    // the exam can never quote different figures.
+    items: 50,
+    seconds: 30 * 60,
+    // The split across task types is OURS. ETS publishes the section
+    // total, not the composition, so this is a defensible arrangement
+    // of our own banks rather than a claim about test day.
+    plan: { 'complete-words': 2, 'passage': 4, 'daily-read': 10 },
+  },
+};
+
+// How many questions one generated exercise of each type is worth.
+// complete-words is marked per gap, so its ten gaps are ten items.
+function examQuestionCount(item){
+  const d = item.data;
+  if(d.words) return d.words.length;
+  if(d.questions) return d.questions.length;
+  return 1;
+}
+
+// Builds a section that totals EXACTLY the published item count.
+//
+// complete-words and passage are fixed size (10 and 5), so they are
+// drawn by exercise count. Read in Daily Life is not — a text carries
+// two questions or three — so it is drawn to fill the remainder.
+//
+// The trap: filling 10 by drawing 2s and 3s can strand you on 1, which
+// no draw can complete (10-3-3-3). So a draw is accepted only if it
+// finishes the remainder exactly or leaves at least 2 behind. That
+// keeps the loop terminating and the total honest.
+function buildExamItems(cfg, theme){
+  const items = [];
+  const themeOf = () => theme || drawFromBag('theme', ALL_THEMES, getStudentName());
+
+  for(const type of ['complete-words', 'passage']){
+    for(let i = 0; i < cfg.plan[type]; i++){
+      const th = themeOf();
+      items.push({ id:'__exam__', type, tag: tagFor(type), theme: th,
+                   status:'approved', data: generateOne(type, th).data });
+    }
+  }
+
+  let remaining = cfg.plan['daily-read'];
+  let guard = 0;
+  while(remaining > 0 && guard++ < 200){
+    const th = themeOf();
+    const data = generateOne('daily-read', th).data;
+    const n = data.questions.length;
+    const after = remaining - n;
+    if(after !== 0 && after < 2) continue;   // would strand us on 1
+    items.push({ id:'__exam__', type:'daily-read', tag: tagFor('daily-read'),
+                 theme: th, status:'approved', data });
+    remaining = after;
+  }
+
+  return shuffle(items);
+}
+
+const EXAM_KEY = 'ajar_exam_current';
+
+// The clock is stored as the moment it runs out, not as seconds left.
+// A countdown held in memory restarts on every refresh, which would turn
+// reloading the page into free time — the one cheat a timed section
+// must not have.
+function loadExam(){
+  try{ return JSON.parse(localStorage.getItem(EXAM_KEY) || 'null'); }catch(e){ return null; }
+}
+function saveExam(ex){
+  try{ localStorage.setItem(EXAM_KEY, JSON.stringify(ex)); }catch(e){}
+}
+function examActive(){
+  const ex = loadExam();
+  return !!ex && !ex.finished;
+}
+function examSecondsLeft(ex){
+  return Math.max(0, Math.ceil((ex.endsAt - Date.now()) / 1000));
+}
+
+function confirmStartExam(section){
+  const cfg = EXAM_SECTIONS[section];
+  const mins = Math.round(cfg.seconds / 60);
+  const ok = confirm(
+    `Sit the ${cfg.label} section?\n\n` +
+    `${cfg.items} questions, ${mins} minutes for the whole section.\n` +
+    `You cannot go back to a question once you leave it, and the clock ` +
+    `keeps running if you close the page.\n\n` +
+    `This does not affect your practice patterns.`);
+  if(ok) startExam(section);
+}
+
+function startExam(section){
+  const cfg = EXAM_SECTIONS[section];
+  const items = buildExamItems(cfg);
+  const ex = {
+    section, startedAt: Date.now(), endsAt: Date.now() + cfg.seconds * 1000,
+    items, idx: 0, correct: 0, answered: 0, finished: false,
+  };
+  saveExam(ex);
+  selectedId = '__exam__';
+  practiceOverride = null;
+  startExamClock();
+  renderPractice();
+  mountExamBar(ex);
+}
+
+// One clock for the section, checked once a second. Separate from the
+// per-task timer, which the exam leaves alone: inside a section the real
+// pressure is the section clock, and two countdowns on one screen would
+// tell the student to pace against the wrong one.
+function startExamClock(){
+  stopExamClock();
+  window._examClock = setInterval(() => {
+    const ex = loadExam();
+    if(!ex || ex.finished){ stopExamClock(); return; }
+    const left = examSecondsLeft(ex);
+    // Re-mount if something took the bar away. Several things legitimately
+    // rebuild the student view underneath a running section — the shared
+    // classroom content resolves after start-up and re-renders it — and
+    // chasing every one of them is a losing game. The tick is already
+    // running, so it can simply put the clock back.
+    if(!document.getElementById('exam-bar')) mountExamBar(ex);
+    const el = document.getElementById('exam-clock');
+    if(el){
+      el.textContent = '⏱ ' + formatTime(left);
+      el.classList.toggle('caution', left <= 300 && left > 60);
+      el.classList.toggle('urgent', left <= 60);
+    }
+    const prog = document.getElementById('exam-progress');
+    if(prog){
+      const cfg = EXAM_SECTIONS[ex.section];
+      prog.innerHTML = `${cfg.label} section &middot; question ${Math.min(ex.answered + 1, cfg.items)} of ${cfg.items}`;
+    }
+    if(left <= 0) finishExam('time');
+  }, 1000);
+}
+function stopExamClock(){
+  if(window._examClock){ clearInterval(window._examClock); window._examClock = null; }
+}
+
+// Called from logUsage, which every exercise already funnels its result
+// through. outcome01 is the fraction right, so it scales to however many
+// questions the exercise was worth.
+function recordExamOutcome(type, theme, outcome01){
+  const ex = loadExam();
+  if(!ex || ex.finished) return;
+  const item = ex.items[ex.idx];
+  const n = item ? examQuestionCount(item) : 1;
+  ex.correct += Math.round(Math.max(0, Math.min(1, outcome01)) * n);
+  ex.answered += n;
+  saveExam(ex);
+}
+
+function advanceExam(){
+  const ex = loadExam();
+  if(!ex || ex.finished) return;
+  if(ex.idx >= ex.items.length - 1){ finishExam('completed'); return; }
+  ex.idx += 1;
+  saveExam(ex);
+  clearPracticeTimer();
+  window._lrState = null; window._interviewState = null; window._crState = null;
+  renderPractice();
+  mountExamBar(ex);
+}
+
+function finishExam(reason){
+  const ex = loadExam();
+  if(!ex || ex.finished) return;
+  stopExamClock();
+  clearPracticeTimer();
+  unmountExamBar();
+  ex.finished = true;
+  ex.finishedAt = Date.now();
+  ex.reason = reason;
+  saveExam(ex);
+  renderExamResult(ex);
+}
+
+// Our estimate, and labelled as one wherever it is shown.
+//
+// ETS does not publish a table from raw score to band, so anything that
+// looked like an official conversion would be invented. A straight
+// proportion across the 1-to-6 band range is at least transparent: a
+// student can see exactly how it was reached and treat it as the rough
+// signal it is.
+function examBand(correct, total){
+  if(!total) return 1;
+  const band = 1 + (correct / total) * 5;
+  return Math.round(band * 2) / 2;          // half-band steps
+}
+
+function renderExamResult(ex){
+  const cfg = EXAM_SECTIONS[ex.section];
+  const total = cfg.items;
+  const band = examBand(ex.correct, total);
+  const mins = Math.floor((ex.finishedAt - ex.startedAt) / 60000);
+  const ranOut = ex.reason === 'time';
+  const unanswered = Math.max(0, total - ex.answered);
+
+  const wrap = document.getElementById('practice-wrap');
+  wrap.innerHTML = `
+    <div class="compose">
+      <h2 style="margin:0 0 .2rem">${cfg.label} section — finished</h2>
+      <div class="sub">${ranOut ? 'The clock ran out.' : 'You finished with time in hand.'}</div>
+      <div class="panel" style="margin-top:.9rem">
+        <div style="font-size:2rem;font-weight:700">${ex.correct} / ${total}</div>
+        <div class="small-note">correct &middot; ${mins} minute${mins===1?'':'s'} used${unanswered ? ` &middot; ${unanswered} never reached` : ''}</div>
+      </div>
+      <div class="panel" style="margin-top:.7rem;background:var(--accent-soft);border:none">
+        <b>Estimated band ${band.toFixed(1)}</b>
+        <p class="small-note" style="margin:.35rem 0 0">
+          This is <b>our</b> estimate, not an ETS score. ETS does not publish how a raw
+          ${cfg.label} score converts to a band, so this is a straight proportion across
+          the 1&ndash;6 range — useful for tracking your own progress, and not a prediction
+          of test day.
+        </p>
+      </div>
+      <div class="ex-actions" style="margin-top:1rem">
+        <button class="btn" onclick="leaveExam()">Back to practice</button>
+        <button class="btn ghost sm" onclick="confirmStartExam('${ex.section}')">Sit it again</button>
+      </div>
+    </div>`;
+}
+
+function leaveExam(){
+  try{ localStorage.removeItem(EXAM_KEY); }catch(e){}
+  stopExamClock();
+  unmountExamBar();
+  selectedId = null;
+  renderStudent();
+  const wrap = document.getElementById('practice-wrap');
+  if(wrap) wrap.innerHTML = '';
+}
+
+// The section clock lives OUTSIDE practice-wrap, in a bar of its own.
+//
+// The obvious place was timerBadgeHtml, which several renderers already
+// call for their per-task clock — but only four of the twelve call it,
+// and the three reading tasks are not among them, because in practice
+// they are untimed. Hanging the section clock there would have hidden it
+// during the one section that has one.
+//
+// Living outside the wrap has a second benefit: renderPractice replaces
+// that wrap wholesale on every question, and a clock that is re-created
+// fifty times is fifty chances to reset it.
+function examBannerHtml(ex){
+  const cfg = EXAM_SECTIONS[ex.section];
+  return `
+    <div class="timer-row">
+      <div class="timer-badge" id="exam-clock">⏱ ${formatTime(examSecondsLeft(ex))}</div>
+      <span class="small-note" style="margin-left:.6rem" id="exam-progress">
+        ${cfg.label} section &middot; question ${Math.min(ex.answered + 1, cfg.items)} of ${cfg.items}
+      </span>
+    </div>
+    <div class="timer-note">One clock for the whole section, as on test day. You cannot return to a question once you have left it.</div>`;
+}
+
+function mountExamBar(ex){
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap) return;
+  let bar = document.getElementById('exam-bar');
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'exam-bar';
+    wrap.parentNode.insertBefore(bar, wrap);
+  }
+  bar.innerHTML = examBannerHtml(ex);
+}
+
+function unmountExamBar(){
+  const bar = document.getElementById('exam-bar');
+  if(bar) bar.remove();
+}
+
 function renderPractice(){
   const wrap = document.getElementById('practice-wrap');
   const item = currentItem();
@@ -7638,6 +7968,8 @@ function renderPractice(){
         ${item.type==='email' ? emailPromptHtml(item.data) : discussionPromptHtml(item.data)}
         <textarea id="response" rows="6" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
         <div class="wordcount" id="wordcount">0 words</div>
+        <div id="paste-note" class="small-note" style="display:none;color:var(--red);font-weight:600"></div>
+        <p class="small-note">✍️ This one has to be your own writing, so pasting a whole passage in is off. Fixing a word or moving a phrase you wrote is fine.</p>
         <div class="ex-actions"><button class="btn" onclick="checkWriting()">Check draft</button></div>
         <div id="feedback"></div>
       </div>`;
@@ -8292,6 +8624,7 @@ function renderInterviewStep(item){
       </div>
       ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
       <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null; window._interviewState.draft = this.value">${escapeHtml(st.draft || '')}</textarea>
+      <div id="paste-note" class="small-note" style="display:none;color:var(--red);font-weight:600"></div>
       <div class="ex-actions" style="margin-top:.6rem">
         <button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button>
         <button class="btn ghost sm" onclick="revealInterviewQuestion(true)">I didn't catch it — show the question</button>
@@ -8381,6 +8714,82 @@ function checkSentence(){
   document.getElementById('sentence-result').innerHTML = `<div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct! (exact word order — matches the real all-or-nothing scoring)' : '✕ Not correct yet — even one word out of place counts as incorrect on the real test. Keep trying, or tap Reset.'}</div>`;
   logUsage('sentence', item.theme, ok ? 1 : 0);
 }
+
+/* =========================================================
+   PASTING INTO A PRODUCED ANSWER
+   =========================================================
+   The writing tasks and the typed interview answer are the only places a
+   student produces extended language of their own. They are therefore the
+   only places where dropping in someone else's paragraph — a friend's, a
+   translator's, a chatbot's — replaces the exact thing being measured.
+
+   A short paste still goes through. A student fixing one word, or moving
+   a phrase they already wrote, is doing ordinary editing, and blocking
+   that would punish careful writers for the sake of a rule.
+
+   Be clear about what this is: a deterrent, not a lock. Anyone who wants
+   past it can retype, paste in small pieces, or write on a second device,
+   and nothing running in this page can see that. What it stops is the
+   effortless case — the one that actually happens in a classroom, where
+   the barrier is convenience rather than intent.
+
+   Three routes in, so three guards. The paste event covers the keyboard.
+   Drop covers dragging text in. The input check is the backstop: it
+   notices any sudden jump in length however it arrived, including routes
+   a browser never reports as a paste. */
+
+const PASTE_MAX_CHARS = 25;          // a word, or a short fix
+const GUARDED_FIELDS = ['response', 'interview-answer'];
+
+function isGuardedField(el){
+  return !!el && GUARDED_FIELDS.includes(el.id);
+}
+
+function pasteBlockedNote(el, n){
+  const note = document.getElementById('paste-note');
+  const msg = n
+    ? `✋ That paste was ${n} characters. Write your answer in your own words — short edits are fine, whole passages are not.`
+    : '✋ Dropping text in is off for this task. Write your answer in your own words.';
+  if(note){
+    note.textContent = msg;
+    note.style.display = 'block';
+    clearTimeout(window._pasteNoteTimer);
+    window._pasteNoteTimer = setTimeout(() => { note.style.display = 'none'; }, 6000);
+  }
+  if(el && el.focus) el.focus();
+}
+
+document.addEventListener('paste', e => {
+  if(!isGuardedField(e.target)) return;
+  const text = ((e.clipboardData || window.clipboardData) || { getData: () => '' }).getData('text') || '';
+  if(text.length <= PASTE_MAX_CHARS) return;
+  e.preventDefault();
+  pasteBlockedNote(e.target, text.length);
+}, true);
+
+document.addEventListener('drop', e => {
+  if(!isGuardedField(e.target)) return;
+  e.preventDefault();
+  pasteBlockedNote(e.target, 0);
+}, true);
+
+// Backstop. Typing, however fast, arrives a character or two at a time;
+// a paragraph arriving in one event did not come from a keyboard. This
+// catches the routes the paste event misses, and reverts the field to
+// what it held a moment ago rather than trying to guess what was added.
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(!isGuardedField(el)) return;
+  const before = el._lastValue || '';
+  const now = el.value || '';
+  if(now.length - before.length > PASTE_MAX_CHARS){
+    el.value = before;
+    pasteBlockedNote(el, now.length - before.length);
+    if(el.id === 'response' && typeof updateWordcount === 'function') updateWordcount();
+    return;
+  }
+  el._lastValue = now;
+}, true);
 
 // The real Write an Email task shows the scenario, then the instruction
 // with its three bullets, then a pre-filled To: and Subject: line — the
@@ -8910,6 +9319,11 @@ function progressSummary(name){
 }
 
 function logUsage(type, theme, outcome01, name){
+  // A mock is a rehearsal, not a practice rep. Diverting here — at the one
+  // funnel every exercise reports through — is what keeps a sat section out
+  // of the day's best score and out of the teacher's patterns. Not a
+  // convention to remember: the write simply never happens.
+  if(examActive()){ recordExamOutcome(type, theme, outcome01); return; }
   try{
     const rawName = name !== undefined ? name : getStudentName();
     const key = rawName.toLowerCase() || '_anon';
@@ -9664,6 +10078,22 @@ renderIndividualControls();
 renderTeacher();
 renderStudent();
 renderWhoAmI();
+
+// A section survives a refresh, a closed tab, a flat battery — the clock
+// is stored as the moment it runs out, so time keeps passing whether the
+// page is open or not. Put the student back where they were; if the time
+// went while they were away, they land on the result rather than on a
+// question they can no longer answer.
+(function resumeExamIfAny(){
+  const ex = loadExam();
+  if(!ex || ex.finished) return;
+  setView('student');
+  if(examSecondsLeft(ex) <= 0){ finishExam('time'); return; }
+  selectedId = '__exam__';
+  startExamClock();
+  renderPractice();
+  mountExamBar(ex);
+})();
 loadSharedClassroomContent().then(()=>{
   renderStudent();
   // Don't stack the guide on top of the welcome screen — one question at
