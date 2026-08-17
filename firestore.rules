@@ -79,25 +79,37 @@ service cloud.firestore {
       // not subject to these client read rules.
       allow read: if isSignedIn() && request.auth.uid == uid;
 
-      // A teacher may correct her own display name, and nothing else.
+      // Her display name and the name of her school, and nothing else.
       //
-      // The name is shown to her class, so she should be able to fix it
+      // Both are shown to her class, so she should be able to fix them
       // without asking anyone — a teacher's name is hers, and getting it
       // wrong in front of her students is not a thing to need permission
       // for.
       //
-      // schoolId decides what she can publish to, so it stays untouchable
-      // from the app: an account able to edit its own schoolId could move
-      // itself into another school's classroom, which is the whole thing
-      // multi-tenancy exists to prevent. hasOnly(['name']) is what draws
-      // that line, and it is drawn here rather than in the UI because the
-      // UI is not what enforces anything.
+      // schoolName lives HERE, on her own private record, rather than on
+      // schools/{schoolId} — that document is readable by any signed-in
+      // visitor, and every visitor is signed in anonymously, so putting it
+      // there would publish it. The requirement was that this shows on her
+      // screen and therefore on the classroom TV, without teacher data
+      // being publicly readable. Those two are only compatible if it is
+      // stored on the record that only she can read.
+      //
+      // schoolId is still untouchable: it decides which classroom she can
+      // publish to, and an account able to edit its own would move itself
+      // into another school. hasOnly() is what draws that line, and it is
+      // drawn here rather than in the form, because the form enforces
+      // nothing.
       allow update: if isSignedIn()
         && request.auth.uid == uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 80;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'schoolName'])
+        && (!('name' in request.resource.data.diff(resource.data).affectedKeys())
+            || (request.resource.data.name is string
+                && request.resource.data.name.size() > 0
+                && request.resource.data.name.size() <= 80))
+        && (!('schoolName' in request.resource.data.diff(resource.data).affectedKeys())
+            || (request.resource.data.schoolName is string
+                && request.resource.data.schoolName.size() > 0
+                && request.resource.data.schoolName.size() <= 120));
 
       // Creating or deleting a teacher stays a console job. Self-signup
       // would let anyone with an account become a teacher of any school.

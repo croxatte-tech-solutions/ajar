@@ -58,7 +58,7 @@ assert('and a signed-out visitor gets no further', /applyTeacherGate\(\)\)\{[^}]
 // asking for the surname, and a line-based check then failed text that had
 // simply moved down two rows.
 const authStart = html.indexOf('window.__onAuthChanged =');
-const authAll = html.slice(authStart, authStart + 1400);
+const authAll = html.slice(authStart, html.indexOf('\n};', authStart) + 3);
 assert('signing in or out redraws the panel, not just the card',
   authAll.indexOf('renderTeacher()') > -1);
 
@@ -72,8 +72,11 @@ assert('signing in or out redraws the panel, not just the card',
 //
 // Part of the confusion was upstream: the panel opened with no sign-in, so
 // there was nothing to sign out OF. Gating it makes the pair coherent.
-const whoAmI = html.slice(html.indexOf('function renderWhoAmI()'),
-                          html.indexOf('function renderWhoAmI()') + 900);
+// Sliced to the end of the function rather than a fixed byte count: the
+// header grew a comment and the button slid past a 900-character window,
+// failing an assertion about code that had not changed.
+const whoStart = html.indexOf('function renderWhoAmI()');
+const whoAmI = html.slice(whoStart, html.indexOf('\nlet currentView', whoStart));
 assert('the header carries the sign-out, not just the Account panel',
   whoAmI.indexOf('teacherSignOut()') > -1);
 assert('it shows who is signed in beside it',
@@ -114,7 +117,7 @@ assert('but a single name is still allowed to be saved',
 
 assert('she can save it from the app', /function saveTeacherDisplayName\(/.test(html));
 assert('saving goes through CloudSync, not a direct write',
-  /CloudSync\.saveTeacherName/.test(html));
+  /CloudSync\.saveTeacherProfile/.test(html));
 assert('the header refreshes after saving',
   html.slice(html.indexOf('function saveTeacherDisplayName')).indexOf('renderWhoAmI()') > -1);
 
@@ -135,9 +138,11 @@ assert('a bare signed-in read is no longer enough',
 
 assert('the rules let a teacher update her own document', /allow update:/.test(teacherRule));
 assert('only her own', /request\.auth\.uid == uid/.test(teacherRule));
-assert('and only the name field', /hasOnly\(\['name'\]\)/.test(teacherRule));
+assert('and only the display fields', /hasOnly\(\['name', 'schoolName'\]\)/.test(teacherRule));
+// The whole of multi-tenancy rests on schoolId not being self-editable.
 assert('schoolId stays out of reach, so no account can move school',
-  teacherRule.indexOf("hasOnly(['name'])") > -1 && !/affectedKeys\(\)\.hasAny/.test(teacherRule));
+  teacherRule.indexOf("hasOnly(['name', 'schoolName'])") > -1
+  && teacherRule.indexOf("'schoolId'") === -1);
 assert('becoming a teacher is still a console job', /allow create, delete: if false/.test(teacherRule));
 
 // --- the trial run, and feedback that cannot be skipped ---
@@ -191,15 +196,17 @@ assert('it tells them one section is timed, not all four',
 // half written, and a field nobody is pointed at does not get filled. She
 // is the authority in the room and the app names her in front of her
 // class, so it asks once on the way in.
-const authBlock = html.slice(html.indexOf('window.__onAuthChanged ='),
-                             html.indexOf('window.__onAuthChanged =') + 1400);
+const authFrom = html.indexOf('window.__onAuthChanged =');
+const authBlock = html.slice(authFrom, html.indexOf('\n};', authFrom) + 3);
 assert('signing in checks whether the name is complete',
   authBlock.indexOf('teacherNameLooksPartial') > -1);
 assert('an incomplete name lands her on the field',
   authBlock.indexOf("showSection(null, 'grp-account'") > -1);
+// The id is chosen by a ternary now, since either field can be the missing
+// one, so match the focus call rather than one literal id.
 assert('with the field focused rather than merely present',
-  /getElementById\('teacher-name-input'\)[\s\S]{0,80}focus\(\)/.test(authBlock));
-assert('and a reason, not just a nudge', /Your class sees this name/.test(authBlock));
+  /getElementById\(needsName \? /.test(authBlock) && /input\.focus\(\)/.test(authBlock));
+assert('and a reason, not just a nudge', /Your class sees this/.test(authBlock));
 
 // An empty record is the case that most needs asking. Returning false for
 // it meant the one account needing the prompt never got it.
@@ -208,6 +215,46 @@ const partialFn = html.slice(html.indexOf('function teacherNameLooksPartial'),
 assert('a record with no name at all counts as incomplete',
   /if\(!n\) return true;/.test(partialFn));
 assert('a single name counts as incomplete', /split\(.+\)\.length < 2/.test(partialFn));
+
+// --- her school, on her screen and nowhere public ---
+//
+// Asked for: the first login should collect her full name and her school,
+// remembered per teacher, shown on her screen and therefore on the
+// classroom TV — without teacher data being publicly readable.
+//
+// Those last two only hold together if the school name lives on HER record.
+// schools/{schoolId} is readable by any signed-in visitor, and every
+// visitor is signed in anonymously, so storing it there would publish it.
+assert('the school name is asked for', /Your school's name/.test(html));
+assert('and saved with the name in one write', /saveTeacherProfile\(\{ name, schoolName \}\)/.test(html));
+assert('the profile save is the one path', /async saveTeacherProfile\(/.test(html));
+assert('the older single-field call still routes through it',
+  /async saveTeacherName\(name\)[\s\S]{0,160}saveTeacherProfile/.test(html));
+assert('the school reaches her header, which is what the TV shows',
+  whoAmI.indexOf('u.schoolName') > -1);
+assert('and the panel says who can read it', /only you can read/.test(html));
+
+// The first login has to ask for whichever is missing, and focus it —
+// otherwise the first keystroke lands in a field already filled.
+assert('a missing school triggers the prompt too', /const needsSchool =/.test(authAll));
+assert('the prompt focuses the field that is actually empty',
+  /needsName \? 'teacher-name-input' : 'teacher-school-input'/.test(authAll));
+assert('and names what it wants rather than just nagging',
+  /your first name and surname/.test(authAll) && /your school/.test(authAll));
+
+const teacherRule2 = rules.slice(rules.indexOf('match /teachers/'), rules.indexOf('match /schools/'));
+assert('the rules allow exactly name and schoolName',
+  /hasOnly\(\['name', 'schoolName'\]\)/.test(teacherRule2));
+assert('schoolId is still not editable from the app',
+  teacherRule2.indexOf("'schoolId'") === -1);
+assert('and her record is still readable only by her',
+  /allow read: if isSignedIn\(\) && request\.auth\.uid == uid/.test(teacherRule2));
+
+// The public school document must NOT have gained a writable display name.
+const schoolRule = rules.slice(rules.indexOf('match /schools/{schoolId}'),
+                               rules.indexOf('match /classroom/'));
+assert('the publicly readable school document stays read-only',
+  /allow write: if false/.test(schoolRule));
 
 // --- the class-day flow lives on one screen ---
 //

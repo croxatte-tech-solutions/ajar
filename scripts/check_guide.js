@@ -87,6 +87,35 @@ const testScript = `
   assert('it still says it is a prototype', /prototype/i.test(teacher));
   assert('it warns the band is not an ETS score', /not an ETS score|our<\\/b> estimate|our.{0,15}estimate/i.test(teacher));
 
+  // --- the English on the door stays long enough to read ---
+  //
+  // This was a flat 7 seconds, picked without measuring. The English on that
+  // screen is 61 words, which is 15s for a native adult and 41s for a slower
+  // second-language reader — the audience. So seven seconds did not let a
+  // NATIVE speaker finish half of it.
+  //
+  // Computed from the text now, so rewriting the copy moves the timing with
+  // it rather than leaving a stale constant behind.
+  const enText = (WELCOME_TEXT.en.lede || '') + ' ' + (WELCOME_TEXT.en.meaning || '');
+  const enWords = enText.split(/\s+/).filter(Boolean).length;
+  const delayMs = welcomeSwapDelay(WELCOME_TEXT.en.lede, WELCOME_TEXT.en.meaning);
+
+  assert('the swap delay is computed, not a constant',
+    typeof welcomeSwapDelay === 'function');
+  assert('the delay grows with the text',
+    welcomeSwapDelay('one two three four five') < welcomeSwapDelay(enText + ' ' + enText));
+
+  // Every reading rate measured has to finish, including the slowest.
+  [['native adult', 238], ['fluent L2', 180], ['intermediate L2', 120], ['slower L2', 90]]
+    .forEach(([who, wpm]) => {
+      const needed = (enWords / wpm) * 60000;
+      assert('a ' + who + ' reader can finish the English', needed <= delayMs);
+    });
+
+  assert('and it is nowhere near the old seven seconds', delayMs > 20000);
+  assert('but not so long it reads as broken', delayMs <= 60000);
+  assert('a very short translation still gets a floor', welcomeSwapDelay('hi') >= 12000);
+
   // --- the numbers come from the app, not from prose ---
   // A guide that hard-codes "50 questions" goes wrong the day the section
   // changes and nobody notices.

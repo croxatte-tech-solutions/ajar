@@ -6422,20 +6422,20 @@ function teacherNameLooksPartial(u){
 }
 
 function saveTeacherDisplayName(){
-  const input = document.getElementById('teacher-name-input');
   const msg = document.getElementById('teacher-name-msg');
-  const name = (input && input.value || '').trim();
   if(!msg) return;
+  const name = ((document.getElementById('teacher-name-input') || {}).value || '').trim();
+  const schoolName = ((document.getElementById('teacher-school-input') || {}).value || '').trim();
   if(name.length < 2){
     msg.innerHTML = '<p class="small-note" style="color:var(--red)">Please type the name your class should see.</p>';
     return;
   }
-  if(!window.CloudSync || !window.CloudSync.saveTeacherName){
+  if(!window.CloudSync || !window.CloudSync.saveTeacherProfile){
     msg.innerHTML = '<p class="small-note">Saving needs a connection — try again once you are online.</p>';
     return;
   }
   msg.innerHTML = '<p class="small-note">Saving…</p>';
-  window.CloudSync.saveTeacherName(name)
+  window.CloudSync.saveTeacherProfile({ name, schoolName })
     .then(() => {
       msg.innerHTML = '<p class="small-note" style="color:var(--accent)">Saved. Your class sees this name now.</p>';
       renderWhoAmI();
@@ -6471,7 +6471,7 @@ function renderTeacherSignIn(){
         <button class="btn ghost sm" onclick="teacherSignOut()">Sign out</button>
       </div>
       <div class="panel" style="margin-top:.7rem">
-        <h3 style="margin:0 0 .3rem">Your name, as your class sees it</h3>
+        <h3 style="margin:0 0 .3rem">Your name and school, as your class sees them</h3>
         <p class="small-note" style="margin:0 0 .6rem">
           Please give your first name and surname. Your students see this above the work
           you set them, and a teacher gets her full name.${teacherNameLooksPartial(u)
@@ -6483,8 +6483,20 @@ function renderTeacherSignIn(){
             <input type="text" id="teacher-name-input" placeholder="e.g. Ana Beatriz Ferreira"
                    value="${escapeHtml(u.name || '')}" autocomplete="name">
           </div>
+        </div>
+        <div class="field-row" style="margin-top:.6rem">
+          <div class="field">
+            <label for="teacher-school-input">Your school's name</label>
+            <input type="text" id="teacher-school-input" placeholder="e.g. Riverside Language Institute"
+                   value="${escapeHtml(u.schoolName || '')}" autocomplete="organization">
+          </div>
           <button class="btn sm" onclick="saveTeacherDisplayName()">Save</button>
         </div>
+        <p class="small-note" style="margin:.5rem 0 0">
+          Both appear above the work you set, on your screen and on the classroom screen.
+          They are stored on your own record, which only you can read — no student and no
+          visitor can look up a teacher.
+        </p>
         <div id="teacher-name-msg"></div>
       </div>`;
     return;
@@ -6591,13 +6603,21 @@ window.__onAuthChanged = () => {
   try{
     const u = window.CloudSync && window.CloudSync.currentUser
       ? window.CloudSync.currentUser() : null;
-    if(u && u.isTeacher && (!u.name || teacherNameLooksPartial(u))){
+    const needsName = !u || teacherNameLooksPartial(u);
+    const needsSchool = !u || !(u.schoolName && u.schoolName.trim());
+    if(u && u.isTeacher && (needsName || needsSchool)){
       showSection(null, 'grp-account', true);
-      const input = document.getElementById('teacher-name-input');
+      // Focus whichever is actually missing, so the first keystroke lands
+      // where it is needed rather than in a field already filled.
+      const input = document.getElementById(needsName ? 'teacher-name-input' : 'teacher-school-input');
       if(input){ input.focus(); }
       const msg = document.getElementById('teacher-name-msg');
+      const asks = [];
+      if(needsName) asks.push('your first name and surname');
+      if(needsSchool) asks.push('your school');
       if(msg) msg.innerHTML = '<p class="small-note" style="color:var(--accent);font-weight:600">'
-        + 'Your class sees this name — please add your surname.</p>';
+        + 'Welcome. Your class sees this above the work you set, so please add '
+        + asks.join(' and ') + '.</p>';
     }
   }catch(e){}
 };
@@ -10350,9 +10370,14 @@ function renderWhoAmI(){
     // leaving a shared school computer, when she is already walking away.
     const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
     if(u && u.isTeacher){
+      // Her name, her school beneath it, and the way out. This header is
+      // what ends up on the classroom screen, so the school belongs here
+      // rather than on a record anyone could look up.
       el.innerHTML = `${escapeHtml(teacherDisplayName(u))}
         <button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
-                onclick="teacherSignOut()">Sign out</button>`;
+                onclick="teacherSignOut()">Sign out</button>${u.schoolName
+          ? `<div class="small-note" style="font-weight:600;margin-top:.1rem">${escapeHtml(u.schoolName)}</div>`
+          : ''}`;
     } else {
       el.textContent = TEACHER_NAME;
     }
@@ -10523,14 +10548,51 @@ function renderWelcome(){
     paintWelcomeCopy(en, false);
     if(local !== en){
       clearTimeout(window._welcomeSwap);
-      window._welcomeSwap = setTimeout(() => paintWelcomeCopy(local, true), WELCOME_SWAP_MS);
+      // Timed off the English actually on screen, not a constant.
+      const en = WELCOME_TEXT.en || {};
+      window._welcomeSwap = setTimeout(() => paintWelcomeCopy(local, true),
+        welcomeSwapDelay(en.lede, en.meaning));
     }
   }catch(e){ /* the buttons still work, which is what the screen is for */ }
 }
 // Long enough to read the first line in English, short enough that nobody
 // waits. The full text runs about forty words; this is not time to read it
 // all, and is not meant to be — it is time to see which language it opened in.
-const WELCOME_SWAP_MS = 7000;
+/* How long the English stays before it becomes their language.
+   -----------------------------------------------------------
+   This was a flat 7 seconds, which I picked without measuring. The English
+   on that screen is 61 words. Measured against published reading rates:
+
+     native adult     238 wpm  ->  15.4s
+     fluent L2        180 wpm  ->  20.3s
+     intermediate L2  120 wpm  ->  30.5s
+     slower L2         90 wpm  ->  40.7s
+
+   So 7 seconds did not let a NATIVE speaker finish half of it, on a screen
+   whose whole audience is people learning the language. The ask was for two
+   or three extra seconds; the honest gap was closer to twenty-six.
+
+   Computed from the text now, so rewriting the copy moves the timing with
+   it instead of leaving a stale number behind. 110 wpm is the rate for an
+   intermediate second-language reader, which is who this is for, plus the
+   few seconds asked for on top because some people read slower than any
+   average. The floor keeps a short future translation from flashing past;
+   the ceiling keeps a long one from feeling broken. */
+// 90 wpm is the slowest rate measured above, and the one to design for:
+// the request was explicitly about people who read slower. It costs nothing
+// to wait — both doors are on screen the whole time, so a fast reader is
+// never held up, they just press through. The translation is ambient, not a
+// gate.
+const WELCOME_WPM = 90;
+const WELCOME_EXTRA_MS = 3000;
+const WELCOME_SWAP_MIN_MS = 12000;
+const WELCOME_SWAP_MAX_MS = 60000;
+
+function welcomeSwapDelay(...texts){
+  const words = texts.filter(Boolean).join(' ').split(/\s+/).filter(Boolean).length;
+  const read = Math.round((words / WELCOME_WPM) * 60000) + WELCOME_EXTRA_MS;
+  return Math.min(WELCOME_SWAP_MAX_MS, Math.max(WELCOME_SWAP_MIN_MS, read));
+}
 function paintWelcomeCopy(t, animate){
   try{
     const lede = document.getElementById('welcome-lede');
@@ -11192,6 +11254,7 @@ loadSharedClassroomContent().then(()=>{
               // What she is called, and where she teaches — both from her
               // own record rather than from the account.
               name: (teacherRecord && teacherRecord.name) || currentUser.displayName || null,
+              schoolName: (teacherRecord && teacherRecord.schoolName) || null,
               schoolId: (teacherRecord && teacherRecord.schoolId) || null,
               isTeacher: isTeacherAccount(currentUser) }
           : null;
@@ -11212,12 +11275,23 @@ loadSharedClassroomContent().then(()=>{
       // field on her own document and nothing else — schoolId in
       // particular stays out of reach, since it decides which classroom
       // she can publish to.
-      async saveTeacherName(name) {
+      // Her display name and her school's name. The rules allow exactly
+      // these two fields on her own document — schoolId in particular stays
+      // out of reach, since it decides which classroom she publishes to.
+      async saveTeacherProfile(fields) {
         const u = auth.currentUser;
         if (!u) throw new Error('not signed in');
-        await setDoc(doc(db, 'teachers', u.uid), { name: String(name).trim() }, { merge: true });
-        teacherRecord = { ...(teacherRecord || {}), name: String(name).trim() };
+        const patch = {};
+        if (typeof fields.name === 'string' && fields.name.trim()) patch.name = fields.name.trim();
+        if (typeof fields.schoolName === 'string' && fields.schoolName.trim()) patch.schoolName = fields.schoolName.trim();
+        if (!Object.keys(patch).length) return;
+        await setDoc(doc(db, 'teachers', u.uid), patch, { merge: true });
+        teacherRecord = { ...(teacherRecord || {}), ...patch };
         window.__onAuthChanged?.(window.CloudSync.currentUser());
+      },
+      // Kept so an older call site cannot silently stop saving.
+      async saveTeacherName(name) {
+        return window.CloudSync.saveTeacherProfile({ name });
       },
       async signOutTeacher() {
         await signOut(auth);
