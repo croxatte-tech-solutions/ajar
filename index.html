@@ -10057,33 +10057,123 @@ function enterAs(role){
    for each role, always one click away, shown automatically
    the first time each role is opened.
    ========================================================= */
+// The guide, kept honest about what the app has become.
+//
+// It went stale: it still described a batch generator, and said nothing
+// about the timed sections, the single listen, the estimated bands, or
+// why writing cannot be pasted in. A student reading it would have met
+// three features nobody warned them about.
+//
+// Tone here is deliberately relaxed and long-ish. This is the one screen
+// where explaining properly is the job — everywhere else in the app the
+// explanations were just cut down for exactly that reason.
 function guideContent(role){
   if(role === 'teacher'){
     return `
       <h2>How this works — for teachers</h2>
-      <div class="sub">What this tool is, and what it will never do</div>
-      <p>This is a support tool that generates TOEFL-2026-style practice material for your students, built around real-life topics (health, career, environment, daily logistics, campus life...) so students build vocabulary the same way the real test now works — not just abstract grammar drills.</p>
-      <div class="rule">🛡️ Our one non-negotiable rule: you always have the final word. Nothing generated here reaches a student, and nothing a student does here becomes a grade, until you approve it. This tool suggests — you decide.</div>
-      <h3>How to use it, step by step</h3>
+      <div class="sub">What it does, what it hands back to you, and what it will never pretend to know</div>
+
+      <p>Think of this as a very willing teaching assistant who is great at making practice
+      material and completely useless at judging your students. It writes
+      TOEFL-2026-style exercises around real-life topics — health, work, campus life,
+      getting things done — so your students build the kind of vocabulary the exam
+      actually asks for now, instead of drilling grammar in the abstract.</p>
+
+      <div class="rule">🛡️ The one rule everything else bends around: you have the final
+      word. Nothing generated here reaches a student until you approve it, and nothing a
+      student does here becomes a grade. It suggests — you decide.</div>
+
+      <h3>Signing in</h3>
+      <p>Your class list and each student's practice history sit behind your sign-in, so
+      the panel stays shut until you're in. Your students never sign in at all — they open
+      a link you share and tap their own name. One account, yours, and that's the whole
+      arrangement.</p>
+
+      <h3>A normal class day</h3>
       <ol>
-        <li>Pick one of the ${TASK_TYPES.length} real TOEFL task types and a real-life theme.</li>
-        <li>Click "Generate batch" — you'll get a fresh set of practice items.</li>
-        <li>Review each card: <b>Approve</b>, <b>Discard</b>, or leave it pending.</li>
-        <li>Only what you approve becomes visible to students, in the Student view.</li>
+        <li>Pick one of the ${TASK_TYPES.length} task types and a theme. The task buttons
+        are grouped by exam section, so you can go straight to the Listening row.</li>
+        <li>Hit <b>Generate for the whole class</b> — you get a fresh set, made on the spot.</li>
+        <li>Look through the cards: <b>Approve</b>, <b>Discard</b>, or leave one pending.</li>
+        <li>Share the link or QR code. Only what you approved shows up.</li>
       </ol>
-      <h3>What's still a prototype</h3>
-      <p>No grade is ever recorded here, and nothing here feeds a school's official records — this is a working sketch of the idea for you to react to, not a finished product.</p>`;
+
+      <h3>Practice is deliberately loose</h3>
+      <p>Students can redo anything as often as they like — that's the point of practice.
+      Only their <b>best score of the day</b> feeds the patterns you see, so a student who
+      struggles at first and then gets it isn't punished for having tried.</p>
+
+      <h3>Full sections, when they want the real thing</h3>
+      <p>Separately from practice, a student can sit a whole section under test conditions:
+      one clock for the section, no going back, and a score at the end. Reading is
+      ${EXAM_SECTIONS.reading.items} questions in ${Math.round(EXAM_SECTIONS.reading.seconds/60)}
+      minutes, Listening ${EXAM_SECTIONS.listening.items} in
+      ${Math.round(EXAM_SECTIONS.listening.seconds/60)}, Writing
+      ${EXAM_SECTIONS.writing.items} in ${Math.round(EXAM_SECTIONS.writing.seconds/60)}.</p>
+      <p>Two things worth knowing. In a Listening section the audio plays <b>once</b>, like
+      test day — practice gives two, and we say so on screen so nobody is caught out. And a
+      sat section never touches their practice patterns; a rehearsal isn't a practice rep.</p>
+
+      <h3>The Writing section comes back to you</h3>
+      <p>The app marks Build a Sentence, because exact word order is something a machine can
+      judge. It does <b>not</b> mark the email or the discussion post — nothing here reads
+      prose. Those two are handed back on the results screen for the student to copy to you,
+      and the score covers the ten sentences only. We'd rather show you an honest ten than
+      invent a twelve.</p>
+
+      <h3>What it genuinely can't do</h3>
+      <p>Pronunciation, rhythm and intonation are not measured — that needs real audio
+      analysis. Grammar accuracy isn't checked either. Any band you see is <b>our</b>
+      estimate on a 1–6 scale, not an ETS score; they don't publish the conversion, so
+      anything that looked official would be invented. Use it to watch progress over weeks,
+      not to predict a result.</p>
+
+      <h3>Still a prototype</h3>
+      <p>No grade is recorded here and nothing feeds a school's official records. It's a
+      working sketch for you to push back on.</p>`;
   }
   return `
     <h2>How this works — for students</h2>
-    <div class="sub">What you're looking at, and why it's safe to try</div>
-    <p>This is extra practice, in the same format as the real TOEFL 2026 test, built around real-life topics — the goal is vocabulary you'll actually use, not just test tricks.</p>
-    <div class="rule">🛡️ Your teacher reviews everything first. You will only ever see exercises your teacher has already approved — nothing appears here without her checking it.</div>
-    <h3>Does this affect my grade?</h3>
-    <p>No. Practising here never changes your official grade anywhere. Any feedback you see is a draft, meant to help you improve — your teacher decides what actually counts.</p>
+    <div class="sub">What this is, and why you can't break anything</div>
+
+    <p>This is extra practice in the same shape as the real TOEFL 2026 test, built around
+    everyday situations rather than textbook sentences. The idea is that you pick up
+    vocabulary you'd actually use, and get comfortable with the format long before test day.</p>
+
+    <div class="rule">🛡️ Your teacher checks everything first. You only ever see exercises
+    she has already approved.</div>
+
+    <h3>Does this change my grade?</h3>
+    <p>No. Nothing you do here touches your real grade anywhere. Any feedback is a draft to
+    help you improve — your teacher decides what counts.</p>
+
+    <h3>Practise as much as you want</h3>
+    <p>Seriously, redo anything, as many times as you like. Only your <b>best score of the
+    day</b> counts towards the patterns your teacher sees. Getting it wrong the first three
+    times costs you nothing.</p>
+
+    <h3>When you want the real thing</h3>
+    <p>You can also sit a full section under test conditions. One clock for the whole
+    section, no going back to a question you've left, and a score at the end. Three things
+    to expect:</p>
+    <ul>
+      <li><b>Listening plays once.</b> In practice you get two listens. In a section you
+      get one, because that's what test day gives you — better to find that out here.</li>
+      <li><b>The clock keeps running</b> if you close the page. Reloading won't buy you
+      more time.</li>
+      <li><b>It doesn't affect your patterns.</b> A rehearsal is not practice, so it stays
+      out of your day-to-day record.</li>
+    </ul>
+
+    <h3>About writing in your own words</h3>
+    <p>On the email and the discussion post you can't paste in a long passage — fixing a
+    word or moving a phrase you wrote is fine, dropping in a paragraph isn't. It's not
+    suspicion, it's just that those two tasks only help you if the words are yours. Your
+    teacher reads them; the app doesn't grade them.</p>
+
     <!-- Count comes from TASK_TYPES so adding a task type can't leave this
          text claiming a number that is no longer true. -->
-    <h3>The ${TASK_TYPES.length} task types, matching the real exam</h3>
+    <h3>The ${TASK_TYPES.length} task types</h3>
     <ul>
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
       <li><b>Read in Daily Life</b> — read a sign, receipt or message thread, answer questions.</li>
@@ -10092,14 +10182,24 @@ function guideContent(role){
       <li><b>Listen to an Announcement</b> — hear a notice, answer questions about it.</li>
       <li><b>Listen to a Conversation</b> — hear two people talking, answer questions about it.</li>
       <li><b>Listen to an Academic Talk</b> — hear a short talk, answer four questions on it.</li>
-      <li><b>Build a Sentence</b> — put scrambled words in the right order.</li>
-      <li><b>Write an Email</b> — respond to a real-life scenario, 80–120 words.</li>
+      <li><b>Build a Sentence</b> — put scrambled words in the right order. One word out of
+      place counts as wrong, exactly like the real test.</li>
+      <li><b>Write an Email</b> — respond to a real-life situation.</li>
       <li><b>Academic Discussion</b> — join a class discussion thread, at least 100 words.</li>
       <li><b>Listen and Repeat</b> — hear a sentence once, repeat it back.</li>
-      <li><b>Take an Interview</b> — answer a spontaneous spoken question.</li>
+      <li><b>Take an Interview</b> — answer a spoken question with no prep time.</li>
     </ul>
+    <p class="small-note">Each exercise has a short <b>"On the real test"</b> note you can
+    open — it says what test day does, and where we've done something different on purpose.</p>
+
+    <h3>One honest warning about scores</h3>
+    <p>Any band you see is <b>our</b> estimate on a 1–6 scale, not an official TOEFL score.
+    We can't check pronunciation or grammar accuracy — that needs tools we don't have yet,
+    and we'd rather say so than make a number up. Use it to see yourself improving week to
+    week, not to predict your result.</p>
+
     <h3>How to start</h3>
-    <p>Pick any approved exercise from the list, complete it, and use the feedback to improve. That's it.</p>`;
+    <p>Pick anything from the list and go. That's honestly it.</p>`;
 }
 function showGuide(role){
   document.getElementById('guide-modal').innerHTML = guideContent(role) + `<div class="guide-close"><button class="btn" onclick="closeGuide('${role}')">Got it</button></div>`;
