@@ -326,6 +326,43 @@ const testScript = `
 
   localStorage.removeItem('ajar_exam_current');
 
+  // --- answering must always open the way forward ---
+  //
+  // Reported from a real sitting: built the sentence, tapped Check, stuck.
+  //
+  // Six types re-render into a "Done — 3 of 4 correct" panel and pick up
+  // the finished footer that way. Build a Sentence and Complete the Words
+  // just write a line into a result div and leave the rest of the screen
+  // standing — so the footer went on offering to SKIP an exercise the
+  // student had already answered. Answering correctly and being shown only
+  // a button that says leave without answering is a dead end.
+  //
+  // The fix hangs off the outcome funnel rather than each checker, so this
+  // asserts the funnel, not the six screens.
+  assert('the footer is findable so it can be swapped when answered',
+    HTML_SOURCE.indexOf('exam-footer') > -1);
+  assert('answering swaps the footer to the finished one',
+    HTML_SOURCE.indexOf('markExerciseAnswered') > -1);
+
+  const funnel = HTML_SOURCE.slice(
+    HTML_SOURCE.indexOf('function recordExamOutcome'),
+    HTML_SOURCE.indexOf('function advanceExam'));
+  assert('a scored answer opens the way forward',
+    (funnel.split('markExerciseAnswered()').length - 1) >= 2);
+  assert('and so does a delivered piece of writing',
+    funnel.indexOf('delivered') < funnel.lastIndexOf('markExerciseAnswered()'));
+
+  // The swap must produce the finished label, not the skip one.
+  localStorage.removeItem('ajar_exam_current');
+  startExam('writing');
+  assert('the swapped-in footer says next, not skip',
+    practiceFooter(true).indexOf('Next exercise') > -1 &&
+    practiceFooter(true).indexOf('Skip') === -1);
+  assert('an untouched exercise still offers only to skip',
+    practiceFooter(false).indexOf('Skip this exercise') > -1);
+  finishExam('completed');
+  localStorage.removeItem('ajar_exam_current');
+
   // --- each item must be its own exercise, not the previous one's leftovers ---
   //
   // Reported from a real sitting: in Listening the next audio did not come

@@ -7544,7 +7544,27 @@ function practiceFooter(done){
   // mark without being told. So mid-exercise this says what it does.
   const label = done ? 'Next exercise &rarr;' : 'Skip this exercise &rarr;';
   const cls = done ? 'btn' : 'btn ghost sm';
-  return `<div class="ex-actions" style="margin-top:.6rem"><button class="${cls}" onclick="advanceExam()">${label}</button></div>`;
+  return `<div class="ex-actions exam-footer" style="margin-top:.6rem"><button class="${cls}" onclick="advanceExam()">${label}</button></div>`;
+}
+
+// An exercise that has reported its outcome is finished, whatever it does
+// with its own screen afterwards.
+//
+// Six types re-render into a "Done — 3 of 4 correct" panel and pick up the
+// finished footer that way. The rest — Build a Sentence, Complete the
+// Words — just write a line into a result div and leave everything else
+// standing, so the footer went on offering to SKIP an exercise the student
+// had already answered. Answering correctly and being shown only a button
+// that says leave without answering reads as a dead end, and was reported
+// as one.
+//
+// Called from the outcome funnel rather than from each checker, so a type
+// added later is covered without anyone remembering this.
+function markExerciseAnswered(){
+  try{
+    const f = document.querySelector('.exam-footer');
+    if(f) f.outerHTML = practiceFooter(true);
+  }catch(e){}
 }
 
 </script>
@@ -7971,12 +7991,14 @@ function recordExamOutcome(type, theme, outcome01){
     ex.written.push({ type, theme, text: text.trim(), at: Date.now() });
     ex.delivered = (ex.delivered || 0) + n;
     saveExam(ex);
+    markExerciseAnswered();
     return;
   }
 
   ex.correct += Math.round(Math.max(0, Math.min(1, outcome01)) * n);
   ex.answered += n;
   saveExam(ex);
+  markExerciseAnswered();
 }
 
 function advanceExam(){
