@@ -3,7 +3,7 @@
 // break CDN version pinning, and they already fail gracefully offline.
 // ponytail: app-shell-only cache, no runtime asset versioning strategy —
 // bump CACHE_NAME by hand when index.html changes meaningfully.
-const CACHE_NAME = 'ajar-shell-v1';
+const CACHE_NAME = 'ajar-shell-v2';
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have

@@ -21,14 +21,18 @@ Também: **não há back-end de aplicação.** Só Firestore. Então "validaçã
 
 ## Resumo em 10 segundos
 
+> **Segunda passada, 17/08 de manhã:** você mandou resolver os bugs. Todos os
+> ⚠️ de bug foram corrigidos e verificados. Sobraram só as três sugestões de UX
+> que são decisão de produto (20, 21 parcial, 22), marcadas abaixo.
+
 | Severidade | Total | Corrigidos | Aguardando você |
 |---|---|---|---|
-| 🔴 Crítico | 1 | 0 | **1** |
-| 🟠 Alto | 5 | 4 | 1 |
-| 🟡 Médio | 7 | 3 | 4 |
-| 🟢 Baixo | 6 | 5 | 1 |
-| 💡 Sugestão UX | 4 | — | 4 |
-| **Total** | **23** | **12** | **11** |
+| 🔴 Crítico | 1 | **1** | 0 |
+| 🟠 Alto | 5 | **5** | 0 |
+| 🟡 Médio | 7 | **7** | 0 |
+| 🟢 Baixo | 6 | **6** | 0 |
+| 💡 Sugestão UX | 4 | 1 | 3 |
+| **Total** | **23** | **20** | **3** |
 
 | Ângulo | Achados |
 |---|---|
@@ -40,13 +44,15 @@ Também: **não há back-end de aplicação.** Só Firestore. Então "validaçã
 | UX | 4 sugestões |
 | Qualidade de código | 3 (2 corrigidos) |
 
-**Suite:** 2.732 → **2.812 checagens, verde**, em 24 arquivos. Três verificadores novos (79 checagens) mais uma asserção adicionada ao painel.
+**Suite:** 2.732 → **2.822 checagens, verde**, em 24 arquivos. Três verificadores novos (79 checagens) mais uma asserção adicionada ao painel.
 
 ---
 
 # 🔴 CRÍTICO
 
 ## 1. Atribuição individual publica sem passar por aprovação
+
+**✅ RESOLVIDO (2ª passada).** Nasce `pending`, como o resto. E ganhou revisão de verdade: cartão com o nome, botão "👁 Read it before you send it" (fechado por padrão, porque a tela dela vai para a TV), e "✓ Send to Carla" / "✕ Discard". `individualForShare()` já filtrava por aprovado, então nada a jusante mudou — o portão existia e este caminho passava por fora dele. Seis asserções novas, incluindo o lado do aluno via `applySharedPayload`.
 
 **Ângulo:** Conformidade com regras inegociáveis (a) · **Severidade:** crítico · **Status:** ⚠️ reportado, aguardando sua decisão
 
@@ -110,6 +116,8 @@ O `try/catch` em volta não salva, ao contrário do que o comentário dele prome
 
 ## 4. Botão ▶ Start abaixo da dobra em 3 das 4 combinações de dispositivo
 
+**✅ RESOLVIDO (2ª passada).** Abrir um exercício rola até ele. E quando o portão está aberto, rola até o **botão**, não até o topo do cartão: em 393px de altura o cartão tem 470px, então nenhuma posição mostra as duas pontas. A ação ganha. Medido no iPhone paisagem: Start em y=218 de 393, visível, com o cartão ainda na tela acima.
+
 **Ângulo:** Responsividade / iPhone e iPad · **Severidade:** alto · **Status:** ⚠️ reportado, aguardando sua decisão
 
 **Onde:** [index.html](index.html) — `startGateHtml()` + `renderStudent()`; a causa é ausência de scroll ao abrir
@@ -133,6 +141,8 @@ Vale notar: este é um bug que **eu introduzi hoje** ao construir o portão de S
 
 ## 5. O relógio da tarefa fica fora da tela enquanto o aluno escreve
 
+**✅ RESOLVIDO (2ª passada).** `.timer-row` é `position:sticky; top:0`. Verificado no iPhone paisagem: rolando até o campo de resposta, o relógio continua visível.
+
 **Ângulo:** Responsividade / UX · **Severidade:** alto · **Status:** ⚠️ reportado, aguardando sua decisão
 
 **Onde:** [index.html](index.html) — `timerBadgeHtml()` renderiza dentro de `practice-wrap`
@@ -144,6 +154,8 @@ Vale notar: este é um bug que **eu introduzi hoje** ao construir o portão de S
 **Por que não corrigi:** a solução é `position: sticky` na `.timer-row`, e isso é mudança de layout — pode colidir com a barra de voltar e com a barra da seção, que também são fixas fora do wrap. Precisa de teste nas 4 combinações depois. Recomendo fazer junto com o item 4.
 
 ## 6. Alvos de toque de 22 a 31px na navegação do painel
+
+**✅ RESOLVIDO (2ª passada).** Abas do painel e o Sign out a 44px; `.btn.sm` a 34px. Tamanho de fonte intocado, só a caixa cresceu. A tira ganhou máscara de gradiente na borda direita, que é o aviso de que rola.
 
 **Ângulo:** Acessibilidade / mobile · **Severidade:** alto · **Status:** ✅ corrigido automaticamente (foco) / ⚠️ tamanho reportado
 
@@ -160,6 +172,8 @@ Vale notar: este é um bug que **eu introduzi hoje** ao construir o portão de S
 # 🟡 MÉDIO
 
 ## 7. Aspas duplas em texto falado quebram o botão de áudio, silenciosamente
+
+**✅ RESOLVIDO (2ª passada).** O texto saiu do atributo `onclick`. Vai em `data-speak`, escrito via `textContent`, com **um** listener delegado para os seis lugares. Verificado no navegador: `She said "hello" loudly, C:\path and it's fine` volta idêntico. A checagem virou "zero sítios com o padrão antigo", não "seis conhecidos" — a forma velha não pode voltar um lugar por vez.
 
 **Ângulo:** Bug funcional latente · **Severidade:** médio · **Status:** ⚠️ reportado + guarda de regressão adicionada
 
@@ -184,6 +198,8 @@ Confirmei que o clique não produz chamada nenhuma no caso das aspas duplas.
 **Por que não corrigi:** a correção certa é parar de interpolar em atributo — `data-speak` + um listener delegado — e isso mexe em 6 lugares e no padrão de renderização. Reportado. Adicionei uma asserção em `check_hygiene.js` que falha se algum texto falado ganhar aspas duplas, então o problema é detectado no momento em que for escrito.
 
 ## 8. Catch vazio esconde a perda do botão "Next exercise"
+
+**✅ RESOLVIDO (2ª passada).** O catch continua (lançar ali levaria a resposta do aluno junto), mas agora escreve no console dizendo que o rodapé não foi substituído. O próximo relato tem o que ler.
 
 **Ângulo:** Falha silenciosa · **Severidade:** médio · **Status:** ⚠️ reportado
 
@@ -270,6 +286,8 @@ Comentários explicavam `no-store` pelo "GitHub Pages força max-age=600". O app
 
 ## 17. `CACHE_NAME = 'ajar-shell-v1'` nunca subiu de versão
 
+**✅ RESOLVIDO (2ª passada).** `ajar-shell-v2`.
+
 **Ângulo:** Performance / cache · **Status:** ⚠️ reportado
 
 O próprio `sw.js` diz para subir à mão quando `index.html` mudar de forma relevante. Mudou muito hoje e continua `v1`. **Impacto real é pequeno**: o shell é network-first com `no-store`, então a versão só decide o que é servido *offline*. Vale subir por higiene.
@@ -285,6 +303,8 @@ Verifiquei e está bem resolvido: os 672 clipes são endereçados por conteúdo 
 # 💡 SUGESTÕES DE UX (não são bugs)
 
 ## 19. O modal do guia abre por cima de tudo, todo primeiro acesso, sem X
+
+**✅ Escape agora fecha** (2ª passada) — era a única saída que faltava para quem usa teclado, e em 334px de janela o botão fica abaixo do texto. O X no topo continua sugestão.
 
 334px de altura no iPhone paisagem, com bastante texto. Rola por dentro (`overflow-y: auto`, confirmado) e fecha ao tocar fora, mas: **não fecha com Escape** (testei — não fecha), não tem X no topo, e nada indica que rola. Sugestão: um X no canto e um handler de Escape.
 

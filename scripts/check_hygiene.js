@@ -119,14 +119,27 @@ assert('the section clock is announced', /id="exam-clock"[^>]*aria-live/.test(ht
 //=====================================================================
 // FRAGILE STRING BUILDING
 //=====================================================================
-// speak('${text}') inside an onclick attribute: a double quote in the text
-// ends the attribute early and the handler becomes invalid, so the audio
-// button silently does nothing. No current exercise text contains one — this
-// fails the day somebody writes reported speech with quotation marks.
-const speakSites = [...html.matchAll(/onclick="speak\('\$\{([^}]+)\}'\)"/g)].length;
-assert('the speak() attribute sites are known and counted', speakSites === 6);
-const quotedInData = [...html.matchAll(/\btext:\s*'[^']*"|"\btext:\s*"[^"]*\\"/g)].length;
-assert('no spoken text contains a double quote yet', quotedInData === 0);
+// speak('${text}') used to be built inside an onclick attribute, where one
+// double quote in the text ended the attribute early and left invalid
+// JavaScript — the audio button then did nothing at all, silently. The text
+// travels as a data attribute now, set through textContent, so no character
+// in it means anything.
+//
+// Asserted as ZERO rather than as a known count: the point is that the old
+// shape is gone and cannot come back one site at a time.
+// Comments stripped first — BLOCK comments too, which is what the previous
+// attempt missed: the passage in index.html documenting this very mistake is a
+// /* */ block whose continuation lines start with plain spaces, so a
+// line-prefix filter left them in. Third time a rule in this file has reported
+// its own subject matter, and the second time the fix was itself too narrow.
+const codeOnly = html
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')      // /* ... */ in both CSS and JS
+  .replace(/^\s*\/\/.*$/gm, ' ');          // // to end of line
+const speakSites = [...codeOnly.matchAll(/onclick="speak\('/g)].length;
+assert('no spoken text is interpolated into an attribute', speakSites === 0);
+assert('spoken text travels as data', /data-speak="/.test(html));
+assert('and one delegated listener handles all of them',
+  /closest\('\[data-speak\]'\)/.test(html));
 
 //=====================================================================
 // COMMENTS THAT NO LONGER DESCRIBE THE CODE
@@ -154,7 +167,12 @@ assert('no comment asserts a breakpoint the stylesheet does not have',
 // What matters is that the number does not quietly grow. A new empty catch is
 // a new place a real failure can hide, and it should be a deliberate decision
 // with this number moved by hand.
-const SILENT_CATCH_BASELINE = 21;
+// 21 -> 23: currentSchool() gained two localStorage guards when the school id
+// came out of the config and the device started remembering it from the link.
+// Same known class as the other 21 — private-mode Safari throws, and there is
+// a working fallback on the next line. Moved by hand, which is the point of a
+// baseline rather than a ban.
+const SILENT_CATCH_BASELINE = 23;
 const silent = [...html.matchAll(/catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g)].length;
 assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CATCH_BASELINE + ')',
   silent <= SILENT_CATCH_BASELINE,

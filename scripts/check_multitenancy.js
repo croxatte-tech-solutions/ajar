@@ -34,23 +34,47 @@ ${combined}
   const results = [];
   function assert(n,c){ results.push(n+': '+(c?'PASS':'FAIL')); }
 
-  assert('a default school is configured', typeof CONFIG.defaultSchool === 'string' && CONFIG.defaultSchool.length > 0);
-  // A guessable id would be no barrier at all, since a student joins by
-  // opening a link rather than by signing in.
-  assert('the default school id is not a guessable word (got "'+CONFIG.defaultSchool+'")',
-    CONFIG.defaultSchool.length >= 12 && /[0-9]/.test(CONFIG.defaultSchool));
+  // NO SCHOOL IS WRITTEN IN THE FILE.
+  //
+  // A real school id used to live in CONFIG.defaultSchool. It named the school
+  // — initials and city — in a public repository, and it is also the id that
+  // separates one school's material from another's, so it belongs in a link
+  // and in a teacher's own record rather than in a file anyone can read.
+  assert('no school id is hardcoded in the config',
+    !CONFIG.defaultSchool || CONFIG.defaultSchool.length === 0);
+  assert('and no school name or city is left in the file',
+    !/cse-den/i.test(__html));
 
-  assert('with no parameter it falls back to the default', currentSchool() === CONFIG.defaultSchool);
+  // With nothing to go on, a visitor belongs to no class — and '' rather than
+  // a guess is what stops a malformed 'schools//classroom' path being built.
+  localStorage.removeItem('ajar_school');
+  location.search = '';
+  assert('a visitor who never opened a link has no school', currentSchool() === '');
+
   location.search = '?school=other-school-99xy';
-  assert('a link naming another school resolves to it', currentSchool() === 'other-school-99xy');
-  assert('it is NOT silently the default', currentSchool() !== CONFIG.defaultSchool);
+  assert('a link naming a school resolves to it', currentSchool() === 'other-school-99xy');
   location.search = '?s=1&school=third-school-42ab';
   assert('it is read alongside other parameters', currentSchool() === 'third-school-42ab');
+
+  // THE DEVICE REMEMBERS. This is what let the id leave the config without
+  // any migration: a student who opened a link once keeps finding their class
+  // when they later type the bare address.
   location.search = '';
-  assert('it returns to the default when the parameter goes', currentSchool() === CONFIG.defaultSchool);
+  assert('the school from the last link is remembered', currentSchool() === 'third-school-42ab');
+  localStorage.removeItem('ajar_school');
+  assert('and forgetting it returns to no school', currentSchool() === '');
+
+  // A teacher's own record beats both, so she cannot publish into a colleague's
+  // school by having opened their link.
+  location.search = '?school=someone-elses-77zz';
+  window.CloudSync = { currentUser: () => ({ isTeacher: true, schoolId: 'her-own-school-11aa' }) };
+  assert('her own record beats the address bar', currentSchool() === 'her-own-school-11aa');
+  delete window.CloudSync;
+  localStorage.setItem('ajar_school', 'her-own-school-11aa');
+  location.search = '';
 
   const whole = shortShareLink();
-  assert('the whole-class link carries the school', whole.indexOf('school=' + CONFIG.defaultSchool) > -1);
+  assert('the whole-class link carries the school', whole.indexOf('school=her-own-school-11aa') > -1);
 
   const item = { id:'abc123', type:'talk', tag:'Listen to an Academic Talk', theme:'campus',
                  status:'approved', data: genTalk('campus') };
@@ -67,7 +91,7 @@ ${combined}
   // to. That is the failure this whole change exists to prevent.
   window.CloudSync = { pullClassroomItem(){}, pushClassroomItem(){} };
   const per = itemShareLink(item);
-  assert('the per-exercise link carries the school', per.indexOf('school=' + CONFIG.defaultSchool) > -1);
+  assert('the per-exercise link carries the school', per.indexOf('school=her-own-school-11aa') > -1);
   assert('the per-exercise link still carries the exercise', per.indexOf('ex=abc123') > -1);
   [whole, per].forEach(l => {
     assert('link carries a non-empty school ("' + l.slice(-30) + '")', /school=[^&]+/.test(l));
@@ -106,6 +130,7 @@ const sandbox = {
 };
 sandbox.self = sandbox.window;
 sandbox.globalThis = sandbox;
+sandbox.__html = html;   // uma asserção olha o arquivo cru, não o comportamento
 vm.createContext(sandbox);
 vm.runInContext(testScript, sandbox).catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
 

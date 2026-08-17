@@ -68,6 +68,49 @@ const testScript = `
   assert('nothing pending is in what gets published', published.length === 0);
 
   //===================================================================
+  // (a) SECOND PATH: NAMING ONE STUDENT
+  //===================================================================
+  // This was the hole. Assigning to a student by name marked the items
+  // approved at the moment of creation, so it published an exercise the
+  // teacher had never read — the one path in the app that walked around the
+  // rule the whole product rests on.
+  document.getElementById('indiv-name').value = 'Carla';
+  document.getElementById('indiv-type').value = 'email';
+  document.getElementById('indiv-theme').value = 'health';
+  generateForIndividual();
+  const mine = individualAssignments['carla'];
+  assert('naming a student generates something', !!mine && mine.items.length > 0);
+  assert('and every item of it is pending, not approved',
+    mine.items.every(i => i.status === 'pending'));
+  assert('so nothing is published to her yet',
+    Object.keys(individualForShare()).length === 0);
+
+  setStudentName('Carla');
+  location.search = '';
+  assert('and Carla sees none of it on her own device',
+    getStudentBatch().length === 0);
+
+  setIndividualStatus('carla', 'approved');
+  assert('approving it publishes it', Object.keys(individualForShare()).length === 1);
+
+  // Her device and Carla's are different machines. individualAssignments is
+  // memory on the teacher side; it reaches a student only through the payload
+  // that gets published. So the student half is tested by applying that
+  // payload, which is what actually happens on Carla's phone.
+  applySharedPayload({ items: [], individual: individualForShare() });
+  assert('and it arrives on Carla device once published',
+    getStudentBatch().length === mine.items.length);
+
+  setIndividualStatus('carla', 'discarded');
+  assert('discarding empties what gets published',
+    Object.keys(individualForShare()).length === 0);
+  applySharedPayload({ items: [], individual: individualForShare() });
+  assert('and it leaves her device on the next publish',
+    getStudentBatch().length === 0);
+  removeIndividual('carla');
+  setStudentName('Ana');
+
+  //===================================================================
   // (b) NO IMMIGRATION DATA, AND NOWHERE FOR IT TO GO
   //===================================================================
   // Two halves. There is no field for it — checked against the shapes the app

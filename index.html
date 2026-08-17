@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Ajar — free TOEFL 2026 practice built around real student life. A student project by @croxatte tech solutions.">
+<meta name="description" content="Ajar — free TOEFL 2026 practice built around real student life, reviewed by your teacher before it reaches you.">
 <meta name="theme-color" content="#0f6e56">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ajar">
-<title>Ajar by @croxatte tech solutions</title>
+<title>Ajar</title>
 <style>
 :root{
   --bg: #f6f9f8; --surface: #ffffff; --surface-alt: #edf4f2; --border: #d7e0dc;
@@ -99,7 +99,12 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .btn.danger{ background:var(--red-soft); color:var(--red); }
 .btn.ok{ background:var(--green-soft); color:var(--green); }
 .btn.sound{ background:var(--purple-soft); color:var(--purple); }
-.btn.sm{ padding:.4rem .7rem; font-size:.76rem; }
+.btn.sm{ padding:.4rem .7rem; font-size:.76rem; min-height:34px; }
+/* The one that was 22px. It signs a teacher out of her own class in front of
+   her students, so it should be neither the smallest target on screen nor the
+   easiest to hit by accident — 44px tall, and it keeps the ghost styling that
+   stops it competing with the work. */
+.whoami .btn.sm{ min-height:44px; }
 
 .type-tabs{ display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:.9rem; }
     /* Four labelled rows instead of one wall of twelve. The label sits on
@@ -188,7 +193,17 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
    the dashboard brief asked for. Deliberately one component with a media
    query rather than a drawer: a drawer that covers a 375px screen mid-class
    would be worse than the scrolling it replaces. */
+/* 44px minimum on the tabs and the small buttons.
+   Measured at 31px for a nav tab and 22px for Sign out, against Apple's 44pt
+   guidance — and this is used one-handed, standing up, in a classroom. The
+   font size is untouched; only the box grew.
+   The gradient on the right edge says the strip scrolls. It carried 557px of
+   tabs in 357px of width on iPhone portrait, so "Account" was off-screen with
+   nothing indicating it existed. */
+#teacher-nav a{ min-height:44px; display:inline-flex; align-items:center; }
 #teacher-nav{ display:flex; gap:.35rem; overflow-x:auto; position:sticky; top:0; z-index:5;
+  -webkit-mask-image:linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image:linear-gradient(to right, #000 calc(100% - 24px), transparent);
   background:var(--bg); padding:.5rem 0 .6rem; margin-bottom:.4rem;
   border-bottom:1px solid var(--border); scrollbar-width:none; }
 #teacher-nav::-webkit-scrollbar{ display:none; }
@@ -315,7 +330,15 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .timer-badge.caution{ background:var(--amber-soft); color:var(--amber); transform:scale(1.08); }
 .timer-badge.urgent{ background:var(--red-soft); color:var(--red); transform:scale(1.18); font-weight:800; }
 /* Reserve the tallest state's room up front, so nothing below moves. */
-.timer-row{ min-height:2.4rem; display:flex; align-items:center; }
+/* Sticky, because a clock you cannot see is not a clock.
+   Measured on iPhone landscape: the badge sits at y=563 and the answer field
+   at y=1010, so a student typing against a 7-minute limit had the countdown
+   450px above the visible area — including the amber warning at 2 minutes and
+   the red at 45 seconds, which exist for exactly that moment and which nobody
+   ever saw. top:0 rather than a guessed offset: the back bar is above it in
+   the flow, not fixed over it. */
+.timer-row{ min-height:2.4rem; display:flex; align-items:center;
+  position:sticky; top:0; z-index:5; background:var(--bg); padding:.25rem 0; }
 @media (prefers-reduced-motion: reduce){ .timer-badge{ transition:none; } }
 .timer-note{ font-size:.68rem; color:var(--text-dim); margin:-.5rem 0 .7rem; }
 
@@ -339,7 +362,11 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
     <div class="brand">
       <div class="brand-mark"><img src="logo.svg" alt="Ajar logo"></div>
       <div class="brand-text">
-        <h1>Ajar <span style="font-weight:400;color:var(--text-dim);text-transform:lowercase">by @croxatte tech solutions</span></h1>
+        <!-- No byline. It read as taking credit on a screen a teacher and her
+             students are trying to work on, and the app is not the place for
+             it: the developer's address is in the feedback panel, which is
+             where someone who wants to reach him actually looks. -->
+        <h1>Ajar</h1>
         <span>Working prototype &middot; not a system of record</span>
       </div>
     </div>
@@ -527,20 +554,24 @@ const CONFIG = {
   // When a server exists, endpoints go here.
   apiBase: null,
 
-  // Which school's data this session reads and writes. Everything lives
-  // under schools/{id}/, so two schools using the same deployment can
-  // never see or overwrite each other.
+  // NO DEFAULT SCHOOL. Deliberately empty, and it should stay empty.
   //
-  // The id is deliberately a long random-looking string rather than "cse":
-  // a student joins by opening a share link, not by signing in, so there
-  // is no account to check them against. The id in the link is therefore
-  // what stands between one school's material and another's, and a
-  // guessable one would be no barrier at all. Treat it like a password
-  // that happens to live in a URL.
+  // A school id used to be written here. It named the school — initials and
+  // city — in a public repository, which is the same thing we removed from
+  // the git history for the same reason. Worse, it is the id in the URL that
+  // separates one school's material from another's, so it belongs in a link
+  // and in a teacher's own record, not in a file anyone can read.
   //
-  // A link may name a different school with ?school=<id>; this is only
-  // the fallback for someone opening the bare address.
-  defaultSchool: 'cse-den-8f3a91',
+  // Nothing needed migrating to remove it, because nothing that matters
+  // depended on it. currentSchool() already preferred the teacher's own
+  // Firestore record, then the ?school= in the link. This was only the
+  // fallback for someone opening the bare address — and that visitor now
+  // gets self-practice, which needs no school at all.
+  //
+  // A device that has been through a link once remembers which school it
+  // was, so a returning student typing the address still finds what was set
+  // for them by name. See currentSchool().
+  defaultSchool: '',
 
   // The teacher account's address, pre-filled on the sign-in form so she
   // only types a password. This is an account belonging to the APP rather
@@ -605,6 +636,7 @@ const CONFIG = {
 // Which school the current visitor belongs to. A share link carries it, so
 // a student who scans a QR from one school lands in that school's data
 // whichever address they opened.
+const SCHOOL_SEEN_KEY = 'ajar_school';
 function currentSchool(){
   // A signed-in teacher belongs to the school named in her own record, and
   // that beats anything in the address bar — otherwise a teacher who opened
@@ -613,11 +645,26 @@ function currentSchool(){
     const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
     if(u && u.isTeacher && u.schoolId) return u.schoolId;
   }catch(e){}
+  // Then the link, and the device remembers it. This is what let the id come
+  // out of the config: a student who opened a link once keeps finding their
+  // class when they later type the bare address, without the school's name
+  // ever being written in a public file.
   try{
     const fromUrl = new URLSearchParams(location.search).get('school');
-    if(fromUrl) return fromUrl;
+    if(fromUrl){
+      try{ localStorage.setItem(SCHOOL_SEEN_KEY, fromUrl); }catch(e){}
+      return fromUrl;
+    }
   }catch(e){}
-  return CONFIG.defaultSchool;
+  try{
+    const seen = localStorage.getItem(SCHOOL_SEEN_KEY);
+    if(seen) return seen;
+  }catch(e){}
+  // No school. A visitor who has never opened a link belongs to no class, and
+  // saying so is right: they get self-practice, which touches no school data.
+  // Returning '' rather than a guess keeps a malformed 'schools//...' path
+  // from ever being built — see the guard in CloudSync.
+  return CONFIG.defaultSchool || '';
 }
 
 /* THE SCHOOL'S CALENDAR AND THE SCHOOL'S CLOCK
@@ -7365,7 +7412,17 @@ function generateForIndividual(){
   const type = document.getElementById('indiv-type').value;
   let theme = document.getElementById('indiv-theme').value;
   if(theme === '__random') theme = pick(ALL_THEMES);
-  individualAssignments[name.toLowerCase()] = { displayName: name, items: generateBatchItems(type, theme).map(i=>({...i, status:'approved'})) };
+  // PENDING, like everything else she generates.
+  //
+  // This used to be 'approved' at the moment of creation, which meant naming
+  // a student was the one path in the app that published an exercise she had
+  // never read. The whole-class path has always required her to approve each
+  // item; this one handed a generated prompt straight to a named student's
+  // phone. Same rule both ways now.
+  //
+  // individualForShare() already filters on approved, so nothing downstream
+  // needed changing — the gate was wired and this was walking around it.
+  individualAssignments[name.toLowerCase()] = { displayName: name, items: generateBatchItems(type, theme).map(i=>({...i, status:'pending'})) };
   nameInput.value = '';
   renderIndividualList();
   renderShareBox();
@@ -7375,15 +7432,61 @@ function removeIndividual(key){
   renderIndividualList();
   renderShareBox();
 }
+// Approve or discard what was generated for one student.
+//
+// Every item under that name at once: a single assignment is one exercise in
+// practice, and asking her to approve the parts of one thing separately would
+// be pedantry rather than care.
+function setIndividualStatus(key, status){
+  const a = individualAssignments[key];
+  if(!a) return;
+  a.items = a.items.map(i => ({ ...i, status }));
+  renderIndividualList();
+  renderShareBox();
+}
 function renderIndividualList(){
   const el = document.getElementById('individual-list');
   const keys = Object.keys(individualAssignments);
   if(keys.length===0){ el.innerHTML=''; return; }
-  el.innerHTML = '<div class="chip-row" style="margin-top:.6rem">' + keys.map(k=>{
+
+  // A real review card, not a chip. The chip named the task type and the
+  // theme and stopped there, so approving meant approving something unseen —
+  // and there was no approving, because it arrived already published.
+  //
+  // Same parts as the whole-class queue: closed by default because this
+  // screen is usually on the TV, opened on request, and the reveal shares
+  // one mechanism with the exercise cards rather than inventing a second.
+  el.innerHTML = keys.map(k => {
     const a = individualAssignments[k];
-    const theme = a.items[0]?.theme;
-    return `<span class="chip">${a.displayName} — ${a.items[0]?.tag || ''}${theme ? ' · ' + (THEME_LABELS[theme]||theme) : ''} <button class="btn ghost sm" style="padding:.1rem .4rem;margin-left:.3rem" onclick="removeIndividual('${k}')" aria-label="Remove ${escapeHtml(a.displayName || k)} from this assignment">✕</button></span>`;
-  }).join('') + '</div>';
+    const item = a.items[0] || {};
+    const status = item.status || 'pending';
+    const revealKey = 'indiv-' + k;
+    const shown = privateShown().has(revealKey);
+    return `
+      <div class="ex-card" style="margin:.7rem 0 0">
+        <div class="ex-card-head">
+          <span class="ex-tag">🎯 ${escapeHtml(a.displayName)}</span>
+          <span class="ex-status ${status}">${status === 'pending' ? 'Awaiting your review'
+            : status === 'approved' ? 'Sent to ' + escapeHtml(a.displayName) : 'Discarded'}</span>
+        </div>
+        <div class="ex-body">${escapeHtml(item.tag || '')}${item.theme
+          ? ' &middot; ' + escapeHtml(THEME_LABELS[item.theme] || item.theme) : ''}${a.items.length > 1
+          ? ' &middot; ' + a.items.length + ' exercises' : ''}</div>
+        ${shown ? `
+          <div class="small-note" style="color:var(--red);font-weight:600;margin-top:.5rem">👁 Showing the exercise — anyone watching this screen can read it, answers included.</div>
+          ${cardBody(item)}
+          <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="togglePrivate('${revealKey}')">🙈 Hide it again</button></div>
+        ` : `
+          <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="togglePrivate('${revealKey}')">👁 Read it before you send it</button>
+          <span class="small-note" style="margin-left:.4rem">Only if this screen is not on the TV</span></div>
+        `}
+        <div class="ex-actions">
+          ${status !== 'approved' ? `<button class="btn ok sm" onclick="setIndividualStatus('${k}','approved')">✓ Send to ${escapeHtml(a.displayName)}</button>` : ''}
+          ${status !== 'discarded' ? `<button class="btn danger sm" onclick="setIndividualStatus('${k}','discarded')">✕ Discard</button>` : ''}
+          <button class="btn ghost sm" onclick="removeIndividual('${k}')" aria-label="Remove ${escapeHtml(a.displayName || k)} from this assignment">Remove</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 /* =========================================================
@@ -7495,7 +7598,7 @@ function cardBody(item){
     <div style="margin-top:.7rem">
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="small-note" style="flex:1">Listen to ${escapeHtml(d.context)}</span>
-        <button class="btn sound sm" onclick="speak('${d.text.replace(/'/g,"\\'")}')" aria-label="Play this talk aloud">🔊</button>
+        ${speakButtonHtml(d.text, 'Play this talk aloud')}
       </div>
       <div class="small-note" style="margin:.3rem 0 0 0">${escapeHtml(d.text)}</div>
       ${d.questions.map(q=>`<div class="small-note" style="margin-top:.4rem">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}
@@ -7505,7 +7608,7 @@ function cardBody(item){
     <div style="margin-top:.7rem">
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="small-note" style="flex:1">Listen to ${escapeHtml(d.context)}</span>
-        <button class="btn sound sm" onclick="speak('${conversationText(d.turns).replace(/'/g,"\\'")}')" aria-label="Play this conversation aloud">🔊</button>
+        ${speakButtonHtml(conversationText(d.turns), 'Play this conversation aloud')}
       </div>
       <div class="small-note" style="margin:.3rem 0 0 0">${d.turns.map(t=>`<b>${t[0]==='M'?'Man':'Woman'}:</b> ${escapeHtml(t[1])}`).join('<br>')}</div>
       ${d.questions.map(q=>`<div class="small-note" style="margin-top:.4rem">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}
@@ -7516,7 +7619,7 @@ function cardBody(item){
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="chip" style="flex-shrink:0">#${i+1}</span>
         <span class="small-note" style="flex:1">Listen to ${escapeHtml(a.context)}</span>
-        <button class="btn sound sm" onclick="speak('${a.text.replace(/'/g,"\\'")}')" aria-label="Play announcement ${i+1} aloud">🔊</button>
+        ${speakButtonHtml(a.text, 'Play announcement ' + (i+1) + ' aloud')}
       </div>
       <div class="small-note" style="margin:.2rem 0 0 2.2rem">${escapeHtml(a.text)}</div>
       ${a.questions.map(q=>`<div class="small-note" style="margin:.2rem 0 0 2.2rem">• ${escapeHtml(q.q)} ✓ ${escapeHtml(q.options[q.answer])}</div>`).join('')}
@@ -7528,7 +7631,7 @@ function cardBody(item){
         <div style="display:flex;align-items:center;gap:.5rem">
           <span class="chip" style="flex-shrink:0">#${i+1}</span>
           <span style="flex:1">${escapeHtml(q.prompt)}</span>
-          <button class="btn sound sm" onclick="speak('${q.prompt.replace(/'/g,"\\'")}')" aria-label="Play exchange ${i+1} aloud">🔊</button>
+          ${speakButtonHtml(q.prompt, 'Play exchange ' + (i+1) + ' aloud')}
         </div>
         <div class="small-note" style="margin:.15rem 0 0 2.2rem">✓ ${escapeHtml(q.options[q.answer])}</div>
       </div>`).join('')}
@@ -7545,7 +7648,7 @@ function cardBody(item){
       ${d.set.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
         <span class="chip" style="flex-shrink:0">#${s.index} · ${s.seconds}s</span>
         <span style="flex:1">${s.text}</span>
-        <button class="btn sound sm" onclick="speak('${s.text.replace(/'/g,"\\'")}')" aria-label="Play sentence ${s.index} aloud">🔊</button>
+        ${speakButtonHtml(s.text, 'Play sentence ' + s.index + ' aloud')}
       </div>`).join('')}
     </div>`;
   if(item.type==='interview') return `<div class="ex-body"><b>${d.topic}</b> — 4 connected questions:</div>
@@ -7554,7 +7657,7 @@ function cardBody(item){
       ${d.questions.map((q,i)=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
         <span class="chip" style="flex-shrink:0">#${i+1}</span>
         <span style="flex:1">${q.text}</span>
-        <button class="btn sound sm" onclick="speak('${q.text.replace(/'/g,"\\'")}')" aria-label="Play question ${i+1} aloud">🔊</button>
+        ${speakButtonHtml(q.text, 'Play question ' + (i+1) + ' aloud')}
       </div>`).join('')}
     </div>`;
   return '';
@@ -8446,7 +8549,15 @@ function markExerciseAnswered(){
   try{
     const f = document.querySelector('.exam-footer');
     if(f) f.outerHTML = practiceFooter(true);
-  }catch(e){}
+  }catch(e){
+    // Not swallowed any more. If this throws, the footer is not replaced and
+    // the student loses "Next exercise →" with no way forward — which is
+    // exactly how it was reported once: "o botao sumiu e nao foi para o
+    // proximo exercicio". The catch stays, because throwing here would take
+    // the answer down with it, but it leaves a trace so the next report has
+    // something to read.
+    console.error('markExerciseAnswered: the footer was not replaced —', e);
+  }
 }
 
 </script>
@@ -9262,6 +9373,7 @@ function mountBackBar(){
 function renderPractice(){
   renderPracticeInner();
   mountBackBar();
+  bringPracticeIntoView();
 }
 
 /* NOTHING STARTS UNTIL THE STUDENT SAYS SO
@@ -9323,9 +9435,45 @@ function startGateHtml(item){
       ${called}
       ${clock}
       ${taskBriefHtml(item.type)}
-      <div class="ex-actions" style="margin-top:.9rem"><button class="btn" onclick="startExercise('${item.id}')">▶ Start</button></div>
+      <div class="ex-actions" style="margin-top:.9rem"><button class="btn" id="start-gate-btn" onclick="startExercise('${item.id}')">▶ Start</button></div>
       <p class="small-note" style="margin-top:.6rem">Nobody is waiting on you — everyone in the room starts their own.</p>
     </div>`;
+}
+
+/* Opening an exercise brings it onto the screen.
+   ============================================
+   It did not, and the start gate made that matter. Measured on four
+   device/orientation pairs: the exercise begins 542px down (masthead 108,
+   role switcher 46, the clock, the list itself 157, the back bar 32), and the
+   gate card is 470px tall, so ▶ Start sits at y=951. That is below the fold on
+   iPhone portrait (852), iPhone landscape (393) and iPad landscape (820) —
+   three of the four, including iPad landscape, which is how this class
+   actually holds the thing.
+
+   A student scans a code, sees a card describing the task, and no way to
+   begin. In a room of thirteen starting at once that is the first hand up.
+
+   Only when something is actually open, and never during a section — a
+   section mounts its own bar and scrolling under a running clock is
+   disorienting. Guarded in a try because scroll-behavior is the sort of thing
+   an old WebView refuses. */
+function bringPracticeIntoView(){
+  if(!selectedId || examActive()) return;
+
+  // When the gate is showing, scroll to the BUTTON, not to the top of the
+  // card. On iPhone landscape the viewport is 393px tall and the card is 470,
+  // so aligning the top leaves ▶ Start 19px below the fold — no scroll
+  // position can show both ends of something taller than the screen.
+  //
+  // So the action wins. The card sits just above it and a small scroll reads
+  // it; an invisible button is a dead end, and a student in a classroom will
+  // put their hand up rather than guess that the page scrolls.
+  const gate = document.getElementById('start-gate-btn');
+  const target = gate || document.getElementById('back-bar') || document.getElementById('practice-wrap');
+  if(!target) return;
+  const block = gate ? 'center' : 'start';
+  try{ target.scrollIntoView({ behavior: 'smooth', block }); }
+  catch(e){ try{ target.scrollIntoView(); }catch(e2){} }
 }
 
 function renderPracticeInner(){
@@ -11094,6 +11242,43 @@ const TASK_BRIEF = {
     real: 'Four questions on one topic, asked one after another, 45 seconds each and no preparation time.',
     ours: 'Two listens per question here, none on the real test. Speaking is 11 items in about 8 minutes on test day.' },
 };
+/* SPOKEN TEXT TRAVELS AS DATA, NOT AS CODE
+   ======================================
+   These buttons used to be built as onclick="speak('${text}')". The text is
+   interpolated into an attribute delimited by double quotes while only single
+   quotes are escaped, so one double quote in the text ends the attribute early
+   and the handler becomes invalid JavaScript. The button then does nothing at
+   all — no error, no sound, and no reason for whoever wrote the exercise to
+   suspect the attribute.
+
+   Verified in the browser: `She said "hello" loudly` produced
+   onclick="speak('She said " and the click called nothing. A backslash was
+   quieter and worse — `C:\path` spoke "C:path", because \p is p.
+
+   None of the 868 spoken strings in the app today contains either character,
+   so this was latent rather than broken. It would have gone live the first
+   time somebody wrote reported speech with quotation marks, which in a
+   listening exercise is a matter of when.
+
+   textContent puts the words in the DOM as text, where no character means
+   anything. One listener on document handles every one of them, so a
+   thirteenth site cannot be built the old way by accident. */
+function speakButtonHtml(text, label){
+  const holder = document.createElement('span');
+  holder.textContent = String(text == null ? '' : text);
+  return `<button class="btn sound sm" data-speak="${holder.innerHTML.replace(/"/g, '&quot;')}" aria-label="${escapeHtml(label)}">🔊</button>`;
+}
+document.addEventListener('click', e => {
+  const btn = e.target && e.target.closest ? e.target.closest('[data-speak]') : null;
+  if(!btn) return;
+  // textContent of a scratch node decodes the entities back to the real
+  // characters — the reverse of how they went in.
+  const decoder = document.createElement('span');
+  decoder.innerHTML = btn.getAttribute('data-speak') || '';
+  const text = decoder.textContent;
+  if(text) speak(text);
+});
+
 function taskBriefHtml(type){
   const b = TASK_BRIEF[type];
   if(!b) return '';
@@ -11327,6 +11512,14 @@ function closeGuide(role){
   document.getElementById('guide-overlay').style.display = 'none';
   if(role) localStorage.setItem('cse_guide_seen_'+role, '1');
 }
+// Escape closes it. Tapping outside already did, and the button at the bottom
+// did, but on a short screen — 334px of window on iPhone landscape — the
+// button is below the text and Escape is the one exit a keyboard user has.
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  const ov = document.getElementById('guide-overlay');
+  if(ov && ov.style.display === 'flex') closeGuide();
+});
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -11733,7 +11926,13 @@ loadSharedClassroomContent().then(()=>{
     }
     // Read at call time rather than captured once: a student can open a
     // link for a different school without reloading the page.
-    const school = () => (typeof currentSchool === 'function' ? currentSchool() : 'cse-den-8f3a91');
+    const school = () => (typeof currentSchool === 'function' ? currentSchool() : '');
+    // Every path below is schools/{id}/..., and an empty id builds
+    // 'schools//classroom', which Firestore rejects. A visitor with no school
+    // has no class data to read or write, so the honest answer is to do
+    // nothing rather than to throw inside a fire-and-forget promise nobody
+    // reads.
+    const noSchool = () => !school();
     onAuthStateChanged(auth, user => {
       currentUser = user || null;
       teacherRecord = null;
@@ -11764,10 +11963,12 @@ loadSharedClassroomContent().then(()=>{
       // short: students fetch the actual content here instead of it
       // being encoded into the URL itself.
       async pushClassroomBatch(payload) {
+        if(noSchool()) return;
         await authReady;
         await setDoc(doc(db, 'schools', school(), 'classroom', 'current'), { ...payload, updatedAt: serverTimestamp() });
       },
       async pullClassroomBatch() {
+        if(noSchool()) return null;
         await authReady;
         const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'current'));
         return snap.exists() ? snap.data() : null;
@@ -11778,6 +11979,7 @@ loadSharedClassroomContent().then(()=>{
       // resolve to exactly that exercise, independent of whatever else
       // is or isn't in the current whole-class batch.
       async pushClassroomItem(id, payload) {
+        if(noSchool()) return;
         await authReady;
         await setDoc(doc(db, 'schools', school(), 'classroom', 'item_' + id), { ...payload, updatedAt: serverTimestamp() });
       },
@@ -11789,6 +11991,7 @@ loadSharedClassroomContent().then(()=>{
           { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
       },
       async pullClassSummaries(names) {
+        if(noSchool()) return {};
         await authReady;
         const out = {};
         await Promise.all(names.map(async n => {
@@ -11804,6 +12007,7 @@ loadSharedClassroomContent().then(()=>{
       // teacher publishes, so it inherits the same rule: she writes, the
       // class reads, nobody else does either.
       async pushRoster(roster) {
+        if(noSchool()) return;
         await authReady;
         await setDoc(doc(db, 'schools', school(), 'classroom', 'roster'),
           { ...roster, updatedAt: serverTimestamp() });
@@ -11819,11 +12023,13 @@ loadSharedClassroomContent().then(()=>{
         return snap.exists() ? (snap.data().notes || {}) : {};
       },
       async pullRoster() {
+        if(noSchool()) return null;
         await authReady;
         const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'roster'));
         return snap.exists() ? snap.data() : null;
       },
       async pullClassroomItem(id) {
+        if(noSchool()) return null;
         await authReady;
         const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'item_' + id));
         return snap.exists() ? snap.data() : null;
