@@ -30,6 +30,17 @@ rules_version = '2';
 //    school. Closing that needs per-student accounts, which costs more
 //    than it buys for a class of 13 who share a room with their teacher.
 //
+//    That limit is wider than it first reads, and it got wider when the
+//    teacher's private note was added: a note lives at
+//    classroom/note_{name}, the class list publishes every classmate's
+//    name, and classroom/* is readable by any signed-in visitor because
+//    that is how a QR works without an account. So a student in the class
+//    can read what their teacher wrote about the student next to them.
+//    No rule can express "only Ana" while Ana is anonymous. This is
+//    asserted in scripts/rules-test/rules.test.js as a KNOWN GAP rather
+//    than left to be rediscovered, and it is the strongest single argument
+//    for per-student identity.
+//
 // 2. Because students are anonymous, the schoolId in a share link is what
 //    separates one school's material from another's for READING. It is
 //    therefore a long random string rather than a guessable name, and
@@ -58,6 +69,16 @@ service cloud.firestore {
     // by the database, that no client can influence.
     function isTeacherOf(schoolId) {
       return isTeacher() && teacherDoc().schoolId == schoolId;
+    }
+
+    // Students never create an account, so the app signs every visitor in
+    // anonymously — which is why isSignedIn() alone is close to no check at
+    // all under /students. It cannot tell one student from another (see
+    // limit 1), but it CAN tell a student from a teacher of some other
+    // school, and that distinction is the whole of multi-tenancy.
+    function isAnonymous() {
+      return isSignedIn()
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
 
     // The teacher roster. Created by hand in the console; the app never
@@ -148,8 +169,17 @@ service cloud.firestore {
             && request.resource.data.displayName.size() <= 60;
         }
 
-        allow read: if isSignedIn();
-        allow create, update: if isSignedIn()
+        // "Anonymous, or this school's own teacher" rather than "signed in".
+        //
+        // The emulator found this on its first run, which is the entire
+        // argument for running these instead of reading them: isSignedIn()
+        // here scoped to NOTHING. A teacher signed in to another school
+        // could read and overwrite this school's student records — the one
+        // thing the multi-tenancy comment two screens up promises cannot
+        // happen. It never showed up in review because the check looks
+        // present until you ask what it actually compares.
+        allow read: if isAnonymous() || isTeacherOf(schoolId);
+        allow create, update: if (isAnonymous() || isTeacherOf(schoolId))
           && studentId.size() <= 60
           && validStudent();
         // History is a record of what happened. Nothing in the app deletes
@@ -173,8 +203,8 @@ service cloud.firestore {
               && request.resource.data.ts is number;
           }
 
-          allow read: if isSignedIn();
-          allow create: if isSignedIn() && validAttempt();
+          allow read: if isAnonymous() || isTeacherOf(schoolId);
+          allow create: if (isAnonymous() || isTeacherOf(schoolId)) && validAttempt();
           // An attempt is a fact about the past. Editing or deleting one
           // would let a student rewrite the history their teacher reads.
           allow update, delete: if false;

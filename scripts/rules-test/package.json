@@ -1,0 +1,8 @@
+{
+  "name": "ajar-rules-test",
+  "private": true,
+  "description": "Runs firestore.rules against the real rules engine. Isolated here on purpose: the app itself has no build step and no node_modules, and that stays true.",
+  "type": "module",
+  "scripts": { "test": "cd ../.. && firebase emulators:exec --only firestore --project ajar-rules-test 'node scripts/rules-test/rules.test.js'" },
+  "devDependencies": { "@firebase/rules-unit-testing": "^4.0.1", "firebase": "^11.0.0" }
+}

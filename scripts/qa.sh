@@ -41,4 +41,21 @@ if [ -n "$AJAR_QR" ]; then
   python3 scripts/qr_verify.py || fail=1
 fi
 
+# The security rules, executed rather than read. Opt-in for the same reason:
+# it boots a JVM and the Firestore emulator, which takes about fifteen
+# seconds. Run it before publishing rules to the console — that is the moment
+# it is worth the wait, and it caught a live cross-school hole the first time.
+#   AJAR_RULES=1 sh scripts/qa.sh
+if [ -n "$AJAR_RULES" ]; then
+  printf '\n  Security rules (Firestore emulator)\n'
+  if [ ! -d scripts/rules-test/node_modules ]; then
+    printf '    skipped — run: cd scripts/rules-test && npm install\n'
+  else
+    ( cd scripts/rules-test && npm test --silent ) 2>&1 \
+      | grep -E 'FAIL|ALL [0-9]+ CHECKS PASS|FAILURES' | sed 's/^/    /' \
+      || fail=1
+    ( cd scripts/rules-test && npm test --silent ) >/dev/null 2>&1 || fail=1
+  fi
+fi
+
 exit $fail
