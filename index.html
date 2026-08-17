@@ -709,6 +709,13 @@ function classTermStart(){
     const p = JSON.parse(localStorage.getItem('cse_progress') || '{}');
     if(p.termStart) return p.termStart;
   }catch(e){}
+  // On a student's device this is the anchor their teacher published, which
+  // arrived with the batch. Same value, so the week they read is the week she
+  // is on rather than a second opinion.
+  try{
+    const synced = localStorage.getItem('cse_class_term_start');
+    if(synced) return synced;
+  }catch(e){}
   return CONFIG.termStart;
 }
 
@@ -6376,7 +6383,7 @@ function saveBatch(b){ localStorage.setItem('cse_batch', JSON.stringify(b)); }
    a denser QR, never break outright.
    ========================================================= */
 function encodeBatchForShare(items, individual, speakingTurn, teacherEmail, announcement){
-  const json = JSON.stringify({ items, individual: individual || {}, speakingTurn: (speakingTurn && speakingTurn.length) ? speakingTurn : null, teacherEmail: teacherEmail || null, announcement: announcement || null });
+  const json = JSON.stringify({ items, individual: individual || {}, speakingTurn: (speakingTurn && speakingTurn.length) ? speakingTurn : null, teacherEmail: teacherEmail || null, announcement: announcement || null, termStart: classTermStart() || null });
   return encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
 }
 function decodeBatchFromShare(str){
@@ -6402,6 +6409,11 @@ function applySharedPayload(payload){
   else localStorage.removeItem('cse_teacher_email');
   if(payload.announcement) localStorage.setItem('cse_announcement', payload.announcement);
   else localStorage.removeItem('cse_announcement');
+  // The class's Monday. This is what lets a student on the roster see the
+  // same week their teacher is on, computed rather than told — so it stays
+  // right on Thursday without her republishing anything.
+  if(payload.termStart) localStorage.setItem('cse_class_term_start', payload.termStart);
+  else localStorage.removeItem('cse_class_term_start');
 }
 // Tries the small Firestore-backed path first (works for any visit, not
 // just ones with "?s=1" — a bookmarked plain URL should still pick up
@@ -6801,6 +6813,12 @@ function renderShareBox(){
   const speakTurn = parseSpeakTurn(speakTurnRaw);
   const teacherEmailRaw = (localStorage.getItem('cse_teacher_email_raw') || '').trim();
   const announcementRaw = (localStorage.getItem('cse_teacher_announcement_raw') || '').trim();
+  // The Monday this class counts from, so her students' devices can work out
+  // the same week she is on. Just the anchor — not her week-and-day pointer,
+  // which she moves around to look at finished weeks. A student should see
+  // what week the class IS in, and an anchor cannot go stale the way a
+  // published "it is Monday" would the moment Tuesday arrived.
+  const termStart = classTermStart() || null;
 
   if(approved.length===0 && individualCount===0){
     // Nothing is approved right now — actively clear the shared Firestore
@@ -6811,13 +6829,13 @@ function renderShareBox(){
     // get served yesterday's (or five-minutes-ago's) exercise instead of
     // whatever the teacher is currently looking at. This closes that gap.
     if(window.CloudSync){
-      window.CloudSync.pushClassroomBatch({ items: [], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null }).catch(()=>{});
+      window.CloudSync.pushClassroomBatch({ items: [], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null, termStart }).catch(()=>{});
     }
     box.innerHTML = `<div class="panel"><p class="small-note">📤 Nothing approved yet — once you approve at least one item above, the link/QR here goes live automatically. Until then, students who scan it won't see anything new.</p></div>`;
     return;
   }
 
-  const payload = { items: approved, individual, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null };
+  const payload = { items: approved, individual, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null, termStart };
 
   if(window.CloudSync){
     paintShareBox(shortShareLink(), '☁️ Saving to the cloud…', { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
@@ -6838,7 +6856,7 @@ function renderShareBox(){
     // exactly that exercise — independent of whatever else is or isn't
     // in the whole-class batch right now.
     approved.forEach(item => {
-      window.CloudSync.pushClassroomItem(item.id, { items: [item], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null }).catch(()=>{});
+      window.CloudSync.pushClassroomItem(item.id, { items: [item], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null, termStart }).catch(()=>{});
     });
   } else {
     paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
@@ -7166,12 +7184,48 @@ const SCHOOL_CLOCK_TICK_MS = 20000;
 // anyone in the world may open it is either meaningless or misleading. The
 // clock is the opposite case: it is about the person holding the phone, so
 // it is theirs, and it names their zone so they can see that it is.
+// Is this device one of HER students?
+//
+// Not "has a name typed on it" — a name is just a string, and the cover is
+// open to anyone in the world. On the roster, which she wrote and which
+// syncs to the class, is what makes someone a member of this class rather
+// than a visitor who guessed a name.
+//
+// Compared case-insensitively, the same normalisation the roster and the
+// history use, so 'ana' and 'Ana' are one student here as everywhere else.
+function isRosteredStudent(){
+  const name = getStudentName().trim().toLowerCase();
+  if(!name) return false;
+  try{
+    return (loadRoster().students || []).some(x => String(x).trim().toLowerCase() === name);
+  }catch(e){ return false; }
+}
 function renderSchoolClock(){
-  const html = `<b>${escapeHtml(localDateLabel())}</b> &middot; ${escapeHtml(localTimeLabel())}`;
-  ['welcome-clock', 'student-clock'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.innerHTML = html;
-  });
+  const when = `<b>${escapeHtml(localDateLabel())}</b> &middot; ${escapeHtml(localTimeLabel())}`;
+
+  // The cover shows the date and stops. Nobody has said who they are yet, so
+  // there is no class whose week it could be.
+  const cover = document.getElementById('welcome-clock');
+  if(cover) cover.innerHTML = when;
+
+  // The student page adds the week once the device belongs to the class —
+  // same anchor their teacher published, same arithmetic her panel does, so
+  // the two cannot drift. A visitor practising on their own sees the date
+  // only, which is the honest answer: they are not in a week.
+  const student = document.getElementById('student-clock');
+  if(!student) return;
+  const plan = isRosteredStudent() ? schoolPlanToday() : null;
+  student.innerHTML = plan
+    ? `${when} &middot; <b>Week ${plan.week}</b>, day ${plan.day} of 4 &middot; ${escapeHtml(weekFocusLabel(plan.week))}`
+    : when;
+}
+// What the class is working on this week, from the same plan her panel reads.
+// Derived from the week number rather than sent along with it: one source, so
+// a student and their teacher cannot be told different things.
+function weekFocusLabel(week){
+  const wk = WEEK_PLAN[week];
+  if(!wk) return '';
+  return wk.simulado ? 'Mock exam week' : wk.label;
 }
 function startSchoolClock(){
   renderSchoolClock();
@@ -8212,6 +8266,9 @@ function startSurprisePractice(){
 }
 
 function renderStudent(){
+  // Redrawn here, not only on load: the week appears the moment a student
+  // taps their name, and the name is typed after the page is already up.
+  renderSchoolClock();
   renderAnnouncement();
   const noteBox = document.getElementById('student-note');
   if(noteBox) noteBox.innerHTML = teacherNoteHtml();

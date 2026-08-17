@@ -177,12 +177,86 @@ const testScript = `
   assert('the student page carries the same line',
     studentClock.innerHTML === clock.innerHTML && studentClock.innerHTML.length > 0);
 
-  // The week is a fact about one class. On a screen anyone in the world may
-  // open it is either meaningless or misleading, so it is not there at all.
+  // The cover is open to anyone in the world. Nobody has said who they are
+  // yet, so there is no class whose week it could be — and it stays that way
+  // even for a student who IS on the roster, because the cover is the same
+  // screen for everyone.
   assert('the cover says nothing about the week',
     clock.innerHTML.indexOf('Week') === -1 && clock.innerHTML.indexOf('day 1 of') === -1);
-  assert('and neither does the student page',
+
+  //=================================================================
+  // THE WEEK REACHES HER STUDENTS, AND ONLY HER STUDENTS
+  //=================================================================
+  // A name is just a string. Being on the roster she wrote — which syncs to
+  // the class — is what makes someone a member rather than a visitor who
+  // guessed a name.
+  saveRoster({ students: ['Ana', 'Bruno'], present: [] });
+
+  setStudentName('');
+  renderSchoolClock();
+  assert('with nobody signed in, the student page shows the date only',
     studentClock.innerHTML.indexOf('Week') === -1);
+  assert('and still shows the date', studentClock.innerHTML.indexOf(',') > -1);
+
+  setStudentName('Someone Else');
+  renderSchoolClock();
+  assert('a visitor who typed a name they invented gets no week',
+    studentClock.innerHTML.indexOf('Week') === -1);
+  assert('and the roster is what decides, not the name being non-empty',
+    isRosteredStudent() === false);
+
+  setStudentName('Ana');
+  renderSchoolClock();
+  assert('a student on the roster is recognised', isRosteredStudent() === true);
+  assert('case does not make her a different student', (() => {
+    setStudentName('ana');
+    const yes = isRosteredStudent();
+    setStudentName('Ana');
+    return yes;
+  })());
+
+  // Whether a week shows depends on today being a class day, which the suite
+  // cannot choose — so assert against what schoolPlanToday actually says.
+  const nowPlan = schoolPlanToday();
+  if(nowPlan){
+    assert('and sees the week her class is in',
+      studentClock.innerHTML.indexOf('Week ' + nowPlan.week) > -1);
+    assert('and the day within it',
+      studentClock.innerHTML.indexOf('day ' + nowPlan.day + ' of 4') > -1);
+    // Derived from the week rather than sent alongside it, so a student and
+    // their teacher cannot be told different things.
+    assert('and what the class is working on this week',
+      studentClock.innerHTML.indexOf(weekFocusLabel(nowPlan.week)) > -1);
+  } else {
+    assert('off a class day even a rostered student gets no week',
+      studentClock.innerHTML.indexOf('Week') === -1);
+  }
+
+  //=================================================================
+  // SYNCED, NOT DUPLICATED
+  //=================================================================
+  // The anchor rides with the batch she publishes. It is the anchor and not
+  // her week-and-day pointer: she moves that around to look at finished
+  // weeks, and a published "it is Monday" would be wrong by Tuesday.
+  assert('the anchor is what gets published, not the pointer',
+    __html.indexOf('const termStart = classTermStart() || null;') > -1);
+  assert('and it rides in the payload she already shares',
+    __html.indexOf('announcement: announcementRaw || null, termStart }') > -1);
+  assert('the older URL-encoded share carries it too, so the two agree',
+    __html.indexOf('termStart: classTermStart() || null') > -1);
+
+  // On the student's device it comes out of the synced value, so the week
+  // they read is hers rather than a second opinion.
+  localStorage.removeItem('cse_progress');
+  localStorage.setItem('cse_class_term_start', '2026-09-07');
+  assert('a student device counts from the anchor their teacher published',
+    classTermStart() === '2026-09-07');
+  applySharedPayload({ items: [], individual: {}, termStart: '2026-08-17' });
+  assert('and a fresh publish updates it', classTermStart() === '2026-08-17');
+  applySharedPayload({ items: [], individual: {} });
+  assert('a publish without one clears it rather than leaving a stale week',
+    localStorage.getItem('cse_class_term_start') === null);
+  localStorage.removeItem('cse_class_term_start');
 
   // The panel has to say whether it is showing today or a day she left it
   // on. That was the whole complaint.
@@ -270,6 +344,7 @@ const cloudStub = new Proxy({}, {
 });
 sandbox.window.CloudSync = cloudStub;
 sandbox.CloudSync = cloudStub;
+sandbox.__html = html;   // three assertions are about the publish sites, which are text
 vm.createContext(sandbox);
 vm.runInContext(blocks.join('\n;\n') + '\n;\n' + testScript, sandbox)
   .catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
