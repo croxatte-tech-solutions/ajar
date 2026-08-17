@@ -47,9 +47,10 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 
 .masthead{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
 .brand{ display:flex; align-items:center; gap:.6rem; }
-/* 34px -> 39px: 15% up, asked for after seeing it on an iPad in landscape,
-   which is how this class actually uses it. */
-.brand-mark{ width:39px; height:39px; flex-shrink:0; }
+/* 34px -> 44px: 30% up. Went to 15% first and it was still small on an
+   iPad in landscape, which is how this class actually uses it. Measured
+   from the original 34, not compounded on the 39. */
+.brand-mark{ width:44px; height:44px; flex-shrink:0; }
 .brand-mark img{ width:100%; height:100%; object-fit:contain; display:block; }
 .brand-text h1{ font-size:1.05rem; margin:0; font-weight:700; letter-spacing:-.01em; }
 .brand-text span{ font-size:.72rem; color:var(--text-dim); }
@@ -267,9 +268,9 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .brief b{ color:var(--accent); }
 .brief p{ margin:.4rem 0 0 .1rem; padding-left:.7rem; border-left:2px solid var(--border); line-height:1.5; }
 .welcome{ max-width:30rem; margin:2.5rem auto 0; text-align:center; padding:0 .5rem; }
-/* 84px -> 97px, the same 15%. The front door is the one screen with room
+/* 84px -> 109px, the same 30%. The front door is the one screen with room
    to spare, so the mark can carry it. */
-.welcome-mark{ width:97px; height:97px; }
+.welcome-mark{ width:109px; height:109px; }
 .welcome-name{ font-size:2.1rem; font-weight:800; margin:.5rem 0 .1rem; letter-spacing:-.02em; }
 .welcome-lede{ color:var(--text-dim); font-size:1rem; line-height:1.55; margin:.6rem 0 1.6rem; transition:opacity .26s ease; }
 .welcome-doors{ display:flex; flex-direction:column; gap:.6rem; }
