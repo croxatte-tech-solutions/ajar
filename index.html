@@ -381,6 +381,85 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .guide-modal ol, .guide-modal ul{ margin:.3rem 0; padding-left:1.2rem; }
 .guide-modal .rule{ background:var(--accent-soft); color:var(--accent); border-radius:10px; padding:.8rem 1rem; font-size:.85rem; font-weight:600; margin:.8rem 0; }
 .guide-close{ display:flex; justify-content:flex-end; margin-top:1.2rem; }
+
+/* ==========================================================================
+   ALTERNATIVA A — "LÍNGUA"
+   --------------------------------------------------------------------------
+   A DECISÃO DE RAIO: a língua do mascote termina num semicírculo completo —
+   o raio é metade da largura, não um arredondamento tímido. Essa é a curva
+   que a marca já desenha, então o app a repete: tudo que é controle vira
+   pílula de verdade (999px), e as superfícies são generosamente moles.
+   Não existe meio-termo aqui. Ou é pílula, ou é um cartão de 20-26px.
+
+   A TIPOGRAFIA: uma forma redonda pede uma letra redonda. `ui-rounded` é a
+   SF Rounded do sistema — real no iPad e no iPhone, que é onde essa turma
+   abre o app — e degrada sozinha pro stack anterior em Windows/Android.
+   Zero requisição de rede: o app é PWA e roda no wi-fi da escola, uma
+   webfont do Google seria uma dependência offline nova por vaidade.
+   O "ajuste" está no par peso/tracking: display 800 com -.03em fecha a
+   forma redonda, e o corpo abre pra 1.62 de entrelinha.
+
+   AS MICROINTERAÇÕES: o botão levanta 1px e a sombra se espalha; ao apertar
+   ele afunda e a sombra colapsa. É a física de uma tecla mole.
+   ========================================================================== */
+:root{
+  --r-xs:8px; --r-sm:14px; --r-md:20px; --r-lg:26px; --r-pill:999px;
+  --font-body:ui-rounded,'SF Pro Rounded','Nunito',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-display:var(--font-body);
+  --dur:180ms; --ease:cubic-bezier(.2,.7,.3,1);
+  --press:cubic-bezier(.34,1.4,.64,1);
+}
+
+/* --- tipografia ---------------------------------------------------------- */
+body{ font-family:var(--font-body); line-height:1.62; }
+.brand-text h1,.welcome-name,.panel h2,.tv-tag,.pg-title,.dl-title,
+.guide-modal h2,.guide-modal h3{ font-family:var(--font-display); }
+.welcome-name{ font-weight:800; letter-spacing:-.03em; }
+.tv-tag{ font-weight:800; letter-spacing:-.025em; }
+.brand-text h1,.panel h2,.pg-title,.dl-title,.guide-modal h2{ letter-spacing:-.015em; }
+/* Micro-rótulos em caixa alta ganham ar: redonda + apertada vira mancha. */
+.field label,.ex-tag,.ex-status,.dl-sec,.dl-who,.fb-who,.forum-name,
+.type-group-label,.interview-scenario-label,.interview-reveal-label,
+.feedback-label{ letter-spacing:.075em; }
+
+/* --- raio ---------------------------------------------------------------- */
+.switcher,.switcher button,.ex-status,#teacher-nav a,.timer-badge,
+.guide-btn{ border-radius:var(--r-pill); }
+.btn,.type-tabs button,.word-chip{ border-radius:var(--r-pill); }
+select,textarea,input[type=text]{ border-radius:var(--r-sm); }
+.panel,.compose,.guide-modal{ border-radius:var(--r-lg); }
+.ex-card,.scenario-pick,.dl-doc,.fb-msg,.welcome-meaning{ border-radius:var(--r-md); }
+.tech-note,.padrao-c,.interview-scenario,.interview-figure,.forum-post,
+.mc-option,.interview-reveal,.feedback,.pg-doc,.assembled,.email-head,
+.guide-modal .rule,.scene-thumb,.dl-msg{ border-radius:var(--r-sm); }
+.chip,.lr-diff span,.pg-vocab{ border-radius:var(--r-xs); }
+
+/* --- microinterações ----------------------------------------------------- */
+.btn{ box-shadow:0 1px 2px rgba(15,30,25,.10);
+  transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease),filter var(--dur) var(--ease); }
+.btn:hover:not(:disabled){ transform:translateY(-1px); filter:brightness(1.06);
+  box-shadow:0 4px 12px rgba(15,30,25,.16); }
+.btn:active:not(:disabled){ transform:translateY(0) scale(.97);
+  box-shadow:0 1px 1px rgba(15,30,25,.12); transition-duration:80ms; transition-timing-function:var(--press); }
+.btn:disabled{ box-shadow:none; }
+
+.mc-option,.scenario-pick,.type-tabs button,.word-chip,.guide-btn,.switcher button{
+  transition:border-color var(--dur) var(--ease),background-color var(--dur) var(--ease),
+             color var(--dur) var(--ease),transform var(--dur) var(--ease); }
+.mc-option:hover:not(:disabled),.scenario-pick:hover{ transform:translateY(-1px); }
+.mc-option:active:not(:disabled),.scenario-pick:active{ transform:scale(.99); transition-duration:80ms; }
+.word-chip:hover:not(:disabled),.type-tabs button:hover{ transform:translateY(-1px); }
+.word-chip:active:not(:disabled){ transform:scale(.94); transition-duration:80ms; }
+
+@media (prefers-reduced-motion:reduce){
+  .btn,.mc-option,.scenario-pick,.type-tabs button,.word-chip,.guide-btn,
+  .switcher button{ transition:none; }
+  .btn:hover:not(:disabled),.btn:active:not(:disabled),
+  .mc-option:hover:not(:disabled),.scenario-pick:hover,
+  .word-chip:hover:not(:disabled),.type-tabs button:hover,
+  .mc-option:active:not(:disabled),.scenario-pick:active,
+  .word-chip:active:not(:disabled){ transform:none; }
+}
 </style>
 </head>
 <body>
