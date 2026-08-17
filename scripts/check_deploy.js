@@ -76,6 +76,14 @@ assert('and the App Check endpoint itself',
 // enforced — and then it refuses everything. Caught by loading the live site.
 assert('and reCAPTCHA can actually exchange the token it fetches',
   /connect-src[^;]*www\.google\.com\/recaptcha/.test(csp));
+
+// Cloudflare Web Analytics, allowed deliberately. Both halves or neither: the
+// beacon loads from one host and reports to another, and allowing only the
+// script leaves an error on every page load that hides real ones.
+const cfScript = /script-src[^;]*static\.cloudflareinsights\.com/.test(csp);
+const cfConnect = /connect-src[^;]*cloudflareinsights\.com/.test(csp);
+assert('Cloudflare analytics is allowed in both directives or in neither',
+  cfScript === cfConnect, 'script-src ' + cfScript + ', connect-src ' + cfConnect);
 // Off by default. A key committed here is not a secret, but switching this on
 // is a sequence (register, key, deploy, watch, THEN enforce) and the default
 // must never be the middle of it.
