@@ -63,7 +63,21 @@ service cloud.firestore {
     // The teacher roster. Created by hand in the console; the app never
     // writes here, so no client can promote itself or move schools.
     match /teachers/{uid} {
-      allow read: if isSignedIn();
+      // Her own document, and only hers.
+      //
+      // This used to be "any signed-in user", which sounds narrow and is
+      // not: students never sign in, so the app signs EVERY visitor in
+      // anonymously, and anonymous satisfies isSignedIn(). A teacher's
+      // name and school were therefore readable by anyone who opened the
+      // address — which mattered the moment we started asking her for a
+      // full name to show her class.
+      //
+      // Nothing breaks by closing it. The app only ever fetches the
+      // signed-in user's own record (loadTeacherRecord(uid) with that
+      // user's uid); it never lists the collection. And isTeacherOf()
+      // below reads this path with get(), which runs server-side and is
+      // not subject to these client read rules.
+      allow read: if isSignedIn() && request.auth.uid == uid;
 
       // A teacher may correct her own display name, and nothing else.
       //

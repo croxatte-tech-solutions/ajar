@@ -99,6 +99,16 @@ const rules = require('fs').readFileSync(
   require('path').join(require('path').dirname(process.argv[2] === 'index.html' ? '.' : process.argv[2]), 'firestore.rules'), 'utf8');
 const teacherRule = rules.slice(rules.indexOf('match /teachers/'),
                                 rules.indexOf('match /schools/'));
+// Reading her record is scoped to her too. "Any signed-in user" reads as
+// narrow and is not: students never sign in, so every visitor is signed
+// in anonymously, and anonymous satisfies it. Her name and school were
+// readable by anyone who opened the address — which started mattering the
+// moment the app asked her for a full name to show her class.
+assert('only she can read her own teacher record',
+  /allow read: if isSignedIn\(\) && request\.auth\.uid == uid/.test(teacherRule));
+assert('a bare signed-in read is no longer enough',
+  !/allow read: if isSignedIn\(\);/.test(teacherRule));
+
 assert('the rules let a teacher update her own document', /allow update:/.test(teacherRule));
 assert('only her own', /request\.auth\.uid == uid/.test(teacherRule));
 assert('and only the name field', /hasOnly\(\['name'\]\)/.test(teacherRule));
