@@ -180,6 +180,61 @@ const testScript = `
     maxListens('talk') === 1);
   finishExam('completed');
 
+  // --- there must always be a way forward ---
+  //
+  // This is the one that got shipped broken. Every type ends its last
+  // question on a "Done — 3 of 4 correct" screen whose only control is
+  // the footer, and in a section that footer offered "Try another one
+  // like this" — which re-draws the same type instead of advancing.
+  // Nothing else moved the section on: goToNextExercise is reached only
+  // from the per-task timer expiring, and a section turns that timer off.
+  // So a student who answered an exercise had nothing to click, and the
+  // section stopped dead with the clock still running.
+  //
+  // My checks all drove advanceExam() directly, so every one of them
+  // passed while the screen had no button to call it.
+  localStorage.removeItem('ajar_exam_current');
+  assert('practice offers another draw of the same type',
+    practiceFooter().indexOf('practiceAgain()') > -1);
+
+  startExam('listening');
+  assert('a section offers a way forward instead',
+    practiceFooter().indexOf('advanceExam()') > -1);
+  assert('a section does not offer to re-draw the exercise',
+    practiceFooter().indexOf('practiceAgain()') === -1);
+  assert('the finished screen offers the next exercise',
+    practiceFooter(true).indexOf('Next exercise') > -1);
+
+  // Several exercises carry their own "Next question" control for moving
+  // WITHIN the exercise. A footer beside it also reading "Next" means
+  // something else — leave the exercise — and a student one question from
+  // the end who reads them as the same thing silently loses a mark.
+  assert('mid-exercise the footer says it skips, not that it is next',
+    practiceFooter(false).indexOf('Skip this exercise') > -1);
+  assert('mid-exercise the footer does not just say Next',
+    practiceFooter(false).indexOf('Next exercise') === -1);
+  assert('the two footers do not read the same',
+    practiceFooter(true) !== practiceFooter(false));
+  assert('skipping is the quieter of the two controls',
+    practiceFooter(false).indexOf('ghost') > -1 && practiceFooter(true).indexOf('ghost') === -1);
+  finishExam('completed');
+  assert('the practice footer comes back afterwards',
+    practiceFooter().indexOf('practiceAgain()') > -1);
+
+  // Nothing may render the old constant directly — that is exactly how
+  // the dead end happened, and a new exercise type would reintroduce it.
+  // Plain split, not a regex: this code is itself inside a template
+  // literal, so a backslash escape is eaten before the regex ever sees it
+  // and /\+/ arrives as /+/ — "nothing to repeat".
+  const midExercise = HTML_SOURCE.split('+= practiceFooter();').length - 1;
+  const onDone = HTML_SOURCE.split('+ practiceFooter(true);').length - 1;
+  assert('every exercise renders the footer through the swap, not the constant',
+    midExercise + onDone >= 15);
+  assert('the finished screens are the ones marked done', onDone >= 5);
+  assert('and the live ones are not', midExercise >= 8);
+  assert('the raw constant is referenced only where it is defined and returned',
+    (HTML_SOURCE.match(/PRACTICE_AGAIN_BTN/g) || []).length === 2);
+
   // --- sit each section end to end ---
   // Building a section and finishing one are separate things. This walks
   // every item the way a student does — answer, advance — and checks it
@@ -323,6 +378,9 @@ const sandbox = {
   Audio: function(){ this.play = () => Promise.resolve(); this.pause = () => {}; },
   SpeechSynthesisUtterance: function(t){ this.text = t; },
   speechSynthesis: { speak(){}, getVoices(){ return []; }, addEventListener(){}, cancel(){} },
+  // The page's own source, so a check can assert on what the markup does
+  // rather than only on what the functions return.
+  HTML_SOURCE: html,
   URLSearchParams,
   console, Date, Math, JSON, Array, Object, String, Number, Intl, Set, Promise,
   setInterval: (...a) => { const t = setInterval(...a); if(t && t.unref) t.unref(); return t; },

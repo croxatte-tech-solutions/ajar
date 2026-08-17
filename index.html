@@ -7496,6 +7496,34 @@ function practiceAgain(){
 
 const PRACTICE_AGAIN_BTN = `<div class="ex-actions" style="margin-top:.6rem"><button class="btn ghost sm" onclick="practiceAgain()">🔄 Try another one like this</button></div>`;
 
+/* The footer under every exercise, which a section has to change.
+   ------------------------------------------------------------
+   In practice this offers another draw of the same type, which is the
+   right offer: practice is meant to be repeated.
+
+   In a section it is the wrong offer twice over. The next item is
+   already chosen, so re-drawing would replace it — and more seriously,
+   this footer is the ONLY control on the screen every type renders when
+   its last question is answered ("Done — 3 of 4 correct"). Without a
+   way forward there, a student who finished an exercise had nothing to
+   click and the section simply stopped.
+
+   Nothing else advanced it: goToNextExercise is reached only from the
+   per-task timer expiring, and a section switches that timer off so the
+   student can pace themselves across one section clock instead. */
+function practiceFooter(done){
+  if(!examActive()) return PRACTICE_AGAIN_BTN;
+  // Two different moves, so two different labels. Several exercises carry
+  // their own "Next question" control for stepping WITHIN the exercise,
+  // and a footer also saying "Next" sits next to it meaning something
+  // else entirely — leave the exercise. A student one question from the
+  // end who reads them as the same thing skips a question and loses the
+  // mark without being told. So mid-exercise this says what it does.
+  const label = done ? 'Next exercise &rarr;' : 'Skip this exercise &rarr;';
+  const cls = done ? 'btn' : 'btn ghost sm';
+  return `<div class="ex-actions" style="margin-top:.6rem"><button class="${cls}" onclick="advanceExam()">${label}</button></div>`;
+}
+
 </script>
 <script>
 /* =========================================================
@@ -8005,7 +8033,7 @@ function renderPractice(){
         <div class="ex-actions"><button class="btn" onclick="checkWriting()">Check draft</button></div>
         <div id="feedback"></div>
       </div>`;
-    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    wrap.innerHTML += practiceFooter();
     startTaskTimer(item.type);
     return;
   }
@@ -8025,7 +8053,7 @@ function renderPractice(){
         </div>
         <div id="sentence-result"></div>
       </div>`;
-    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    wrap.innerHTML += practiceFooter();
     window._sentenceState = { remaining: [...item.data.scrambled], assembled: [] };
     renderSentenceUI();
     startTaskTimer(item.type);
@@ -8034,7 +8062,7 @@ function renderPractice(){
 
   if(item.type==='complete-words'){
     wrap.innerHTML = completeWordsHtml(item);
-    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    wrap.innerHTML += practiceFooter();
     startTaskTimer(item.type);
     return;
   }
@@ -8147,7 +8175,7 @@ function renderAnnouncementStep(item){
         <button class="btn" onclick="advanceAnnouncement()">${doneQ < totalQ-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
 }
 function playAnnouncement(){
   const st = window._anState, item = currentItem();
@@ -8194,7 +8222,7 @@ function advanceAnnouncement(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">Announcements carry one or two facts that matter and a good deal that does not. If you missed one, it is usually worth checking whether the answer was stated outright or only implied.</p>
-    </div>` + PRACTICE_AGAIN_BTN;
+    </div>` + practiceFooter(true);
 }
 // Read an Academic Passage. Like Read in Daily Life the text stays on
 // screen throughout; unlike it, the passage is long enough that the
@@ -8230,7 +8258,7 @@ function renderPassageStep(item){
         <button class="btn" onclick="advancePassage()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
 }
 function answerPassage(i){
   const st = window._pgState, item = currentItem();
@@ -8259,7 +8287,7 @@ function advancePassage(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">The five questions test five different things: what the passage is about, something it states, what a word means <i>here</i>, something it implies without saying, and why a part of it is there. The vocabulary one never requires you to already know the word — the sentences around it are the definition.</p>
-    </div>` + PRACTICE_AGAIN_BTN;
+    </div>` + practiceFooter(true);
 }
 
 // Read in Daily Life. The mirror image of the Listening tasks: the text
@@ -8297,7 +8325,7 @@ function renderDailyReadStep(item){
         <button class="btn" onclick="advanceDailyRead()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
 }
 function answerDailyRead(i){
   const st = window._drState, item = currentItem();
@@ -8326,7 +8354,7 @@ function advanceDailyRead(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">These texts are not written to be read start to finish. A receipt, a timetable, a warranty card — you scan them for the one line that answers the question. If one felt slow, try finding the answer <i>before</i> reading the whole thing next time.</p>
-    </div>` + PRACTICE_AGAIN_BTN;
+    </div>` + practiceFooter(true);
 }
 
 // Listen to an Academic Talk. Four questions on one ~200-word talk, and
@@ -8373,7 +8401,7 @@ function renderTalkStep(item){
         <button class="btn" onclick="advanceTalk()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
 }
 function playTalk(){
   const st = window._tkState, item = currentItem();
@@ -8413,7 +8441,7 @@ function advanceTalk(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">The four questions are deliberately different from each other: what the talk is about, one thing it stated, why the speaker brought up a particular example, and what follows from it. If you keep missing the third kind, listen for <i>why</i> something was mentioned rather than what was said about it.</p>
-    </div>` + PRACTICE_AGAIN_BTN;
+    </div>` + practiceFooter(true);
 }
 // Listen to a Conversation. Two speakers, heard once through, then two
 // questions about it. The transcript stays hidden while the questions are
@@ -8457,7 +8485,7 @@ function renderConversationStep(item){
         <button class="btn" onclick="advanceConversation()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
       </div>` : ''}
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
 }
 function playConversation(){
   const st = window._cvState, item = currentItem();
@@ -8501,7 +8529,7 @@ function advanceConversation(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">In a conversation the answer is very often in the <i>reply</i>, not in the line that prompted it. When you miss one, look at who said what after the question was asked.</p>
-    </div>` + PRACTICE_AGAIN_BTN;
+    </div>` + practiceFooter(true);
 }
 // Listen and Choose a Response. The defining rule of the real task is that
 // the prompt is HEARD and never written on screen — so the student decides
@@ -8544,7 +8572,7 @@ function renderChooseResponseStep(item){
         <button class="btn" onclick="advanceChooseResponse()">${st.step < total-1 ? 'Next exchange →' : 'Finish →'}</button>
       </div>` : ''}
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
 }
 function playChoosePrompt(){
   const st = window._crState, item = currentItem();
@@ -8584,7 +8612,7 @@ function advanceChooseResponse(){
     <div class="compose">
       <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
       <p class="small-note">This task rewards catching what was actually said, not general English. If a reply looked reasonable but was wrong, it usually answered a slightly different question.</p>
-    </div>` + PRACTICE_AGAIN_BTN;
+    </div>` + practiceFooter(true);
 }
 // Real TOEFL 2026 "Take an Interview": 4 questions on one topic, asked
 // back-to-back, 45s each, no prep time. Two things about the real task
@@ -8671,7 +8699,7 @@ function renderInterviewStep(item){
           <button class="btn sound" onclick="playInterviewQuestion()">▶ Listen to the question (1 of ${INTERVIEW_MAX_LISTENS})</button>
         </div>
       </div>`;
-    wrap.innerHTML += PRACTICE_AGAIN_BTN;
+    wrap.innerHTML += practiceFooter();
     return;
   }
 
@@ -8697,7 +8725,7 @@ function renderInterviewStep(item){
       </div>
       <div id="interview-feedback"></div>
     </div>`;
-  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+  wrap.innerHTML += practiceFooter();
   if(st.phase === 'review') revealInterviewQuestion(false);
 }
 // Plays the current question. The clock only starts (or resumes) when the
