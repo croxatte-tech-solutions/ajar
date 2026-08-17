@@ -15,14 +15,16 @@
 <style>
 :root{
   --bg: #f6f9f8; --surface: #ffffff; --surface-alt: #edf4f2; --border: #d7e0dc;
+  --btn-ink: #ffffff;   /* 6.20:1 on this theme's deep green */
   --text: #16211e; --text-dim: #5c6863; --accent: #0f6e56; --accent-soft: #e1f5ee;
-  --amber: #b5720f; --amber-soft: #f6ecd8; --red: #9c3b2e; --red-soft: #f5e6e1;
+  --amber: #8a5408; --amber-soft: #f6ecd8; --red: #9c3b2e; --red-soft: #f5e6e1;
   --green: #3c6e4a; --green-soft: #e6efe6; --purple: #6b4fa0; --purple-soft: #ece5f5;
   --shadow: 0 1px 2px rgba(15,30,25,.06), 0 4px 16px rgba(15,30,25,.06);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0f1614; --surface:#16211e; --surface-alt:#1c2925; --border:#2c3a35;
+    --btn-ink:#0f1614;   /* 9.13:1 on this theme's light mint */
     --text:#e3ede9; --text-dim:#93a39c; --accent:#5dcaa5; --accent-soft:#123128;
     --amber:#d9a44e; --amber-soft:#3a2f18; --red:#d98d7d; --red-soft:#3a2420;
     --green:#8fc09d; --green-soft:#1f3226; --purple:#b9a3dd; --purple-soft:#2c2440;
@@ -31,6 +33,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0f1614; --surface:#16211e; --surface-alt:#1c2925; --border:#2c3a35;
+  --btn-ink:#0f1614;   /* 9.13:1 on this theme's light mint */
   --text:#e3ede9; --text-dim:#93a39c; --accent:#5dcaa5; --accent-soft:#123128;
   --amber:#d9a44e; --amber-soft:#3a2f18; --red:#d98d7d; --red-soft:#3a2420;
   --green:#8fc09d; --green-soft:#1f3226; --purple:#b9a3dd; --purple-soft:#2c2440;
@@ -56,7 +59,7 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 .brand-text span{ font-size:.72rem; color:var(--text-dim); }
 .switcher{ display:flex; background:var(--surface-alt); border:1px solid var(--border); border-radius:99px; padding:3px; gap:2px; }
 .switcher button{ border:none; background:transparent; padding:.5rem 1rem; border-radius:99px; font-size:.82rem; font-weight:600; color:var(--text-dim); cursor:pointer; }
-.switcher button.active{ background:var(--accent); color:#fff; }
+.switcher button.active{ background:var(--accent); color:var(--btn-ink); }
 .switcher button:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 
 .padrao-c{ display:flex; align-items:center; gap:.5rem; background:var(--accent-soft); color:var(--accent); border-radius:8px; padding:.55rem .8rem; font-size:.78rem; font-weight:600; margin-bottom:1.1rem; }
@@ -77,7 +80,18 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 .field label{ display:block; font-size:.7rem; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.35rem; }
 select,textarea,input[type=text]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
 select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
-.btn{ border:none; border-radius:9px; padding:.65rem 1.1rem; font-size:.85rem; font-weight:700; cursor:pointer; background:var(--accent); color:#fff; display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }
+/* --btn-ink, not a hardcoded #fff.
+   In the dark theme --accent is a light mint (#5dcaa5) and white text on it
+   measures 2.01:1 — below WCAG AA at any text size, on the PRIMARY button:
+   Start, Approve, Generate, every one of them. Measured, not guessed.
+   The ink follows the theme instead: dark on the light accent gives 9.13:1,
+   white on the deep green gives 6.20:1. */
+.btn{ border:none; border-radius:9px; padding:.65rem 1.1rem; font-size:.85rem; font-weight:700; cursor:pointer; background:var(--accent); color:var(--btn-ink); display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }
+/* Keyboard focus was visible on form fields and on the role switcher and
+   nowhere else, so someone tabbing through the teacher panel could not see
+   which button they were on. */
+.btn:focus-visible, .scenario-pick:focus-visible, #teacher-nav a:focus-visible, .guide-btn:focus-visible{
+  outline:3px solid var(--accent); outline-offset:2px; }
 .btn:hover{ filter:brightness(1.1); }
 .btn:active{ transform:scale(.98); }
 .btn:disabled{ opacity:.45; cursor:default; }
@@ -99,7 +113,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       color:var(--text-dim);min-width:4.6rem;flex:0 0 auto}
 
 .type-tabs button{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); border-radius:8px; padding:.4rem .7rem; font-size:.74rem; font-weight:600; cursor:pointer; }
-.type-tabs button.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+.type-tabs button.active{ background:var(--accent); border-color:var(--accent); color:var(--btn-ink); }
 
 .batch-grid{ display:grid; gap:.8rem; }
 .ex-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; box-shadow:var(--shadow); }
@@ -181,7 +195,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 #teacher-nav a{ flex-shrink:0; font-size:.78rem; font-weight:700; text-decoration:none;
   color:var(--text-dim); background:var(--surface); border:1px solid var(--border);
   border-radius:999px; padding:.35rem .7rem; white-space:nowrap; }
-#teacher-nav a.here{ color:#fff; background:var(--accent); border-color:var(--accent); }
+#teacher-nav a.here{ color:var(--btn-ink); background:var(--accent); border-color:var(--accent); }
 #teacher-nav a .n{ opacity:.65; font-weight:600; margin-left:.3rem; }
 /* The rail sits left of a 960px centred column, so it needs
    50vw - 480 - 184(rail) - 16(gap) >= 16, i.e. a viewport of ~1400px.
@@ -369,8 +383,8 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <p class="welcome-lede" id="welcome-lede"></p>
       <p class="welcome-meaning" id="welcome-meaning"></p>
       <div class="welcome-doors">
-        <button class="btn welcome-door" onclick="enterAs('teacher')" id="door-teacher"></button>
-        <button class="btn ghost welcome-door" onclick="enterAs('student')" id="door-student"></button>
+        <button class="btn welcome-door" onclick="enterAs('teacher')" id="door-teacher" aria-label="I am a teacher"></button>
+        <button class="btn ghost welcome-door" onclick="enterAs('student')" id="door-student" aria-label="I am a student"></button>
       </div>
       <a class="welcome-more" id="welcome-more" href="https://github.com/croxatte-tech-solutions/ajar#readme" target="_blank" rel="noopener"></a>
     </div>
@@ -6874,7 +6888,7 @@ function paintShareBox(link, statusNote, s){
       <p class="small-note" style="margin-top:0">Each approved exercise below has its own QR code — project the one you are running this round. ${s.approved.length} exercise(s) approved.${individualNote}</p>
       ${statusNote ? `<p class="small-note">${statusNote}</p>` : ''}
       <div class="field-row">
-        <input type="text" id="share-link" value="${link}" readonly onclick="this.select()">
+        <input type="text" id="share-link" aria-label="Link to share with your class" value="${link}" readonly onclick="this.select()">
         <button class="btn sm" onclick="copyShareLink()">Copy link</button>
       </div>
       <div class="field-row" style="margin-top:.8rem">
@@ -7292,14 +7306,14 @@ function renderProgressBox(){
     <div class="panel">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
         <div style="display:flex;align-items:center;gap:.5rem">
-          <button class="btn ghost sm" onclick="changeWeek(-1)" title="Previous week">◀</button>
+          <button class="btn ghost sm" onclick="changeWeek(-1)" title="Previous week" aria-label="Previous week">◀</button>
           <b>Week ${p.week}</b>
-          <button class="btn ghost sm" onclick="changeWeek(1)" title="Next week">▶</button>
+          <button class="btn ghost sm" onclick="changeWeek(1)" title="Next week" aria-label="Next week">▶</button>
         </div>
         <div style="display:flex;align-items:center;gap:.5rem">
-          <button class="btn ghost sm" onclick="changeDay(-1)" title="Previous day">◀</button>
+          <button class="btn ghost sm" onclick="changeDay(-1)" title="Previous day" aria-label="Previous day">◀</button>
           <b>${dayName} (Day ${p.day} of 4)</b>
-          <button class="btn ghost sm" onclick="changeDay(1)" title="Next day">▶</button>
+          <button class="btn ghost sm" onclick="changeDay(1)" title="Next day" aria-label="Next day">▶</button>
         </div>
       </div>
       <p class="small-note" style="margin:.6rem 0 0">${dateNote}</p>
@@ -7368,7 +7382,7 @@ function renderIndividualList(){
   el.innerHTML = '<div class="chip-row" style="margin-top:.6rem">' + keys.map(k=>{
     const a = individualAssignments[k];
     const theme = a.items[0]?.theme;
-    return `<span class="chip">${a.displayName} — ${a.items[0]?.tag || ''}${theme ? ' · ' + (THEME_LABELS[theme]||theme) : ''} <button class="btn ghost sm" style="padding:.1rem .4rem;margin-left:.3rem" onclick="removeIndividual('${k}')">✕</button></span>`;
+    return `<span class="chip">${a.displayName} — ${a.items[0]?.tag || ''}${theme ? ' · ' + (THEME_LABELS[theme]||theme) : ''} <button class="btn ghost sm" style="padding:.1rem .4rem;margin-left:.3rem" onclick="removeIndividual('${k}')" aria-label="Remove ${escapeHtml(a.displayName || k)} from this assignment">✕</button></span>`;
   }).join('') + '</div>';
 }
 
@@ -7481,7 +7495,7 @@ function cardBody(item){
     <div style="margin-top:.7rem">
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="small-note" style="flex:1">Listen to ${escapeHtml(d.context)}</span>
-        <button class="btn sound sm" onclick="speak('${d.text.replace(/'/g,"\\'")}')">🔊</button>
+        <button class="btn sound sm" onclick="speak('${d.text.replace(/'/g,"\\'")}')" aria-label="Play this talk aloud">🔊</button>
       </div>
       <div class="small-note" style="margin:.3rem 0 0 0">${escapeHtml(d.text)}</div>
       ${d.questions.map(q=>`<div class="small-note" style="margin-top:.4rem">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}
@@ -7491,7 +7505,7 @@ function cardBody(item){
     <div style="margin-top:.7rem">
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="small-note" style="flex:1">Listen to ${escapeHtml(d.context)}</span>
-        <button class="btn sound sm" onclick="speak('${conversationText(d.turns).replace(/'/g,"\\'")}')">🔊</button>
+        <button class="btn sound sm" onclick="speak('${conversationText(d.turns).replace(/'/g,"\\'")}')" aria-label="Play this conversation aloud">🔊</button>
       </div>
       <div class="small-note" style="margin:.3rem 0 0 0">${d.turns.map(t=>`<b>${t[0]==='M'?'Man':'Woman'}:</b> ${escapeHtml(t[1])}`).join('<br>')}</div>
       ${d.questions.map(q=>`<div class="small-note" style="margin-top:.4rem">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}
@@ -7502,7 +7516,7 @@ function cardBody(item){
       <div style="display:flex;align-items:center;gap:.5rem">
         <span class="chip" style="flex-shrink:0">#${i+1}</span>
         <span class="small-note" style="flex:1">Listen to ${escapeHtml(a.context)}</span>
-        <button class="btn sound sm" onclick="speak('${a.text.replace(/'/g,"\\'")}')">🔊</button>
+        <button class="btn sound sm" onclick="speak('${a.text.replace(/'/g,"\\'")}')" aria-label="Play announcement ${i+1} aloud">🔊</button>
       </div>
       <div class="small-note" style="margin:.2rem 0 0 2.2rem">${escapeHtml(a.text)}</div>
       ${a.questions.map(q=>`<div class="small-note" style="margin:.2rem 0 0 2.2rem">• ${escapeHtml(q.q)} ✓ ${escapeHtml(q.options[q.answer])}</div>`).join('')}
@@ -7514,7 +7528,7 @@ function cardBody(item){
         <div style="display:flex;align-items:center;gap:.5rem">
           <span class="chip" style="flex-shrink:0">#${i+1}</span>
           <span style="flex:1">${escapeHtml(q.prompt)}</span>
-          <button class="btn sound sm" onclick="speak('${q.prompt.replace(/'/g,"\\'")}')">🔊</button>
+          <button class="btn sound sm" onclick="speak('${q.prompt.replace(/'/g,"\\'")}')" aria-label="Play exchange ${i+1} aloud">🔊</button>
         </div>
         <div class="small-note" style="margin:.15rem 0 0 2.2rem">✓ ${escapeHtml(q.options[q.answer])}</div>
       </div>`).join('')}
@@ -7531,7 +7545,7 @@ function cardBody(item){
       ${d.set.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
         <span class="chip" style="flex-shrink:0">#${s.index} · ${s.seconds}s</span>
         <span style="flex:1">${s.text}</span>
-        <button class="btn sound sm" onclick="speak('${s.text.replace(/'/g,"\\'")}')">🔊</button>
+        <button class="btn sound sm" onclick="speak('${s.text.replace(/'/g,"\\'")}')" aria-label="Play sentence ${s.index} aloud">🔊</button>
       </div>`).join('')}
     </div>`;
   if(item.type==='interview') return `<div class="ex-body"><b>${d.topic}</b> — 4 connected questions:</div>
@@ -7540,7 +7554,7 @@ function cardBody(item){
       ${d.questions.map((q,i)=>`<div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem">
         <span class="chip" style="flex-shrink:0">#${i+1}</span>
         <span style="flex:1">${q.text}</span>
-        <button class="btn sound sm" onclick="speak('${q.text.replace(/'/g,"\\'")}')">🔊</button>
+        <button class="btn sound sm" onclick="speak('${q.text.replace(/'/g,"\\'")}')" aria-label="Play question ${i+1} aloud">🔊</button>
       </div>`).join('')}
     </div>`;
   return '';
@@ -7673,7 +7687,7 @@ function renderReviewPanel(){
         Send this to a native speaker before they start, so they know what they are looking at.
         Tap to select, then copy.
       </p>
-      <textarea rows="9" readonly onclick="this.select()" style="width:100%">${escapeHtml(REVIEWER_BRIEF)}</textarea>
+      <textarea rows="9" aria-label="Review notes, ready to copy" readonly onclick="this.select()" style="width:100%">${escapeHtml(REVIEWER_BRIEF)}</textarea>
     </div>
 
     ${notes.length ? `
@@ -7839,7 +7853,7 @@ function renderTeacher(){
           <div class="small-note" style="margin-top:0">Scan to start this exercise</div>
         </div>
         <div style="flex:1;min-width:0">
-          <input type="text" value="${itemShareLink(item)}" readonly style="font-size:.72rem" onclick="this.select()">
+          <input type="text" aria-label="Link straight to this exercise" value="${itemShareLink(item)}" readonly style="font-size:.72rem" onclick="this.select()">
           <div class="small-note" style="margin-top:.2rem">Scan to go straight to this exercise — nothing else</div>
         </div>
       </div>` : ''}
@@ -7981,7 +7995,17 @@ async function refreshClassProgress(){
   const roster = loadRoster().students || [];
   if(!roster.length || !window.CloudSync || !window.CloudSync.pullClassSummaries) return;
   try{
-    _classProgress = await window.CloudSync.pullClassSummaries(roster);
+    // `|| {}` is not defensive noise. renderClassProgress does
+    // _classProgress[name] on every student, so one falsy result here does
+    // not fail politely — it throws inside renderTeacher, which stops
+    // renderProgressBox, renderIndividualList, renderShareBox and the whole
+    // batch from drawing. And because this is module state, it stays
+    // poisoned: every later render throws too, so the panel is dead for the
+    // rest of the session with no way back but a reload.
+    //
+    // The catch below cannot help, whatever its comment says. The assignment
+    // succeeds and the throw happens later, in a different function.
+    _classProgress = (await window.CloudSync.pullClassSummaries(roster)) || {};
     if(currentView === 'teacher') renderClassProgress();
   }catch(e){ /* offline — the panel keeps whatever it last showed */ }
 }
@@ -7993,7 +8017,7 @@ function renderClassProgress(){
   const notes = loadTeacherNotes();
 
   const rows = roster.map(name => {
-    const d = _classProgress[name] || {};
+    const d = (_classProgress && _classProgress[name]) || {};
     const sum = d.summary || null;
     const esc = name.replace(/'/g, "\\'");
     const today = sum ? sum.attemptsToday : 0;
@@ -8080,7 +8104,7 @@ function renderNamePrompt(){
     </div>` : `
     <div class="compose">
       <div class="ex-body"><b>Welcome!</b> What's your first name?</div>
-      <input type="text" id="name-input" placeholder="Your first name" style="margin-top:.6rem" onkeydown="if(event.key==='Enter') submitName()">
+      <input type="text" id="name-input" aria-label="Your first name" placeholder="Your first name" style="margin-top:.6rem" onkeydown="if(event.key==='Enter') submitName()">
       <div class="ex-actions"><button class="btn" onclick="submitName()">Start practicing</button></div>
       ${privacy}
     </div>`;
@@ -8095,7 +8119,7 @@ function showTypeNameInstead(){
   document.getElementById('practice-wrap').innerHTML = `
     <div class="compose">
       <div class="ex-body"><b>Type your first name</b></div>
-      <input type="text" id="name-input" placeholder="Your first name" style="margin-top:.6rem" onkeydown="if(event.key==='Enter') submitName()">
+      <input type="text" id="name-input" aria-label="Your first name" placeholder="Your first name" style="margin-top:.6rem" onkeydown="if(event.key==='Enter') submitName()">
       <div class="ex-actions">
         <button class="btn" onclick="submitName()">Start practicing</button>
         <button class="btn ghost sm" onclick="renderNamePrompt()">Back to the list</button>
@@ -8468,7 +8492,10 @@ function timerBadgeHtml(type){
   const colourNote = GRADED_TIMER[type]
     ? '. The clock here turns amber with 2 minutes left and red with 45 seconds — the real one does not, so watch the number too.'
     : '';
-  return `<div class="timer-row"><div class="timer-badge" id="task-timer">⏱ ${formatTime(total)}</div></div><div class="timer-note">${note}${colourNote}</div>`;
+  // aria-live="polite" and not "assertive": the number changes every second,
+  // and an assertive region would interrupt the student mid-sentence once a
+  // second, which is worse than saying nothing. Polite waits for a pause.
+  return `<div class="timer-row"><div class="timer-badge" id="task-timer" role="timer" aria-live="polite" aria-atomic="true">⏱ ${formatTime(total)}</div></div><div class="timer-note">${note}${colourNote}</div>`;
 }
 // onExpire lets a task decide what "time's up" actually advances into —
 // most types move to the next exercise in the batch (the default), but
@@ -9028,7 +9055,7 @@ function renderExamResult(ex){
               <div><span class="email-field">${escapeHtml(tagFor(w.type) || w.type)}</span>
                 ${w.text ? (w.text.split(/\s+/).length + ' words') : '<b>nothing written</b>'}</div>
             </div>
-            ${w.text ? `<textarea rows="5" readonly onclick="this.select()" style="width:100%;margin-bottom:.6rem">${escapeHtml(w.text)}</textarea>` : ''}
+            ${w.text ? `<textarea rows="5" aria-label="Text ready to copy" readonly onclick="this.select()" style="width:100%;margin-bottom:.6rem">${escapeHtml(w.text)}</textarea>` : ''}
           `).join('')}
         </div>` : ''}
       <div class="panel" style="margin-top:.7rem;background:var(--accent-soft);border:none">
@@ -9111,7 +9138,7 @@ function submitReview(section){
   if(msg){
     msg.innerHTML = `
       <p class="small-note" style="color:var(--accent)"><b>Thank you — that is genuinely the useful part.</b></p>
-      <textarea rows="7" readonly onclick="this.select()" style="width:100%">${escapeHtml(body)}</textarea>
+      <textarea rows="7" aria-label="Section review, ready to copy" readonly onclick="this.select()" style="width:100%">${escapeHtml(body)}</textarea>
       <div class="ex-actions" style="margin-top:.5rem">
         <button class="btn sm" onclick="mailReview(${JSON.stringify(JSON.stringify(body))})">Open an email with this</button>
         <button class="btn ghost sm" onclick="leaveExam()">Done</button>
@@ -9151,7 +9178,7 @@ function examBannerHtml(ex){
   const cfg = EXAM_SECTIONS[ex.section];
   return `
     <div class="timer-row">
-      <div class="timer-badge" id="exam-clock">⏱ ${formatTime(examSecondsLeft(ex))}</div>
+      <div class="timer-badge" id="exam-clock" role="timer" aria-live="polite" aria-atomic="true">⏱ ${formatTime(examSecondsLeft(ex))}</div>
       <span class="small-note" style="margin-left:.6rem" id="exam-progress">
         ${cfg.label} section &middot; question ${Math.min(ex.answered + 1, cfg.items)} of ${cfg.items}
       </span>
@@ -9319,12 +9346,12 @@ function renderPracticeInner(){
         <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this task would end now. Moving to the next exercise…</div>
         ${taskBriefHtml(item.type)}
         ${item.type==='email' ? emailPromptHtml(item.data) : discussionPromptHtml(item.data)}
-        <textarea id="response" rows="6" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
+        <textarea id="response" rows="6" aria-label="Your answer" placeholder="Write your answer here..." oninput="updateWordcount()"></textarea>
         <div class="wordcount" id="wordcount">0 words</div>
-        <div id="paste-note" class="small-note" style="display:none;color:var(--red);font-weight:600"></div>
+        <div id="paste-note" class="small-note" role="alert" style="display:none;color:var(--red);font-weight:600"></div>
         <p class="small-note">✍️ This one has to be your own writing, so pasting a whole passage in is off. Fixing a word or moving a phrase you wrote is fine.</p>
         <div class="ex-actions"><button class="btn" onclick="checkWriting()">Check draft</button></div>
-        <div id="feedback"></div>
+        <div id="feedback" role="status" aria-live="polite"></div>
       </div>`;
     wrap.innerHTML += practiceFooter();
     startTaskTimer(item.type);
@@ -9344,7 +9371,7 @@ function renderPracticeInner(){
           <button class="btn ghost sm" onclick="resetSentence()">↺ Reset</button>
           <button class="btn sm" onclick="checkSentence()">Check</button>
         </div>
-        <div id="sentence-result"></div>
+        <div id="sentence-result" role="status" aria-live="polite"></div>
       </div>`;
     wrap.innerHTML += practiceFooter();
     window._sentenceState = { remaining: [...item.data.scrambled], assembled: [] };
@@ -10021,8 +10048,8 @@ function renderInterviewStep(item){
         ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
       </div>
       ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
-      <textarea id="interview-answer" rows="4" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null; window._interviewState.draft = this.value">${escapeHtml(st.draft || '')}</textarea>
-      <div id="paste-note" class="small-note" style="display:none;color:var(--red);font-weight:600"></div>
+      <textarea id="interview-answer" rows="4" aria-label="Your answer to this question" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null; window._interviewState.draft = this.value">${escapeHtml(st.draft || '')}</textarea>
+      <div id="paste-note" class="small-note" role="alert" style="display:none;color:var(--red);font-weight:600"></div>
       <div class="ex-actions" style="margin-top:.6rem">
         <button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button>
         <button class="btn ghost sm" onclick="revealInterviewQuestion(true)">I didn't catch it — show the question</button>
@@ -11550,7 +11577,7 @@ function sendFeedback(){
     // has written something deserves a way to keep it either way.
     document.getElementById('fb-result').innerHTML = `
       <p class="small-note">No address on file — copy this and send it however you'd like.</p>
-      <textarea id="fb-copy-text" rows="6" readonly onclick="this.select()">${escapeHtml(body)}</textarea>
+      <textarea id="fb-copy-text" rows="6" aria-label="Your feedback, ready to copy" readonly onclick="this.select()">${escapeHtml(body)}</textarea>
       <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="copyFeedbackText()">Copy</button></div>`;
   }
 }

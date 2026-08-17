@@ -348,6 +348,27 @@ assert('a row spans the full width so the grouping survives the flex parent',
 assert('the section is no longer repeated on every button',
   !/\$\{t\.tag\} <span style="opacity:\.6">· \$\{t\.section\}<\/span>/.test(html));
 
+// --- the one-student list renders at all ---
+//
+// Added after a one-word slip in an aria-label (`v.displayName` where the
+// variable in scope is `a`) shipped past 2811 green checks, because nothing
+// in the suite ever called this function. A ReferenceError inside a template
+// literal takes the whole panel down, and no assertion here would have
+// noticed.
+{
+  const fs2 = require('fs');
+  const vm2 = require('vm');
+  const probe = html.slice(html.indexOf('function renderIndividualList'),
+                           html.indexOf('function individualForShare'));
+  // Every identifier the template reads has to be one the function declares.
+  const declared = new Set(['el', 'keys', 'k', 'a', 'theme', 'html', 'i']);
+  const reads = [...probe.matchAll(/\$\{[^}]*?\b([a-z])\.[a-zA-Z]/g)].map(m => m[1]);
+  const undeclared = [...new Set(reads)].filter(v => !declared.has(v));
+  assert('the one-student list reads no variable it did not declare',
+    undeclared.length === 0);
+  if(undeclared.length) results.push('    undeclared: ' + undeclared.join(', '));
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)

@@ -13,11 +13,15 @@ const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', 
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    // GitHub Pages sends "Cache-Control: max-age=600" on every file, which
-    // the browser's normal fetch() would happily honor -- populating this
-    // offline-fallback cache with a copy that could already be stale.
-    // no-store bypasses that so the shell we cache here is always the real
-    // latest deploy, not whatever the last 10-minute window had.
+    // no-store, so this cache is filled from the network and never from
+    // whatever the HTTP cache is holding — otherwise the offline fallback can
+    // be seeded with a copy that is already stale.
+    //
+    // The original reason was GitHub Pages forcing max-age=600 on every file.
+    // The app is on Cloudflare Pages now and _headers sets no-cache on the
+    // shell, so that specific pressure is gone; this stays because "the
+    // offline copy is the real latest deploy" should not depend on a host's
+    // cache policy staying the way it is today.
     caches.open(CACHE_NAME).then(cache =>
       cache.addAll(SHELL_FILES.map(url => new Request(url, { cache: 'no-store' })))
     )
@@ -64,9 +68,12 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    // The app shell stays network-first with no-store: never let GitHub
-    // Pages' 10-minute HTTP cache decide what "latest" means, so a fix
-    // reaches students immediately. Offline support is untouched -- the
+    // The app shell stays network-first with no-store: never let an HTTP
+    // cache decide what "latest" means, so a fix reaches students
+    // immediately. (Written against GitHub Pages' forced 10-minute cache;
+    // the app is on Cloudflare Pages now, where _headers sets no-cache, and
+    // the rule is worth keeping either way.) Offline support is untouched --
+    // the
     // .catch() below still falls back to this service worker's OWN cache
     // (a separate mechanism from the HTTP cache), so a real network
     // outage still serves the last-cached shell.

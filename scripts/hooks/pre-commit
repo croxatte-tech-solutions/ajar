@@ -1,0 +1,16 @@
+#!/bin/sh
+# Refuse a commit that breaks a check.
+#
+# The suite takes about ten seconds and has caught, among other things, a
+# teacher panel that died for the whole session, the answer key showing on the
+# classroom screen, and a primary button at 2:1 contrast in dark mode. Ten
+# seconds is cheap against any of those reaching a classroom.
+#
+# Bypass with --no-verify when you genuinely mean to commit red — then say so
+# in the commit message, because a red commit with no explanation is a trap for
+# whoever bisects later.
+sh scripts/qa.sh --quiet || {
+  printf '\n  Commit refused: the checks are red. Run "sh scripts/qa.sh" to see which.\n'
+  printf '  Deliberately committing red? git commit --no-verify, and say why in the message.\n\n'
+  exit 1
+}
