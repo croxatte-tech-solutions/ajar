@@ -80,6 +80,28 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 .field label{ display:block; font-size:.7rem; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.35rem; }
 select,textarea,input[type=text]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
 select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
+/* THE CLASSROOM SCREEN
+   Read from the back of a room, so everything is bigger than the app would
+   ever be, and the code sits on white regardless of theme because a projector
+   plus a dark background is where scanning fails.
+   Fixed and above everything: while this is up, nothing else is on the wall. */
+.tv{ position:fixed; inset:0; z-index:200; background:var(--bg); color:var(--text);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:1.2rem; padding:2vmin; text-align:center; }
+.tv-who{ font-size:clamp(1rem, 2.6vmin, 1.6rem); font-weight:700; }
+.tv-when{ font-size:clamp(.8rem, 2vmin, 1.15rem); color:var(--text-dim);
+  font-variant-numeric:tabular-nums; }
+.tv-tag{ font-size:clamp(1.3rem, 4.4vmin, 3rem); font-weight:800; line-height:1.15;
+  max-width:22ch; }
+.tv-code{ background:#ffffff; padding:2vmin; border-radius:2vmin; line-height:0;
+  box-shadow:0 2px 24px rgba(0,0,0,.18); }
+.tv-nav{ display:flex; align-items:center; gap:1.2rem; }
+.tv-nav .btn{ font-size:clamp(.9rem, 2.2vmin, 1.2rem); min-height:44px; }
+.tv-count{ font-size:clamp(.85rem, 2vmin, 1.1rem); color:var(--text-dim);
+  font-variant-numeric:tabular-nums; min-width:6ch; }
+.tv-exit{ position:fixed; top:2vmin; right:2vmin; }
+.tv-empty{ font-size:clamp(1rem, 3vmin, 1.5rem); max-width:30ch; color:var(--text-dim); }
+
 /* --btn-ink, not a hardcoded #fff.
    In the dark theme --accent is a light mint (#5dcaa5) and white text on it
    measures 2.01:1 — below WCAG AA at any text size, on the PRIMARY button:
@@ -6923,6 +6945,98 @@ function renderShareBox(){
     paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
   }
 }
+/* THE CLASSROOM SCREEN
+   ===================
+   One exercise's code, as large as the wall allows, and nothing else that is
+   not already agreed to be public: the task type, her name and school, today's
+   date and week.
+
+   Why a screen and not a switch on the panel. The panel is where she works —
+   tabs, forms, the class list, her own account — and none of that belongs
+   projected. A switch would have hidden the exercise content card by card and
+   left everything else on the wall. This removes the category instead of
+   managing it, and it cannot be forgotten in the wrong position: she is either
+   presenting or she is not.
+
+   It also fixes something a switch could not. The code on the review card is
+   150px, which is small seen from the back of a room, and a small code on a
+   projector is where scanning fails and five students start asking. Here it is
+   sized from the viewport.
+
+   The arrows matter more than they look. Moving to the next exercise mid-class
+   is the common case, and making her leave, approve and come back would trade
+   one annoyance for another. */
+let _tvIndex = 0;
+function tvItems(){ return loadBatch().filter(i => i.status === 'approved'); }
+function openClassroomScreen(){
+  if(!teacherIsSignedIn()) return;
+  _tvIndex = 0;
+  document.getElementById('tv-screen').style.display = 'flex';
+  renderClassroomScreen();
+}
+function closeClassroomScreen(){
+  const el = document.getElementById('tv-screen');
+  if(el){ el.style.display = 'none'; el.innerHTML = ''; }
+}
+function tvIsOpen(){
+  const el = document.getElementById('tv-screen');
+  return !!el && el.style.display === 'flex';
+}
+function tvMove(delta){
+  const items = tvItems();
+  if(!items.length) return;
+  // Wraps, because the last exercise going nowhere reads as a broken button
+  // when she is standing in front of a class.
+  _tvIndex = (_tvIndex + delta + items.length) % items.length;
+  renderClassroomScreen();
+}
+// The code is sized from the smaller side of the screen. A QR has to be square
+// and fully visible; sizing off the width alone overflows a short landscape TV,
+// which is the shape most classroom screens are.
+function tvCodeSize(){
+  const side = Math.min(window.innerWidth || 800, window.innerHeight || 600);
+  return Math.max(180, Math.round(side * 0.52));
+}
+function renderClassroomScreen(){
+  const el = document.getElementById('tv-screen');
+  if(!el || !tvIsOpen()) return;
+  const items = tvItems();
+  const u = (window.CloudSync && window.CloudSync.currentUser) ? window.CloudSync.currentUser() : null;
+  const who = teacherDisplayName(u) || TEACHER_NAME;
+  const school = (u && u.schoolName) ? u.schoolName : '';
+  const plan = schoolPlanToday();
+  const exit = `<div class="tv-exit"><button class="btn ghost" onclick="closeClassroomScreen()">✕ Back to my panel</button></div>`;
+
+  if(!items.length){
+    el.innerHTML = exit + `<div class="tv-who">${escapeHtml(who)}${school ? ' &middot; ' + escapeHtml(school) : ''}</div>
+      <p class="tv-empty">Nothing approved yet. Approve an exercise in your panel and its code appears here.</p>`;
+    return;
+  }
+
+  if(_tvIndex >= items.length) _tvIndex = 0;
+  const item = items[_tvIndex];
+  el.innerHTML = exit + `
+    <div class="tv-who">${escapeHtml(who)}${school ? ' &middot; ' + escapeHtml(school) : ''}</div>
+    <div class="tv-when">${escapeHtml(schoolDateLabel())}${plan
+      ? ' &middot; Week ' + plan.week + ', day ' + plan.day + ' of 4' : ''}</div>
+    <div class="tv-tag">${item.tag}</div>
+    <div class="tv-code">${renderQRSvg(itemShareLink(item), tvCodeSize())}</div>
+    <div class="tv-nav">
+      <button class="btn ghost" onclick="tvMove(-1)" aria-label="Previous exercise">◀</button>
+      <span class="tv-count">${_tvIndex + 1} of ${items.length}</span>
+      <button class="btn ghost" onclick="tvMove(1)" aria-label="Next exercise">▶</button>
+    </div>`;
+}
+// Escape leaves, and a resize re-sizes the code — a teacher plugging into a
+// projector changes the screen dimensions after this is already open.
+document.addEventListener('keydown', e => {
+  if(!tvIsOpen()) return;
+  if(e.key === 'Escape') closeClassroomScreen();
+  if(e.key === 'ArrowRight') tvMove(1);
+  if(e.key === 'ArrowLeft') tvMove(-1);
+});
+window.addEventListener('resize', () => { if(tvIsOpen()) renderClassroomScreen(); });
+
 function paintShareBox(link, statusNote, s){
   const box = document.getElementById('share-box');
   if(!box) return;
@@ -6933,6 +7047,10 @@ function paintShareBox(link, statusNote, s){
     <div class="panel">
       <h2>📤 Settings for today's session</h2>
       <p class="small-note" style="margin-top:0">Each approved exercise below has its own QR code — project the one you are running this round. ${s.approved.length} exercise(s) approved.${individualNote}</p>
+      <div class="ex-actions" style="margin:.2rem 0 .8rem">
+        <button class="btn" onclick="openClassroomScreen()">📺 Put the code on the classroom screen</button>
+      </div>
+      <p class="small-note" style="margin:0 0 .6rem">Opens a screen with nothing on it but the code, big enough to scan from the back of the room — no panel, no class list, no exercise text. Arrows move between exercises; Escape comes back.</p>
       ${statusNote ? `<p class="small-note">${statusNote}</p>` : ''}
       <div class="field-row">
         <input type="text" id="share-link" aria-label="Link to share with your class" value="${link}" readonly onclick="this.select()">
@@ -12097,6 +12215,14 @@ loadSharedClassroomContent().then(()=>{
     console.warn('CloudSync unavailable — falling back to local-only history:', e);
   }
 </script>
+
+<!-- THE CLASSROOM SCREEN
+     This is what goes on the TV, and it is a screen rather than a mode on the
+     panel because the panel is not fit to be on a wall: tabs, forms, the class
+     list, her account. A toggle would have managed that card by card and left
+     the rest of it projected. Living outside the three views on purpose — no
+     setView() path can reach in and change it. -->
+<div id="tv-screen" class="tv" style="display:none" role="dialog" aria-modal="true" aria-label="Classroom screen"></div>
 
 </body>
 </html>

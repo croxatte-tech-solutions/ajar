@@ -175,6 +175,75 @@ const testScript = `
   assert('opening the private panel does not cry wolf about exercises',
     panelHtml().indexOf('answers are showing') === -1);
 
+  //=================================================================
+  // THE CLASSROOM SCREEN
+  //=================================================================
+  // The panel is where she works and it is not fit to be on a wall. This is a
+  // screen with the code on it and nothing else, so the question it has to
+  // answer is the same one as the cards: is any of the exercise on it?
+  const tv = document.getElementById('tv-screen');
+  window._privateShown = null;
+  const shown = [];
+  TASK_TYPES.slice(0, 6).forEach((t, i) => {
+    shown.push({ id: 'tv-' + t.id, type: t.id, tag: t.tag, theme: 'campus',
+                 status: 'approved', data: generateOne(t.id, 'campus').data });
+  });
+  shown.push({ id: 'tv-pending', type: 'passage', tag: tagFor('passage'), theme: 'campus',
+               status: 'pending', data: generateOne('passage', 'campus').data });
+  saveBatch(shown);
+
+  assert('it does not open by itself', tvIsOpen() === false);
+  openClassroomScreen();
+  assert('it opens', tvIsOpen() === true);
+
+  // Every approved exercise is reachable, and the pending one is not — a code
+  // for something she has not approved would put unapproved work on the wall.
+  assert('it counts only the approved exercises', tvItems().length === 6);
+  assert('and says which one is showing', tv.innerHTML.indexOf('1 of 6') > -1);
+
+  // Walk all six, checking each for content as we go.
+  let leakedOnTv = [];
+  for(let i = 0; i < 6; i++){
+    const item = tvItems()[i];
+    const html2 = tv.innerHTML;
+    assert('code ' + (i+1) + ': the task type is named', html2.indexOf(item.tag) > -1);
+    assert('code ' + (i+1) + ': there is a code to scan', html2.indexOf('<svg') > -1);
+    secretsOf(item.data).forEach(x => { if(html2.indexOf(x) > -1) leakedOnTv.push(x.slice(0, 50)); });
+    tvMove(1);
+  }
+  assert('no exercise text ever reaches the classroom screen', leakedOnTv.length === 0);
+  if(leakedOnTv.length) results.push('    leaked: ' + JSON.stringify(leakedOnTv[0]));
+
+  // Back to the first after six moves — it wraps, because a dead arrow in
+  // front of a class reads as a broken app.
+  assert('the arrows wrap round', tv.innerHTML.indexOf('1 of 6') > -1);
+  tvMove(-1);
+  assert('and go backwards', tv.innerHTML.indexOf('6 of 6') > -1);
+
+  // What IS allowed on the wall, which is the set agreed for it.
+  openClassroomScreen();
+  assert('her name is on it', tv.innerHTML.indexOf('Ms Teacher') > -1);
+  assert('and the date', tv.innerHTML.indexOf(schoolDateLabel()) > -1);
+
+  // And what is NOT, beyond the exercises: none of the panel comes along.
+  ['teacher-nav', 'roster', 'Weakest so far', 'Sign out', 'indiv-name'].forEach(bit => {
+    assert('the panel bit "' + bit + '" is not on the wall', tv.innerHTML.indexOf(bit) === -1);
+  });
+
+  // The code is sized for a room, not for a card. The review card renders 150px.
+  assert('the code is far larger than the one on the card', tvCodeSize() > 150);
+
+  closeClassroomScreen();
+  assert('it closes', tvIsOpen() === false);
+  assert('and leaves nothing behind in the page', tv.innerHTML === '');
+
+  // With nothing approved it says so rather than showing an empty frame.
+  saveBatch([]);
+  openClassroomScreen();
+  assert('with nothing approved it explains instead of showing a blank wall',
+    tv.innerHTML.indexOf('Nothing approved yet') > -1);
+  closeClassroomScreen();
+
   // Nothing opens itself. This is the assertion the whole file exists for.
   window._privateShown = null;
   assert('a fresh load has every card closed', privateShown().size === 0);

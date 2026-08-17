@@ -31,8 +31,8 @@ Também: **não há back-end de aplicação.** Só Firestore. Então "validaçã
 | 🟠 Alto | 5 | **5** | 0 |
 | 🟡 Médio | 7 | **7** | 0 |
 | 🟢 Baixo | 5 | **5** | 0 |
-| 💡 Sugestão UX | 4 | 2 | 2 |
-| **Total** | **22** | **20** | **2** |
+| 💡 Sugestão UX | 4 | 3 | 1 |
+| **Total** | **22** | **21** | **1** |
 
 *(A primeira versão desta tabela dizia 23 e 4 baixos. São 22 itens numerados e
 5 baixos — o item 18, peso dos assets, é informativo e não conta como achado.)*
@@ -47,7 +47,7 @@ Também: **não há back-end de aplicação.** Só Firestore. Então "validaçã
 | UX | 4 sugestões |
 | Qualidade de código | 3 (2 corrigidos) |
 
-**Suite:** 2.732 → **2.822 checagens, verde**, em 24 arquivos. Três verificadores novos (79 checagens) mais uma asserção adicionada ao painel.
+**Suite:** 2.732 → **2.852 checagens, verde**, em 24 arquivos. Três verificadores novos (79 checagens) mais uma asserção adicionada ao painel.
 
 ---
 
@@ -321,7 +321,23 @@ O aluno rola por relógio, briefing e enunciado antes de chegar onde escreve. Fa
 
 ## 22. "Show me the exercise" é o mesmo botão em dois contextos diferentes
 
-Na fila de aprovação ela precisa ver o conteúdo para decidir; no modo TV não pode. Hoje é o mesmo botão com um aviso ao lado. Sugestão: um interruptor único no topo do painel — "esta tela está na TV" — que muda todos os cartões de uma vez. Decisão de produto, não corrigi.
+**✅ RESOLVIDO (2ª passada) — e não pelo interruptor que eu havia sugerido.**
+
+Minha sugestão era um interruptor no topo do painel, "esta tela está na TV", mudando todos os cartões de uma vez. Você propôs outra coisa: uma tela que mostra **só o QR code** enquanto os alunos leem. É melhor, por três razões:
+
+1. **O interruptor administrava o vazamento; a tela remove a categoria.** Ele esconderia o conteúdo dos exercícios e deixaria na parede o resto do painel — abas, formulários, a lista da turma, a conta dela. Nada disso é para projetar.
+2. **Um interruptor depende de lembrar de virar.** Uma tela em que ela *entra* é inequívoca: ou está apresentando, ou está trabalhando.
+3. **Resolve algo que o interruptor não tocava.** O código no cartão de revisão tem 150px — pequeno visto do fundo da sala, e código pequeno em projetor é onde o escaneamento falha. Aqui ele é dimensionado pela tela: 331px num viewport de 637, ~560px numa TV 1080p.
+
+**O que está nela:** o tipo de exercício, o QR grande, o nome e a escola dela, a data e a semana. Exatamente o conjunto já acordado como público, e nada além.
+
+**O que não está:** nenhum texto de exercício (asseverado varrendo os dados dos 6 tipos), nem gabarito, nem lista da turma, nem ponto fraco de ninguém, nem `Sign out`, nem as abas.
+
+**As setas** trocam de exercício sem sair da tela — trocar no meio da aula é o caso comum, e obrigá-la a sair, aprovar e voltar seria trocar um incômodo por outro. Dão a volta, porque seta morta na frente de uma turma parece app quebrado. Escape volta.
+
+**Só o aprovado aparece.** Um código para algo não aprovado poria trabalho não revisado na parede.
+
+30 asserções novas, incluindo uma varredura dos dados dos 6 tipos procurando qualquer string na tela. Verificado com o vazamento recolocado de propósito (falha) e com o decodificador Vision da Apple lendo os códigos gerados.
 
 ---
 
