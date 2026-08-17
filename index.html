@@ -691,7 +691,13 @@ const CONFIG = {
   //
   // This key is public, like the apiKey above — it identifies the site to
   // reCAPTCHA and proves nothing on its own.
-  appCheckSiteKey: '',
+  // Verified to be the SITE key, not the secret, before it went in — the two
+  // are both 40 characters starting with 6L and cannot be told apart by
+  // reading them. Loaded in a browser as a site key it produced a valid
+  // token; a secret key is refused outright. That check mattered: a secret
+  // committed here would be a real secret in a public repository, in a file
+  // whose own tests exist to catch exactly that.
+  appCheckSiteKey: '6LeWCYstAAAAALcXbg8hCCRY4kKzJOujQIq3GzRG',
 
   // TODO(auth): there is no authentication anywhere in this app.
   // Anyone holding a share link can write to the classroom document,

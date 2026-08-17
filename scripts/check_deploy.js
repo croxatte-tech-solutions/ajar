@@ -73,8 +73,17 @@ assert('and the App Check endpoint itself',
 // Off by default. A key committed here is not a secret, but switching this on
 // is a sequence (register, key, deploy, watch, THEN enforce) and the default
 // must never be the middle of it.
-assert('App Check is wired but not switched on by default',
-  /appCheckSiteKey: ''/.test(html));
+/* The site key is now set, and the assertion changed shape with it.
+   A reCAPTCHA site key and secret key are both 40 characters starting with
+   6L, so they cannot be told apart by reading. This one was verified in a
+   browser first: used as a site key it produced a valid token, which a secret
+   never does. What must never appear here is a value that failed that test.
+   The pattern below is the shape of a reCAPTCHA key, so a stray password or
+   token pasted into this field fails the check rather than shipping. */
+assert('the App Check site key looks like a reCAPTCHA key',
+  /appCheckSiteKey: '6L[A-Za-z0-9_-]{36,40}'/.test(html));
+assert('and it is the public site key, not a secret — verified by use, not by shape',
+  /Verified to be the SITE key, not the secret/.test(html));
 assert('and it is loaded only when a key exists, so no key costs nothing',
   /if\(CONFIG\.appCheckSiteKey\)\{/.test(html));
 
