@@ -335,6 +335,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
     </div>
 
     <div id="roster-box"></div>
+    <div id="class-progress"></div>
 
     <div class="panel" id="sec-individual">
       <h2>🎯 Assign to one student (optional)</h2>
@@ -372,6 +373,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
   <!-- STUDENT VIEW -->
   <div id="view-student" class="view">
     <div id="announcement-banner"></div>
+    <div id="student-note"></div>
     <div id="welcome-back"></div>
     <div id="feedback-nudge"></div>
     <div id="student-empty" class="empty">
@@ -6884,9 +6886,10 @@ function cardBody(item){
 // state rather than being decorative: "Review 4" is the number actually
 // waiting for her, which is the one number this panel exists to show.
 const TEACHER_SECTIONS = [
-  { id:'sec-progress',   label:'Progress' },
+  { id:'sec-progress',   label:'This week' },
   { id:'sec-generate',   label:'Generate' },
   { id:'sec-roster',     label:'Class list' },
+  { id:'sec-class',      label:'Class' },
   { id:'sec-individual', label:'Assign' },
   { id:'sec-account',    label:'Account' },
   { id:'sec-share',      label:'Share' },
@@ -6944,6 +6947,7 @@ function renderTeacher(){
   renderTeacherNav();
   renderTeacherSignIn();
   renderRoster();
+  renderClassProgress();
   renderProgressBox();
   renderIndividualList();
   renderShareBox();
@@ -7066,6 +7070,88 @@ function renderRoster(){
         : '<p class="small-note" style="margin-top:.8rem">No one added yet. Until you add someone, students type their own name as before.</p>'}
     </div>`;
 }
+
+/* =========================================================
+   CLASS PROGRESS — and the note that answers it
+   The app's job here stops at the diagnosis. It counts, compares, and says
+   which task type a student is weakest at across their attempts; it does
+   NOT tell them what to do about it. That sentence is the teacher's,
+   because she knows the student and the app knows a number.
+   This is the same rule as batch review, applied to feedback: the machine
+   suggests, the person decides. It holds for every teacher who uses this,
+   not only the pilot one.
+   ========================================================= */
+function loadTeacherNotes(){
+  try{ return JSON.parse(localStorage.getItem('cse_teacher_notes') || '{}'); }
+  catch(e){ return {}; }
+}
+function saveTeacherNote(name, text){
+  const notes = loadTeacherNotes();
+  const t = (text || '').trim();
+  if(t) notes[name] = t; else delete notes[name];
+  localStorage.setItem('cse_teacher_notes', JSON.stringify(notes));
+  if(window.CloudSync && window.CloudSync.pushNotes) window.CloudSync.pushNotes(notes).catch(()=>{});
+}
+function noteFieldId(name){ return 'note-' + name.replace(/[^a-zA-Z0-9]/g,''); }
+function onTeacherNoteChange(name){
+  const el = document.getElementById(noteFieldId(name));
+  if(el) saveTeacherNote(name, el.value);
+}
+
+let _classProgress = {};
+async function refreshClassProgress(){
+  const roster = loadRoster().students || [];
+  if(!roster.length || !window.CloudSync || !window.CloudSync.pullClassSummaries) return;
+  try{
+    _classProgress = await window.CloudSync.pullClassSummaries(roster);
+    if(currentView === 'teacher') renderClassProgress();
+  }catch(e){ /* offline — the panel keeps whatever it last showed */ }
+}
+function renderClassProgress(){
+  const box = document.getElementById('class-progress');
+  if(!box) return;
+  const roster = loadRoster().students || [];
+  if(!roster.length){ box.innerHTML = ''; return; }
+  const notes = loadTeacherNotes();
+
+  const rows = roster.map(name => {
+    const d = _classProgress[name] || {};
+    const sum = d.summary || null;
+    const esc = name.replace(/'/g, "\\'");
+    const today = sum ? sum.attemptsToday : 0;
+    const weak = sum && sum.weakType
+      ? tagFor(sum.weakType) + ' &middot; ' + sum.weakAvg + '%'
+      : '<span class="small-note">not enough attempts yet</span>';
+    const trend = sum && sum.trend === 'up' ? '📈' : sum && sum.trend === 'down' ? '📉' : '';
+    return `
+      <div class="ex-card" style="margin:0 0 .7rem">
+        <div class="ex-card-head">
+          <span class="ex-tag">${escapeHtml(name)}</span>
+          <span class="small-note">${today ? today + ' today' : 'nothing today'}${sum ? ' &middot; ' + sum.attemptsTotal + ' in total' : ''} ${trend}</span>
+        </div>
+        <div class="small-note" style="margin:.2rem 0 .5rem">Weakest so far: <b>${weak}</b></div>
+        <div class="field">
+          <label for="${noteFieldId(name)}">Your note to ${escapeHtml(name)} — they see this, and the app never writes it for you</label>
+          <textarea id="${noteFieldId(name)}" rows="2" placeholder="e.g. Your emails are strong. In the interview, try finishing the sentence even when a word escapes you." onchange="onTeacherNoteChange('${esc}')">${escapeHtml(notes[name] || '')}</textarea>
+        </div>
+        <div class="ex-actions"><button class="btn ghost sm" onclick="showInsights('${esc}')">📈 Full patterns</button></div>
+      </div>`;
+  }).join('');
+
+  box.innerHTML = `
+    <div class="panel" id="sec-class">
+      <h2>📊 How the class is doing</h2>
+      <p class="small-note" style="margin-top:0">Updates as students practise. The app points at the weak spot; the advice is yours — it knows a number, you know the student.</p>
+      <div class="ex-actions" style="margin:.6rem 0 .9rem"><button class="btn sm" onclick="refreshClassProgress()">↻ Refresh now</button></div>
+      ${rows}
+    </div>`;
+}
+// Slow on purpose. Every refresh is one read per student, and a lesson runs
+// an hour — a five-second poll would burn the free quota to show a teacher
+// something she would not notice arriving sooner.
+setInterval(() => {
+  if(currentView === 'teacher' && (loadRoster().students || []).length) refreshClassProgress();
+}, 45000);
 
 function renderNamePrompt(){
   document.getElementById('student-empty').style.display = 'none';
@@ -7228,6 +7314,8 @@ function startSurprisePractice(){
 
 function renderStudent(){
   renderAnnouncement();
+  const noteBox = document.getElementById('student-note');
+  if(noteBox) noteBox.innerHTML = teacherNoteHtml();
   renderWelcomeBack();
   renderFeedbackNudge();
   const contentExists = hasAnyTeacherContent();
@@ -8673,6 +8761,27 @@ function migrateLegacyUsageLog(){
   }catch(e){}
   localStorage.removeItem('cse_usage_log');
 }
+// What the teacher's screen reads, one small document per student instead
+// of their whole history. Pulling 13 full histories every refresh would be
+// ~780 reads each time and would exhaust the free quota inside one lesson;
+// this is 13. The student's own device computes it, because it already has
+// the data locally and the teacher's device would otherwise have to fetch
+// everything just to reduce it.
+function progressSummary(name){
+  const s = usageSummary(name);
+  if(!s) return null;
+  const today = new Date().toDateString();
+  const log = loadUsageLogAll()[(name||'').toLowerCase()] || [];
+  const weak = s.weakestList[0] || null;
+  return {
+    attemptsTotal: s.total,
+    attemptsToday: log.filter(e => new Date(e.ts).toDateString() === today).length,
+    weakType: weak ? weak.type : null,
+    weakAvg: weak ? Math.round(weak.avg * 100) : null,
+    trend: s.trend || null,
+  };
+}
+
 function logUsage(type, theme, outcome01, name){
   try{
     const rawName = name !== undefined ? name : getStudentName();
@@ -8688,7 +8797,12 @@ function logUsage(type, theme, outcome01, name){
     // CDN import actually loaded (blocked inside the Claude Artifact
     // sandbox, works on a real domain). Missing or offline = local-only,
     // exactly like before this existed. Never blocks the UI on network.
-    if(key !== '_anon') window.CloudSync?.pushAttempt(rawName, entry).catch(()=>{});
+    if(key !== '_anon'){
+      window.CloudSync?.pushAttempt(rawName, entry).catch(()=>{});
+      // Refresh the summary the teacher's class view reads. Fire-and-forget
+      // like everything else here: a failed sync must never block practice.
+      window.CloudSync?.pushSummary?.(rawName, progressSummary(rawName)).catch(()=>{});
+    }
   }catch(e){}
 }
 // Combine this device's local history with whatever came back from the
@@ -8715,6 +8829,28 @@ async function hydrateFromCloud(name){
     localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
   }catch(e){ /* offline or blocked — local history still works fine */ }
 }
+// The teacher's note is the whole point of the class-progress panel: the
+// app finds the weak spot, she writes what to do about it, and it has to
+// actually reach the student or the loop never closes.
+async function hydrateNotesFromCloud(){
+  if(!window.CloudSync || !window.CloudSync.pullNotes) return;
+  try{
+    const notes = await window.CloudSync.pullNotes();
+    localStorage.setItem('cse_teacher_notes', JSON.stringify(notes || {}));
+    if(currentView === 'student') renderStudent();
+  }catch(e){ /* offline — nothing to show, and nothing breaks */ }
+}
+function teacherNoteHtml(){
+  const name = getStudentName();
+  if(!name) return '';
+  const note = (loadTeacherNotes() || {})[name];
+  if(!note) return '';
+  return `<div class="panel" style="border-left:3px solid var(--accent)">
+    <div class="feedback-label" style="color:var(--accent)">💬 A note from ${escapeHtml(TEACHER_NAME)}</div>
+    <div style="margin-top:.15rem">${escapeHtml(note)}</div>
+  </div>`;
+}
+
 async function hydrateRosterFromCloud(){
   if(!window.CloudSync || !window.CloudSync.pullRoster) return;
   try{
@@ -8739,6 +8875,7 @@ window.__onCloudSyncReady = function(){
   // has not been chosen yet — replacing the screen under someone who is
   // already practising would be worse than a slightly stale list.
   hydrateRosterFromCloud();
+  hydrateNotesFromCloud();
   // Module scripts load AFTER classic scripts (deferred by spec), so on
   // ANY page load — first-ever visit or a later one — the very first
   // loadSharedClassroomContent() call in the init tail can run BEFORE
@@ -9277,6 +9414,25 @@ loadSharedClassroomContent().then(()=>{
         await authReady;
         await setDoc(doc(db, 'schools', school(), 'classroom', 'item_' + id), { ...payload, updatedAt: serverTimestamp() });
       },
+      // The teacher's live class view reads these, one per student.
+      async pushSummary(name, summary) {
+        if(!summary) return;
+        await authReady;
+        await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
+          { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
+      },
+      async pullClassSummaries(names) {
+        await authReady;
+        const out = {};
+        await Promise.all(names.map(async n => {
+          try{
+            const snap = await getDoc(doc(db, 'schools', school(), 'students', n.toLowerCase()));
+            if(snap.exists()) out[n] = snap.data();
+          }catch(e){ /* one student failing must not blank the whole class */ }
+        }));
+        return out;
+      },
+
       // The class list rides in the same collection as everything else the
       // teacher publishes, so it inherits the same rule: she writes, the
       // class reads, nobody else does either.
@@ -9284,6 +9440,16 @@ loadSharedClassroomContent().then(()=>{
         await authReady;
         await setDoc(doc(db, 'schools', school(), 'classroom', 'roster'),
           { ...roster, updatedAt: serverTimestamp() });
+      },
+      async pushNotes(notes) {
+        await authReady;
+        await setDoc(doc(db, 'schools', school(), 'classroom', 'notes'),
+          { notes, updatedAt: serverTimestamp() });
+      },
+      async pullNotes() {
+        await authReady;
+        const snap = await getDoc(doc(db, 'schools', school(), 'classroom', 'notes'));
+        return snap.exists() ? (snap.data().notes || {}) : {};
       },
       async pullRoster() {
         await authReady;
