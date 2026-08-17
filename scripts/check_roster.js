@@ -33,8 +33,8 @@ ${combined}
   const wrapHtml = () => document.getElementById('practice-wrap').innerHTML;
 
   // --- with no roster, the app must still work ---
-  localStorage.removeItem('cse_roster');
-  localStorage.removeItem('cse_student_name');
+  localStorage.removeItem('ajar_roster');
+  localStorage.removeItem('ajar_student_name');
   renderNamePrompt();
   assert('with no class list a student can still type a name', wrapHtml().indexOf('name-input') > -1);
 
@@ -87,7 +87,7 @@ ${combined}
 
   // --- emptying the list returns the app to typing ---
   loadRoster().students.slice().forEach(n => rosterRemove(n));
-  localStorage.removeItem('cse_student_name');
+  localStorage.removeItem('ajar_student_name');
   renderNamePrompt();
   assert('an empty list falls back to typing', wrapHtml().indexOf('name-input') > -1);
 

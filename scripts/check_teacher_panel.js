@@ -30,11 +30,11 @@ assert('a shared link goes straight to the student view',
 assert('everyone else lands on the welcome screen',
   /else setView\('welcome'\);/.test(html));
 assert('there is no "seen it before" shortcut past the door',
-  html.indexOf('cse_entered') === -1 && html.indexOf('skipWelcome') === -1);
+  html.indexOf('ajar_entered') === -1 && html.indexOf('skipWelcome') === -1);
 assert('the default view is never the sign-in wall',
   /let currentView = 'welcome';/.test(html));
 assert('no guide opens by itself on load',
-  !/skipWelcome && !localStorage\.getItem\('cse_guide_seen_teacher'\)\) showGuide/.test(html));
+  !/skipWelcome && !localStorage\.getItem\('ajar_guide_seen_teacher'\)\) showGuide/.test(html));
 
 // --- the gate exists and covers the class data ---
 assert('a signed-in check exists', /function teacherIsSignedIn\(\)/.test(html));

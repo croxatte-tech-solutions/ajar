@@ -39,10 +39,10 @@ ${combined}
   const results = [];
   function assert(n,c){ results.push(n+': '+(c?'PASS':'FAIL')); }
 
-  localStorage.removeItem('cse_roster');
-  localStorage.removeItem('cse_teacher_notes');
-  localStorage.removeItem('cse_usage_log_by_name');
-  localStorage.removeItem('cse_student_name');
+  localStorage.removeItem('ajar_roster');
+  localStorage.removeItem('ajar_teacher_notes');
+  localStorage.removeItem('ajar_usage_log_by_name');
+  localStorage.removeItem('ajar_student_name');
   ['Alex','Sam'].forEach(n => { document.getElementById('roster-name').value = n; rosterAddStudent(); });
 
   // --- the diagnosis comes from real attempts, not from nothing ---

@@ -39,7 +39,7 @@ const testScript = `
   //===================================================================
   // (a) NOTHING REACHES A STUDENT UNTIL SHE APPROVES IT
   //===================================================================
-  localStorage.removeItem('cse_individual');
+  localStorage.removeItem('ajar_individual');
   setStudentName('Ana');
   location.search = '?s=1';   // arrived through her code, so the class set is in play
 

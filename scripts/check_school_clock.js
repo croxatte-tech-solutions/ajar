@@ -247,16 +247,16 @@ const testScript = `
 
   // On the student's device it comes out of the synced value, so the week
   // they read is hers rather than a second opinion.
-  localStorage.removeItem('cse_progress');
-  localStorage.setItem('cse_class_term_start', '2026-09-07');
+  localStorage.removeItem('ajar_progress');
+  localStorage.setItem('ajar_class_term_start', '2026-09-07');
   assert('a student device counts from the anchor their teacher published',
     classTermStart() === '2026-09-07');
   applySharedPayload({ items: [], individual: {}, termStart: '2026-08-17' });
   assert('and a fresh publish updates it', classTermStart() === '2026-08-17');
   applySharedPayload({ items: [], individual: {} });
   assert('a publish without one clears it rather than leaving a stale week',
-    localStorage.getItem('cse_class_term_start') === null);
-  localStorage.removeItem('cse_class_term_start');
+    localStorage.getItem('ajar_class_term_start') === null);
+  localStorage.removeItem('ajar_class_term_start');
 
   // The panel has to say whether it is showing today or a day she left it
   // on. That was the whole complaint.

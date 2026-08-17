@@ -44,7 +44,7 @@ ${combined}
   const now = Date.now();
   const mk = (outcome, daysAgo, i) => ({ type:'interview', theme:'career', outcome,
                                           ts: now - daysAgo*DAY + (i||0)*1000 });
-  const setLog = entries => localStorage.setItem('cse_usage_log_by_name',
+  const setLog = entries => localStorage.setItem('ajar_usage_log_by_name',
     JSON.stringify({ x: entries }));
   const pct = v => Math.round(v*100);
 

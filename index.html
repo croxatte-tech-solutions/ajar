@@ -658,6 +658,63 @@ const CONFIG = {
 // Which school the current visitor belongs to. A share link carries it, so
 // a student who scans a QR from one school lands in that school's data
 // whichever address they opened.
+/* CARRYING FORWARD WHAT IS ALREADY ON A DEVICE
+   ==========================================
+   Every key this app stores used to be prefixed cse_ — the school's initials,
+   in a public repository, which is the same thing we took out of the git
+   history and out of the config for the same reason. They are ajar_ now.
+
+   Renaming a storage key is not free: on a device that has already been used,
+   the app would look for ajar_student_name, find nothing, and ask a student
+   who has been practising for weeks to introduce themselves again — losing the
+   name their history is filed under, their teacher's note, and the batch they
+   were part-way through.
+
+   So the old keys are copied forward once, on the first load after the rename.
+
+   Enumerated rather than listed. Two of them are prefixes with an id or a role
+   appended (ajar_msg_<id>, ajar_guide_seen_<role>), so a hand-written list
+   would have to know every suffix that exists on every device, which is not
+   knowable. Walking the keys handles them without being told.
+
+   Guarded on Object.keys being available, because the test harnesses stub
+   localStorage as three functions with nothing to enumerate — and there is
+   nothing to migrate in a test anyway.
+
+   The old key is removed after copying. If a stale cached build ever loads
+   afterwards it will see an empty store and ask for a name again, which is a
+   worse day for nobody: the service worker is network-first, so that build
+   would have to come from a cache that is already being bypassed.
+
+   Runs before anything reads storage. Idempotent — on the second load there
+   is no old key left to find. */
+const LEGACY_PREFIX = 'cse_';
+const CURRENT_PREFIX = 'ajar_';
+function migrateLegacyKeys(){
+  try{
+    if(typeof Object.keys(localStorage) === 'undefined') return 0;
+    const old = Object.keys(localStorage).filter(k => k.indexOf(LEGACY_PREFIX) === 0);
+    let moved = 0;
+    old.forEach(k => {
+      const to = CURRENT_PREFIX + k.slice(LEGACY_PREFIX.length);
+      // Never overwrite. If both exist the new one is what the app has been
+      // writing, and the old one is a leftover from before this ran.
+      if(localStorage.getItem(to) === null){
+        localStorage.setItem(to, localStorage.getItem(k));
+        moved++;
+      }
+      localStorage.removeItem(k);
+    });
+    return moved;
+  }catch(e){ return 0; }   // private-mode Safari has nothing stored to carry
+}
+
+// Called here, in the first script block, because this is the earliest point
+// after the function exists and before any later block reads storage. Classic
+// scripts run in order, so nothing has looked for a key yet.
+const _migrated = migrateLegacyKeys();
+if(_migrated) console.info('Ajar: carried ' + _migrated + ' saved item(s) forward from the previous key names.');
+
 const SCHOOL_SEEN_KEY = 'ajar_school';
 function currentSchool(){
   // A signed-in teacher belongs to the school named in her own record, and
@@ -782,21 +839,21 @@ const TERM_START_WEEK = 8;
 // is read from the class's own record, and CONFIG only supplies the default
 // for the class this was built for.
 //
-// It lives beside week and day in cse_progress, which is already per-device
+// It lives beside week and day in ajar_progress, which is already per-device
 // and therefore per-class. When a second class actually exists this wants to
 // move onto her Firestore record next to schoolName, so it follows her rather
 // than the browser — but that is a schema change to make when there is a
 // second class, not before there is one.
 function classTermStart(){
   try{
-    const p = JSON.parse(localStorage.getItem('cse_progress') || '{}');
+    const p = JSON.parse(localStorage.getItem('ajar_progress') || '{}');
     if(p.termStart) return p.termStart;
   }catch(e){}
   // On a student's device this is the anchor their teacher published, which
   // arrived with the batch. Same value, so the week they read is the week she
   // is on rather than a second opinion.
   try{
-    const synced = localStorage.getItem('cse_class_term_start');
+    const synced = localStorage.getItem('ajar_class_term_start');
     if(synced) return synced;
   }catch(e){}
   return CONFIG.termStart;
@@ -823,7 +880,7 @@ function appBaseUrl(){
 // what the panel promises in writing.
 function feedbackTo(){
   try{
-    const own = (localStorage.getItem('cse_teacher_email') || '').trim();
+    const own = (localStorage.getItem('ajar_teacher_email') || '').trim();
     if(own) return own;
   }catch(e){}   // private-mode Safari throws on localStorage; the address below still works
   return CONFIG.devEmail || '';
@@ -3184,7 +3241,7 @@ const ALL_TYPE_THEME_COMBOS = TASK_TYPES.flatMap(t => ALL_THEMES.map(th => t.id 
 // (theme-only vs full type+theme), each stored in localStorage so the
 // rotation survives across sessions on that device.
 function drawFromBag(bagKey, allItems, studentKey){
-  const storageKey = `cse_bag_${bagKey}_${(studentKey||'_anon').toLowerCase()}`;
+  const storageKey = `ajar_bag_${bagKey}_${(studentKey||'_anon').toLowerCase()}`;
   let bag;
   try{ bag = JSON.parse(localStorage.getItem(storageKey) || '[]'); }catch(e){ bag = []; }
   if(!bag.length || !bag.every(x=>allItems.includes(x))) bag = shuffle(allItems);
@@ -6451,8 +6508,8 @@ function listenOnce(onResult, onError){
 /* =========================================================
    STORAGE + GENERATION
    ========================================================= */
-function loadBatch(){ return JSON.parse(localStorage.getItem('cse_batch') || '[]'); }
-function saveBatch(b){ localStorage.setItem('cse_batch', JSON.stringify(b)); }
+function loadBatch(){ return JSON.parse(localStorage.getItem('ajar_batch') || '[]'); }
+function saveBatch(b){ localStorage.setItem('ajar_batch', JSON.stringify(b)); }
 
 /* =========================================================
    CLASSROOM SHARING — the teacher's approved batch (plus start
@@ -6484,19 +6541,19 @@ function applySharedPayload(payload){
   // the NEW one the current URL actually points to.
   window.__classroomContentApplied = true;
   saveBatch(payload.items);
-  if(payload.individual && Object.keys(payload.individual).length) localStorage.setItem('cse_individual', JSON.stringify(payload.individual));
-  else localStorage.removeItem('cse_individual');
-  if(payload.speakingTurn && payload.speakingTurn.length) localStorage.setItem('cse_speaking_turn', JSON.stringify(payload.speakingTurn));
-  else localStorage.removeItem('cse_speaking_turn');
-  if(payload.teacherEmail) localStorage.setItem('cse_teacher_email', payload.teacherEmail);
-  else localStorage.removeItem('cse_teacher_email');
-  if(payload.announcement) localStorage.setItem('cse_announcement', payload.announcement);
-  else localStorage.removeItem('cse_announcement');
+  if(payload.individual && Object.keys(payload.individual).length) localStorage.setItem('ajar_individual', JSON.stringify(payload.individual));
+  else localStorage.removeItem('ajar_individual');
+  if(payload.speakingTurn && payload.speakingTurn.length) localStorage.setItem('ajar_speaking_turn', JSON.stringify(payload.speakingTurn));
+  else localStorage.removeItem('ajar_speaking_turn');
+  if(payload.teacherEmail) localStorage.setItem('ajar_teacher_email', payload.teacherEmail);
+  else localStorage.removeItem('ajar_teacher_email');
+  if(payload.announcement) localStorage.setItem('ajar_announcement', payload.announcement);
+  else localStorage.removeItem('ajar_announcement');
   // The class's Monday. This is what lets a student on the roster see the
   // same week their teacher is on, computed rather than told — so it stays
   // right on Thursday without her republishing anything.
-  if(payload.termStart) localStorage.setItem('cse_class_term_start', payload.termStart);
-  else localStorage.removeItem('cse_class_term_start');
+  if(payload.termStart) localStorage.setItem('ajar_class_term_start', payload.termStart);
+  else localStorage.removeItem('ajar_class_term_start');
 }
 // Tries the small Firestore-backed path first (works for any visit, not
 // just ones with "?s=1" — a bookmarked plain URL should still pick up
@@ -6619,16 +6676,16 @@ const CLASSROOM_MESSAGES = [
 // a fresh message each time would flicker on the classroom projector while
 // the students are trying to scan it.
 function itemMessage(id){
-  const key = 'cse_msg_' + id;
+  const key = 'ajar_msg_' + id;
   let msg = localStorage.getItem(key);
   if(!msg){ msg = pick(CLASSROOM_MESSAGES); localStorage.setItem(key, msg); }
   return msg;
 }
 function nextClassroomMessage(){
-  const last = localStorage.getItem('cse_last_msg') || '';
+  const last = localStorage.getItem('ajar_last_msg') || '';
   const pool = CLASSROOM_MESSAGES.filter(m => m !== last);
   const msg = pick(pool.length ? pool : CLASSROOM_MESSAGES);
-  localStorage.setItem('cse_last_msg', msg);
+  localStorage.setItem('ajar_last_msg', msg);
   return msg;
 }
 
@@ -6803,7 +6860,7 @@ function renderTeacherSignIn(){
 // in CONFIG so the convenience is local to her machine and the repository
 // stays free of anyone's real address.
 function lastTeacherEmail(){
-  return localStorage.getItem('cse_teacher_login_email') || CONFIG.teacherEmail || '';
+  return localStorage.getItem('ajar_teacher_login_email') || CONFIG.teacherEmail || '';
 }
 function teacherSignInMsg(text, ok){
   const el = document.getElementById('teacher-signin-msg');
@@ -6819,7 +6876,7 @@ function teacherSignIn(){
     .then(()=>{
       // Remembered only once a sign-in actually succeeded — a typo should
       // never become the value she is handed next time.
-      localStorage.setItem('cse_teacher_login_email', email.trim());
+      localStorage.setItem('ajar_teacher_login_email', email.trim());
       renderTeacherSignIn(); renderShareBox(); renderWhoAmI();
     })
     .catch(e => {
@@ -6892,10 +6949,10 @@ function renderShareBox(){
   const approved = loadBatch().filter(i=>i.status==='approved');
   const individual = individualForShare();
   const individualCount = Object.keys(individual).length;
-  const speakTurnRaw = localStorage.getItem('cse_teacher_speak_turn_raw') || '';
+  const speakTurnRaw = localStorage.getItem('ajar_teacher_speak_turn_raw') || '';
   const speakTurn = parseSpeakTurn(speakTurnRaw);
-  const teacherEmailRaw = (localStorage.getItem('cse_teacher_email_raw') || '').trim();
-  const announcementRaw = (localStorage.getItem('cse_teacher_announcement_raw') || '').trim();
+  const teacherEmailRaw = (localStorage.getItem('ajar_teacher_email_raw') || '').trim();
+  const announcementRaw = (localStorage.getItem('ajar_teacher_announcement_raw') || '').trim();
   // The Monday this class counts from, so her students' devices can work out
   // the same week she is on. Just the anchor — not her week-and-day pointer,
   // which she moves around to look at finished weeks. A student should see
@@ -7090,33 +7147,33 @@ function paintShareBox(link, statusNote, s){
 }
 function onSpeakTurnChange(){
   const v = document.getElementById('speak-turn').value;
-  if(v.trim()) localStorage.setItem('cse_teacher_speak_turn_raw', v);
-  else localStorage.removeItem('cse_teacher_speak_turn_raw');
+  if(v.trim()) localStorage.setItem('ajar_teacher_speak_turn_raw', v);
+  else localStorage.removeItem('ajar_teacher_speak_turn_raw');
   renderShareBox();
 }
 function clearSpeakTurn(){
-  localStorage.removeItem('cse_teacher_speak_turn_raw');
+  localStorage.removeItem('ajar_teacher_speak_turn_raw');
   renderShareBox();
 }
 function onTeacherEmailChange(){
   const v = document.getElementById('teacher-email').value.trim();
-  if(v){ localStorage.setItem('cse_teacher_email_raw', v); localStorage.setItem('cse_teacher_email', v); }
-  else { localStorage.removeItem('cse_teacher_email_raw'); localStorage.removeItem('cse_teacher_email'); }
+  if(v){ localStorage.setItem('ajar_teacher_email_raw', v); localStorage.setItem('ajar_teacher_email', v); }
+  else { localStorage.removeItem('ajar_teacher_email_raw'); localStorage.removeItem('ajar_teacher_email'); }
   renderShareBox();
 }
 function clearTeacherEmail(){
-  localStorage.removeItem('cse_teacher_email_raw');
-  localStorage.removeItem('cse_teacher_email');
+  localStorage.removeItem('ajar_teacher_email_raw');
+  localStorage.removeItem('ajar_teacher_email');
   renderShareBox();
 }
 function onAnnouncementChange(){
   const v = document.getElementById('announcement-text').value.trim();
-  if(v) localStorage.setItem('cse_teacher_announcement_raw', v);
-  else localStorage.removeItem('cse_teacher_announcement_raw');
+  if(v) localStorage.setItem('ajar_teacher_announcement_raw', v);
+  else localStorage.removeItem('ajar_teacher_announcement_raw');
   renderShareBox();
 }
 function clearAnnouncement(){
-  localStorage.removeItem('cse_teacher_announcement_raw');
+  localStorage.removeItem('ajar_teacher_announcement_raw');
   renderShareBox();
 }
 function copyShareLink(){
@@ -7208,12 +7265,12 @@ function generateBatchItems(type, theme, topicIndex){
 // class already — tracked per area of study, not tied to any fixed
 // day-by-day schedule, since a real class doesn't always move in a
 // straight line. Drives the checkmarks in the theme dropdown below.
-function loadThemeProgress(){ try{ return JSON.parse(localStorage.getItem('cse_theme_done') || '{}'); }catch(e){ return {}; } }
+function loadThemeProgress(){ try{ return JSON.parse(localStorage.getItem('ajar_theme_done') || '{}'); }catch(e){ return {}; } }
 function markThemeDone(type, theme){
   const done = loadThemeProgress();
   if(!done[type]) done[type] = [];
   if(!done[type].includes(theme)) done[type].push(theme);
-  localStorage.setItem('cse_theme_done', JSON.stringify(done));
+  localStorage.setItem('ajar_theme_done', JSON.stringify(done));
 }
 function isThemeDone(type, theme){ return (loadThemeProgress()[type] || []).includes(theme); }
 // Renders the theme <select> fresh each time the active task type
@@ -7310,8 +7367,8 @@ const WEEK_PLAN = {
   11: { type:'discussion',     label:'Write for an Academic Discussion' },
   12: { simulado:true },
 };
-function loadProgress(){ return JSON.parse(localStorage.getItem('cse_progress') || '{"week":8,"day":1}'); }
-function saveProgress(p){ localStorage.setItem('cse_progress', JSON.stringify(p)); }
+function loadProgress(){ return JSON.parse(localStorage.getItem('ajar_progress') || '{"week":8,"day":1}'); }
+function saveProgress(p){ localStorage.setItem('ajar_progress', JSON.stringify(p)); }
 function todaysPlan(){
   const p = loadProgress();
   const wk = WEEK_PLAN[p.week];
@@ -8117,11 +8174,11 @@ let selectedId = null;
    Attendance is marked on top of it and changes nothing about identity.
    ========================================================= */
 function loadRoster(){
-  try{ return JSON.parse(localStorage.getItem('cse_roster') || '{"students":[],"present":[]}'); }
+  try{ return JSON.parse(localStorage.getItem('ajar_roster') || '{"students":[],"present":[]}'); }
   catch(e){ return { students:[], present:[] }; }
 }
 function saveRoster(r){
-  localStorage.setItem('cse_roster', JSON.stringify(r));
+  localStorage.setItem('ajar_roster', JSON.stringify(r));
   if(window.CloudSync && window.CloudSync.pushRoster) window.CloudSync.pushRoster(r).catch(()=>{});
 }
 function rosterAddStudent(){
@@ -8195,14 +8252,14 @@ function renderRoster(){
    not only the pilot one.
    ========================================================= */
 function loadTeacherNotes(){
-  try{ return JSON.parse(localStorage.getItem('cse_teacher_notes') || '{}'); }
+  try{ return JSON.parse(localStorage.getItem('ajar_teacher_notes') || '{}'); }
   catch(e){ return {}; }
 }
 function saveTeacherNote(name, text){
   const notes = loadTeacherNotes();
   const t = (text || '').trim();
   if(t) notes[name] = t; else delete notes[name];
-  localStorage.setItem('cse_teacher_notes', JSON.stringify(notes));
+  localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes));
   if(window.CloudSync && window.CloudSync.pushNotes) window.CloudSync.pushNotes(notes).catch(()=>{});
 }
 function noteFieldId(name){ return 'note-' + name.replace(/[^a-zA-Z0-9]/g,''); }
@@ -8371,7 +8428,7 @@ function submitName(){
 function hasAnyTeacherContent(){
   if(arrivedThroughSharedCode() && loadBatch().some(i=>i.status==='approved')) return true;
   try{
-    const map = JSON.parse(localStorage.getItem('cse_individual') || '{}');
+    const map = JSON.parse(localStorage.getItem('ajar_individual') || '{}');
     return Object.values(map).some(items => Array.isArray(items) && items.some(i=>i.status==='approved'));
   }catch(e){ return false; }
 }
@@ -8394,7 +8451,7 @@ function arrivedThroughSharedCode(){
 function isIndividuallyAssigned(){
   const name = getStudentName().toLowerCase();
   if(!name) return false;
-  try{ const map = JSON.parse(localStorage.getItem('cse_individual') || '{}'); return !!map[name]; }
+  try{ const map = JSON.parse(localStorage.getItem('ajar_individual') || '{}'); return !!map[name]; }
   catch(e){ return false; }
 }
 // True when the student is on the same shared, whole-class batch as
@@ -8413,7 +8470,7 @@ function isSharedClassroomAudio(){
 // no room to keep quiet for, so nothing is gated there.
 function speakingTurnList(){
   try{
-    const arr = JSON.parse(localStorage.getItem('cse_speaking_turn') || 'null');
+    const arr = JSON.parse(localStorage.getItem('ajar_speaking_turn') || 'null');
     return Array.isArray(arr) && arr.length ? arr : null;
   }catch(e){ return null; }
 }
@@ -8445,7 +8502,7 @@ function getStudentBatch(){
   const name = getStudentName().toLowerCase();
   if(name){
     try{
-      const map = JSON.parse(localStorage.getItem('cse_individual') || '{}');
+      const map = JSON.parse(localStorage.getItem('ajar_individual') || '{}');
       if(map[name]) return map[name].filter(i=>i.status==='approved');
     }catch(e){}
   }
@@ -10945,7 +11002,7 @@ function pushWritingFeedback(notes, wordCount){
 // name in her own /teachers record; before she signs in there is nobody to
 // name, so the app says "Teacher" rather than guessing at a real person.
 const TEACHER_NAME = 'Teacher';
-function getStudentName(){ return localStorage.getItem('cse_student_name') || ''; }
+function getStudentName(){ return localStorage.getItem('ajar_student_name') || ''; }
 
 </script>
 <script>
@@ -10966,24 +11023,24 @@ function getStudentName(){ return localStorage.getItem('cse_student_name') || ''
    ========================================================= */
 function loadUsageLogAll(){
   migrateLegacyUsageLog();
-  try{ return JSON.parse(localStorage.getItem('cse_usage_log_by_name') || '{}'); }catch(e){ return {}; }
+  try{ return JSON.parse(localStorage.getItem('ajar_usage_log_by_name') || '{}'); }catch(e){ return {}; }
 }
 // One-time upgrade path: fold any pre-existing flat per-device log (from
 // before per-name tracking existed) into whichever name is active now,
 // instead of silently discarding practice history already collected.
 function migrateLegacyUsageLog(){
-  const legacy = localStorage.getItem('cse_usage_log');
+  const legacy = localStorage.getItem('ajar_usage_log');
   if(!legacy) return;
   try{
     const log = JSON.parse(legacy);
     if(Array.isArray(log) && log.length){
-      const all = JSON.parse(localStorage.getItem('cse_usage_log_by_name') || '{}');
+      const all = JSON.parse(localStorage.getItem('ajar_usage_log_by_name') || '{}');
       const key = (getStudentName() || '_anon').toLowerCase();
       all[key] = (all[key] || []).concat(log).slice(-60);
-      localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
+      localStorage.setItem('ajar_usage_log_by_name', JSON.stringify(all));
     }
   }catch(e){}
-  localStorage.removeItem('cse_usage_log');
+  localStorage.removeItem('ajar_usage_log');
 }
 // What the teacher's screen reads, one small document per student instead
 // of their whole history. Pulling 13 full histories every refresh would be
@@ -11024,7 +11081,7 @@ function logUsage(type, theme, outcome01, name){
     log.push(entry);
     while(log.length > 60) log.shift();
     all[key] = log;
-    localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
+    localStorage.setItem('ajar_usage_log_by_name', JSON.stringify(all));
     // Fire-and-forget cloud push — CloudSync only exists where Firebase's
     // CDN import actually loaded (blocked inside the Claude Artifact
     // sandbox, works on a real domain). Missing or offline = local-only,
@@ -11058,7 +11115,7 @@ async function hydrateFromCloud(name){
     const key = name.toLowerCase();
     const all = loadUsageLogAll();
     all[key] = mergeUsageLogs(all[key] || [], cloudEntries);
-    localStorage.setItem('cse_usage_log_by_name', JSON.stringify(all));
+    localStorage.setItem('ajar_usage_log_by_name', JSON.stringify(all));
   }catch(e){ /* offline or blocked — local history still works fine */ }
 }
 // The teacher's note is the whole point of the class-progress panel: the
@@ -11068,7 +11125,7 @@ async function hydrateNotesFromCloud(){
   if(!window.CloudSync || !window.CloudSync.pullNotes) return;
   try{
     const notes = await window.CloudSync.pullNotes();
-    localStorage.setItem('cse_teacher_notes', JSON.stringify(notes || {}));
+    localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes || {}));
     if(currentView === 'student') renderStudent();
   }catch(e){ /* offline — nothing to show, and nothing breaks */ }
 }
@@ -11088,7 +11145,7 @@ async function hydrateRosterFromCloud(){
   try{
     const cloud = await window.CloudSync.pullRoster();
     if(!cloud || !Array.isArray(cloud.students)) return;
-    localStorage.setItem('cse_roster', JSON.stringify({
+    localStorage.setItem('ajar_roster', JSON.stringify({
       students: cloud.students, present: cloud.present || []
     }));
     if(currentView === 'teacher') renderRoster();
@@ -11208,7 +11265,7 @@ function usageSummary(name){
   return { total: log.length, rows, weakest: weakestList[0] || null, weakestList, strongestList,
            trend, streak, activeDays: dayKeys.length, recentLog: log.slice(-8).reverse() };
 }
-function setStudentName(name){ localStorage.setItem('cse_student_name', name.trim()); }
+function setStudentName(name){ localStorage.setItem('ajar_student_name', name.trim()); }
 function renderWhoAmI(){
   const el = document.getElementById('who-am-i');
   if(!el) return;
@@ -11255,7 +11312,7 @@ function setView(v){
   if(v==='welcome'){ renderWelcome(); return; }
   if(v==='student') renderStudent();
   renderWhoAmI();
-  if(!localStorage.getItem('cse_guide_seen_'+v)) showGuide(v);
+  if(!localStorage.getItem('ajar_guide_seen_'+v)) showGuide(v);
 }
 
 /* =========================================================
@@ -11665,7 +11722,7 @@ function showGuide(role){
 }
 function closeGuide(role){
   document.getElementById('guide-overlay').style.display = 'none';
-  if(role) localStorage.setItem('cse_guide_seen_'+role, '1');
+  if(role) localStorage.setItem('ajar_guide_seen_'+role, '1');
 }
 // Escape closes it. Tapping outside already did, and the button at the bottom
 // did, but on a short screen — 334px of window on iPhone landscape — the
@@ -11691,9 +11748,9 @@ function escapeHtml(s){
 function renderAnnouncement(){
   const el = document.getElementById('announcement-banner');
   if(!el) return;
-  const text = (localStorage.getItem('cse_announcement') || '').trim();
+  const text = (localStorage.getItem('ajar_announcement') || '').trim();
   if(!text){ el.innerHTML = ''; return; }
-  const dismissed = localStorage.getItem('cse_announcement_dismissed');
+  const dismissed = localStorage.getItem('ajar_announcement_dismissed');
   if(dismissed === String(hashStr(text))){ el.innerHTML = ''; return; }
   el.innerHTML = `
     <div class="panel" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;background:var(--accent-soft);border:none;margin-bottom:1rem">
@@ -11702,8 +11759,8 @@ function renderAnnouncement(){
     </div>`;
 }
 function dismissAnnouncement(){
-  const text = (localStorage.getItem('cse_announcement') || '').trim();
-  localStorage.setItem('cse_announcement_dismissed', String(hashStr(text)));
+  const text = (localStorage.getItem('ajar_announcement') || '').trim();
+  localStorage.setItem('ajar_announcement_dismissed', String(hashStr(text)));
   renderAnnouncement();
 }
 
@@ -11801,7 +11858,7 @@ function shouldShowFeedbackNudge(){
   const s = usageSummary();
   if(!s || s.total < FEEDBACK_NUDGE_MIN_ATTEMPTS) return false;
   if(new Date().getDay() !== FEEDBACK_NUDGE_WEEKDAY) return false;
-  const last = Number(localStorage.getItem('cse_feedback_last_prompt') || 0);
+  const last = Number(localStorage.getItem('ajar_feedback_last_prompt') || 0);
   if(!last) return true;
   return !isSameLocalDay(last, Date.now());
 }
@@ -11821,7 +11878,7 @@ function renderFeedbackNudge(){
     </div>` : '';
 }
 function snoozeFeedbackNudge(){
-  localStorage.setItem('cse_feedback_last_prompt', String(Date.now()));
+  localStorage.setItem('ajar_feedback_last_prompt', String(Date.now()));
   renderFeedbackNudge();
 }
 
@@ -11916,7 +11973,7 @@ function sendFeedback(){
   const subject = `${PRODUCT_NAME} — app feedback from ${name}`;
   // Either path below means the student actually engaged with feedback
   // this cycle, so the weekly nudge stays quiet for another 7 days.
-  localStorage.setItem('cse_feedback_last_prompt', String(Date.now()));
+  localStorage.setItem('ajar_feedback_last_prompt', String(Date.now()));
   if(email){
     location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     document.getElementById('fb-result').innerHTML = `<p class="small-note">Opening your mail app, addressed to ${escapeHtml(email)}…</p>`;

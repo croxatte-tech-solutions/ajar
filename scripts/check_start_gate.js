@@ -58,8 +58,8 @@ const testScript = `
   // WHO SEES THE CLASS'S SET
   //=================================================================
   const classSet = [approved('sentence','campus'), approved('passage','environment')];
-  localStorage.setItem('cse_batch', JSON.stringify(classSet));
-  localStorage.removeItem('cse_individual');
+  localStorage.setItem('ajar_batch', JSON.stringify(classSet));
+  localStorage.removeItem('ajar_individual');
   setStudentName('Ana');
 
   location.search = '';
@@ -90,7 +90,7 @@ const testScript = `
   // cannot answer "did pressing Start start the clock". Email also carries a
   // subject line, which is exactly the kind of thing the card must not leak.
   const mine = [approved('email','career')];
-  localStorage.setItem('cse_individual', JSON.stringify({ ana: mine }));
+  localStorage.setItem('ajar_individual', JSON.stringify({ ana: mine }));
   location.search = '';
   assert('a set picked for her by name reaches her without any code',
     getStudentBatch().length === 1 && getStudentBatch()[0].type === 'email');

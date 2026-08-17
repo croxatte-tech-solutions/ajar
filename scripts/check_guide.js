@@ -177,14 +177,14 @@ const testScript = `
 
   // Run it. Both branches matter: hers when she has set one, the
   // developer's when she has not.
-  localStorage.removeItem('cse_teacher_email');
+  localStorage.removeItem('ajar_teacher_email');
   assert('with nothing set it goes to the developer', feedbackTo() === DEV_EMAIL);
-  localStorage.setItem('cse_teacher_email', '   ');
+  localStorage.setItem('ajar_teacher_email', '   ');
   assert('a blank saved address still goes to the developer', feedbackTo() === DEV_EMAIL);
-  localStorage.setItem('cse_teacher_email', 'ms@school.example');
+  localStorage.setItem('ajar_teacher_email', 'ms@school.example');
   assert('a teacher who set her own address reads it first',
     feedbackTo() === 'ms@school.example');
-  localStorage.removeItem('cse_teacher_email');
+  localStorage.removeItem('ajar_teacher_email');
 
   // The panel used to promise a copy-this-yourself box when no address was
   // set. There is always an address now, so that sentence was a lie.

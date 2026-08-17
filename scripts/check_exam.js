@@ -95,7 +95,7 @@ const testScript = `
   assert('the running order varies between sittings', new Set(firstTypes).size > 1);
 
   // --- a sat section never reaches the practice log ---
-  localStorage.removeItem('cse_usage_log_by_name');
+  localStorage.removeItem('ajar_usage_log_by_name');
   setStudentName('Test Student');
   startExam('reading');
   assert('an exam is now in progress', examActive());
@@ -103,7 +103,7 @@ const testScript = `
   logUsage('passage', 'campus', 1);
   logUsage('daily-read', 'money', 0.5);
   assert('practising during an exam writes nothing to the practice log',
-    localStorage.getItem('cse_usage_log_by_name') === null);
+    localStorage.getItem('ajar_usage_log_by_name') === null);
 
   const mid = JSON.parse(localStorage.getItem('ajar_exam_current'));
   assert('the exam counted those answers instead', mid.answered > 0);
@@ -507,7 +507,7 @@ const testScript = `
   Object.keys(EXAM_SECTIONS).forEach(k => {
     const sec = EXAM_SECTIONS[k];
     localStorage.removeItem('ajar_exam_current');
-    localStorage.removeItem('cse_usage_log_by_name');
+    localStorage.removeItem('ajar_usage_log_by_name');
     startExam(k);
     let steps = 0;
     while(steps++ < 200){
@@ -527,7 +527,7 @@ const testScript = `
     assert('all-correct in ' + k + ' scores everything markable', end.correct === markable);
     assert('all-correct in ' + k + ' is band 6', examBand(end.correct, markable) === 6);
     assert('a full ' + k + ' sitting left the practice log alone',
-      localStorage.getItem('cse_usage_log_by_name') === null);
+      localStorage.getItem('ajar_usage_log_by_name') === null);
     if(sec.scored){
       // One entry per unscored EXERCISE, not per question: Speaking's
       // single interview is worth four items but is one piece of work
@@ -624,10 +624,10 @@ const testScript = `
   })());
 
   // --- and once finished, practice logging works again ---
-  localStorage.removeItem('cse_usage_log_by_name');
+  localStorage.removeItem('ajar_usage_log_by_name');
   logUsage('passage', 'campus', 1);
   assert('practice logging resumes once the exam is over',
-    localStorage.getItem('cse_usage_log_by_name') !== null);
+    localStorage.getItem('ajar_usage_log_by_name') !== null);
 
   // --- unanswered questions are not silently counted right ---
   localStorage.removeItem('ajar_exam_current');
