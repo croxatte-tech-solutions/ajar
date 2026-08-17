@@ -42,7 +42,10 @@ const el = (id) => {
 };
 const store = {};
 
+const HTML_SOURCE_JSON = JSON.stringify(html);
 const testScript = `
+const HTML_SOURCE = ${HTML_SOURCE_JSON};
+
 ${blocks.join('\n;\n')}
 ;
 (function(){
@@ -115,6 +118,32 @@ ${blocks.join('\n;\n')}
   //=================================================================
   // Four options, so blind guessing is 25%. A strategy that needs no
   // comprehension must not beat that by more than sampling noise (3 sd).
+    /* THE TELL THAT IS NOT A TELL, AND THE ONE LINE HOLDING IT THAT WAY.
+
+     Every answer key in every bank is index 0 — 511 of 511. That is not a
+     flaw in the data; it is how the banks were authored, and it is harmless
+     for exactly one reason: each generator calls shuffle(q.options) before
+     the student ever sees them, so position carries no information at the
+     point where a student could use it.
+
+     It is harmless the way an unlocked door is harmless while someone is
+     standing in front of it. A seventh exercise type, or a renderer that
+     forgets the shuffle, hands out a 100% strategy — pick the first one —
+     and the length checks below would not notice, because they read the
+     bank rather than the screen. So the guard is on the generators. */
+  const generators = ['genChooseResponse','genAnnouncement','genConversation',
+                      'genTalk','genDailyRead','genPassage'];
+  const src = String(HTML_SOURCE);
+  const unshuffled = generators.filter(g => {
+    const at = src.indexOf('function ' + g + '(');
+    if(at === -1) return true;
+    const body = src.slice(at, at + 2600);
+    return body.indexOf('shuffle(') === -1;
+  });
+  assert('every generator shuffles its options, so answer position is never a tell (' +
+    generators.length + ' generators, 511 keys all at index 0)',
+    unshuffled.length === 0, 'never shuffled: ' + unshuffled.join(', '));
+
   const byType = {};
   qs.forEach(x => { (byType[x.type] = byType[x.type] || []).push(x.q); });
   for(const type in byType){
