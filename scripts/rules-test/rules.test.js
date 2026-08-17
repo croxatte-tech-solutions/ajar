@@ -37,6 +37,9 @@ await env.withSecurityRulesDisabled(async (c) => {
   await setDoc(doc(db, 'schools', SCHOOL, 'classroom', 'roster'), { students: ['Ana', 'Bo'] });
   await setDoc(doc(db, 'schools', SCHOOL, 'classroom', 'note_ana'), { text: 'Ana still confuses -ed endings.' });
   await setDoc(doc(db, 'schools', SCHOOL, 'students', 'ana'), { displayName: 'Ana', summary: { done: 4 } });
+  await setDoc(doc(db, 'admins', 'the_admin'), { note: 'owner' });
+  await setDoc(doc(db, 'users', 'anon_student'), { displayName: 'Ana', email: 'ana@x.test',
+    country: 'Brazil', birthDate: '2007-04-11', role: 'student', schoolId: SCHOOL, createdAt: 1 });
 });
 
 // firebase.sign_in_provider is what the rules read, and it defaults to
@@ -48,6 +51,90 @@ const student2 = env.authenticatedContext('anon_other',   ANON).firestore();
 const alpha    = env.authenticatedContext('teacher_alpha').firestore();
 const beta     = env.authenticatedContext('teacher_beta').firestore();
 const nobody   = env.unauthenticatedContext().firestore();
+const admin     = env.authenticatedContext('the_admin').firestore();
+const applicant = env.authenticatedContext('applicant').firestore();
+const outsider  = env.authenticatedContext('outsider').firestore();
+
+//===================================================================
+// NOBODY MAKES THEMSELVES A TEACHER BY TYPING A SCHOOL NAME
+//===================================================================
+// The signup form asks for the school. That string is evidence, never
+// authority — if typing it granted access, anyone could sign up as a teacher
+// at any school and read its class, its results and its private notes.
+await check('an applicant can file their own request', () =>
+  assertSucceeds(setDoc(doc(applicant, 'teacherRequests', 'applicant'),
+    { name: 'B. New', email: 'b@x.test', schoolNameTyped: 'Alpha', requestedAt: 2 })));
+await check('but filing it grants nothing — they are still not a teacher', () =>
+  assertFails(setDoc(doc(applicant, 'schools', SCHOOL, 'classroom', 'current'), { items: [] })));
+await check('and they cannot write their own teacher record', () =>
+  assertFails(setDoc(doc(applicant, 'teachers', 'applicant'), { name: 'B', schoolId: SCHOOL })));
+await check('a request cannot name a school it does not have to justify', () =>
+  assertFails(setDoc(doc(outsider, 'teacherRequests', 'outsider'),
+    { name: 'B', email: 'b@x.test', schoolNameTyped: 'Alpha', schoolId: SCHOOL, requestedAt: 2 })));
+await check('nor arrive with no school named at all', () =>
+  assertFails(setDoc(doc(outsider, 'teacherRequests', 'outsider'),
+    { name: 'B', email: 'b@x.test', schoolNameTyped: '', requestedAt: 2 })));
+await check('nobody files a request in somebody else\'s name', () =>
+  assertFails(setDoc(doc(outsider, 'teacherRequests', 'applicant'),
+    { name: 'X', email: 'x@x.test', schoolNameTyped: 'Alpha', requestedAt: 2 })));
+await check('an anonymous visitor cannot flood the queue', () =>
+  assertFails(setDoc(doc(student, 'teacherRequests', 'anon_student'),
+    { name: 'X', email: 'x@x.test', schoolNameTyped: 'Alpha', requestedAt: 2 })));
+await check('a request cannot be edited after it is filed', () =>
+  assertFails(updateDoc(doc(applicant, 'teacherRequests', 'applicant'), { schoolNameTyped: 'Beta' })));
+await check('one applicant cannot read another\'s request', () =>
+  assertFails(getDoc(doc(outsider, 'teacherRequests', 'applicant'))));
+await check('a teacher cannot read the queue either', () =>
+  assertFails(getDoc(doc(alpha, 'teacherRequests', 'applicant'))));
+
+//===================================================================
+// THE ADMINISTRATOR, AND THE FACT THAT ONE CANNOT BE INVENTED
+//===================================================================
+await check('the administrator reads the queue', () =>
+  assertSucceeds(getDoc(doc(admin, 'teacherRequests', 'applicant'))));
+await check('and is the one who can create a teacher', () =>
+  assertSucceeds(setDoc(doc(admin, 'teachers', 'applicant'), { name: 'B. New', schoolId: SCHOOL, schoolName: 'Alpha' })));
+await check('and can clear the request once it is handled', () =>
+  assertSucceeds(deleteDoc(doc(admin, 'teacherRequests', 'applicant'))));
+await check('NOBODY CAN MAKE THEMSELVES AN ADMINISTRATOR', () =>
+  assertFails(setDoc(doc(outsider, 'admins', 'outsider'), { note: 'me' })));
+await check('not even a teacher', () =>
+  assertFails(setDoc(doc(alpha, 'admins', 'teacher_alpha'), { note: 'me' })));
+await check('not even the administrator can mint another', () =>
+  assertFails(setDoc(doc(admin, 'admins', 'outsider'), { note: 'friend' })));
+await check('the list of administrators is not enumerable by anyone', () =>
+  assertFails(getDoc(doc(outsider, 'admins', 'the_admin'))));
+await check('a teacher cannot promote themselves to another school', () =>
+  assertFails(setDoc(doc(alpha, 'teachers', 'teacher_alpha'), { name: 'M', schoolId: OTHER })));
+
+//===================================================================
+// PERSONAL DATA STAYS WITH THE PERSON
+//===================================================================
+// Email, country and date of birth live in users/{uid} and nowhere else.
+// A teacher does not need any student's date of birth in order to teach them.
+await check('a student reads their own profile', () =>
+  assertSucceeds(getDoc(doc(student, 'users', 'anon_student'))));
+await check('a classmate cannot read it', () =>
+  assertFails(getDoc(doc(student2, 'users', 'anon_student'))));
+await check('THEIR OWN TEACHER CANNOT READ IT EITHER', () =>
+  assertFails(getDoc(doc(alpha, 'users', 'anon_student'))));
+await check('nor can the administrator', () =>
+  assertFails(getDoc(doc(admin, 'users', 'anon_student'))));
+await check('a profile with an invented field is refused', () =>
+  assertFails(setDoc(doc(student, 'users', 'anon_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2007-04-11', role: 'student', isAdmin: true })));
+await check('a profile claiming a role that is not a role is refused', () =>
+  assertFails(setDoc(doc(student, 'users', 'anon_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2007-04-11', role: 'admin' })));
+await check('a profile with no country is refused', () =>
+  assertFails(setDoc(doc(student, 'users', 'anon_student'),
+    { displayName: 'Ana', country: '', birthDate: '2007-04-11', role: 'student' })));
+await check('a malformed birth date is refused', () =>
+  assertFails(setDoc(doc(student, 'users', 'anon_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '11/04/07', role: 'student' })));
+await check('and nobody writes a profile under another person\'s id', () =>
+  assertFails(setDoc(doc(outsider, 'users', 'anon_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2007-04-11', role: 'student' })));
 
 //===================================================================
 // THE ONE GUARANTEE THE PRODUCT RESTS ON

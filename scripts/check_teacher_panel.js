@@ -143,7 +143,34 @@ assert('and only the display fields', /hasOnly\(\['name', 'schoolName'\]\)/.test
 assert('schoolId stays out of reach, so no account can move school',
   teacherRule.indexOf("hasOnly(['name', 'schoolName'])") > -1
   && teacherRule.indexOf("'schoolId'") === -1);
-assert('becoming a teacher is still a console job', /allow create, delete: if false/.test(teacherRule));
+/* This used to require `allow create, delete: if false` — teachers made in
+   the console and nowhere else. Self-service teacher signup needed somebody
+   to be able to say yes, so it is now isAdmin().
+
+   That is a change in WHO performs the act, not in whether the act is
+   deliberate, and the check has to assert the new guarantee rather than be
+   loosened to accommodate the change. The guarantee is a chain: a teacher can
+   only be created by an administrator, an administrator can only be created
+   by the console, and nothing in the app can write either. Assert all three
+   links, because any one of them failing gives the app a way to promote its
+   own users. */
+// Each block runs to the next top-level match, so a rule cannot be read as
+// belonging to a section it does not sit in.
+const ruleBlock = name => {
+  const at = rules.indexOf('match /' + name + '/');
+  if(at === -1) return '';
+  const next = rules.indexOf('\n    match /', at + 1);
+  return rules.slice(at, next === -1 ? rules.length : next);
+};
+const adminRule = ruleBlock('admins');
+assert('only an administrator can make someone a teacher',
+  /allow create, delete: if isAdmin\(\)/.test(teacherRule));
+assert('and an administrator is still made in the console and nowhere else',
+  /allow create, update, delete: if false/.test(adminRule));
+assert('so nothing the app can write promotes anybody',
+  adminRule.indexOf('isAdmin()') === -1 && adminRule.indexOf('isSignedIn() && request.auth.uid == uid') > -1);
+assert('and the applicant queue grants nothing on its own',
+  ruleBlock('teacherRequests').indexOf("'schoolId'") === -1);
 
 // --- the trial run, and feedback that cannot be skipped ---
 //

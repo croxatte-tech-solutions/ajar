@@ -76,13 +76,96 @@ service cloud.firestore {
     // all under /students. It cannot tell one student from another (see
     // limit 1), but it CAN tell a student from a teacher of some other
     // school, and that distinction is the whole of multi-tenancy.
+    // The one account that can make someone a teacher.
+    //
+    // Firebase's canonical answer for roles is a custom claim on the token,
+    // and it is the wrong tool here: it needs the Admin SDK, so there is no
+    // backend-free way to set it and no way to see or edit it in the console;
+    // and a changed claim does not reach the client until the token refreshes,
+    // so approving somebody would not take effect until they signed out and
+    // back in. A document is legible, editable by hand, and effective at once.
+    //
+    // Created by hand in the console and by nothing else. An app that can
+    // promote its own users to administrator has no administrators.
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     function isAnonymous() {
       return isSignedIn()
         && request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
 
-    // The teacher roster. Created by hand in the console; the app never
-    // writes here, so no client can promote itself or move schools.
+    // Who the administrator is. Nothing but the console writes here, and
+    // only the holder can read their own record — an enumerable list of
+    // administrators is a list of accounts worth attacking.
+    match /admins/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow create, update, delete: if false;
+    }
+
+    // A teacher asking to be let in. This is the whole of self-service
+    // signup for teachers: it records the request and grants nothing.
+    //
+    // The school name here is TYPED BY THE APPLICANT and is evidence, not
+    // authority — it is deliberately NOT the schoolId. If typing a school
+    // name granted access to that school, anyone could sign up as a teacher
+    // at any school and read its class, its results and its private notes.
+    // The binding happens when an administrator creates the teacher record.
+    match /teacherRequests/{uid} {
+      function validRequest() {
+        return request.resource.data.keys().hasOnly(['name', 'email', 'schoolNameTyped', 'requestedAt'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 80
+          && request.resource.data.email is string
+          && request.resource.data.email.size() <= 200
+          && request.resource.data.schoolNameTyped is string
+          && request.resource.data.schoolNameTyped.size() > 0
+          && request.resource.data.schoolNameTyped.size() <= 120;
+      }
+      // Their own request, once, and never anonymously — a queue an
+      // anonymous visitor can write to is a queue that can be flooded.
+      allow create: if isSignedIn() && !isAnonymous()
+        && request.auth.uid == uid
+        && validRequest();
+      // They can see that they asked; the administrator sees everyone.
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      // Editing a pending request after an administrator has looked at it
+      // would let the school name change between review and approval.
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Everyone's own profile, and the only place the personal data lives.
+    //
+    // Kept apart from schools/{id}/students/{uid} on purpose. That document
+    // holds a display name and five numbers, and the class can read it. This
+    // one holds an email address, a country and a date of birth, and nobody
+    // reads it but its owner — not classmates, not their teacher, who does
+    // not need any student's date of birth in order to teach them.
+    match /users/{uid} {
+      function validProfile() {
+        return request.resource.data.keys().hasOnly(
+                 ['displayName', 'email', 'country', 'birthDate', 'role', 'schoolId', 'createdAt'])
+          && request.resource.data.displayName is string
+          && request.resource.data.displayName.size() > 0
+          && request.resource.data.displayName.size() <= 80
+          && request.resource.data.country is string
+          && request.resource.data.country.size() > 0
+          && request.resource.data.country.size() <= 60
+          && request.resource.data.birthDate is string
+          && request.resource.data.birthDate.size() == 10
+          && request.resource.data.role in ['student', 'teacher'];
+      }
+      allow read, delete: if isSignedIn() && request.auth.uid == uid;
+      allow create, update: if isSignedIn() && request.auth.uid == uid
+        && validProfile();
+    }
+
+    // The teacher roster. Created by an administrator, never by the app's
+    // own users, so no client can promote itself or move schools.
     match /teachers/{uid} {
       // Her own document, and only hers.
       //
@@ -132,9 +215,14 @@ service cloud.firestore {
                 && request.resource.data.schoolName.size() > 0
                 && request.resource.data.schoolName.size() <= 120));
 
-      // Creating or deleting a teacher stays a console job. Self-signup
-      // would let anyone with an account become a teacher of any school.
-      allow create, delete: if false;
+      // Creating a teacher is the act of granting access to a school, and
+      // it belongs to a person, not to a form. It was `if false` — console
+      // only — and moving it to isAdmin() changes who does it, not whether
+      // it is deliberate: an administrator record is itself console-only.
+      //
+      // Self-signup is still impossible. An applicant writes to
+      // teacherRequests and waits; nothing they can write reaches here.
+      allow create, delete: if isAdmin();
     }
 
     match /schools/{schoolId} {
