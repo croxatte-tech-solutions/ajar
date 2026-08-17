@@ -38,6 +38,32 @@ const authLine = (html.split('\n').find(l => l.indexOf('__onAuthChanged =') > -1
 assert('signing in or out redraws the panel, not just the card',
   authLine.indexOf('renderTeacher()') > -1);
 
+// --- signing out is reachable from anywhere ---
+//
+// The button existed, but only inside the Account panel. Once the panel
+// became tabs that put it one click away and effectively invisible —
+// reported as "there is no log out". It belongs in the header, which is on
+// screen whichever tab is open, and it matters most when a teacher is
+// walking away from a shared school computer.
+//
+// Part of the confusion was upstream: the panel opened with no sign-in, so
+// there was nothing to sign out OF. Gating it makes the pair coherent.
+const whoAmI = html.slice(html.indexOf('function renderWhoAmI()'),
+                          html.indexOf('function renderWhoAmI()') + 900);
+assert('the header carries the sign-out, not just the Account panel',
+  whoAmI.indexOf('teacherSignOut()') > -1);
+assert('it shows who is signed in beside it',
+  /u\.name \|\| u\.email/.test(whoAmI));
+assert('and shows nothing to sign out of when nobody is signed in',
+  whoAmI.indexOf('u && u.isTeacher') > -1);
+assert('signing out actually clears the session',
+  /signOutTeacher\(\)/.test(html));
+// Line-based, not [^;]*: the call chain is several statements on one line,
+// so a "no semicolons between" regex misses text that is plainly there.
+// Third time that pattern has produced a false failure in this repo.
+const signOutLine = (html.split('\n').find(l => l.indexOf('signOutTeacher()') > -1 && l.indexOf('then') > -1) || '');
+assert('and redraws the header afterwards', signOutLine.indexOf('renderWhoAmI') > -1);
+
 // --- tabs, not a scroll position ---
 assert('the old scroll-jump is gone', html.indexOf('function jumpToSection') === -1);
 assert('the scroll-spy is gone too', html.indexOf('markSectionInView') === -1);
