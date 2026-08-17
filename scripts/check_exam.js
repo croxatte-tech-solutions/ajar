@@ -161,6 +161,17 @@ const testScript = `
   assert('and says there was one listen, as on test day',
     listensSpentNote('answer').indexOf('One listen') > -1);
 
+  // The sentence that tells the student how many listens they get has to
+  // agree with how many they get. Found on a real iPhone: inside a
+  // Listening section the screen said "you will hear it at most twice"
+  // while maxListens() correctly returned 1. The limit was right; the
+  // sentence describing it was three separate hardcoded strings.
+  assert('a section promises one listen, not two',
+    listensAheadNote().indexOf('once only') > -1);
+  assert('and does not still say twice', listensAheadNote().indexOf('twice') === -1);
+  assert('nothing hardcodes the promise any more',
+    (HTML_SOURCE.split('Press listen to begin. You will hear').length - 1) === 0);
+
   // The brief must stop promising a second listen while the section is
   // taking it away, or it contradicts the screen it sits on.
   const briefInExam = taskBriefHtml('talk');

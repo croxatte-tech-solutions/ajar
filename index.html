@@ -8673,7 +8673,7 @@ function renderAnnouncementStep(item){
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
         <div class="mc-options">${options}</div>`
-        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin. You will hear it at most twice.</p>'}
+        : listensAheadNote()}
       <div id="an-result"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceAnnouncement()">${doneQ < totalQ-1 ? 'Next question →' : 'Finish →'}</button>
@@ -8899,7 +8899,7 @@ function renderTalkStep(item){
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
         <div class="mc-options">${options}</div>`
-        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin. It runs about a minute, and you will hear it at most twice. All four questions come from this one talk.</p>'}
+        : listensAheadNote(' It runs about a minute.') + '<p class="small-note">All four questions come from this one talk.</p>'}
       <div id="tk-result"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceTalk()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
@@ -8983,7 +8983,7 @@ function renderConversationStep(item){
       ${st.listens ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
         <div class="mc-options">${options}</div>`
-        : '<p class="small-note" style="margin-top:.8rem">Press listen to begin. You will hear it at most twice.</p>'}
+        : listensAheadNote()}
       <div id="cv-result"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceConversation()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
@@ -9168,6 +9168,18 @@ function maxListens(type){
 }
 // The note shown once they are out of listens has to match how many they
 // actually had, or it tells a student in a section they used two.
+// How many listens the student is about to get, in words.
+//
+// Found on a real iPhone: inside a Listening section, where the audio
+// plays once, the screen still read "you will hear it at most twice". The
+// limit was right and the sentence describing it was a separate hardcoded
+// string in three places. A student reads the sentence, not maxListens().
+function listensAheadNote(extra){
+  const n = examActive() ? 1 : 2;
+  const how = n === 1 ? 'once only, as on test day' : 'at most twice';
+  return `<p class="small-note" style="margin-top:.8rem">Press listen to begin.${extra || ''} You will hear it ${how}.</p>`;
+}
+
 function listensSpentNote(verb){
   return examActive()
     ? `<span class="small-note">🔇 One listen, as on test day — ${verb} from what you heard.</span>`
