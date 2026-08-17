@@ -243,6 +243,26 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 
 .timer-badge{ display:inline-flex; align-items:center; gap:.35rem; background:var(--accent-soft); color:var(--accent); border-radius:99px; padding:.3rem .75rem; font-size:.85rem; font-weight:700; font-variant-numeric:tabular-nums; margin-bottom:.7rem; }
 .timer-badge.warn{ background:var(--red-soft); color:var(--red); }
+/* Graded warning, on the two long writing tasks only. The thresholds are
+   absolute seconds rather than percentages, because they are anchored to
+   what the student still has to DO with the time left: about a minute to
+   finish the closing sentence at the 10-20 words per minute a second-
+   language writer manages under pressure, and about a minute to reread
+   a hundred words. Two minutes is therefore "you can still close and
+   check"; forty-five seconds is "you can only check now".
+
+   Size grows with colour so the signal survives colour blindness — about
+   one man in twelve cannot separate green from red, and WCAG 1.4.1 says
+   colour may never be the only channel. It grows with transform rather
+   than font-size: a badge that reflows would shove the paragraph the
+   student is writing, which is a worse interruption than the one being
+   signalled. */
+.timer-badge{ transition:transform .4s ease, background-color .4s ease, color .4s ease; transform-origin:left center; }
+.timer-badge.caution{ background:var(--amber-soft); color:var(--amber); transform:scale(1.08); }
+.timer-badge.urgent{ background:var(--red-soft); color:var(--red); transform:scale(1.18); font-weight:800; }
+/* Reserve the tallest state's room up front, so nothing below moves. */
+.timer-row{ min-height:2.4rem; display:flex; align-items:center; }
+@media (prefers-reduced-motion: reduce){ .timer-badge{ transition:none; } }
 .timer-note{ font-size:.68rem; color:var(--text-dim); margin:-.5rem 0 .7rem; }
 
 .guide-btn{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); border-radius:99px; padding:.45rem .8rem; font-size:.78rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:.35rem; }
@@ -7422,7 +7442,12 @@ function clearPracticeTimer(){
 function timerBadgeHtml(type){
   const total = TASK_TIME_LIMITS[type];
   const note = OFFICIAL_TIMING[type] ? 'Official TOEFL time for this task' : 'Practice pacing target — ETS does not publish an official time for this task';
-  return `<div class="timer-badge" id="task-timer">⏱ ${formatTime(total)}</div><div class="timer-note">${note}</div>`;
+  // The real exam's clock does not change colour. Saying so keeps a
+  // student from building a habit around a cue that will not be there.
+  const colourNote = GRADED_TIMER[type]
+    ? '. The clock here turns amber with 2 minutes left and red with 45 seconds — the real one does not, so watch the number too.'
+    : '';
+  return `<div class="timer-row"><div class="timer-badge" id="task-timer">⏱ ${formatTime(total)}</div></div><div class="timer-note">${note}${colourNote}</div>`;
 }
 // onExpire lets a task decide what "time's up" actually advances into —
 // most types move to the next exercise in the batch (the default), but
@@ -7438,12 +7463,32 @@ function startTaskTimer(type, onExpire){
   renderTaskTimer();
   runTaskTimer();
 }
+// Only the two long writing tasks are graded. On a 45-second spoken answer
+// a colour change adds an alarm without adding information — the whole task
+// IS the pressure window, and the student is talking, which is the thing
+// being measured. The real clock does not change colour either, so the
+// short tasks stay closest to it.
+const GRADED_TIMER = { email:true, discussion:true };
+const TIMER_CAUTION_S = 120;  // still time to finish a sentence and reread
+const TIMER_URGENT_S = 45;    // only time to reread
 function renderTaskTimer(){
   const st = window._timerState;
   const el = document.getElementById('task-timer');
   if(!st || !el) return;
   el.textContent = '⏱ ' + formatTime(st.left);
-  el.classList.toggle('warn', st.left <= Math.max(10, Math.floor(TASK_TIME_LIMITS[st.type]*0.15)));
+  if(GRADED_TIMER[st.type]){
+    el.classList.toggle('caution', st.left <= TIMER_CAUTION_S && st.left > TIMER_URGENT_S);
+    el.classList.toggle('urgent', st.left <= TIMER_URGENT_S);
+    el.classList.remove('warn');
+  } else {
+    // Clear the graded state as well. The badge is one element reused
+    // across tasks, so leaving a stale class here meant a 45-second spoken
+    // answer opened already red and enlarged, carried over from whatever
+    // long writing task the student did before it.
+    el.classList.remove('caution');
+    el.classList.remove('urgent');
+    el.classList.toggle('warn', st.left <= Math.max(10, Math.floor(TASK_TIME_LIMITS[st.type]*0.15)));
+  }
 }
 function runTaskTimer(){
   if(window._practiceTimer || !window._timerState) return;
