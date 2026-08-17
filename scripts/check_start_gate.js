@@ -89,7 +89,7 @@ const testScript = `
   // clock when the question is revealed, not when the screen draws, so it
   // cannot answer "did pressing Start start the clock". Email also carries a
   // subject line, which is exactly the kind of thing the card must not leak.
-  const mine = [approved('email','work')];
+  const mine = [approved('email','career')];
   localStorage.setItem('cse_individual', JSON.stringify({ ana: mine }));
   location.search = '';
   assert('a set picked for her by name reaches her without any code',

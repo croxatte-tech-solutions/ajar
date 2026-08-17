@@ -1,0 +1,214 @@
+// Her screen IS the classroom screen.
+//
+// She mirrors the teacher panel to the TV so the room can scan the codes.
+// Every word that panel draws is therefore public — and it was drawing the
+// exercises. The whole passage. Both sides of every conversation. All seven
+// sentences to be repeated. And for eleven of the twelve types, the correct
+// answer, in bold, beside the question it answers.
+//
+// A class watching the TV had the key before the exercise began.
+//
+// So this file asks one question of all twelve types at once: is there any
+// string from the exercise data on that screen? Not "does the code look
+// careful" — the actual rendered panel, walked for anything that came out of
+// the item.
+//
+// The generic walk matters more than any single assertion here. A thirteenth
+// task type gets covered the day it is written, without anybody remembering
+// to come back and add it.
+const fs = require('fs');
+const vm = require('vm');
+const html = fs.readFileSync(process.argv[2], 'utf8');
+const blocks = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)]
+  .filter(m => !/type\s*=\s*["']module["']/.test(m[1]))
+  .map(m => m[2]);
+
+const nodes = {};
+const el = (id) => {
+  if(id && nodes[id]) return nodes[id];
+  const n = {
+    style:{}, innerHTML:'', textContent:'', value:'', id: id || '', className: '',
+    classList:{toggle(){},add(){},remove(){},contains:()=>false},
+    children: [],
+    addEventListener(){}, querySelector:()=>el(), querySelectorAll:()=>[],
+    closest:()=>null, select(){}, focus(){}, remove(){}, insertBefore(){},
+    getBoundingClientRect:()=>({top:0,left:0,width:0,height:0}),
+  };
+  // Cards are appended, not assigned, so collect them instead of dropping
+  // them on the floor — a stub that swallows appendChild would report an
+  // empty panel and pass every assertion in this file.
+  n.appendChild = (child) => { n.children.push(child); };
+  n.parentNode = { insertBefore(){}, removeChild(){} };
+  if(id) nodes[id] = n;
+  return n;
+};
+
+const testScript = `
+(async () => {
+  const results = [];
+  function assert(n, c){ results.push(n + ': ' + (c ? 'PASS' : 'FAIL')); }
+
+  const box = document.getElementById('batch');
+  const panelHtml = () => box.children.map(c => c.innerHTML || '').join('\\n');
+
+  // Everything in the item that a student must not read early. Walked
+  // rather than listed per type: the data comes in three different shapes,
+  // and each of the two times I hand-listed them I missed one.
+  //
+  // 15 characters is the floor. Below it a string is a label or a single
+  // word that turns up in ordinary page furniture; above it, it is content.
+  function secretsOf(data){
+    const found = [];
+    (function walk(v){
+      if(typeof v === 'string'){ if(v.trim().length >= 15) found.push(v.trim()); return; }
+      if(Array.isArray(v)){ v.forEach(walk); return; }
+      if(v && typeof v === 'object'){ Object.values(v).forEach(walk); }
+    })(data);
+    return found;
+  }
+  // The answer is the worst of it, and an option can be short enough to slip
+  // under the floor above, so it is collected regardless of length.
+  function answersOf(data){
+    const found = [];
+    (function walk(v){
+      if(Array.isArray(v)){ v.forEach(walk); return; }
+      if(v && typeof v === 'object'){
+        if(Array.isArray(v.options) && typeof v.answer === 'number' && v.options[v.answer]){
+          found.push(String(v.options[v.answer]).trim());
+        }
+        Object.values(v).forEach(walk);
+      }
+    })(data);
+    return found.filter(a => a.length >= 8);
+  }
+
+  let checkedTypes = 0, totalSecrets = 0, totalAnswers = 0;
+
+  TASK_TYPES.forEach(t => {
+    const g = generateOne(t.id, 'campus');
+    const item = { id: 'card-' + t.id, type: t.id, tag: t.tag, theme: 'campus',
+                   status: 'approved', data: g.data };
+    saveBatch([item]);
+
+    // --- closed, which is how it arrives ---
+    window._revealedCards = null;
+    box.children = [];
+    renderTeacher();
+    const closed = panelHtml();
+
+    const secrets = secretsOf(item.data);
+    const answers = answersOf(item.data);
+    totalSecrets += secrets.length;
+    totalAnswers += answers.length;
+    checkedTypes++;
+
+    const leaked = secrets.filter(x => closed.indexOf(x) > -1);
+    assert(t.tag + ': nothing from the exercise is on the screen',
+      leaked.length === 0);
+    if(leaked.length) results.push('    leaked: ' + JSON.stringify(leaked[0].slice(0, 70)));
+
+    const keyLeaked = answers.filter(x => closed.indexOf(x) > -1);
+    assert(t.tag + ': and least of all an answer', keyLeaked.length === 0);
+    if(keyLeaked.length) results.push('    answer on screen: ' + JSON.stringify(keyLeaked[0]));
+
+    // She still has to be able to choose. Type and theme are what she picks
+    // on, so they have to be there — otherwise this is safe and useless.
+    assert(t.tag + ': she can still see what it is', closed.indexOf(t.tag) > -1);
+    assert(t.tag + ': and what it is about', closed.indexOf('Campus') > -1);
+
+    // And the code to project, which is the entire reason the screen is on
+    // the TV in the first place.
+    assert(t.tag + ': the code to scan is still there', closed.indexOf('<svg') > -1);
+
+    // --- opened, because approving something unread is not review ---
+    // This half is what stops the file passing for the wrong reason. If the
+    // walk above collected nothing, or the panel rendered empty, everything
+    // passes and nothing was tested.
+    window._revealedCards = new Set([item.id]);
+    box.children = [];
+    renderTeacher();
+    const open = panelHtml();
+    const shown = secrets.filter(x => open.indexOf(x) > -1);
+    assert(t.tag + ': but she can open it and read it',
+      secrets.length > 0 && shown.length > 0);
+    assert(t.tag + ': and is told the room can read it too',
+      open.indexOf('anyone watching this screen') > -1);
+  });
+
+  assert('all twelve task types were checked', checkedTypes === TASK_TYPES.length);
+  assert('and there was real content to hide', totalSecrets > 40);
+  assert('including real answer keys', totalAnswers > 10);
+
+  //=================================================================
+  // ONE WAY TO PUT IT ALL AWAY
+  //=================================================================
+  // A card left open scrolls out of sight and stays on the TV.
+  window._revealedCards = new Set(['card-passage']);
+  box.children = [];
+  renderTeacher();
+  assert('an open card raises an alarm at the top of the panel',
+    panelHtml().indexOf('are showing on this screen') > -1);
+  assert('with one button that closes every one of them',
+    panelHtml().indexOf('hideAllCardContent()') > -1);
+
+  hideAllCardContent();
+  box.children = [];
+  renderTeacher();
+  assert('and pressing it does', panelHtml().indexOf('are showing on this screen') === -1);
+  assert('the alarm is absent when nothing is open, not just quiet',
+    revealedCards().size === 0);
+
+  // Nothing opens itself. This is the assertion the whole file exists for.
+  window._revealedCards = null;
+  assert('a fresh load has every card closed', revealedCards().size === 0);
+
+  console.log(results.join('\\n'));
+  const fails = results.filter(r => r.includes('FAIL'));
+  console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
+                           : ('ALL ' + results.length + ' CHECKS PASS'));
+  globalThis.__fails = fails.length;
+})();
+`;
+
+const store = {};
+const sandbox = {
+  btoa: s => Buffer.from(s, 'binary').toString('base64'),
+  atob: s => Buffer.from(s, 'base64').toString('binary'),
+  document: { getElementById: id => el(id), createElement: () => el(), querySelector: () => el(),
+              querySelectorAll: () => [], addEventListener(){}, body: el() },
+  window: { addEventListener(){}, scrollTo(){} },
+  localStorage: {
+    getItem: k => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: k => { delete store[k]; },
+  },
+  location: { origin:'https://example.com', pathname:'/', hash:'', search:'' },
+  navigator: { language:'en-US', languages:['en-US'] },
+  confirm: () => true,
+  Audio: function(){ this.play = () => Promise.resolve(); this.pause = () => {}; },
+  SpeechSynthesisUtterance: function(t){ this.text = t; },
+  speechSynthesis: { speak(){}, getVoices(){ return []; }, addEventListener(){}, cancel(){} },
+  URLSearchParams,
+  console, Date, Math, JSON, Array, Object, String, Number, Intl, Set, Promise,
+  setInterval: (...a) => { const t = setInterval(...a); if(t && t.unref) t.unref(); return t; },
+  clearInterval, setTimeout, clearTimeout,
+};
+sandbox.self = sandbox.window;
+sandbox.globalThis = sandbox;
+// The panel refuses to render at all without a signed-in teacher, which is
+// its own protection and correct — so stand one up. A Proxy rather than a
+// hand-listed stub: start-up touches several CloudSync methods and listing
+// them here would break this file every time one is added.
+const cloudStub = new Proxy({}, {
+  get(_, prop){
+    if(prop === 'currentUser') return () => ({ isTeacher: true, schoolId: 'check-school', name: 'Ms Teacher' });
+    return () => Promise.resolve();
+  },
+});
+sandbox.window.CloudSync = cloudStub;
+sandbox.CloudSync = cloudStub;
+vm.createContext(sandbox);
+vm.runInContext(blocks.join('\n;\n') + '\n;\n' + testScript, sandbox)
+  .catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
+
+process.on('beforeExit', () => { if (sandbox.__fails) process.exitCode = 1; });

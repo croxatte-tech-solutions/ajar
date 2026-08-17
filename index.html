@@ -7132,6 +7132,61 @@ function renderTypeTabs(){
   renderThemeSelect();
 }
 
+/* HER SCREEN IS THE CLASSROOM SCREEN
+   =================================
+   She mirrors the panel to the TV so the room can scan the codes. Which
+   means every word this panel draws is public, and this panel was drawing
+   the exercises — the whole passage, both sides of every conversation, and
+   for eleven of the twelve types the correct answer, in bold, next to the
+   question it answers. A class reading the TV had the key before the
+   exercise started.
+
+   So the card is safe by default and says only what a student may as well
+   know: the task type, the theme, how big it is. That is not a consolation
+   prize — it is a real basis for choosing. She picks a passage because it
+   is a passage, on this week's theme, at a length that fits the time she
+   has. The content is what the exercise IS; she does not need to have read
+   it to know it belongs in today's lesson.
+
+   She can still open it, because approving something sight-unseen is not
+   review. But she has to ask, the asking says why, and it never opens by
+   itself.
+
+   Revealed cards live on window rather than in storage, so a reload closes
+   every one of them. It survives renderTeacher on purpose: approving an
+   exercise re-renders the panel, and having the card slam shut under her
+   while she was reading it would teach her to leave everything open. */
+function revealedCards(){
+  if(!window._revealedCards) window._revealedCards = new Set();
+  return window._revealedCards;
+}
+function toggleCardContent(id){
+  const open = revealedCards();
+  if(open.has(id)) open.delete(id); else open.add(id);
+  renderTeacher();
+}
+function hideAllCardContent(){
+  window._revealedCards = null;
+  renderTeacher();
+}
+// What is safe to put on a screen the whole room is looking at.
+//
+// Word counts and question counts, never the words or the questions. The
+// question count comes from examQuestionCount, which already knows the
+// three different shapes this data comes in — the same three that have
+// caught me twice by looking countable when they were not.
+function cardSummary(item){
+  const d = item.data;
+  const words = d.text ? d.text.split(/\s+/).filter(Boolean).length
+    : d.turns ? d.turns.reduce((n, t) => n + t[1].split(/\s+/).filter(Boolean).length, 0)
+    : d.set ? d.set.reduce((n, a) => n + ((a.text || a.prompt || '').split(/\s+/).filter(Boolean).length), 0)
+    : 0;
+  const bits = [THEME_LABELS[item.theme] || item.theme];
+  if(words) bits.push(words + ' words');
+  const qs = examQuestionCount(item);
+  if(qs > 1) bits.push(qs + ' questions');
+  return bits.join(' · ');
+}
 function cardBody(item){
   const d = item.data;
   if(item.type==='passage') return `
@@ -7444,6 +7499,20 @@ function renderTeacher(){
   wrap.innerHTML = '';
   if(batch.length===0){ empty.style.display='block'; return; }
   empty.style.display='none';
+  // One way out, at the top, whenever anything is open. A teacher who
+  // revealed a card to read it should not have to remember which one, or
+  // find it again after scrolling, before she puts the screen back on the
+  // TV. It is absent entirely when nothing is showing, so it is a state and
+  // not decoration.
+  if(revealedCards().size){
+    const alarm = document.createElement('div');
+    alarm.className = 'panel';
+    alarm.style.cssText = 'border-color:var(--red);margin-bottom:.8rem';
+    alarm.innerHTML = `<b style="color:var(--red)">👁 ${revealedCards().size} exercise(s) are showing on this screen</b>
+      <p class="small-note" style="margin:.3rem 0 .6rem">Including their answers. Hide them before this goes on the classroom screen.</p>
+      <button class="btn sm" onclick="hideAllCardContent()">🙈 Hide all of them</button>`;
+    wrap.appendChild(alarm);
+  }
   batch.forEach(item=>{
     const card = document.createElement('div');
     card.className = 'ex-card' + (item.status==='discarded' ? ' discarded':'');
@@ -7452,7 +7521,15 @@ function renderTeacher(){
         <span class="ex-tag">${item.tag}</span>
         <span class="ex-status ${item.status}">${item.status==='pending'?'Awaiting review':item.status==='approved'?'Approved':'Discarded'}</span>
       </div>
-      ${cardBody(item)}
+      <div class="ex-body">${escapeHtml(cardSummary(item))}</div>
+      ${revealedCards().has(item.id) ? `
+        <div class="small-note" style="color:var(--red);font-weight:600;margin-top:.5rem">👁 Showing the exercise — anyone watching this screen can read it, answers included.</div>
+        ${cardBody(item)}
+        <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="toggleCardContent('${item.id}')">🙈 Hide it again</button></div>
+      ` : `
+        <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="toggleCardContent('${item.id}')">👁 Show me the exercise</button>
+        <span class="small-note" style="margin-left:.4rem">Only if this screen is not on the TV — it shows the answers too</span></div>
+      `}
       ${item.status==='approved' ? `
       <div class="field-row" style="margin-top:.7rem;align-items:center">
         <div style="border:1px solid var(--border);border-radius:12px;padding:10px;background:#ffffff;flex-shrink:0">${renderQRSvg(itemShareLink(item), 150)}</div>
