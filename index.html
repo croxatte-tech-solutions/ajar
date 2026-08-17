@@ -6357,6 +6357,50 @@ function legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, annou
 // only accepts writes to /classroom from a real Google account listed in
 // /teachers, so signing out is the difference between publishing to the
 // class and quietly falling back to the older, denser QR code.
+// A teacher's name, shown wherever her class or the app refers to her.
+//
+// Falls back through what is actually known rather than inventing
+// anything: the name she saved, then the account address, then a generic
+// word. It never shows a bare email to students.
+function teacherDisplayName(u){
+  if(!u) return 'Teacher';
+  return (u.name && u.name.trim()) || u.email || 'Teacher';
+}
+
+// Whether only one name is on file. Not a validation rule — plenty of
+// people go by one name, and refusing to save would be presumptuous. It
+// only decides whether to mention that a surname is missing.
+function teacherNameLooksPartial(u){
+  const n = (u && u.name || '').trim();
+  return n.length > 0 && n.split(/\s+/).length < 2;
+}
+
+function saveTeacherDisplayName(){
+  const input = document.getElementById('teacher-name-input');
+  const msg = document.getElementById('teacher-name-msg');
+  const name = (input && input.value || '').trim();
+  if(!msg) return;
+  if(name.length < 2){
+    msg.innerHTML = '<p class="small-note" style="color:var(--red)">Please type the name your class should see.</p>';
+    return;
+  }
+  if(!window.CloudSync || !window.CloudSync.saveTeacherName){
+    msg.innerHTML = '<p class="small-note">Saving needs a connection — try again once you are online.</p>';
+    return;
+  }
+  msg.innerHTML = '<p class="small-note">Saving…</p>';
+  window.CloudSync.saveTeacherName(name)
+    .then(() => {
+      msg.innerHTML = '<p class="small-note" style="color:var(--accent)">Saved. Your class sees this name now.</p>';
+      renderWhoAmI();
+    })
+    .catch(() => {
+      // The likeliest cause by far is the rules not being published yet,
+      // so say that rather than a generic failure.
+      msg.innerHTML = '<p class="small-note" style="color:var(--red)">Could not save. If this keeps happening, the database rules may not be published yet.</p>';
+    });
+}
+
 function renderTeacherSignIn(){
   const box = document.getElementById('teacher-signin');
   if(!box) return;
@@ -6375,10 +6419,27 @@ function renderTeacherSignIn(){
       <div class="panel" style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
         <span style="font-size:1.1rem">🔓</span>
         <div style="flex:1;min-width:210px">
-          <div style="font-weight:700">Signed in as ${escapeHtml(u.name || u.email || 'teacher')}</div>
+          <div style="font-weight:700">Signed in as ${escapeHtml(teacherDisplayName(u))}</div>
           <div class="small-note" style="margin:.15rem 0 0">Approved sets publish to your class. Students still need no account and no password.</div>
         </div>
         <button class="btn ghost sm" onclick="teacherSignOut()">Sign out</button>
+      </div>
+      <div class="panel" style="margin-top:.7rem">
+        <h3 style="margin:0 0 .3rem">Your name, as your class sees it</h3>
+        <p class="small-note" style="margin:0 0 .6rem">
+          Please give your first name and surname. Your students see this above the work
+          you set them, and a teacher gets her full name.${teacherNameLooksPartial(u)
+            ? ' <b>At the moment only one name is stored.</b>' : ''}
+        </p>
+        <div class="field-row">
+          <div class="field">
+            <label for="teacher-name-input">First name and surname</label>
+            <input type="text" id="teacher-name-input" placeholder="e.g. Ana Beatriz Ferreira"
+                   value="${escapeHtml(u.name || '')}" autocomplete="name">
+          </div>
+          <button class="btn sm" onclick="saveTeacherDisplayName()">Save</button>
+        </div>
+        <div id="teacher-name-msg"></div>
       </div>`;
     return;
   }
@@ -9849,7 +9910,7 @@ function renderWhoAmI(){
     // leaving a shared school computer, when she is already walking away.
     const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
     if(u && u.isTeacher){
-      el.innerHTML = `${escapeHtml(u.name || u.email || TEACHER_NAME)}
+      el.innerHTML = `${escapeHtml(teacherDisplayName(u))}
         <button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
                 onclick="teacherSignOut()">Sign out</button>`;
     } else {
@@ -10722,6 +10783,17 @@ loadSharedClassroomContent().then(()=>{
       },
       async resetTeacherPassword(email) {
         await sendPasswordResetEmail(auth, email);
+      },
+      // Save the teacher's own display name. The rules allow this one
+      // field on her own document and nothing else — schoolId in
+      // particular stays out of reach, since it decides which classroom
+      // she can publish to.
+      async saveTeacherName(name) {
+        const u = auth.currentUser;
+        if (!u) throw new Error('not signed in');
+        await setDoc(doc(db, 'teachers', u.uid), { name: String(name).trim() }, { merge: true });
+        teacherRecord = { ...(teacherRecord || {}), name: String(name).trim() };
+        window.__onAuthChanged?.(window.CloudSync.currentUser());
       },
       async signOutTeacher() {
         await signOut(auth);

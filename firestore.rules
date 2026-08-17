@@ -64,7 +64,30 @@ service cloud.firestore {
     // writes here, so no client can promote itself or move schools.
     match /teachers/{uid} {
       allow read: if isSignedIn();
-      allow write: if false;
+
+      // A teacher may correct her own display name, and nothing else.
+      //
+      // The name is shown to her class, so she should be able to fix it
+      // without asking anyone — a teacher's name is hers, and getting it
+      // wrong in front of her students is not a thing to need permission
+      // for.
+      //
+      // schoolId decides what she can publish to, so it stays untouchable
+      // from the app: an account able to edit its own schoolId could move
+      // itself into another school's classroom, which is the whole thing
+      // multi-tenancy exists to prevent. hasOnly(['name']) is what draws
+      // that line, and it is drawn here rather than in the UI because the
+      // UI is not what enforces anything.
+      allow update: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+
+      // Creating or deleting a teacher stays a console job. Self-signup
+      // would let anyone with an account become a teacher of any school.
+      allow create, delete: if false;
     }
 
     match /schools/{schoolId} {

@@ -53,7 +53,7 @@ const whoAmI = html.slice(html.indexOf('function renderWhoAmI()'),
 assert('the header carries the sign-out, not just the Account panel',
   whoAmI.indexOf('teacherSignOut()') > -1);
 assert('it shows who is signed in beside it',
-  /u\.name \|\| u\.email/.test(whoAmI));
+  whoAmI.indexOf('teacherDisplayName(u)') > -1);
 assert('and shows nothing to sign out of when nobody is signed in',
   whoAmI.indexOf('u && u.isTeacher') > -1);
 assert('signing out actually clears the session',
@@ -63,6 +63,48 @@ assert('signing out actually clears the session',
 // Third time that pattern has produced a false failure in this repo.
 const signOutLine = (html.split('\n').find(l => l.indexOf('signOutTeacher()') > -1 && l.indexOf('then') > -1) || '');
 assert('and redraws the header afterwards', signOutLine.indexOf('renderWhoAmI') > -1);
+
+// --- a teacher's name is hers, and shown in full ---
+//
+// She is the authority in the room, and the app refers to her in front of
+// her class, so it asks for a first name and surname rather than a
+// handle. It also has to let her fix it herself: getting a teacher's name
+// wrong in front of her students is not something to need permission for.
+assert('one helper decides how she is named everywhere',
+  /function teacherDisplayName\(/.test(html));
+assert('the header uses it rather than formatting its own',
+  html.indexOf('escapeHtml(teacherDisplayName(u))') > -1);
+assert('it never shows a bare email where a name belongs',
+  /\(u\.name && u\.name\.trim\(\)\) \|\| u\.email/.test(html));
+
+assert('she is asked for a first name and surname',
+  /First name and surname/.test(html));
+assert('and told why it matters', /Your students see this/.test(html));
+assert('a single name is noticed', /function teacherNameLooksPartial\(/.test(html));
+// Noticing is not refusing: plenty of people go by one name, and blocking
+// the save would be the app overruling her about her own name.
+const partial = html.slice(html.indexOf('function teacherNameLooksPartial'),
+                           html.indexOf('function saveTeacherDisplayName'));
+assert('but a single name is still allowed to be saved',
+  partial.indexOf('return') > -1 && !/throw|refus/i.test(partial));
+
+assert('she can save it from the app', /function saveTeacherDisplayName\(/.test(html));
+assert('saving goes through CloudSync, not a direct write',
+  /CloudSync\.saveTeacherName/.test(html));
+assert('the header refreshes after saving',
+  html.slice(html.indexOf('function saveTeacherDisplayName')).indexOf('renderWhoAmI()') > -1);
+
+// The rules are what actually enforce this, not the form.
+const rules = require('fs').readFileSync(
+  require('path').join(require('path').dirname(process.argv[2] === 'index.html' ? '.' : process.argv[2]), 'firestore.rules'), 'utf8');
+const teacherRule = rules.slice(rules.indexOf('match /teachers/'),
+                                rules.indexOf('match /schools/'));
+assert('the rules let a teacher update her own document', /allow update:/.test(teacherRule));
+assert('only her own', /request\.auth\.uid == uid/.test(teacherRule));
+assert('and only the name field', /hasOnly\(\['name'\]\)/.test(teacherRule));
+assert('schoolId stays out of reach, so no account can move school',
+  teacherRule.indexOf("hasOnly(['name'])") > -1 && !/affectedKeys\(\)\.hasAny/.test(teacherRule));
+assert('becoming a teacher is still a console job', /allow create, delete: if false/.test(teacherRule));
 
 // --- tabs, not a scroll position ---
 assert('the old scroll-jump is gone', html.indexOf('function jumpToSection') === -1);
