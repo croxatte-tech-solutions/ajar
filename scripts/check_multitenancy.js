@@ -30,7 +30,7 @@ const localStorage = { getItem:k=>(k in store?store[k]:null), setItem:(k,v)=>{st
 const testScript = `
 ${combined}
 ;
-(function(){
+(async function(){
   const results = [];
   function assert(n,c){ results.push(n+': '+(c?'PASS':'FAIL')); }
 
