@@ -63,7 +63,7 @@ ${combined}
   // carry the whole history, a class of 13 would cost ~780 reads a refresh
   // and exhaust the free quota inside a lesson.
   assert('the summary carries no raw history',
-    Object.keys(s).every(k => ['attemptsTotal','attemptsToday','weakType','weakAvg','trend'].indexOf(k) > -1));
+    Object.keys(s).every(k => ['attemptsTotal','attemptsToday','weakType','weakAvg','weakTries','trend'].indexOf(k) > -1));
 
   // --- the advice is the teacher's, and only hers ---
   saveTeacherNote('Alex', 'Keep going even when a word escapes you.');

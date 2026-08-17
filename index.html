@@ -7120,7 +7120,7 @@ function renderClassProgress(){
     const esc = name.replace(/'/g, "\\'");
     const today = sum ? sum.attemptsToday : 0;
     const weak = sum && sum.weakType
-      ? tagFor(sum.weakType) + ' &middot; ' + sum.weakAvg + '%'
+      ? tagFor(sum.weakType) + ' &middot; ' + sum.weakAvg + '% <span class="small-note">(best of day, over ' + sum.weakTries + ' attempt' + (sum.weakTries>1?'s':'') + ')</span>'
       : '<span class="small-note">not enough attempts yet</span>';
     const trend = sum && sum.trend === 'up' ? '📈' : sum && sum.trend === 'down' ? '📉' : '';
     return `
@@ -8778,6 +8778,9 @@ function progressSummary(name){
     attemptsToday: log.filter(e => new Date(e.ts).toDateString() === today).length,
     weakType: weak ? weak.type : null,
     weakAvg: weak ? Math.round(weak.avg * 100) : null,
+    // How hard that score was won. A teacher reads 90% differently when it
+    // took twelve attempts, and averaging would have hidden both numbers.
+    weakTries: weak ? weak.attempts : null,
     trend: s.trend || null,
   };
 }
@@ -8907,35 +8910,74 @@ function usageSummary(name){
   const key = (name !== undefined ? name : getStudentName()).toLowerCase() || '_anon';
   const log = loadUsageLogAll()[key] || [];
   if(!log.length) return null;
-  const groups = {};
-  log.forEach(e=>{
-    const gk = e.type + '|' + e.theme;
-    if(!groups[gk]) groups[gk] = { type: e.type, theme: e.theme, sum: 0, n: 0 };
-    groups[gk].sum += e.outcome; groups[gk].n++;
-  });
-  const rows = Object.values(groups).map(g => ({ ...g, avg: g.sum / g.n }));
-  rows.sort((a,b)=>a.avg-b.avg || b.n-a.n);
-  // Only flag a pattern once there's more than one data point for it —
-  // a single unlucky (or lucky) attempt isn't a trend yet.
-  const weakestList = rows.filter(r=>r.n>=2).slice(0,2);
-  const strongestList = [...rows].filter(r=>r.n>=2).sort((a,b)=>b.avg-a.avg || b.n-a.n).slice(0,2);
 
-  // Simple recent-vs-prior trend signal — last 5 attempts vs the 5 before
-  // that, no model needed, just honest arithmetic on real outcomes.
+  // Practice is unlimited on purpose: a student should repeat a task as
+  // many times as the lesson allows. Averaging every attempt punished
+  // exactly that. Someone who went 20% - 40% - 60% - 80% - 90% at Take an
+  // Interview appeared as 58%, when what they can now do is 90% — and the
+  // number that mattered to them was the one telling them to stop trying.
+  //
+  // So the pattern is built from the BEST attempt of each DAY, averaged
+  // across days. Best-of-day rewards persistence within a lesson; keeping
+  // it per-day rather than all-time still shows a decline if one appears,
+  // instead of freezing a lucky afternoon forever.
+  //
+  // Every attempt is still stored. The count travels with the score,
+  // because "90% on the first try" and "90% on the twelfth" are different
+  // students, and that difference is the teacher's to read, not ours to
+  // average away.
+  const groups = {};
+  log.forEach(e => {
+    const gk = e.type + '|' + e.theme;
+    const day = new Date(e.ts).toDateString();
+    if(!groups[gk]) groups[gk] = { type: e.type, theme: e.theme, attempts: 0, bestByDay: {} };
+    const g = groups[gk];
+    g.attempts++;
+    if(g.bestByDay[day] === undefined || e.outcome > g.bestByDay[day]) g.bestByDay[day] = e.outcome;
+  });
+
+  const rows = Object.values(groups).map(g => {
+    const bests = Object.values(g.bestByDay);
+    const avg = bests.reduce((a,b)=>a+b, 0) / bests.length;
+    return { type: g.type, theme: g.theme, avg, attempts: g.attempts,
+             days: bests.length, best: Math.max(...bests),
+             // n stays for anything still reading the old field name.
+             n: g.attempts };
+  });
+  rows.sort((a,b)=>a.avg-b.avg || b.attempts-a.attempts);
+
+  // One attempt is luck, not a pattern — but a second attempt on the same
+  // day now tells us less than a second DAY does, since the first is
+  // already folded into that day's best.
+  const settled = rows.filter(r => r.attempts >= 2);
+  const weakestList = settled.slice(0,2);
+  const strongestList = [...settled].sort((a,b)=>b.avg-a.avg || b.attempts-a.attempts).slice(0,2);
+
+  // Trend compares recent days to earlier ones, on the same best-of-day
+  // basis, so a day spent deliberately retrying a hard task does not read
+  // as a decline.
+  const byDay = {};
+  log.forEach(e => {
+    const day = new Date(e.ts).toDateString();
+    if(byDay[day] === undefined || e.outcome > byDay[day]) byDay[day] = e.outcome;
+  });
+  const dayKeys = Object.keys(byDay).sort((a,b)=>new Date(a)-new Date(b));
   let trend = null;
-  if(log.length >= 6){
-    const avg = arr => arr.reduce((a,e)=>a+e.outcome,0)/arr.length;
-    const delta = avg(log.slice(-5)) - avg(log.slice(-10,-5));
+  if(dayKeys.length >= 4){
+    const mean = arr => arr.reduce((a,b)=>a+b,0)/arr.length;
+    const half = Math.floor(dayKeys.length/2);
+    const delta = mean(dayKeys.slice(-half).map(d=>byDay[d])) - mean(dayKeys.slice(0,half).map(d=>byDay[d]));
     trend = delta > 0.1 ? 'up' : delta < -0.1 ? 'down' : 'flat';
   }
 
   // Consecutive calendar days with at least one logged attempt, counting
   // back from today.
-  const days = new Set(log.map(e => new Date(e.ts).toDateString()));
+  const days = new Set(dayKeys);
   let streak = 0;
   for(let d = new Date(); days.has(d.toDateString()); d.setDate(d.getDate()-1)) streak++;
 
-  return { total: log.length, rows, weakest: weakestList[0] || null, weakestList, strongestList, trend, streak, recentLog: log.slice(-8).reverse() };
+  return { total: log.length, rows, weakest: weakestList[0] || null, weakestList, strongestList,
+           trend, streak, activeDays: dayKeys.length, recentLog: log.slice(-8).reverse() };
 }
 function setStudentName(name){ localStorage.setItem('cse_student_name', name.trim()); }
 function renderWhoAmI(){
@@ -9187,12 +9229,13 @@ function showInsights(name){
     return;
   }
   const bar = avg => `<div style="background:var(--border);border-radius:6px;height:6px;width:100%;overflow:hidden;margin-top:.25rem"><div style="background:var(--accent);height:100%;width:${Math.round(avg*100)}%"></div></div>`;
-  const rowsHtml = s.rows.map(r=>`<li style="margin-bottom:.5rem"><b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% (${r.n} attempt${r.n>1?'s':''})${bar(r.avg)}</li>`).join('');
+  const tries = r => `${r.attempts} attempt${r.attempts>1?'s':''}${r.days>1 ? ' over ' + r.days + ' days' : ''}`;
+  const rowsHtml = s.rows.map(r=>`<li style="margin-bottom:.5rem"><b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% <span class="small-note">(${tries(r)})</span>${bar(r.avg)}</li>`).join('');
   const strengthsHtml = s.strongestList.length
-    ? s.strongestList.map(r=>`<li>💪 <b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% average</li>`).join('')
+    ? s.strongestList.map(r=>`<li>💪 <b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% <span class="small-note">(${tries(r)})</span></li>`).join('')
     : '<li class="small-note">Keep practicing to surface a clear strength.</li>';
   const weaknessesHtml = s.weakestList.length
-    ? s.weakestList.map(r=>`<li>🎯 <b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% average<br><span class="small-note">${IMPROVEMENT_TIPS[r.type]||''}</span></li>`).join('')
+    ? s.weakestList.map(r=>`<li>🎯 <b>${tagFor(r.type)}</b> — ${THEME_LABELS[r.theme]||r.theme}: ${Math.round(r.avg*100)}% <span class="small-note">(${tries(r)})</span><br><span class="small-note">${IMPROVEMENT_TIPS[r.type]||''}</span></li>`).join('')
     : '<li class="small-note">No clear weak spot yet — keep practicing across a few themes to get a real signal.</li>';
   const trendHtml = s.trend
     ? `<p class="small-note">${s.trend==='up' ? '📈 Trending up over the last few attempts — nice.' : s.trend==='down' ? '📉 Dipped a bit over the last few attempts — normal, keep going.' : '➡️ Holding steady over the last few attempts.'}</p>`
@@ -9201,6 +9244,7 @@ function showInsights(name){
   const historyHtml = s.recentLog.map(e=>`<li>${new Date(e.ts).toLocaleDateString()} — ${tagFor(e.type)} (${THEME_LABELS[e.theme]||e.theme}): ${Math.round(e.outcome*100)}%</li>`).join('');
   modal.innerHTML = `<h2>📈 ${who} practice patterns</h2>
     <div class="sub">${s.total} attempt(s) logged${activeName ? ' under this name' : ' on this device'}</div>
+    <p class="small-note">Each score is your <b>best attempt of the day</b>, averaged across the days you practised — so repeating something until it clicks helps your number instead of dragging it down. Every attempt is still counted beside it.</p>
     ${streakHtml}
     ${trendHtml}
     <h3>💪 Strengths</h3><ul>${strengthsHtml}</ul>
