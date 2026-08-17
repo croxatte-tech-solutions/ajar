@@ -221,7 +221,10 @@ assert('no comment asserts a breakpoint the stylesheet does not have',
 // 30 -> 33: setPublishState redraws two surfaces and neither redraw failing
 // may lose the state it just recorded; currentSchool drops an invalid stored
 // id. All three guard a recovery, not a failure worth surfacing.
-const SILENT_CATCH_BASELINE = 33;
+// 33 -> 34: dismissScanError strips ?ex= from the address bar so a reload does
+// not reopen the failed code. An old browser refusing replaceState must not
+// stop the student getting on with free practice.
+const SILENT_CATCH_BASELINE = 34;
 const silent = [...html.matchAll(/catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g)].length;
 assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CATCH_BASELINE + ')',
   silent <= SILENT_CATCH_BASELINE,

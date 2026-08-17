@@ -8743,6 +8743,54 @@ function getStudentBatch(){
   if(!arrivedThroughSharedCode()) return [];
   return loadBatch().filter(i=>i.status==='approved');
 }
+/* What a scan says when it cannot open what it named.
+   Five states, because they need five different actions from the person
+   holding the phone, and one vague "something went wrong" would send all five
+   to the teacher. */
+const SCAN_ERRORS = {
+  gone: { icon: '🔎', title: 'This exercise is no longer available',
+    body: 'Your teacher may have replaced it with a newer one. Ask her for the current code — the one on the screen now.' },
+  'wrong-class': { icon: '🚪', title: 'This code is for a different class',
+    body: 'It opens material that is not yours. Scan the code your own teacher is showing.' },
+  network: { icon: '📶', title: 'Could not check this code',
+    body: 'The connection dropped while opening it. Nothing is lost — try again in a moment.' },
+  offline: { icon: '📴', title: 'You are offline',
+    body: 'This code needs a connection the first time it is opened. Try again once you are back on the wifi.' },
+  invalid: { icon: '⚠️', title: 'This code is not readable',
+    body: 'It may have been scanned partly, or typed with a character missing. Scan it again from the screen.' },
+};
+function renderScanError(kind){
+  const e = SCAN_ERRORS[kind] || SCAN_ERRORS.invalid;
+  ['student-empty','scenario-list'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el){ el.style.display = 'none'; el.innerHTML = ''; }
+  });
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = `
+    <div class="compose" role="alert">
+      <div class="ex-body" style="text-align:center">
+        <div style="font-size:2.4rem;line-height:1">${e.icon}</div>
+        <h2 style="margin:.5rem 0 .2rem">${escapeHtml(e.title)}</h2>
+        <p class="small-note" style="max-width:34ch;margin:.2rem auto 0">${escapeHtml(e.body)}</p>
+      </div>
+      <div class="ex-actions" style="margin-top:1rem;justify-content:center">
+        <button class="btn" onclick="location.reload()">Try again</button>
+        <button class="btn ghost" onclick="dismissScanError()">Practise on my own instead</button>
+      </div>
+    </div>`;
+}
+// Never a dead end: a student whose code failed can still work.
+function dismissScanError(){
+  window.__exError = null;
+  try{
+    const u = new URL(location.href);
+    u.searchParams.delete('ex');
+    history.replaceState(null, '', u.toString());
+  }catch(e){}
+  renderStudent();
+}
+
 function renderSelfPractice(){
   document.getElementById('student-empty').style.display = 'none';
   document.getElementById('scenario-list').innerHTML = '';
@@ -8802,6 +8850,14 @@ function startSurprisePractice(){
 }
 
 function renderStudent(){
+  // A code that named an exercise and could not reach it owns the screen.
+  //
+  // This was the missing half of the fix. Refusing to fall back to the batch
+  // stopped the wrong exercise opening, but with nothing drawn in its place a
+  // student saw free practice — which still reads as "nothing happened", which
+  // is what they saw in the classroom. A scan that fails has to say so.
+  if(window.__exError){ renderScanError(window.__exError); return; }
+
   // Redrawn here, not only on load: the week appears the moment a student
   // taps their name, and the name is typed after the page is already up.
   renderSchoolClock();
