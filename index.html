@@ -462,6 +462,9 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 
   <!-- STUDENT VIEW -->
   <div id="view-student" class="view">
+    <!-- The same line as the cover, and for the same reason: their date,
+         their time, their zone, no week. -->
+    <p class="welcome-clock" id="student-clock" style="text-align:center"></p>
     <div id="announcement-banner"></div>
     <div id="student-note"></div>
     <div id="welcome-back"></div>
@@ -634,19 +637,35 @@ function schoolDayStamp(t){ return Date.UTC(t.y, t.m - 1, t.d); }
 // "Monday, August 17, 2026" — the American order, spelled out, because this
 // is read once at a glance and an ambiguous 8/17 vs 17/8 is a real confusion
 // in a class of international students.
-function schoolDateLabel(now){
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: SCHOOL_TZ(), weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-  }).format(now || new Date());
+//
+// tz is optional: pass the school's zone to ask what day the CLASS is on,
+// omit it to ask what day the READER is on. Both questions are real and the
+// answers differ, so the choice is made by whoever calls rather than baked
+// in here — which is exactly the mistake the first version made by baking
+// Denver into everything.
+function dateLabel(now, tz){
+  const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+  if(tz) opts.timeZone = tz;
+  return new Intl.DateTimeFormat('en-US', opts).format(now || new Date());
 }
-// "9:42 AM" — and the zone's own short name beside it, so MDT or MST is
-// whatever Denver is actually observing rather than something written here.
-function schoolTimeLabel(now){
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: SCHOOL_TZ(), hour: 'numeric', minute: '2-digit',
-    timeZoneName: 'short',
-  }).format(now || new Date());
+// "9:42 AM MDT" — the zone's own short name beside it, so it names whatever
+// zone is actually in force rather than something written here. That is what
+// makes this readable from anywhere: someone opening the app in São Paulo
+// sees their own time, and sees that it is theirs.
+function timeLabel(now, tz){
+  const opts = { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
+  if(tz) opts.timeZone = tz;
+  return new Intl.DateTimeFormat('en-US', opts).format(now || new Date());
 }
+// The reader's own clock, wherever they are. This is what the cover and the
+// student page show: they are not about the class calendar, they are about
+// the person holding the phone.
+function localDateLabel(now){ return dateLabel(now); }
+function localTimeLabel(now){ return timeLabel(now); }
+// The class's clock, which only the teacher's own panel needs — the week is
+// a fact about the classroom, so the day it belongs to is the classroom's.
+function schoolDateLabel(now){ return dateLabel(now, SCHOOL_TZ()); }
+function schoolTimeLabel(now){ return timeLabel(now, SCHOOL_TZ()); }
 
 // Which week and class day today is, from the anchor in CONFIG.
 //
@@ -655,7 +674,7 @@ function schoolTimeLabel(now){
 // Saturday is Day 6. Also null before the term starts, and outside the
 // 12-week plan, since inventing a Week 19 would be worse than saying nothing.
 function schoolPlanToday(now){
-  const m = String(CONFIG.termStart || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const m = String(classTermStart() || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!m) return null;
   const anchor = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   const today = schoolDayStamp(schoolToday(now));
@@ -668,9 +687,30 @@ function schoolPlanToday(now){
   if(!WEEK_PLAN[week]) return null;
   return { week, day: dow };
 }
-// The week CONFIG.termStart is the Monday of. Weeks 1-7 ran before the app
-// existed, so the anchor is week 8 rather than week 1.
+// The week the anchor is the Monday of. Weeks 1-7 ran before the app existed,
+// so the anchor is week 8 rather than week 1.
 const TERM_START_WEEK = 8;
+
+// WHICH MONDAY, FOR THIS CLASS.
+//
+// A week number is not a fact about the app — it is a fact about one class.
+// Another teacher's week 8 is another Monday entirely, and CONFIG.termStart
+// being a single line in a shared file quietly said otherwise. So the anchor
+// is read from the class's own record, and CONFIG only supplies the default
+// for the class this was built for.
+//
+// It lives beside week and day in cse_progress, which is already per-device
+// and therefore per-class. When a second class actually exists this wants to
+// move onto her Firestore record next to schoolName, so it follows her rather
+// than the browser — but that is a schema change to make when there is a
+// second class, not before there is one.
+function classTermStart(){
+  try{
+    const p = JSON.parse(localStorage.getItem('cse_progress') || '{}');
+    if(p.termStart) return p.termStart;
+  }catch(e){}
+  return CONFIG.termStart;
+}
 
 // The one place a share link or QR code gets its origin. Falls back to
 // wherever the page is actually served, so the app keeps working on
@@ -7118,16 +7158,20 @@ function useThisWeeksFocus(){
    displayed minute is never more than twenty seconds stale, cheap enough not
    to matter on a page that is otherwise doing nothing. */
 const SCHOOL_CLOCK_TICK_MS = 20000;
+// The cover and the student page show the READER's date and time, not the
+// classroom's, and no week at all.
+//
+// The week came off these two screens deliberately. It is a fact about one
+// class — another teacher's week 8 is another Monday — so on a screen that
+// anyone in the world may open it is either meaningless or misleading. The
+// clock is the opposite case: it is about the person holding the phone, so
+// it is theirs, and it names their zone so they can see that it is.
 function renderSchoolClock(){
-  const el = document.getElementById('welcome-clock');
-  if(!el) return;
-  const plan = schoolPlanToday();
-  // On a weekend or outside the plan it says the date and stops. Better an
-  // honest gap than a Week 19 nobody scheduled.
-  const week = plan
-    ? ` &middot; Week ${plan.week}, day ${plan.day} of 4`
-    : '';
-  el.innerHTML = `<b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())}${week}`;
+  const html = `<b>${escapeHtml(localDateLabel())}</b> &middot; ${escapeHtml(localTimeLabel())}`;
+  ['welcome-clock', 'student-clock'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = html;
+  });
 }
 function startSchoolClock(){
   renderSchoolClock();
@@ -7170,15 +7214,25 @@ function renderProgressBox(){
   // left it on last week.
   const real = schoolPlanToday();
   const onToday = real && real.week === p.week && real.day === p.day;
+  // The classroom's day, not hers, because that is what the week counts in.
+  // If she opens this from another timezone the class is still on the day
+  // the class is on.
+  const when = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())}`;
   let dateNote;
   if(!real){
-    dateNote = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())} — not a class day, so nothing here is today.`;
+    dateNote = `${when} — not a class day, so nothing here is today.`;
   } else if(onToday){
-    dateNote = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())} — this is today.`;
+    dateNote = `${when} — this is today.`;
   } else {
-    dateNote = `🗓 <b>${escapeHtml(schoolDateLabel())}</b> &middot; ${escapeHtml(schoolTimeLabel())} — today is Week ${real.week}, ${WEEKDAY_NAMES[real.day] || ('day ' + real.day)}.
+    dateNote = `${when} — today is Week ${real.week}, ${WEEKDAY_NAMES[real.day] || ('day ' + real.day)}.
       <button class="btn ghost sm" style="margin-left:.4rem" onclick="goToTodaysPlan()">Go to today</button>`;
   }
+  // Said outright, because a bare "Week 8" reads like a fact about the app.
+  // It is a fact about THIS class: the 12-week plan runs from the Monday
+  // this class started, another class starts on another Monday, and only
+  // this panel shows it — the cover and the student page carry the date and
+  // nothing else.
+  const ownNote = `<span class="small-note">🔒 Week and day belong to your class alone — counted from ${escapeHtml(classTermStart())}, seen only here.</span>`;
 
   el.innerHTML = `
     <div class="panel">
@@ -7195,6 +7249,7 @@ function renderProgressBox(){
         </div>
       </div>
       <p class="small-note" style="margin:.6rem 0 0">${dateNote}</p>
+      <p style="margin:.35rem 0 0">${ownNote}</p>
       <p class="small-note" style="margin:.6rem 0 0">${planNote}${plan && !plan.simulado ? ` <button class="btn ghost sm" style="margin-left:.4rem" onclick="useThisWeeksFocus()">Use this focus</button>` : ''}</p>
     </div>`;
 }

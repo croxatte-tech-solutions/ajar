@@ -127,17 +127,62 @@ const testScript = `
   // The anchor is week 8 because weeks 1-7 happened before the app existed.
   assert('term starts on the Monday named in the config',
     CONFIG.termStart === '2026-08-17');
+
+  // The anchor is the CLASS's, not the app's. Another teacher's week 8 is
+  // another Monday, and a single line in a shared file said otherwise.
+  assert('with no class setting, the config supplies the default',
+    classTermStart() === CONFIG.termStart);
+  saveProgress({ week: 8, day: 1, termStart: '2026-09-07' });
+  assert('a class that started on another Monday counts from that one',
+    classTermStart() === '2026-09-07');
+  assert('and its weeks move with it', (() => {
+    const p = schoolPlanToday(at('2026-09-08T18:00:00Z'));   // Tue 8 Sep
+    return p && p.week === 8 && p.day === 2;
+  })());
+  assert('while the same day is a later week for the original class', (() => {
+    saveProgress({ week: 8, day: 1 });
+    const p = schoolPlanToday(at('2026-09-08T18:00:00Z'));
+    return p && p.week === 11;
+  })());
   assert('and that Monday really is a Monday',
     schoolDateLabel(at('2026-08-17T18:00:00Z')).indexOf('Monday') > -1);
   assert('the anchor week is 8, not 1', TERM_START_WEEK === 8);
 
   //=================================================================
-  // ON SCREEN
+  // THE READER'S CLOCK, NOT THE CLASSROOM'S
+  //=================================================================
+  // Anyone may open the cover from anywhere, so it shows their time and
+  // names their zone. The school's zone is a separate question, asked only
+  // where the week is counted.
+  assert('the reader and the classroom are asked separately',
+    typeof localDateLabel === 'function' && typeof schoolDateLabel === 'function');
+  // Same instant, both formatters. On this machine they may or may not agree;
+  // what must hold is that the school one is pinned and the local one is not.
+  const inst = at('2026-08-18T04:30:00Z');
+  assert('the classroom clock stays on Denver whoever is reading',
+    schoolTimeLabel(inst).indexOf('MDT') > -1);
+  assert('and the local clock names whatever zone the reader is in',
+    /[A-Z]{2,5}|GMT[+-]/.test(localTimeLabel(inst)));
+  assert('the local date is in the same American order',
+    /^[A-Z][a-z]+day, [A-Z][a-z]+ \\d{1,2}, \\d{4}$/.test(localDateLabel(inst)));
+
+  //=================================================================
+  // ON SCREEN — AND WHAT IS DELIBERATELY NOT ON IT
   //=================================================================
   const clock = document.getElementById('welcome-clock');
+  const studentClock = document.getElementById('student-clock');
   renderSchoolClock();
-  assert('the welcome screen carries the date', clock.innerHTML.indexOf(',') > -1);
-  assert('and the time', /(AM|PM)/.test(clock.innerHTML));
+  assert('the cover carries the date', clock.innerHTML.indexOf(',') > -1);
+  assert('and the time with its zone', /(AM|PM)/.test(clock.innerHTML));
+  assert('the student page carries the same line',
+    studentClock.innerHTML === clock.innerHTML && studentClock.innerHTML.length > 0);
+
+  // The week is a fact about one class. On a screen anyone in the world may
+  // open it is either meaningless or misleading, so it is not there at all.
+  assert('the cover says nothing about the week',
+    clock.innerHTML.indexOf('Week') === -1 && clock.innerHTML.indexOf('day 1 of') === -1);
+  assert('and neither does the student page',
+    studentClock.innerHTML.indexOf('Week') === -1);
 
   // The panel has to say whether it is showing today or a day she left it
   // on. That was the whole complaint.
@@ -174,6 +219,14 @@ const testScript = `
   const kept = loadProgress();
   assert('rendering never moves the pointer by itself',
     kept.week === 3 && kept.day === 2);
+
+  // And the panel says whose week it is, because "Week 8" on its own reads
+  // like a fact about the app rather than about this class.
+  const panel = document.getElementById('progress-box').innerHTML;
+  assert('the panel says the week belongs to her class alone',
+    panel.indexOf('belong to your class alone') > -1);
+  assert('and names the Monday it is counted from',
+    panel.indexOf(classTermStart()) > -1);
 
   console.log(results.join('\\n'));
   const fails = results.filter(r => r.includes('FAIL'));
