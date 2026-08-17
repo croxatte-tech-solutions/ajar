@@ -6888,6 +6888,27 @@ function renderTeacherSignIn(){
   const u = window.CloudSync.currentUser();
   const signedIn = u && u.isTeacher;
 
+  /* Signed in, and not a teacher. This became reachable the moment a teacher
+     stopped meaning "has a login": a real account, a correct password, and
+     no /teachers record. Without this branch the form simply accepts the
+     password and nothing happens — the worst possible answer, because it
+     looks like the app is broken rather than like the account is not set up.
+     It is also what a student's Google account will hit, and they need to be
+     told they are in the right app on the wrong screen, not that they failed. */
+  if(u && !u.isAnonymous && u.roleKnown && !u.isTeacher){
+    box.innerHTML = `
+      <div class="panel" style="border-color:var(--amber)">
+        <b>You are signed in, but this is not a teacher account.</b>
+        <p class="small-note" style="margin:.3rem 0 .6rem">
+          ${escapeHtml(u.email || 'This account')} does not have teacher access.
+          If you are a student, everything you need is on the Practise screen —
+          nothing here is for you. If you should have teacher access, ask for
+          your account to be approved.</p>
+        <button class="btn sm ghost" onclick="teacherSignOut()">Sign out</button>
+      </div>`;
+    return;
+  }
+
   if(signedIn){
     box.innerHTML = `
       <div class="panel" style="display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
@@ -12842,12 +12863,40 @@ loadSharedClassroomContent().then(()=>{
     // showing an email address in a header that gets projected onto a
     // classroom wall is both impersonal and more than anyone needs to see.
     let teacherRecord = null;
-    const isTeacherAccount = u => !!u && !u.isAnonymous;
+    /* A TEACHER IS SOMEONE WITH A TEACHER RECORD. NOT SOMEONE WITH A LOGIN.
+
+       This used to read `!!u && !u.isAnonymous` — teacher meant "not
+       anonymous", which was true only while the sole way to be non-anonymous
+       was the teacher's own sign-in form. The moment a student can sign in
+       with Google they stop being anonymous too, and that one line would hand
+       them the whole teacher panel: the generator, the roster, the approval
+       queue, and — through hydrateAllNotesForTeacher, which gates on exactly
+       this — every private note their teacher has written about every one of
+       their classmates.
+
+       The rules would still have refused their WRITES. They would not have
+       refused those reads, because classroom/* has to stay readable for a QR
+       to work without an account. So the leak was real and the gate was
+       cosmetic.
+
+       Now it is the presence of /teachers/{uid}, which only the console can
+       create. A person is a teacher because someone made them one. */
+    const isTeacherAccount = () => !!teacherRecord;
+    // Distinct from "not yet loaded": null means we have not asked, false
+    // means we asked and there is no record. A panel must not flash open
+    // during the gap, so anything gated treats unknown as not-a-teacher.
+    let teacherRecordLoaded = false;
     async function loadTeacherRecord(uid){
       try{
         const snap = await getDoc(doc(db, 'teachers', uid));
         teacherRecord = snap.exists() ? snap.data() : null;
-      }catch(e){ teacherRecord = null; }
+      }catch(e){
+        // A refused read is not proof of anything, but it is definitely not
+        // proof of being a teacher, so it resolves the same way.
+        console.warn('Ajar: could not read the teacher record —', e);
+        teacherRecord = null;
+      }
+      teacherRecordLoaded = true;
       window.__onAuthChanged?.(window.CloudSync ? window.CloudSync.currentUser() : null);
     }
     // Read at call time rather than captured once: a student can open a
@@ -12867,7 +12916,12 @@ loadSharedClassroomContent().then(()=>{
       currentUser = user || null;
       teacherRecord = null;
       if (user) authReadyResolve();
-      if (isTeacherAccount(user)) loadTeacherRecord(user.uid);
+      teacherRecordLoaded = false;
+      // Asked for every signed-in, non-anonymous account — that IS the
+      // question now, rather than something asked once we had already
+      // decided the answer.
+      if (user && !user.isAnonymous) loadTeacherRecord(user.uid);
+      else teacherRecordLoaded = true;
       // Let the UI redraw whenever sign-in state changes, including the
       // redirect back from Google.
       window.__onAuthChanged?.(window.CloudSync ? window.CloudSync.currentUser() : null);
@@ -13016,7 +13070,10 @@ loadSharedClassroomContent().then(()=>{
               name: (teacherRecord && teacherRecord.name) || currentUser.displayName || null,
               schoolName: (teacherRecord && teacherRecord.schoolName) || null,
               schoolId: (teacherRecord && teacherRecord.schoolId) || null,
-              isTeacher: isTeacherAccount(currentUser) }
+              isTeacher: isTeacherAccount(),
+              // So the UI can tell "not a teacher" from "we have not
+              // finished asking" and keep the panel shut during the gap.
+              roleKnown: currentUser.isAnonymous || teacherRecordLoaded }
           : null;
       },
       // `staySignedIn` is the difference between a personal laptop and the
