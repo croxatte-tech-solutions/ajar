@@ -129,7 +129,7 @@ function boot(opts){
     ';globalThis.__api={loadSharedClassroomContent,renderStudent,getStudentBatch,setStudentName,' +
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,dismissScanError,currentSchool,teacherIsSignedIn,applyTeacherGate,'+
-    'renderTeacherSignIn,hydrateAllNotesForTeacher,renderTeacher};', sandbox);
+    'renderTeacherSignIn,hydrateAllNotesForTeacher,renderTeacher,setView};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, store };
 }
 
@@ -187,6 +187,21 @@ function signinBox(){ return el('teacher-signin').innerHTML || ''; }
   assert('and the not-a-teacher notice does not flash up either',
     (function(){ mid.sandbox.currentView='teacher'; mid.api.renderTeacherSignIn();
                  return signinBox().indexOf('not a teacher account') === -1; })());
+
+  //===================================================================
+  // AN ANONYMOUS VISITOR IS NOT TOLD THEY HAVE THE WRONG KIND OF ACCOUNT
+  //===================================================================
+  // They have no account at all. isAnonymous was missing from the object
+  // currentUser() returns, so every caller asking for it got undefined, which
+  // reads as false — and the screen told people who had never signed in that
+  // they were signed in with the wrong sort of login.
+  const visitor = boot({ search: '?school=scan-school' });
+  visitor.api.setView('teacher');
+  visitor.api.renderTeacherSignIn();
+  assert('an anonymous visitor is offered the sign-in form, not a rejection',
+    signinBox().indexOf('not a teacher account') === -1, signinBox().slice(0, 160));
+  assert('the app actually reports whether an account is anonymous',
+    html.indexOf('isAnonymous: !!currentUser.isAnonymous') > -1);
 
   //===================================================================
   // THE OLD TEST IS GONE FROM THE SOURCE

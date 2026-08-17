@@ -11855,7 +11855,7 @@ window.__onCloudSyncReady = function(){
   // used to make this look like "already loaded" and skip the retry —
   // leaving the stale exercise showing instead of the new one.
   if(!window.__classroomContentApplied){
-    loadSharedClassroomContent().then(()=>{ renderStudent(); });
+    loadSharedClassroomContent().then(()=>{ renderStudent(); return syncSchoolMembership(); });
   }
 };
 // Generic, per-skill tips (not per-theme — the theme is just the content,
@@ -12576,9 +12576,26 @@ async function finishProfile(f){
     : 'You are all set.', true);
 }
 
+/* Keeping the profile's school in step with the link that was scanned.
+
+   Called wherever the school can change under a signed-in person: they may
+   have made the account first and scanned the class code afterwards, or
+   arrived on a link for a different class. Their profile's schoolId is what
+   the rules compare against, so if it lags behind, every exercise they finish
+   is refused — and refused in the one place this app has learned not to be
+   quiet about. */
+async function syncSchoolMembership(){
+  if(!window.CloudSync || typeof window.CloudSync.joinSchool !== 'function') return;
+  const sid = currentSchool();
+  if(!sid) return;
+  try{ await window.CloudSync.joinSchool(sid); }
+  catch(e){ console.error('Ajar: could not join this class —', e); }
+}
+
 async function refreshAccountProfile(){
   try{ ACCOUNT_PROFILE = await window.CloudSync.loadProfile(); }
   catch(e){ console.error('Ajar: could not read your profile —', e); ACCOUNT_PROFILE = null; }
+  if(ACCOUNT_PROFILE) await syncSchoolMembership();
   renderAccount();
   renderWhoAmI();
 }
@@ -13698,6 +13715,19 @@ loadSharedClassroomContent().then(()=>{
               schoolName: (teacherRecord && teacherRecord.schoolName) || null,
               schoolId: (teacherRecord && teacherRecord.schoolId) || null,
               isTeacher: isTeacherAccount(),
+              /* isAnonymous was missing from this object, and every caller
+                 that asked for it got undefined — which reads as false, so
+                 every anonymous visitor looked like somebody with an account.
+                 The screen that greeted them said "You are signed in, but
+                 this is not a teacher account" to people who had never signed
+                 in to anything and had no account to sign in with.
+
+                 The probes did not catch it because their fake currentUser
+                 DID return isAnonymous. The stub was more correct than the
+                 app, so the test agreed with a shape the app never produced —
+                 which is the one failure mode a hand-written stub has, and
+                 the reason this field is now returned rather than assumed. */
+              isAnonymous: !!currentUser.isAnonymous,
               // So the UI can tell "not a teacher" from "we have not
               // finished asking" and keep the panel shut during the gap.
               roleKnown: currentUser.isAnonymous || teacherRecordLoaded }
@@ -13840,6 +13870,25 @@ loadSharedClassroomContent().then(()=>{
       },
       async declineTeacher(uid) {
         await deleteDoc(doc(db, 'teacherRequests', uid));
+        return true;
+      },
+      /* Joining the class you just scanned into.
+      
+         The profile's schoolId is what the rules compare against, so a person
+         who created their account before scanning a class link would carry an
+         empty one and be refused on every exercise they finished. The whole
+         document is rewritten rather than patched, because the rules validate
+         the shape of a complete profile and a partial update fails their
+         hasOnly check. */
+      async joinSchool(schoolId) {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous || !schoolId) return false;
+        const ref = doc(db, 'users', u.uid);
+        const snap = await getDoc(ref);
+        if(!snap.exists()) return false;
+        const p = snap.data();
+        if(p.schoolId === schoolId) return false;   // already a member
+        await setDoc(ref, { ...p, schoolId });
         return true;
       },
       async loadProfile() {

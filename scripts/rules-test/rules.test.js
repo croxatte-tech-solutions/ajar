@@ -38,6 +38,14 @@ await env.withSecurityRulesDisabled(async (c) => {
   await setDoc(doc(db, 'schools', SCHOOL, 'classroom', 'note_ana'), { text: 'Ana still confuses -ed endings.' });
   await setDoc(doc(db, 'schools', SCHOOL, 'students', 'ana'), { displayName: 'Ana', summary: { done: 4 } });
   await setDoc(doc(db, 'admins', 'the_admin'), { note: 'owner' });
+  // The owner is a student here too — an account, a profile naming this
+  // school, and no teacher record anywhere.
+  await setDoc(doc(db, 'users', 'the_admin'), { displayName: 'Rony', email: 'r@x.test',
+    country: 'Brazil', birthDate: '1990-01-01', role: 'student', schoolId: SCHOOL, createdAt: 1 });
+  await setDoc(doc(db, 'users', 'signed_in_student'), { displayName: 'Ana', email: 'a@x.test',
+    country: 'Brazil', birthDate: '2005-01-01', role: 'student', schoolId: SCHOOL, createdAt: 1 });
+  await setDoc(doc(db, 'users', 'other_school_student'), { displayName: 'Zed', email: 'z@x.test',
+    country: 'Chile', birthDate: '2005-01-01', role: 'student', schoolId: OTHER, createdAt: 1 });
   await setDoc(doc(db, 'users', 'anon_student'), { displayName: 'Ana', email: 'ana@x.test',
     country: 'Brazil', birthDate: '2007-04-11', role: 'student', schoolId: SCHOOL, createdAt: 1 });
 });
@@ -52,8 +60,43 @@ const alpha    = env.authenticatedContext('teacher_alpha').firestore();
 const beta     = env.authenticatedContext('teacher_beta').firestore();
 const nobody   = env.unauthenticatedContext().firestore();
 const admin     = env.authenticatedContext('the_admin').firestore();
+const signedInStudent    = env.authenticatedContext('signed_in_student').firestore();
+const otherSchoolStudent = env.authenticatedContext('other_school_student').firestore();
 const applicant = env.authenticatedContext('applicant').firestore();
 const outsider  = env.authenticatedContext('outsider').firestore();
+// The person this app is built by AND used by: an account holder who is a
+// student here, and the administrator, and not a teacher of anything.
+const owner     = env.authenticatedContext('the_admin').firestore();
+
+//===================================================================
+// A STUDENT WITH AN ACCOUNT CAN STILL RECORD THEIR OWN PRACTICE
+//===================================================================
+// The case that did not exist when these rules were tightened. Students were
+// all anonymous, so "anonymous, or this school's teacher" covered everyone.
+// A student signed in with Google is neither, and their practice would have
+// been refused on every exercise they finished.
+await check('a signed-in student of this school records an attempt', () =>
+  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana', summary: { done: 1 } })));
+await check('and their attempt history', () =>
+  assertSucceeds(addDoc(collection(signedInStudent, 'schools', SCHOOL, 'students', 'ana', 'attempts'),
+    { type: 'passage', theme: 'campus', outcome: 0.9, ts: Date.now() })));
+await check('and can read the class list, which is how they pick their name', () =>
+  assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'classroom', 'roster'))));
+await check('a signed-in student of ANOTHER school cannot write here', () =>
+  assertFails(setDoc(doc(otherSchoolStudent, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana' })));
+await check('nor read this school\'s student records', () =>
+  assertFails(getDoc(doc(otherSchoolStudent, 'schools', SCHOOL, 'students', 'ana'))));
+await check('an account with no profile at all writes nothing', () =>
+  assertFails(setDoc(doc(outsider, 'schools', SCHOOL, 'students', 'ana'), { displayName: 'Ana' })));
+await check('being the administrator does not by itself grant a school', () =>
+  assertFails(setDoc(doc(admin, 'schools', OTHER, 'students', 'x'), { displayName: 'X' })));
+await check('but the owner practising as a student of this school can', () =>
+  assertSucceeds(setDoc(doc(owner, 'schools', SCHOOL, 'students', 'rony'),
+    { displayName: 'Rony', summary: { done: 2 } })));
+await check('and is still not a teacher of it', () =>
+  assertFails(setDoc(doc(owner, 'schools', SCHOOL, 'classroom', 'current'), { items: [] })));
 
 //===================================================================
 // NOBODY MAKES THEMSELVES A TEACHER BY TYPING A SCHOOL NAME

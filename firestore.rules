@@ -92,6 +92,26 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    /* A SIGNED-IN STUDENT OF THIS SCHOOL.
+       
+       This is the case that did not exist when the rule below was written.
+       Students were all anonymous, so "anonymous, or this school's teacher"
+       covered everyone who had any business writing here. The moment a
+       student signs in with Google they are neither: not anonymous, and not
+       a teacher. Their own practice would have been refused, silently, on
+       every exercise they finished — the newest version of the failure this
+       whole project has been unpicking.
+       
+       Membership is their own profile naming this school. That is strictly
+       BETTER than what anonymous ever gave us: an anonymous visitor holding
+       a school id was trusted with no check at all, and this one is checked.
+       It costs a get() per evaluation, the same price isTeacherOf() pays. */
+    function isMemberOf(schoolId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId == schoolId;
+    }
+
     function isAnonymous() {
       return isSignedIn()
         && request.auth.token.firebase.sign_in_provider == 'anonymous';
@@ -282,8 +302,8 @@ service cloud.firestore {
         // thing the multi-tenancy comment two screens up promises cannot
         // happen. It never showed up in review because the check looks
         // present until you ask what it actually compares.
-        allow read: if isAnonymous() || isTeacherOf(schoolId);
-        allow create, update: if (isAnonymous() || isTeacherOf(schoolId))
+        allow read: if isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId);
+        allow create, update: if (isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId))
           && studentId.size() <= 60
           && validStudent();
         // History is a record of what happened. Nothing in the app deletes
@@ -307,8 +327,9 @@ service cloud.firestore {
               && request.resource.data.ts is number;
           }
 
-          allow read: if isAnonymous() || isTeacherOf(schoolId);
-          allow create: if (isAnonymous() || isTeacherOf(schoolId)) && validAttempt();
+          allow read: if isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId);
+          allow create: if (isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId))
+            && validAttempt();
           // An attempt is a fact about the past. Editing or deleting one
           // would let a student rewrite the history their teacher reads.
           allow update, delete: if false;
