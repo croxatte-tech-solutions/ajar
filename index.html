@@ -496,8 +496,10 @@ const CONFIG = {
   // only types a password. This is an account belonging to the APP rather
   // than to the person: a teacher should never have to put her personal
   // Google account on a shared school computer to use a classroom tool.
-  // Empty means the field starts blank and she types it — which is what a
-  // second school would want. Set it only where one address is expected.
+  // Left empty on purpose. The sign-in field remembers the last address
+  // used ON THAT DEVICE instead, so a returning teacher types only a
+  // password while no real person's address ever sits in a public file —
+  // and a second school is not handed someone else's default.
   //
   // The password is deliberately absent and must stay that way. This
   // repository is public, so a password written here would be readable by
@@ -6357,7 +6359,7 @@ function renderTeacherSignIn(){
       <div class="field-row" style="margin-top:.7rem">
         <div class="field">
           <label for="teacher-signin-email">Email</label>
-          <input type="email" id="teacher-signin-email" value="${escapeHtml(CONFIG.teacherEmail)}" autocomplete="username">
+          <input type="email" id="teacher-signin-email" value="${escapeHtml(lastTeacherEmail())}" autocomplete="username">
         </div>
         <div class="field">
           <label for="teacher-signin-pass">Password</label>
@@ -6377,6 +6379,12 @@ function renderTeacherSignIn(){
       <div id="teacher-signin-msg"></div>
     </div>`;
 }
+// The address last used to sign in on this device. Kept here rather than
+// in CONFIG so the convenience is local to her machine and the repository
+// stays free of anyone's real address.
+function lastTeacherEmail(){
+  return localStorage.getItem('cse_teacher_login_email') || CONFIG.teacherEmail || '';
+}
 function teacherSignInMsg(text, ok){
   const el = document.getElementById('teacher-signin-msg');
   if(el) el.innerHTML = `<div class="result-msg ${ok?'ok':'no'}" style="margin-top:.6rem">${escapeHtml(text)}</div>`;
@@ -6388,7 +6396,12 @@ function teacherSignIn(){
   const stay = !!(document.getElementById('teacher-stay')||{}).checked;
   if(!pass){ teacherSignInMsg('Type the password first.', false); return; }
   window.CloudSync.signInTeacher(email.trim(), pass, stay)
-    .then(()=>{ renderTeacherSignIn(); renderShareBox(); renderWhoAmI(); })
+    .then(()=>{
+      // Remembered only once a sign-in actually succeeded — a typo should
+      // never become the value she is handed next time.
+      localStorage.setItem('cse_teacher_login_email', email.trim());
+      renderTeacherSignIn(); renderShareBox(); renderWhoAmI();
+    })
     .catch(e => {
       // Say what actually went wrong. Firebase's own messages are written
       // for developers, and "auth/invalid-credential" in front of a
