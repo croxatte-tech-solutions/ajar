@@ -565,9 +565,18 @@ const testScript = `
   renderStudent();
   assert('a one-item batch does not hijack a running section', selectedId === '__exam__');
   finishExam('completed');
+  // The other half of this pair used to assert the one-item convenience
+  // resumed after the exam — it auto-opened the day's task, which replaced
+  // '__exam__' as a side effect. That convenience is gone: pressing "I'm a
+  // student" lands on the student's own page now.
+  //
+  // So test the exit a student actually takes. finishExam leaves the id in
+  // place on purpose — the results screen is still on show and a stray
+  // renderPractice would wipe it — and leaveExam is the button that lets go.
+  assert('the results screen still belongs to the exam', selectedId === '__exam__');
+  leaveExam();
   renderStudent();
-  assert('and it still lands the student on the day\\'s task once the exam is over',
-    selectedId !== '__exam__');
+  assert('and leaving it hands the screen back', selectedId !== '__exam__');
 
   // --- scoring scales by how many questions an exercise was worth ---
   localStorage.removeItem('ajar_exam_current');

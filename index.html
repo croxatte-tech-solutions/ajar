@@ -7802,7 +7802,19 @@ function renderStudent(){
   // student onto the day's exercise mid-exam — losing the screen while the
   // section clock keeps running. renderStudent runs again whenever shared
   // classroom content resolves, which is well after the exam started.
-  if(batch.length===1 && !batch.some(i=>i.id===selectedId) && !examActive()){
+  // No auto-opening any more.
+  //
+  // This dropped a student straight into the exercise when only one was
+  // approved, on the theory that a list of one is a wasted tap. In practice
+  // it meant pressing "I'm a student" landed mid-exercise with no sense of
+  // where they were, what else existed, or how to get back — reported
+  // exactly that way.
+  //
+  // Scanning a QR still goes straight in, and should: that student already
+  // chose, and the code IS the choice. Pressing "I'm a student" is not.
+  // openedFromSharedLink separates the two, handled where '?ex=' is read.
+  if(openedFromSharedLink && batch.length === 1
+     && !batch.some(i => i.id === selectedId) && !examActive()){
     selectedId = batch[0].id;
     practiceOverride = null;
   }
@@ -8644,6 +8656,7 @@ function examBannerHtml(ex){
 }
 
 function mountExamBar(ex){
+  mountBackBar();
   const wrap = document.getElementById('practice-wrap');
   if(!wrap) return;
   let bar = document.getElementById('exam-bar');
@@ -8660,7 +8673,64 @@ function unmountExamBar(){
   if(bar) bar.remove();
 }
 
+// Back to the student's own page.
+//
+// There was no way back at all. Combined with the app opening straight into
+// an exercise, a student could arrive mid-task with no idea where they were
+// or what else existed — which is exactly how it was reported. Leaving an
+// exercise has to be as easy as entering one.
+//
+// A section is different: it has its own clock and its own exit, and
+// wandering out mid-section would lose the sitting. That case keeps its
+// own controls.
+function backToMyPage(){
+  if(examActive()) return;
+  selectedId = null;
+  practiceOverride = null;
+  window._lrState = null; window._interviewState = null; window._crState = null;
+  window._anState = null; window._cvState = null; window._tkState = null;
+  clearPracticeTimer();
+  const wrap = document.getElementById('practice-wrap');
+  if(wrap) wrap.innerHTML = '';
+  renderStudent();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Mounted OUTSIDE practice-wrap, for the same reason the section clock is:
+// renderPractice replaces that wrap wholesale in twelve branches, and a bar
+// rendered inside it would need adding to all twelve and would be dropped by
+// any branch that forgot.
+//
+// Not shown during a section: that has its own exit, and this one would read
+// as a way to abandon a timed sitting by accident.
+function mountBackBar(){
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap) return;
+  let bar = document.getElementById('back-bar');
+  const wanted = !!selectedId && !examActive();
+  if(!wanted){ if(bar) bar.remove(); return; }
+  if(!bar){
+    bar = document.createElement('div');
+    bar.id = 'back-bar';
+    wrap.parentNode.insertBefore(bar, wrap);
+  }
+  bar.innerHTML = `<div class="ex-actions" style="margin-bottom:.6rem">
+    <button class="btn ghost sm" onclick="backToMyPage()">&larr; My exercises</button>
+  </div>`;
+}
+
+// Wrapped rather than edited in twelve places.
+//
+// Every branch of the real function ends in its own `return`, so there is
+// no single line at the end to append to — the same shape that let the
+// footer and the section clock go missing from some screens and not
+// others. One wrapper runs after whichever branch fired.
 function renderPractice(){
+  renderPracticeInner();
+  mountBackBar();
+}
+
+function renderPracticeInner(){
   const wrap = document.getElementById('practice-wrap');
   const item = currentItem();
   clearPracticeTimer();
