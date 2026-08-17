@@ -770,6 +770,12 @@ function migrateLegacyKeys(){
 const _migrated = migrateLegacyKeys();
 if(_migrated) console.info('Ajar: carried ' + _migrated + ' saved item(s) forward from the previous key names.');
 
+/* Nothing unvalidated reaches a Firestore path.
+   A slash in an id produces "Invalid segment" and takes the whole load down;
+   an empty one silently builds schools//classroom. Both were reachable from
+   the address bar. One pattern, used for every id that arrives from outside. */
+const ID_PATTERN = /^[A-Za-z0-9_-]{4,128}$/;
+
 const SCHOOL_SEEN_KEY = 'ajar_school';
 function currentSchool(){
   // A signed-in teacher belongs to the school named in her own record, and
@@ -785,14 +791,20 @@ function currentSchool(){
   // ever being written in a public file.
   try{
     const fromUrl = new URLSearchParams(location.search).get('school');
-    if(fromUrl){
+    // Validated before it is stored OR used. An invalid one is discarded
+    // rather than remembered, so a malformed link cannot poison the device
+    // for every later visit.
+    if(fromUrl && ID_PATTERN.test(fromUrl)){
       try{ localStorage.setItem(SCHOOL_SEEN_KEY, fromUrl); }catch(e){}
       return fromUrl;
     }
   }catch(e){}
   try{
     const seen = localStorage.getItem(SCHOOL_SEEN_KEY);
-    if(seen) return seen;
+    // A device that stored an invalid id before this check existed drops it
+    // instead of carrying it forever.
+    if(seen && ID_PATTERN.test(seen)) return seen;
+    if(seen){ try{ localStorage.removeItem(SCHOOL_SEEN_KEY); }catch(e){} }
   }catch(e){}
   // No school. A visitor who has never opened a link belongs to no class, and
   // saying so is right: they get self-practice, which touches no school data.
@@ -6626,16 +6638,39 @@ async function loadSharedClassroomContent(){
   const exId = params.get('ex');
   const isSharedLink = params.get('s') === '1' || !!exId;
 
-  // "?ex=<id>" points at ONE specific approved exercise, saved to its own
-  // Firestore doc the moment the teacher approved it — scanning it always
-  // opens exactly that exercise, never a stale or unrelated one, and
-  // never a list to pick from. Falls through to the whole-class batch
-  // below if that specific doc isn't reachable for any reason.
-  if(exId && window.CloudSync){
+  /* "?ex=<id>" NEVER FALLS BACK. This is the bug that ruined a real class.
+     ------------------------------------------------------------------
+     It used to try the specific document and, on any failure, fall through to
+     the whole-class batch below. So a student who scanned the code for
+     exercise A and hit a missing document, a slow network, a code from
+     yesterday or another school did not see an error — they saw exercise B,
+     or a list, and had no way to know they were in the wrong place. Thirteen
+     students scanning at once is thirteen chances for that, and it is exactly
+     what was reported: "o qr code nao conectava ao exercicio certo".
+     A code that names one exercise resolves to that exercise or to a message
+     saying why not. Never to a different exercise. */
+  if(exId){
+    if(!ID_PATTERN.test(exId)){ window.__exError = 'invalid'; return true; }
+    if(!window.CloudSync){ window.__exError = 'offline'; return true; }
     try{
       const payload = await window.CloudSync.pullClassroomItem(exId);
-      if(payload && payload.items && payload.items.length){ applySharedPayload(payload); return true; }
-    }catch(e){ /* fall through */ }
+      if(payload && payload.items && payload.items.length){
+        applySharedPayload(payload);
+        window.__exError = null;
+        return true;
+      }
+      // The document is reachable and simply is not there: withdrawn,
+      // superseded, or from another school whose id this link does not carry.
+      window.__exError = 'gone';
+      return true;
+    }catch(e){
+      // Refused or unreachable. Distinguished because one is a permissions
+      // problem and the other is the school wifi, and telling a student the
+      // wrong one wastes the lesson.
+      const denied = e && (e.code === 'permission-denied' || /permission/i.test(e.message || ''));
+      window.__exError = denied ? 'wrong-class' : 'network';
+      return true;
+    }
   }
   if(window.CloudSync){
     try{
@@ -7004,6 +7039,50 @@ window.__onAuthChanged = () => {
   }catch(e){}
 };
 
+/* A CODE IS NOT SHOWN UNTIL THE THING IT POINTS AT EXISTS.
+   ======================================================
+   The card drew its QR the instant the item was approved, while the write of
+   that item's own document was still in flight — and the write was
+   fire-and-forget with an empty catch, so a failure was invisible. In a
+   classroom that is: approve, project, thirteen phones scan within seconds,
+   and every scan that arrives before the write lands finds nothing.
+   Before today that fell through to the whole-class batch and opened the
+   wrong exercise. Now it would show an error instead, which is better and
+   still not good enough — the code should not have been on the wall yet.
+   So publication has three states and the screen says which one it is in. */
+const PUBLISH_STATE = {};       // itemId -> 'publishing' | 'live' | 'failed'
+function publishState(id){ return PUBLISH_STATE[id] || null; }
+function setPublishState(id, state){
+  PUBLISH_STATE[id] = state;
+  // Redraw only the surfaces that show codes.
+  try{ renderTeacher(); }catch(e){}
+  try{ if(tvIsOpen()) renderClassroomScreen(); }catch(e){}
+}
+function republishItem(id){
+  const item = loadBatch().find(i => i.id === id);
+  if(!item || !window.CloudSync) return;
+  publishOneItem(item);
+}
+function publishOneItem(item){
+  const speakTurn = parseSpeakTurn(localStorage.getItem('ajar_teacher_speak_turn_raw') || '');
+  const teacherEmailRaw = (localStorage.getItem('ajar_teacher_email_raw') || '').trim();
+  const announcementRaw = (localStorage.getItem('ajar_teacher_announcement_raw') || '').trim();
+  PUBLISH_STATE[item.id] = 'publishing';
+  return window.CloudSync.pushClassroomItem(item.id, {
+      items: [item], individual: {},
+      speakingTurn: speakTurn.length ? speakTurn : null,
+      teacherEmail: teacherEmailRaw || null,
+      announcement: announcementRaw || null,
+      termStart: classTermStart() || null })
+    .then(() => setPublishState(item.id, 'live'))
+    .catch(err => {
+      // Was swallowed. A failed publish that looks identical to a successful
+      // one is how a QR ends up on a wall pointing at nothing.
+      console.error('Ajar: publishing ' + item.id + ' failed —', err);
+      setPublishState(item.id, 'failed');
+    });
+}
+
 function renderShareBox(){
   const box = document.getElementById('share-box');
   const approved = loadBatch().filter(i=>i.status==='approved');
@@ -7055,9 +7134,9 @@ function renderShareBox(){
     // per-exercise QR on each card (see cardBody()) always resolves to
     // exactly that exercise — independent of whatever else is or isn't
     // in the whole-class batch right now.
-    approved.forEach(item => {
-      window.CloudSync.pushClassroomItem(item.id, { items: [item], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null, termStart }).catch(()=>{});
-    });
+    // Each item's own document, with its state tracked so the card can refuse
+    // to show a code for something that is not there yet.
+    approved.forEach(item => { if(!publishState(item.id)) publishOneItem(item); });
   } else {
     paintShareBox(legacyShareLink(approved, individual, speakTurn, teacherEmailRaw, announcementRaw), null, { approved, individualCount, speakTurnRaw, speakTurn, teacherEmailRaw, announcementRaw });
   }
@@ -7084,7 +7163,15 @@ function renderShareBox(){
    is the common case, and making her leave, approve and come back would trade
    one annoyance for another. */
 let _tvIndex = 0;
-function tvItems(){ return loadBatch().filter(i => i.status === 'approved'); }
+// Only what is approved AND confirmed saved. A code on a classroom wall that
+// points at a document still being written is the failure this whole change
+// exists to prevent, and the wall is the worst place for it.
+function tvItems(){
+  return loadBatch().filter(i => i.status === 'approved' && publishState(i.id) === 'live');
+}
+function tvPending(){
+  return loadBatch().filter(i => i.status === 'approved' && publishState(i.id) !== 'live');
+}
 function openClassroomScreen(){
   if(!teacherIsSignedIn()) return;
   _tvIndex = 0;
@@ -8189,7 +8276,16 @@ function renderTeacher(){
         <div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="togglePrivate('${item.id}')">👁 Show me the exercise</button>
         <span class="small-note" style="margin-left:.4rem">Only if this screen is not on the TV — it shows the answers too</span></div>
       `}
-      ${item.status==='approved' ? `
+      ${item.status==='approved' && publishState(item.id) !== 'live' ? `
+      <div class="panel" style="margin-top:.7rem;border-color:${publishState(item.id)==='failed'?'var(--red)':'var(--border)'}">
+        ${publishState(item.id)==='failed'
+          ? `<b style="color:var(--red)">⚠ This exercise did not publish.</b>
+             <p class="small-note" style="margin:.3rem 0 .6rem">Its code would open nothing, so it is not being shown. Check your sign-in and the network, then try again.</p>
+             <button class="btn sm" onclick="republishItem('${item.id}')">Try publishing again</button>`
+          : `<b>⏳ Publishing…</b>
+             <p class="small-note" style="margin:.3rem 0 0">The code appears once this exercise is really saved. Projecting it earlier is how a class ends up scanning a code that points at nothing.</p>`}
+      </div>` : ''}
+      ${item.status==='approved' && publishState(item.id) === 'live' ? `
       <div class="field-row" style="margin-top:.7rem;align-items:center">
         <div style="border:1px solid var(--border);border-radius:12px;padding:10px;background:#ffffff;flex-shrink:0">${renderQRSvg(itemShareLink(item), 150)}</div>
         <div style="flex:1;min-width:180px">

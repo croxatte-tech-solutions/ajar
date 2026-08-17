@@ -218,7 +218,10 @@ assert('no comment asserts a breakpoint the stylesheet does not have',
 // 26 -> 30: GRADE_ON_EXPIRY wraps each type's own checker so a timed-out
 // attempt is marked instead of discarded. A checker throwing must not stop the
 // clock handing the student on to the next exercise, so each is guarded.
-const SILENT_CATCH_BASELINE = 30;
+// 30 -> 33: setPublishState redraws two surfaces and neither redraw failing
+// may lose the state it just recorded; currentSchool drops an invalid stored
+// id. All three guard a recovery, not a failure worth surfacing.
+const SILENT_CATCH_BASELINE = 33;
 const silent = [...html.matchAll(/catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g)].length;
 assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CATCH_BASELINE + ')',
   silent <= SILENT_CATCH_BASELINE,

@@ -90,6 +90,15 @@ const testScript = `
                    status: 'approved', data: g.data };
     saveBatch([item]);
 
+    // An approved item is not yet a projectable item — see the publication
+    // gate below. The card shows a waiting panel until its own document is
+    // confirmed written, so the fixture has to say it is.
+    setPublishState(item.id, 'publishing');
+    const waiting = (window._privateShown = null, box.children = [], renderTeacher(), panelHtml());
+    assert(t.tag + ': while publishing, a waiting panel stands in for the code',
+      waiting.indexOf('Publishing') > -1 && waiting.indexOf('<svg') === -1);
+    setPublishState(item.id, 'live');
+
     // --- closed, which is how it arrives ---
     window._privateShown = null;
     box.children = [];
@@ -152,6 +161,7 @@ const testScript = `
   const one = { id: 'card-alarm', type: 'passage', tag: tagFor('passage'), theme: 'campus',
                 status: 'approved', data: generateOne('passage','campus').data };
   saveBatch([one]);
+  setPublishState(one.id, 'live');
   window._privateShown = new Set([one.id]);
   box.children = [];
   renderTeacher();
@@ -192,6 +202,11 @@ const testScript = `
                status: 'pending', data: generateOne('passage', 'campus').data });
   saveBatch(shown);
 
+  // Publication state is the new gate: a code is shown only for an item whose
+  // own document is confirmed written. The fixture has to say so, and that IS
+  // the contract now — an approved item is not a projectable item.
+  shown.forEach(i => setPublishState(i.id, 'live'));
+
   assert('it does not open by itself', tvIsOpen() === false);
   openClassroomScreen();
   assert('it opens', tvIsOpen() === true);
@@ -199,6 +214,24 @@ const testScript = `
   // Every approved exercise is reachable, and the pending one is not — a code
   // for something she has not approved would put unapproved work on the wall.
   assert('it counts only the approved exercises', tvItems().length === 6);
+
+  /* AND ONLY THE ONES THAT ARE REALLY THERE.
+     This is the classroom failure that started this: the card drew a QR the
+     moment an item was approved, while the write of that item's document was
+     still in flight and its failure was swallowed. She approved, projected,
+     thirteen phones scanned within seconds, and the scans that arrived first
+     found nothing — and fell through to the whole-class batch, opening the
+     wrong exercise. A wall is the worst place for a code that points at
+     nothing. */
+  setPublishState(shown[0].id, 'publishing');
+  assert('an exercise still publishing gets no code on the wall',
+    tvItems().length === 5 && tvItems().every(i => i.id !== shown[0].id));
+  setPublishState(shown[0].id, 'failed');
+  assert('and one whose publish failed gets none either',
+    tvItems().length === 5);
+  assert('but the panel knows they are waiting', tvPending().length === 1);
+  setPublishState(shown[0].id, 'live');
+  assert('once it is really saved, the code appears', tvItems().length === 6);
   assert('and says which one is showing', tv.innerHTML.indexOf('1 of 6') > -1);
 
   // Walk all six, checking each for content as we go.
