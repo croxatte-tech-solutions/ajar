@@ -371,15 +371,15 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
   </div>
 
   <div id="view-teacher" class="view active">
-    <!-- One panel at a time; this picks which. A sticky horizontal strip at
-         every width — measured at 1366px (iPad Pro in landscape, which is how
-         this class actually uses it): still a strip, nine tabs, no sideways
-         overflow.
+    <!-- Picks which group of panels is on screen. A sticky horizontal strip
+         on narrow screens; from 1400px up it becomes a fixed rail to the
+         left of the 960px column (see the media query below).
 
-         This comment used to claim it became a rail pinned to the left above
-         1220px. There is no such media query and never was, so the comment
-         described a layout nobody had written. A rail would be reasonable to
-         build for the wide case. It is not built. -->
+         I got this wrong twice. The comment first said 1220px, which is not
+         a breakpoint in this file; I then "corrected" it to say no rail
+         existed at all, having measured at 1366px — below the real 1400
+         threshold — and concluded from one measurement. The rail exists.
+         The number is 1400. -->
     <nav id="teacher-nav" aria-label="Teacher sections"></nav>
 
     <div id="sec-progress"><div id="progress-box"></div></div>
@@ -388,6 +388,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
       <h2>Generate today's batch</h2>
       <details class="brief"><summary>How the daily batch works</summary><p>Generate and share a fresh set every class day — the weekly theme keeps you on the 12-week plan, but each day gets its own link and QR code.</p></details>
       <div class="type-tabs" id="type-tabs"></div>
+      <div id="focus-applied" class="small-note" style="display:none;color:var(--accent);font-weight:600;margin:.2rem 0 .5rem"></div>
       <div class="field-row">
         <div class="field">
           <label for="topic">Theme</label>
@@ -6911,6 +6912,23 @@ function useThisWeeksFocus(){
   if(!plan || plan.simulado) return;
   activeType = plan.type;
   renderTypeTabs();
+  // Reported as "I click and nothing happens". The function was always
+  // right — it set the type and re-rendered the picker — but the picker
+  // lives in the Generate panel and she taps this from This week. With
+  // those on separate tabs the effect landed where she could not see it.
+  // They share one screen now, so move to the thing that changed and say
+  // what changed, rather than trusting her to spot a highlighted button
+  // further down the page.
+  showSection(null, 'grp-today', true);
+  const tabs = document.getElementById('type-tabs');
+  const note = document.getElementById('focus-applied');
+  if(note){
+    note.textContent = 'Set to ' + plan.label + ' — now pick a theme and generate.';
+    note.style.display = 'block';
+    clearTimeout(window._focusNoteTimer);
+    window._focusNoteTimer = setTimeout(() => { note.style.display = 'none'; }, 6000);
+  }
+  if(tabs){ try{ tabs.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){} }
 }
 function renderProgressBox(){
   const el = document.getElementById('progress-box');
@@ -7117,17 +7135,29 @@ function cardBody(item){
 // The teacher's sections, in the order they appear. Counts come from real
 // state rather than being decorative: "Review 4" is the number actually
 // waiting for her, which is the one number this panel exists to show.
+/* Grouped by what she is DOING, not by what the code calls things.
+   ---------------------------------------------------------------
+   This was nine tabs, one per panel, and that split broke the class-day
+   flow three separate times — most plainly with "Use this focus", which
+   sets the task type and re-renders the picker. The picker lives in
+   Generate. She taps the button from This week. Nothing appears to
+   happen, because the effect landed on a tab she was not looking at.
+   
+   A class day is one continuous act: see today's focus, generate, approve,
+   show the codes. Splitting it across four tabs made her hunt for the
+   consequence of her own click, and made it impossible to mirror the
+   screen to a TV with the QR codes and the exercise list visible at once.
+   
+   So TODAY is one screen carrying that whole sequence in the order it
+   happens, and the rest are genuinely separate jobs. */
 const TEACHER_SECTIONS = [
-  { id:'sec-progress',   label:'This week' },
-  { id:'sec-generate',   label:'Generate' },
-  { id:'sec-roster',     label:'Class list' },
-  { id:'sec-class',      label:'Class' },
-  { id:'sec-individual', label:'Assign' },
-  { id:'sec-account',    label:'Account' },
-  { id:'sec-share',      label:'Share' },
-  { id:'sec-review',     label:'Review' },
-  { id:'sec-trial',      label:'Trial run' },
+  { id:'grp-today',      label:'Today',       panels:['sec-progress','sec-generate','sec-review','sec-share'] },
+  { id:'grp-class',      label:'My class',    panels:['roster-box','class-progress'] },
+  { id:'grp-individual', label:'One student', panels:['sec-individual'] },
+  { id:'grp-trial',      label:'Trial run',   panels:['sec-trial'] },
+  { id:'grp-account',    label:'Account',     panels:['sec-account'] },
 ];
+const TEACHER_PANELS = TEACHER_SECTIONS.flatMap(g => g.panels);
 /* The teacher panel is behind the sign-in.
    ---------------------------------------
    It used not to be, and an anonymous tab could open it — which is how
@@ -7159,7 +7189,9 @@ function teacherIsSignedIn(){
 
 // Sections holding anything about a real class. Everything here stays out
 // of the DOM's way until a teacher is signed in.
-const TEACHER_GATED = ['sec-progress','sec-generate','sec-roster','sec-class','sec-individual','sec-share','sec-review','sec-trial'];
+// Panels, not groups: the gate hides the actual containers. Everything
+// except the sign-in, which is the one thing a signed-out visitor needs.
+const TEACHER_GATED = ['sec-progress','sec-generate','roster-box','class-progress','sec-individual','sec-share','sec-review','sec-trial'];
 
 function applyTeacherGate(){
   const signedIn = teacherIsSignedIn();
@@ -7260,10 +7292,11 @@ function renderTeacherNav(){
   const nav = document.getElementById('teacher-nav');
   if(!nav) return;
   const batch = loadBatch();
+  // Counts belong to the group the teacher would tap. "Today 4" is the
+  // number waiting for her, which is the one number this nav exists for.
   const counts = {
-    'sec-review': batch.filter(i => i.status === 'pending').length,
-    'sec-share': batch.filter(i => i.status === 'approved').length,
-    'sec-individual': Object.keys(individualForShare()).length,
+    'grp-today': batch.filter(i => i.status === 'pending').length,
+    'grp-individual': Object.keys(individualForShare()).length,
   };
   nav.innerHTML = TEACHER_SECTIONS.map(sec => {
     const n = counts[sec.id];
@@ -7290,28 +7323,29 @@ const TEACHER_SECTION_KEY = 'ajar_teacher_section';
 function activeTeacherSection(){
   let saved = null;
   try{ saved = localStorage.getItem(TEACHER_SECTION_KEY); }catch(e){}
-  return TEACHER_SECTIONS.some(s => s.id === saved) ? saved : TEACHER_SECTIONS[0].id;
+  return TEACHER_SECTIONS.some(g => g.id === saved) ? saved : TEACHER_SECTIONS[0].id;
 }
 
 function showSection(ev, id, quiet){
   if(ev) ev.preventDefault();
-  if(!TEACHER_SECTIONS.some(s => s.id === id)) id = TEACHER_SECTIONS[0].id;
-  try{ localStorage.setItem(TEACHER_SECTION_KEY, id); }catch(e){}
+  const group = TEACHER_SECTIONS.find(g => g.id === id) || TEACHER_SECTIONS[0];
+  try{ localStorage.setItem(TEACHER_SECTION_KEY, group.id); }catch(e){}
 
   // Signed out, the gate owns visibility and must not be overridden here.
   if(!teacherIsSignedIn()) return;
 
-  TEACHER_SECTIONS.forEach(sec => {
-    const el = document.getElementById(sec.id);
-    if(el) el.style.display = sec.id === id ? '' : 'none';
+  // Show every panel in the chosen group, hide every panel in the others.
+  TEACHER_PANELS.forEach(pid => {
+    const el = document.getElementById(pid);
+    if(el) el.style.display = group.panels.includes(pid) ? '' : 'none';
   });
   const nav = document.getElementById('teacher-nav');
   if(nav) nav.querySelectorAll('a').forEach(a => {
-    a.classList.toggle('here', a.getAttribute('href') === '#' + id);
+    a.classList.toggle('here', a.getAttribute('href') === '#' + group.id);
   });
-  // The empty-state card belongs to Review; anywhere else it is noise.
+  // The empty-state card belongs with the day's set; elsewhere it is noise.
   const empty = document.getElementById('teacher-empty');
-  if(empty && id !== 'sec-review') empty.style.display = 'none';
+  if(empty && !group.panels.includes('sec-review')) empty.style.display = 'none';
   if(!quiet) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function renderTeacher(){

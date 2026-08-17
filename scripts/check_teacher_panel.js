@@ -43,7 +43,7 @@ assert('it asks whether the account is a teacher, not just any account',
                               html.indexOf('function teacherIsSignedIn') + 400)));
 
 const gated = (html.match(/const TEACHER_GATED = \[([^\]]*)\]/) || [])[1] || '';
-['sec-roster', 'sec-class', 'sec-review', 'sec-share', 'sec-progress', 'sec-individual']
+['roster-box', 'class-progress', 'sec-review', 'sec-share', 'sec-progress', 'sec-individual']
   .forEach(id => assert(id + ' is behind the sign-in', gated.indexOf(id) > -1));
 assert('the sign-in itself is NOT behind the sign-in', gated.indexOf('sec-account') === -1);
 
@@ -143,7 +143,7 @@ assert('becoming a teacher is still a console job', /allow create, delete: if fa
 // English is natural and the questions fair. Both review the material
 // rather than being measured by it.
 assert('the teacher has a trial-run tab',
-  /\{ id:'sec-trial',\s*label:'Trial run' \}/.test(html));
+  /id:'grp-trial',\s*label:'Trial run'/.test(html));
 assert('it is behind the sign-in like the rest', gated.indexOf('sec-trial') > -1);
 assert('the panel is drawn with the others', /renderReviewPanel\(\);/.test(html));
 
@@ -180,13 +180,56 @@ assert('it asks for bluntness rather than politeness', /blunt/i.test(brief));
 assert('it tells them one section is timed, not all four',
   /ONE of them/.test(brief) && /cannot go back/.test(brief));
 
+// --- the class-day flow lives on one screen ---
+//
+// This was nine tabs, one per panel, and that split broke the flow three
+// times. The plainest case was reported directly: "Use this focus" sets
+// the task type and re-renders the picker, the picker is in Generate, and
+// she taps the button from This week — so nothing appeared to happen. The
+// function was never broken. The effect landed on a tab she was not
+// looking at.
+//
+// It also made the screen impossible to mirror to a TV usefully, since the
+// exercise list and its QR codes sat on a different tab from the controls.
+const groups = html.slice(html.indexOf('const TEACHER_SECTIONS = ['),
+                          html.indexOf('const TEACHER_PANELS'));
+assert('the nav is grouped, not one tab per panel', /panels:\s*\[/.test(groups));
+assert('there are five groups, not nine tabs',
+  (groups.match(/\{ id:'grp-/g) || []).length === 5);
+
+const today = groups.slice(groups.indexOf("id:'grp-today'"), groups.indexOf("id:'grp-class'"));
+['sec-progress', 'sec-generate', 'sec-review', 'sec-share'].forEach(p => {
+  assert("today carries " + p, today.indexOf(p) > -1);
+});
+assert('so the plan, the picker, the cards and the codes share one screen',
+  ['sec-progress','sec-generate','sec-review','sec-share'].every(p => today.indexOf(p) > -1));
+
+// The roster and the class view are rebuilt inside stable wrappers on every
+// change, so the tab has to hide the WRAPPER. Hiding the rebuilt child meant
+// adding a student made the roster reappear under Today.
+assert('the class group targets the stable wrappers, not the rebuilt children',
+  groups.indexOf("'roster-box','class-progress'") > -1);
+assert('and the gate does too',
+  /TEACHER_GATED = \[[^\]]*'roster-box'[^\]]*'class-progress'/.test(html));
+
+// The reported button must now show its own effect.
+const focus = html.slice(html.indexOf('function useThisWeeksFocus'),
+                         html.indexOf('function renderProgressBox'));
+assert('using the week focus moves to the screen it changed',
+  focus.indexOf("showSection(null, 'grp-today'") > -1);
+assert('and says what it changed rather than relying on a highlight',
+  focus.indexOf('focus-applied') > -1);
+assert('the confirmation names the task it set', /Set to ' \+ plan\.label/.test(focus));
+assert('there is somewhere for that confirmation to appear',
+  html.indexOf('id="focus-applied"') > -1);
+
 // --- tabs, not a scroll position ---
 assert('the old scroll-jump is gone', html.indexOf('function jumpToSection') === -1);
 assert('the scroll-spy is gone too', html.indexOf('markSectionInView') === -1);
 assert('sections are shown one at a time', /function showSection\(/.test(html));
 assert('the chosen section is remembered between visits', /TEACHER_SECTION_KEY/.test(html));
 assert('an unknown saved section falls back rather than showing nothing',
-  /TEACHER_SECTIONS\.some\(s => s\.id === saved\)/.test(html));
+  /TEACHER_SECTIONS\.some\(g => g\.id === saved\)/.test(html));
 
 // Ordering trap: two panels are built by the renders, so selecting the tab
 // before they exist leaves them on screen next to the chosen one.
