@@ -91,6 +91,68 @@ ${combined}
   renderNamePrompt();
   assert('an empty list falls back to typing', wrapHtml().indexOf('name-input') > -1);
 
+  // --- THE CLASS LIST HAS TO REACH THE CLASS, AND SHE HAS TO KNOW IF IT DID ---
+  //
+  // Reported from a real class: she typed the names and the students could not
+  // pick them. The cause was one character of code — pushRoster(r).catch(()=>{})
+  // — because saveRoster writes localStorage FIRST. Her panel showed thirteen
+  // names whether or not the write reached Firestore, so a failure was
+  // invisible to the one person who could fix it.
+  // The comment beside this in index.html deliberately describes the old shape
+  // instead of quoting it — the first version of this rule fired on its own
+  // explanation, the fifth time in this project a check has reported its own
+  // subject matter. Rewording the comment was smaller than escaping a
+  // comment-stripper through a template literal.
+  assert('the class list publish is no longer fire and forget',
+    __html.indexOf('pushRoster(r).catch(()=>{})') === -1);
+  assert('she is told while it is sending', /ROSTER_STATE\.status = 'saving'/.test(__html));
+  assert('and told plainly when it arrives', /Your students can see/.test(__html));
+  assert('signed out is named as its own failure, since it is the likely one',
+    /ROSTER_STATE\.status = denied/.test(__html) && /You are signed out/.test(__html));
+  assert('and there is a way to send it again', /function retryRoster\(\)/.test(__html));
+  assert('the failure says her screen and theirs disagree',
+    /your screen looks right and theirs does not/.test(__html));
+
+  // --- AND THE STUDENT MUST NOT BE OFFERED TYPING WHILE THE LIST IS COMING ---
+  //
+  // renderStudent runs long before the list lands. A student who looked
+  // immediately was offered "type your first name" — the very thing the list
+  // exists to replace, because a typed name makes Ana, ana and Anna into three
+  // students with three separate histories.
+  setStudentName('');
+  saveRoster({ students: [], present: [] });
+  location.search = '?school=roster-school';
+  setRosterArrival('waiting');
+  renderNamePrompt();
+  const waiting = document.getElementById('practice-wrap').innerHTML;
+  assert('while the list is still coming, no text box is offered',
+    waiting.indexOf('name-input') === -1);
+  assert('and the student is told what is happening',
+    waiting.indexOf('Looking for your class list') > -1);
+
+  setRosterArrival('none');
+  renderNamePrompt();
+  const noList = document.getElementById('practice-wrap').innerHTML;
+  assert('once it is known there is no list, typing is offered',
+    noList.indexOf('name-input') > -1);
+
+  saveRoster({ students: ['Ana', 'Bruno'], present: [] });
+  setRosterArrival('arrived');
+  renderNamePrompt();
+  const withList = document.getElementById('practice-wrap').innerHTML;
+  assert('and when it arrives, names are tapped rather than typed',
+    withList.indexOf('pickName(') > -1 && withList.indexOf('Tap your name') > -1);
+  assert('with typing kept as the way out for someone not on it',
+    withList.indexOf('My name isn') > -1);
+
+  // The wait has to end. A student staring at "looking for your class list"
+  // because a fetch never resolved is worse than being asked to type.
+  // \\\\d, not \\d: this probe is a template literal and eats one backslash before
+  // the regex compiles. Sixth time in this project.
+  assert('the wait is bounded', /const ROSTER_WAIT_MS = \\d+/.test(__html));
+  assert('and short enough not to read as broken',
+    Number((__html.match(/const ROSTER_WAIT_MS = (\\d+)/) || [])[1]) <= 3000);
+
   console.log(results.join('\\n'));
   const fails = results.filter(r=>r.includes('FAIL'));
   globalThis.__fails = fails.length;
@@ -120,6 +182,7 @@ const sandbox = {
 };
 sandbox.self = sandbox.window;
 sandbox.globalThis = sandbox;
+sandbox.__html = html;   // algumas asserções olham o código, não o comportamento
 vm.createContext(sandbox);
 vm.runInContext(testScript, sandbox).catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
 

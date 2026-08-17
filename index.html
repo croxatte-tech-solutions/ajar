@@ -8335,13 +8335,58 @@ let selectedId = null;
    still on it on Thursday, and their history stays one continuous line.
    Attendance is marked on top of it and changes nothing about identity.
    ========================================================= */
+/* Whether the class list actually reached the class.
+   Her screen always showed the names, because they are written locally first.
+   This is the part that says whether the students can see them. */
+const ROSTER_STATE = { status: null, count: 0 };
+function renderRosterStatus(){
+  const el = document.getElementById('roster-status');
+  if(!el) return;
+  const n = ROSTER_STATE.count;
+  if(ROSTER_STATE.status === 'saving'){
+    el.innerHTML = '<p class="small-note">⏳ Sending the class list to your students…</p>';
+  } else if(ROSTER_STATE.status === 'live'){
+    el.innerHTML = '<p class="small-note" style="color:var(--accent);font-weight:600">✓ Your students can see ' +
+      n + ' name' + (n === 1 ? '' : 's') + ' and tap their own.</p>';
+  } else if(ROSTER_STATE.status === 'denied'){
+    el.innerHTML = '<div class="panel" style="border-color:var(--red)">' +
+      '<b style="color:var(--red)">🔒 The class list did NOT reach your students.</b>' +
+      '<p class="small-note" style="margin:.3rem 0 .6rem">You are signed out, so it saved only on this device — your screen looks right and theirs does not. Sign in above, then press the button below.</p>' +
+      '<button class="btn sm" onclick="retryRoster()">Send the list again</button></div>';
+  } else if(ROSTER_STATE.status === 'failed'){
+    el.innerHTML = '<div class="panel" style="border-color:var(--red)">' +
+      '<b style="color:var(--red)">⚠ The class list did NOT reach your students.</b>' +
+      '<p class="small-note" style="margin:.3rem 0 .6rem">It saved on this device only. Check the network and try again — until then your students will have to type their names.</p>' +
+      '<button class="btn sm" onclick="retryRoster()">Send the list again</button></div>';
+  } else el.innerHTML = '';
+}
+function retryRoster(){ saveRoster(loadRoster()); }
+
 function loadRoster(){
   try{ return JSON.parse(localStorage.getItem('ajar_roster') || '{"students":[],"present":[]}'); }
   catch(e){ return { students:[], present:[] }; }
 }
 function saveRoster(r){
   localStorage.setItem('ajar_roster', JSON.stringify(r));
-  if(window.CloudSync && window.CloudSync.pushRoster) window.CloudSync.pushRoster(r).catch(()=>{});
+  /* This used to be a fire-and-forget push with an empty catch, and that empty
+     catch is why she typed
+     thirteen names, saw them on her screen, and the class never got them.
+     saveRoster writes localStorage FIRST, so her panel looked right whether
+     the write reached Firestore or not. If she was not signed in at that
+     moment, or the school wifi hiccuped, the failure was invisible to the one
+     person who could have fixed it. */
+  if(window.CloudSync && window.CloudSync.pushRoster){
+    ROSTER_STATE.status = 'saving';
+    renderRosterStatus();
+    window.CloudSync.pushRoster(r)
+      .then(() => { ROSTER_STATE.status = 'live'; ROSTER_STATE.count = (r.students||[]).length; renderRosterStatus(); })
+      .catch(err => {
+        const denied = err && (err.code === 'permission-denied' || /permission/i.test(err.message || ''));
+        ROSTER_STATE.status = denied ? 'denied' : 'failed';
+        console.error('Ajar: the class list did not reach your students —', err);
+        renderRosterStatus();
+      });
+  }
 }
 function rosterAddStudent(){
   const el = document.getElementById('roster-name');
@@ -8547,6 +8592,17 @@ function renderNamePrompt(){
   // Without one — a new school, or a student practising alone — the text
   // box is still there, because the app must work before a teacher has
   // set anything up.
+  // Still waiting to hear whether this class has a list. Offering the text box
+  // now is offering the very thing the list exists to replace.
+  if(!roster.length && ROSTER_ARRIVAL === 'waiting' && currentSchool()){
+    document.getElementById('practice-wrap').innerHTML = `
+      <div class="compose">
+        <div class="ex-body"><b>Welcome!</b></div>
+        <p class="small-note" role="status">Looking for your class list…</p>
+      </div>`;
+    return;
+  }
+
   document.getElementById('practice-wrap').innerHTML = roster.length ? `
     <div class="compose">
       <div class="ex-body"><b>Welcome!</b> Tap your name.</div>
@@ -11536,17 +11592,53 @@ function teacherNoteHtml(){
 }
 
 async function hydrateRosterFromCloud(){
-  if(!window.CloudSync || !window.CloudSync.pullRoster) return;
+  if(!window.CloudSync || !window.CloudSync.pullRoster){ ROSTER_ARRIVAL = 'none'; renderStudentIfWaiting(); return; }
   try{
     const cloud = await window.CloudSync.pullRoster();
-    if(!cloud || !Array.isArray(cloud.students)) return;
+    if(!cloud || !Array.isArray(cloud.students) || !cloud.students.length){
+      // No list published for this class. Typing is the honest fallback, and
+      // the student should stop waiting for a list that is not coming.
+      ROSTER_ARRIVAL = 'none';
+      renderStudentIfWaiting();
+      return;
+    }
+    ROSTER_ARRIVAL = 'arrived';
     localStorage.setItem('ajar_roster', JSON.stringify({
       students: cloud.students, present: cloud.present || []
     }));
     if(currentView === 'teacher') renderRoster();
     else if(!getStudentName()) renderStudent();
-  }catch(e){ /* offline or blocked — typing a name still works */ }
+  }catch(e){
+    // Offline or blocked. Typing still works, and the student is told to stop
+    // waiting rather than left looking at a spinner.
+    ROSTER_ARRIVAL = 'none';
+    renderStudentIfWaiting();
+  }
 }
+
+/* THE STUDENT USED TO SEE THE TEXT BOX WHILE THE LIST WAS STILL COMING.
+   ================================================================
+   The class list is fetched asynchronously, and renderStudent runs long
+   before it lands. So a student who scanned a code and looked immediately was
+   offered "type your first name" — and typing is exactly what the roster
+   exists to prevent, because a typed name produces Ana, ana and Anna as three
+   students with three separate histories.
+   Now the prompt waits briefly for the list, and only offers typing once the
+   list has arrived, has been shown not to exist, or the wait has run out.
+   Two seconds: long enough for a school wifi round trip, short enough that
+   nobody thinks the app is broken. */
+let ROSTER_ARRIVAL = 'waiting';
+const ROSTER_WAIT_MS = 2000;
+// A top-level `let` is not a property of globalThis, so a test that assigns
+// globalThis.ROSTER_ARRIVAL writes a different variable and the app never sees
+// it — which is exactly how a check can pass while testing nothing.
+function setRosterArrival(v){ ROSTER_ARRIVAL = v; }
+function renderStudentIfWaiting(){
+  if(currentView === 'student' && !getStudentName()) renderStudent();
+}
+setTimeout(() => {
+  if(ROSTER_ARRIVAL === 'waiting'){ ROSTER_ARRIVAL = 'timeout'; renderStudentIfWaiting(); }
+}, ROSTER_WAIT_MS);
 // Called once by the Firebase module script below, right after CloudSync
 // becomes available — hydrates a returning device's already-known name
 // with anything logged elsewhere since the last visit.
@@ -11683,7 +11775,9 @@ function renderWhoAmI(){
         <button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
                 onclick="teacherSignOut()">Sign out</button>${u.schoolName
           ? `<div class="small-note" style="font-weight:600;margin-top:.1rem">${escapeHtml(u.schoolName)}</div>`
-          : ''}`;
+          : ''}
+    <div id="roster-status"></div>`;
+  renderRosterStatus();
     } else {
       el.textContent = TEACHER_NAME;
     }
