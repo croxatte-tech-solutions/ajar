@@ -1,8 +1,23 @@
 // Copyright audit: does OUR content reproduce ETS's copyrighted expression?
 // Test formats/ideas are not copyrightable; specific wording is. This looks
 // for shared word sequences between our banks and ETS's own materials.
+//
+// Usage: node scripts/ip_audit.js [index.html] [ets-corpus-dir]
+//
+// Both paths default relative to the repo, not to the caller's directory, so
+// this runs the same whatever the checkout is named or wherever it sits. The
+// ETS corpus is deliberately NOT in the repo — it is ETS's material, and
+// committing it is the one thing an audit for copying must not do — so it
+// defaults to a sibling of the repo and can be pointed anywhere.
 const fs=require('fs'), vm=require('vm'), path=require('path');
-const html=fs.readFileSync('real-life-english-repo/index.html','utf8');
+const repoRoot=path.resolve(__dirname,'..');
+const htmlPath=process.argv[2]||path.join(repoRoot,'index.html');
+if(!fs.existsSync(htmlPath)){
+  console.error('ip_audit: nao encontrei o app em '+htmlPath+'\n'+
+                'Passe o caminho: node scripts/ip_audit.js <index.html> [corpus]');
+  process.exit(2);
+}
+const html=fs.readFileSync(htmlPath,'utf8');
 const blocks=[...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)]
   .filter(m=>!/type\s*=\s*["']module["']/.test(m[1])).map(m=>m[2]);
 const el=()=>({style:{},innerHTML:'',classList:{toggle(){},add(){},remove(){},contains:()=>false},appendChild(){},addEventListener(){},querySelector:()=>el(),closest:()=>null,select(){},focus(){}});
@@ -11,7 +26,11 @@ const sb={btoa:s=>Buffer.from(s,'binary').toString('base64'),atob:s=>Buffer.from
  window:{addEventListener(){}},localStorage:{getItem:()=>null,setItem(){},removeItem(){}},
  location:{origin:'https://x',pathname:'/',hash:'',search:''},navigator:{language:'en-US',languages:['en-US']},
  SpeechSynthesisUtterance:function(){},speechSynthesis:{speak(){},getVoices:()=>[],addEventListener(){},cancel(){}},
- Audio:function(){this.play=()=>Promise.resolve();this.pause=()=>{};},URLSearchParams,console,Date,Math,JSON,Array,Object,String,Number,Intl,Set,Promise,setInterval,clearInterval,setTimeout,clearTimeout};
+ Audio:function(){this.play=()=>Promise.resolve();this.pause=()=>{};},URLSearchParams,console,Date,Math,JSON,Array,Object,String,Number,Intl,Set,Promise,
+ // Live intervals in the app would hold Node's event loop open and this
+ // audit would never end. unref lets them tick without keeping us alive.
+ setInterval:(...a)=>{const t=setInterval(...a); if(t&&t.unref) t.unref(); return t;},
+ clearInterval,setTimeout,clearTimeout};
 sb.self=sb.window;sb.globalThis=sb;vm.createContext(sb);
 vm.runInContext(blocks.join('\n;\n')+`;globalThis.__c={
  lr:LISTEN_SETS, iv:INTERVIEW_BANK, em:EMAIL_BANK, di:DISCUSSION_BANK,
@@ -47,13 +66,32 @@ const N=Number(process.env.IP_N||7);   // 8+ consecutive shared words = meaningf
 function grams(words){ const g=new Set(); for(let i=0;i+N<=words.length;i++) g.add(words.slice(i,i+N).join(' ')); return g; }
 
 // ETS source corpus
-const dir='ets-pdfs/txt';
+//
+// An audit that finds nothing is only good news if it actually looked. With
+// no corpus there is nothing to match against, every comparison comes back
+// clean, and the run prints ALL CLEAR having verified precisely nothing —
+// the one failure here that is worse than crashing. So a missing or empty
+// corpus stops the run instead of passing it.
+const dir=process.argv[3]||process.env.ETS_CORPUS||path.join(repoRoot,'..','ets-pdfs','txt');
+if(!fs.existsSync(dir)){
+  console.error('ip_audit: corpus da ETS nao encontrado em '+dir+'\n'+
+                'Sem corpus este audit nao verifica nada. Passe o diretorio:\n'+
+                '  node scripts/ip_audit.js '+path.join(repoRoot,'index.html')+' <dir-do-corpus>\n'+
+                'ou defina ETS_CORPUS.');
+  process.exit(2);
+}
+const etsFiles=fs.readdirSync(dir).filter(x=>x.endsWith('.txt'));
+if(!etsFiles.length){
+  console.error('ip_audit: '+dir+' existe mas nao tem nenhum .txt.\n'+
+                'Um corpus vazio faria este audit passar sem comparar nada.');
+  process.exit(2);
+}
 const etsGrams=new Map();
-for(const f of fs.readdirSync(dir).filter(x=>x.endsWith('.txt'))){
+for(const f of etsFiles){
   const w=norm(fs.readFileSync(path.join(dir,f),'utf8'));
   for(const g of grams(w)) if(!etsGrams.has(g)) etsGrams.set(g,f);
 }
-console.log('corpus ETS:', fs.readdirSync(dir).filter(x=>x.endsWith('.txt')).length, 'documentos |', etsGrams.size, 'sequencias de', N, 'palavras');
+console.log('corpus ETS:', etsFiles.length, 'documentos |', etsGrams.size, 'sequencias de', N, 'palavras');
 console.log('nosso conteudo:', ours.length, 'strings\n');
 
 const hits=[];

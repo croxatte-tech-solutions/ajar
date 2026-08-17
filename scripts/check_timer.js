@@ -114,6 +114,7 @@ ${combined}
 
   console.log(results.join('\\n'));
   const fails = results.filter(r=>r.includes('FAIL'));
+  globalThis.__fails = fails.length;
   console.log(fails.length ? ('FAILURES: '+fails.length+' / '+results.length) : ('ALL '+results.length+' CHECKS PASS'));
 })();
 `;
@@ -130,9 +131,22 @@ const sandbox = {
   speechSynthesis: { speak(){}, getVoices(){return [];}, addEventListener(){}, cancel(){} },
   URLSearchParams,
   console, Date, Math, JSON, Array, Object, String, Number, Intl, Set, Promise,
-  setInterval, clearInterval, setTimeout, clearTimeout,
+  // The app registers live intervals the moment it loads — the class
+  // progress refresh and the welcome screen's language swap. A real
+  // interval holds Node's event loop open, so the process never exits
+  // and the verdict cannot be read from an exit code at all. unref lets
+  // them tick without being a reason to stay alive.
+  setInterval: (...a) => { const t = setInterval(...a); if (t && t.unref) t.unref(); return t; },
+  clearInterval, setTimeout, clearTimeout,
 };
 sandbox.self = sandbox.window;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(testScript, sandbox).catch(e => { console.error('RUNTIME ERROR:', e.stack); process.exitCode = 1; });
+
+// Printed text is not a result anyone can act on: a caller cannot tell a
+// run that failed its checks from one that crashed before printing. This
+// carries the verdict out as an exit code. beforeExit fires once the loop
+// drains — after the body has settled — so it covers the files that end
+// synchronously and the ones that end on a promise alike.
+process.on('beforeExit', () => { if (sandbox.__fails) process.exitCode = 1; });
