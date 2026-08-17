@@ -8960,7 +8960,38 @@ function startSurprisePractice(){
   renderPractice();
 }
 
+/* Silhueta enquanto o conteudo da aula vem da nuvem. Existe para UM caso:
+   o aluno abriu um link/QR compartilhado e esta esperando a rede do wi-fi
+   da escola. Num carregamento local o conteudo ja esta ali e um skeleton
+   so piscaria — por isso o chamador checa os parametros antes.
+
+   E elemento PROPRIO, e nao markup dentro de #practice-wrap, porque
+   renderStudent tem varios caminhos de saida (sem conteudo, sem nome, lote
+   vazio, exame em curso) e nem todos limpam os mesmos containers. Elemento
+   separado, removido numa linha no topo do render, nao tem como ficar
+   preso na tela em nenhum deles. */
+function showStudentSkeleton(){
+  if(document.getElementById('student-skeleton')) return;
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap || wrap.innerHTML.trim()) return;   // ja tem algo (ex: exame retomado)
+  const card = '<div class="sk-card"><span class="sk sk-title"></span>' +
+    '<span class="sk sk-line w90"></span><span class="sk sk-line w70"></span>' +
+    '<span class="sk sk-line w40"></span></div>';
+  const box = document.createElement('div');
+  box.id = 'student-skeleton';
+  // aria-busy diz ao leitor de tela que a regiao esta carregando, em vez de
+  // anunciar uma pilha de caixas vazias sem sentido.
+  box.setAttribute('aria-busy', 'true');
+  box.setAttribute('aria-label', 'Loading your exercise');
+  box.innerHTML = card + card;
+  wrap.parentNode.insertBefore(box, wrap);
+}
+function hideStudentSkeleton(){
+  const el = document.getElementById('student-skeleton');
+  if(el) el.remove();
+}
 function renderStudent(){
+  hideStudentSkeleton();   // some em QUALQUER caminho de saida deste render
   // Redrawn here, not only on load: the week appears the moment a student
   // taps their name, and the name is typed after the page is already up.
   renderSchoolClock();
@@ -12540,6 +12571,13 @@ startSchoolClock();
   startExamClock();
   renderPractice();
   mountExamBar(ex);
+})();
+// Só num link compartilhado ("?ex=" ou "?s=1") existe espera de rede para
+// mostrar. Num acesso normal o conteúdo já está local e a silhueta seria um
+// flash sem informação — pior que não ter nada.
+(function () {
+  const p = new URLSearchParams(location.search);
+  if (p.get('s') === '1' || p.get('ex')) showStudentSkeleton();
 })();
 loadSharedClassroomContent().then(()=>{
   renderStudent();
