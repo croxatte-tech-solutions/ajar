@@ -6253,6 +6253,16 @@ const CLASSROOM_MESSAGES = [
   "You didn't come this far to stop now. Let's go! 🔥",
   "Scan, speak, shine. Let's go! ✨",
 ];
+// One message per exercise, chosen once and kept. The panel redraws on
+// every approval, every roster edit and every 45-second progress refresh —
+// a fresh message each time would flicker on the classroom projector while
+// the students are trying to scan it.
+function itemMessage(id){
+  const key = 'cse_msg_' + id;
+  let msg = localStorage.getItem(key);
+  if(!msg){ msg = pick(CLASSROOM_MESSAGES); localStorage.setItem(key, msg); }
+  return msg;
+}
 function nextClassroomMessage(){
   const last = localStorage.getItem('cse_last_msg') || '';
   const pool = CLASSROOM_MESSAGES.filter(m => m !== last);
@@ -6456,16 +6466,9 @@ function paintShareBox(link, statusNote, s){
 
   box.innerHTML = `
     <div class="panel">
-      <h2>📤 Share today's set with students</h2>
-      <p class="small-note" style="margin-top:0">Send the link below, or project this panel on the classroom screen and let students scan the QR code with their own phone camera. Everyone gets exactly the ${s.approved.length} whole-class item(s) you approved — nothing else.${individualNote}</p>
+      <h2>📤 Settings for today's session</h2>
+      <p class="small-note" style="margin-top:0">Each approved exercise below has its own QR code — project the one you are running this round. ${s.approved.length} exercise(s) approved.${individualNote}</p>
       ${statusNote ? `<p class="small-note">${statusNote}</p>` : ''}
-      <div style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;margin:.8rem 0">
-        <div style="border:1px solid var(--border);border-radius:12px;padding:10px;background:#ffffff;flex-shrink:0">${renderQRSvg(link, 160)}</div>
-        <div style="flex:1;min-width:200px">
-          <div style="font-size:1.3rem;font-weight:800;line-height:1.25;margin-bottom:.3rem">${msg}</div>
-          <div class="small-note" style="margin-top:0">Scan to start practicing</div>
-        </div>
-      </div>
       <div class="field-row">
         <input type="text" id="share-link" value="${link}" readonly onclick="this.select()">
         <button class="btn sm" onclick="copyShareLink()">Copy link</button>
@@ -7014,7 +7017,11 @@ function renderTeacher(){
       ${cardBody(item)}
       ${item.status==='approved' ? `
       <div class="field-row" style="margin-top:.7rem;align-items:center">
-        <div style="border:1px solid var(--border);border-radius:8px;padding:6px;background:#ffffff;flex-shrink:0">${renderQRSvg(itemShareLink(item), 90)}</div>
+        <div style="border:1px solid var(--border);border-radius:12px;padding:10px;background:#ffffff;flex-shrink:0">${renderQRSvg(itemShareLink(item), 150)}</div>
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:1.15rem;font-weight:800;line-height:1.3;margin-bottom:.25rem">${itemMessage(item.id)}</div>
+          <div class="small-note" style="margin-top:0">Scan to start this exercise</div>
+        </div>
         <div style="flex:1;min-width:0">
           <input type="text" value="${itemShareLink(item)}" readonly style="font-size:.72rem" onclick="this.select()">
           <div class="small-note" style="margin-top:.2rem">Scan to go straight to this exercise — nothing else</div>
