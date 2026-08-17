@@ -30,9 +30,12 @@ Também: **não há back-end de aplicação.** Só Firestore. Então "validaçã
 | 🔴 Crítico | 1 | **1** | 0 |
 | 🟠 Alto | 5 | **5** | 0 |
 | 🟡 Médio | 7 | **7** | 0 |
-| 🟢 Baixo | 6 | **6** | 0 |
-| 💡 Sugestão UX | 4 | 1 | 3 |
-| **Total** | **23** | **20** | **3** |
+| 🟢 Baixo | 5 | **5** | 0 |
+| 💡 Sugestão UX | 4 | 2 | 2 |
+| **Total** | **22** | **20** | **2** |
+
+*(A primeira versão desta tabela dizia 23 e 4 baixos. São 22 itens numerados e
+5 baixos — o item 18, peso dos assets, é informativo e não conta como achado.)*
 
 | Ângulo | Achados |
 |---|---|
@@ -314,7 +317,7 @@ O aluno rola por relógio, briefing e enunciado antes de chegar onde escreve. Fa
 
 ## 21. A tira de navegação do painel rola sem dizer que rola
 
-Já mencionado no item 6. Como sugestão isolada: máscara de gradiente na borda direita quando há conteúdo escondido.
+**✅ RESOLVIDO (2ª passada).** Máscara de gradiente na borda direita de `#teacher-nav` — quando há aba fora da tela, a última se dissolve, e isso é o aviso. Feito junto com o item 6.
 
 ## 22. "Show me the exercise" é o mesmo botão em dois contextos diferentes
 
