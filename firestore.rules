@@ -251,10 +251,26 @@ service cloud.firestore {
           // class panel reads — five numbers, no raw history. Without it
           // here every write from a practising student is refused, which
           // is how this file and the console drifted apart once already.
-          return request.resource.data.keys().hasOnly(['displayName', 'lastSeen', 'summary'])
+          //
+          // 'birthday' is MM-DD AND THE PATTERN IS THE POINT. A class that
+          // can wish someone a happy birthday needs the day and the month;
+          // the YEAR is the part that reveals age, and age is the one fact
+          // about these users that the law actually cares about. The full
+          // date lives in users/{uid}, readable by its owner alone, and is
+          // used once to check they are old enough. What reaches the class
+          // is a date that cannot be worked backwards into an age.
+          //
+          // So this is not a formatting rule. It is the rule that stops the
+          // birthday feature from quietly publishing every student's age,
+          // and it is enforced here rather than in the form, because a form
+          // enforces nothing.
+          return request.resource.data.keys().hasOnly(['displayName', 'lastSeen', 'summary', 'birthday'])
             && request.resource.data.displayName is string
             && request.resource.data.displayName.size() > 0
-            && request.resource.data.displayName.size() <= 60;
+            && request.resource.data.displayName.size() <= 60
+            && (!('birthday' in request.resource.data)
+                || (request.resource.data.birthday is string
+                    && request.resource.data.birthday.matches('^[0-9]{2}-[0-9]{2}$')));
         }
 
         // "Anonymous, or this school's own teacher" rather than "signed in".

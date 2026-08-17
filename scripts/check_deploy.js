@@ -183,6 +183,44 @@ if(m){
   });
 }
 
+//===================================================================
+// THE MODULE BLOCK PARSES
+//===================================================================
+// The classic <script> blocks are checked by every probe that boots them in a
+// vm. The module block is not — it cannot be, since `import` is illegal in
+// the Function constructor — so a syntax error in the one block that owns
+// authentication and every Firestore write would ship green.
+{
+  const mods = [...html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)]
+    .filter(m => /type\s*=\s*["']module["']/.test(m[1])).map(m => m[2]);
+  assert('there is exactly one module block', mods.length === 1, mods.length);
+  // node --check, not a vm trick: the question is only whether this text
+  // parses as a module, and the parser is the thing that answers it.
+  {
+    const fs = require('fs'), os = require('os'), path = require('path');
+    const f = path.join(os.tmpdir(), 'ajar-mod-check.mjs');
+    fs.writeFileSync(f, mods[0]);
+    const r = require('child_process').spawnSync(process.execPath, ['--check', f], { encoding: 'utf8' });
+    fs.unlinkSync(f);
+    assert('the module block parses as a module',
+      r.status === 0, (r.stderr || '').split('\n').slice(0, 3).join(' '));
+  }
+  const names = ['signInWithGoogle', 'createAccount', 'signInWithPassword',
+                 'saveProfile', 'loadProfile', 'requestTeacherAccess'];
+  const missing = names.filter(n => mods[0].indexOf('async ' + n + '(') === -1);
+  assert('CloudSync exposes the account surface', missing.length === 0, missing);
+  // The production gotcha, asserted so it cannot creep back: redirect drives
+  // a cross-origin iframe against the auth domain, and this app is not served
+  // from it, so any browser blocking third-party storage breaks sign-in.
+  // Comments stripped first. The fix for this in index.html carries a comment
+  // explaining WHY redirect is not used, which names it — and a check that
+  // fires on the documentation of the thing it forbids is a check that
+  // punishes writing the reason down. Eighth time in this file family.
+  const code = mods[0].replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
+  assert('sign-in uses the popup, never the redirect',
+    code.indexOf('signInWithRedirect') === -1);
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
@@ -197,5 +235,6 @@ if(process.env.AJAR_SMOKE){
     'curl -s -o /dev/null -w "%{content_type}\\n" https://hiajar.com/robots.txt   # expect text/plain',
     'curl -s -o /dev/null -w "%{content_type}\\n" https://hiajar.com/sitemap.xml  # expect application/xml',
     'curl -s -o /dev/null -w "%{http_code}\\n" https://hiajar.com/nao-existe-nada  # expect 404, not 200',
-  ].forEach(c => console.log('    ' + c));
+  ].forEach(c => 
+console.log('    ' + c));
 }

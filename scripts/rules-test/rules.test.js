@@ -187,6 +187,32 @@ await check('and a teacher cannot delete herself out of the roster', () =>
   assertFails(deleteDoc(doc(alpha, 'teachers', 'teacher_alpha'))));
 
 //===================================================================
+// THE BIRTHDAY THE CLASS CAN SEE, AND THE AGE IT CANNOT
+//===================================================================
+// A class that wishes someone a happy birthday needs the day and the month.
+// The year is the part that reveals age, and age is the one fact about these
+// users the law actually cares about. So the class-visible field is MM-DD and
+// the rules refuse anything that carries a year — which is the difference
+// between a nice feature and publishing every student's age.
+await check('a student may share the day and month of their birthday', () =>
+  assertSucceeds(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana', birthday: '04-11' })));
+await check('A FULL DATE IN THE CLASS-VISIBLE FIELD IS REFUSED', () =>
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana', birthday: '2007-04-11' })));
+await check('and so is a year smuggled in beside it', () =>
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana', birthday: '04-11', birthYear: 2007 })));
+await check('and so is anything that is not a date at all', () =>
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana', birthday: 'April 11th' })));
+await check('sharing it stays optional — a record without one is fine', () =>
+  assertSucceeds(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+    { displayName: 'Ana' })));
+await check('the full date is still readable only by the person it belongs to', () =>
+  assertFails(getDoc(doc(student2, 'users', 'anon_student'))));
+
+//===================================================================
 // HISTORY IS A RECORD OF WHAT HAPPENED
 //===================================================================
 await check('a student may log their own attempt', () =>

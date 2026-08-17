@@ -12802,7 +12802,12 @@ loadSharedClassroomContent().then(()=>{
      ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signInWithCredential,
+           createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
+           GoogleAuthProvider, signInWithPopup, linkWithPopup, linkWithCredential,
+           EmailAuthProvider, updateProfile,
+           signOut, setPersistence, browserLocalPersistence, browserSessionPersistence }
+    from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
   import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
   // Infrastructure identifiers, not brand: the project id keeps its
@@ -13080,6 +13085,108 @@ loadSharedClassroomContent().then(()=>{
       // shared computer in a classroom. Session persistence means closing
       // the browser ends the session, so the next person to sit down
       // cannot publish to the class as the teacher.
+      /* SIGNING IN WITH GOOGLE — POPUP, NEVER REDIRECT.
+
+         signInWithRedirect drives a cross-origin iframe against the Firebase
+         auth domain. This app is served from hiajar.com and the auth domain
+         is *.firebaseapp.com, so any browser that blocks third-party storage
+         breaks the flow — Safari by default, Chrome by policy. Firebase's own
+         guidance is to use the popup, and the redirect route would only be
+         viable behind a same-origin auth domain we do not have.
+
+         A popup has its own way of failing: the browser blocks it. That is
+         reported rather than left as a button that does nothing.
+
+         AND THE ANONYMOUS SESSION IS PROMOTED, NOT REPLACED. Someone who has
+         already practised has a history attached to an anonymous uid. link()
+         keeps that uid, so signing in carries their work across. Creating a
+         fresh account instead would abandon it in silence, which is the exact
+         failure this project spent a day removing. */
+      async signInWithGoogle() {
+        await setPersistence(auth, browserLocalPersistence);
+        const provider = new GoogleAuthProvider();
+        const u = auth.currentUser;
+        try{
+          const res = (u && u.isAnonymous)
+            ? await linkWithPopup(u, provider)
+            : await signInWithPopup(auth, provider);
+          return { uid: res.user.uid, email: res.user.email || null,
+                   displayName: res.user.displayName || null };
+        }catch(e){
+          // This one is not an error the person can act on: their Google
+          // account already exists separately, so there is nothing to carry
+          // across and the right move is simply to sign in as it.
+          if(e && e.code === 'auth/credential-already-in-use'){
+            const cred = GoogleAuthProvider.credentialFromError(e);
+            const res = await signInWithCredential(auth, cred);
+            return { uid: res.user.uid, email: res.user.email || null,
+                     displayName: res.user.displayName || null, carriedOver: false };
+          }
+          throw e;
+        }
+      },
+      // Same promotion for the email route: an anonymous session that has
+      // practised keeps its uid and its history.
+      async createAccount(email, password, displayName) {
+        await setPersistence(auth, browserLocalPersistence);
+        const u = auth.currentUser;
+        const cred = EmailAuthProvider.credential(email, password);
+        const res = (u && u.isAnonymous)
+          ? await linkWithCredential(u, cred)
+          : await createUserWithEmailAndPassword(auth, email, password);
+        if(displayName){
+          try{ await updateProfile(res.user, { displayName }); }
+          catch(e){ console.warn('Ajar: could not set the display name —', e); }
+        }
+        // Not awaited into the signup path: a mail server having a slow
+        // minute must not hold up an account that already exists.
+        sendEmailVerification(res.user)
+          .catch(e => console.warn('Ajar: the verification email did not send —', e));
+        return { uid: res.user.uid, email: res.user.email || null };
+      },
+      async signInWithPassword(email, password, staySignedIn) {
+        await setPersistence(auth, staySignedIn ? browserLocalPersistence : browserSessionPersistence);
+        const res = await signInWithEmailAndPassword(auth, email, password);
+        return { uid: res.user.uid, email: res.user.email || null,
+                 emailVerified: !!res.user.emailVerified };
+      },
+
+      // The profile, and the split that keeps it private.
+      //
+      // users/{uid} holds the email, the country and the full date of birth,
+      // and its rules let nobody read it but its owner. What the class sees
+      // is written separately, and deliberately cannot carry a year.
+      async saveProfile(profile) {
+        const u = auth.currentUser;
+        if(!u) throw new Error('not signed in');
+        await setDoc(doc(db, 'users', u.uid), {
+          displayName: profile.displayName,
+          email: u.email || '',
+          country: profile.country,
+          birthDate: profile.birthDate,
+          role: profile.role,
+          schoolId: profile.schoolId || '',
+          createdAt: Date.now(),
+        });
+        return true;
+      },
+      async loadProfile() {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous) return null;
+        const snap = await getDoc(doc(db, 'users', u.uid));
+        return snap.exists() ? snap.data() : null;
+      },
+      // Filing to teach somewhere. This writes a request and grants nothing:
+      // the school name is what the applicant typed, and it is evidence for
+      // whoever reviews it rather than a claim the database honours.
+      async requestTeacherAccess(name, schoolNameTyped) {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous) throw new Error('not signed in');
+        await setDoc(doc(db, 'teacherRequests', u.uid), {
+          name, email: u.email || '', schoolNameTyped, requestedAt: Date.now(),
+        });
+        return true;
+      },
       async signInTeacher(email, password, staySignedIn) {
         await setPersistence(auth, staySignedIn ? browserLocalPersistence : browserSessionPersistence);
         const res = await signInWithEmailAndPassword(auth, email, password);
