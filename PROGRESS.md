@@ -107,6 +107,24 @@ Worth recording separately, because each marks a blind spot:
    iOS simulator: `maxListens()` was right, and the sentence describing it
    was three separate hardcoded strings. The student reads the sentence.
 
+### QR codes
+
+Verified end to end rather than by inspection: `scripts/qr_render.js`
+renders PNGs with the app's own library, `scripts/qrdecode.swift` decodes
+them with Apple's Vision framework — the detector behind the iPhone
+camera — and `scripts/qr_verify.py` compares. All 12 task types decode to
+exactly their own link.
+
+```bash
+python3 scripts/qr_verify.py --count 12
+```
+
+Building it found the worst bug of the session: without Firebase loaded,
+the share link packs the whole exercise into the URL (3276 characters
+against a QR maximum near 2331) and the generator threw rather than
+degrading. School wifi blocking a CDN would have broken every QR code
+mid-lesson.
+
 ### Mistakes worth not repeating
 
 - **Three bad tests.** Two flaky, one failing about three runs in four. All
@@ -118,6 +136,15 @@ Worth recording separately, because each marks a blind spot:
   word.
 - **`[^;]*` in a regex, three times**, matching across a line with several
   statements and failing text that was plainly present.
+- **A wrong diagnosis I repeated for hours.** "code length overflow
+  (26868>18672)" in the preview browser: I called it a JS engine
+  bytecode ceiling, said the preview could not run this app, and
+  discounted my own visual checks all session on that basis. It was the QR
+  library failing because the preview does not load Firebase. Bit counts,
+  not bytecode. The evidence was on screen the whole time and I explained
+  it away instead of following it.
+- **A comment describing a layout nobody wrote** — claimed the teacher nav
+  became a left rail above 1220px. No such media query existed.
 - **The guide, in both directions.** Left stale describing an app two
   features behind, then rewritten to 544 and 572 words — three minutes of
   reading in a box that opens on arrival. Halved.
@@ -129,9 +156,10 @@ Worth recording separately, because each marks a blind spot:
 - Recording the graded session on the teacher's device
 - Backup, a separate test environment, monitoring
 - Whitepaper (deliberately last)
-- **Tested on real iOS at the end of the session** (iPhone 17 Pro, Safari):
-  front door, language detection, section clock, briefs and footers all
-  correct. It found the listens bug in twenty minutes. The in-app preview
-  browser hits a per-function bytecode ceiling this app exceeds, so use the
-  simulator, not the preview, for anything visual.
-- **iPad not yet checked.**
+- **Tested on real iOS** (iPhone 17 Pro and both iPads, Safari): front
+  door, language detection, section clock, briefs, footers and the sign-in
+  gate all correct. The iPhone run found the listens bug in twenty minutes.
+  Measured at 1366px: the teacher nav stays a horizontal strip, no sideways
+  overflow.
+- **The teacher panel signed IN is still unverified by eye** — it needs her
+  password, which is not mine to type.
