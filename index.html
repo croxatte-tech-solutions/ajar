@@ -568,6 +568,8 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
   <!-- STUDENT VIEW -->
   <div id="view-account" class="view">
     <div id="account-box"></div>
+    <!-- Empty for everyone but the one account that owns this app. -->
+    <div id="admin-box"></div>
   </div>
 
   <div id="view-student" class="view">
@@ -11988,7 +11990,7 @@ function setView(v){
   document.getElementById('btn-student').classList.toggle('active', v==='student');
   if(v==='welcome'){ renderWelcome(); return; }
   if(v==='student') renderStudent();
-  if(v==='account'){ renderAccount(); renderWhoAmI(); return; }
+  if(v==='account'){ renderAccount(); refreshAdmin(); renderWhoAmI(); return; }
   renderWhoAmI();
   if(!localStorage.getItem('ajar_guide_seen_'+v)) showGuide(v);
 }
@@ -12561,6 +12563,109 @@ function accountSignOut(){
     .then(() => { ACCOUNT_PROFILE = null; ACCOUNT_MODE = 'choose'; renderAccount(); renderWhoAmI(); })
     .catch(e => { console.error('Ajar: sign-out failed —', e);
                   accountMsg('Could not sign out. Check the connection.', false); });
+}
+
+
+/* =========================================================
+   THE APPROVAL QUEUE
+   The one screen where a person decides who may see a class.
+   ========================================================= */
+let ADMIN_IS = false;          // resolved once, from the database
+let ADMIN_REQUESTS = null;     // null = not fetched, [] = fetched and empty
+let ADMIN_MSG = null;
+
+async function refreshAdmin(){
+  if(!window.CloudSync || typeof window.CloudSync.isAdmin !== 'function') return;
+  try{
+    ADMIN_IS = await window.CloudSync.isAdmin();
+    if(ADMIN_IS) ADMIN_REQUESTS = await window.CloudSync.listTeacherRequests();
+  }catch(e){
+    console.error('Ajar: could not read the approval queue —', e);
+    ADMIN_MSG = 'Could not read the queue. Check the connection.';
+  }
+  renderAdmin();
+}
+function renderAdmin(){
+  const box = document.getElementById('admin-box');
+  if(!box) return;
+  if(!ADMIN_IS){ box.innerHTML = ''; return; }
+  const rows = ADMIN_REQUESTS;
+  const msg = ADMIN_MSG
+    ? `<div class="result-msg no" role="alert" style="margin:.6rem 0">${escapeHtml(ADMIN_MSG)}</div>` : '';
+  if(rows === null){ box.innerHTML = msg + '<div class="panel"><p class="small-note">Reading the queue…</p></div>'; return; }
+  if(!rows.length){
+    box.innerHTML = msg + `<div class="panel">
+      <h2 style="margin-top:0">Teacher requests</h2>
+      <p class="small-note" style="margin:0">Nobody is waiting.</p></div>`;
+    return;
+  }
+  box.innerHTML = msg + `<div class="panel">
+    <h2 style="margin-top:0">Teacher requests (${rows.length})</h2>
+    <p class="small-note" style="margin:.2rem 0 .9rem">
+      The school below is <b>what the applicant typed</b>. It is what they claim,
+      not something the app checked — read it, decide, and set the school you are
+      putting them in yourself.</p>
+    ${rows.map(adminRowHtml).join('')}
+  </div>`;
+}
+function adminRowHtml(r){
+  const id = escapeHtml(r.uid);
+  const when = r.requestedAt ? new Date(r.requestedAt).toLocaleDateString() : '';
+  return `<div class="ex-card" style="margin-bottom:.7rem">
+    <div class="ex-body">
+      <b>${escapeHtml(r.name || '(no name)')}</b><br>
+      <span class="small-note">${escapeHtml(r.email || '')}${when ? ' · asked ' + escapeHtml(when) : ''}</span><br>
+      <span class="small-note">Claims to teach at: <b>${escapeHtml(r.schoolNameTyped || '')}</b></span>
+    </div>
+    <div class="field-row" style="margin:.5rem 0">
+      <div class="field">
+        <label for="adm-sid-${id}">School id to put them in</label>
+        <input type="text" id="adm-sid-${id}" placeholder="hja-…">
+      </div>
+      <div class="field">
+        <label for="adm-sname-${id}">School name they will see</label>
+        <input type="text" id="adm-sname-${id}" value="${escapeHtml(r.schoolNameTyped || '')}">
+      </div>
+    </div>
+    <div class="ex-actions">
+      <button class="btn sm" onclick="adminApprove('${id}')">Approve</button>
+      <button class="btn sm ghost" onclick="adminDecline('${id}')">Decline</button>
+    </div>
+  </div>`;
+}
+async function adminApprove(uid){
+  const row = (ADMIN_REQUESTS || []).find(r => r.uid === uid);
+  if(!row) return;
+  const sid = ((document.getElementById('adm-sid-' + uid) || {}).value || '').trim();
+  const sname = ((document.getElementById('adm-sname-' + uid) || {}).value || '').trim();
+  // Refused here as well as in the rules, because the message matters: an
+  // approval into an empty or malformed school id is an approval into nothing,
+  // and the person doing it should be told before it is attempted.
+  if(!ID_PATTERN.test(sid)){
+    ADMIN_MSG = 'Type the school id you are putting them in — the long random one, not the school name.';
+    renderAdmin(); return;
+  }
+  if(!sname){ ADMIN_MSG = 'Give the school a name for them to see.'; renderAdmin(); return; }
+  if(!confirm('Give ' + (row.name || 'this person') + ' teacher access to ' + sname + '?\n\n' +
+              'They will be able to see that class, its results, and to publish to it.')) return;
+  ADMIN_MSG = null;
+  try{
+    await window.CloudSync.approveTeacher(uid, row.name || '', sid, sname);
+    await refreshAdmin();
+  }catch(e){
+    console.error('Ajar: approving failed —', e);
+    ADMIN_MSG = 'That did not go through. Nothing was changed.';
+    renderAdmin();
+  }
+}
+async function adminDecline(uid){
+  if(!confirm('Remove this request? They are not told, and they can ask again.')) return;
+  try{ await window.CloudSync.declineTeacher(uid); await refreshAdmin(); }
+  catch(e){
+    console.error('Ajar: declining failed —', e);
+    ADMIN_MSG = 'That did not go through. Nothing was changed.';
+    renderAdmin();
+  }
 }
 
 function renderWelcome(){
@@ -13299,7 +13404,7 @@ loadSharedClassroomContent().then(()=>{
            EmailAuthProvider, updateProfile,
            signOut, setPersistence, browserLocalPersistence, browserSessionPersistence }
     from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, addDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
   // Infrastructure identifiers, not brand: the project id keeps its
   // original string because renaming it means a new Firebase project.
@@ -13668,6 +13773,47 @@ loadSharedClassroomContent().then(()=>{
         if(!u || noSchool() || !/^[0-9]{2}-[0-9]{2}$/.test(String(mmdd || ''))) return NO_SCHOOL;
         await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
           { displayName: name, birthday: mmdd }, { merge: true });
+        return true;
+      },
+      /* THE ADMINISTRATOR'S SURFACE.
+
+         isAdmin is the presence of admins/{uid}, a document only the console
+         can create — in both directions, so not even an administrator can
+         mint another. Firebase's canonical answer would be a custom claim on
+         the token, and it is the wrong tool here: it needs the Admin SDK, so
+         there is no backend-free way to set one; it cannot be seen or edited
+         in the console; and a changed claim does not reach the client until
+         the token refreshes, so approving somebody would not take effect
+         until they signed out and back in.
+
+         The read is attempted and a refusal is the answer, not an error: the
+         rules let each holder read only their own record, so a non-admin
+         asking gets permission-denied, which is exactly the information
+         wanted. */
+      async isAdmin() {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous) return false;
+        try{
+          const snap = await getDoc(doc(db, 'admins', u.uid));
+          return snap.exists();
+        }catch(e){ return false; }
+      },
+      async listTeacherRequests() {
+        const snap = await getDocs(collection(db, 'teacherRequests'));
+        return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+      },
+      /* Approving is the act of granting access to a school, so it is spelled
+         out rather than derived: the schoolId comes from the administrator
+         choosing one, never from the schoolNameTyped the applicant supplied.
+         That string is evidence for a person to read; if it decided anything,
+         typing a school's name would be enough to read that school's class. */
+      async approveTeacher(uid, name, schoolId, schoolName) {
+        await setDoc(doc(db, 'teachers', uid), { name, schoolId, schoolName });
+        await deleteDoc(doc(db, 'teacherRequests', uid));
+        return true;
+      },
+      async declineTeacher(uid) {
+        await deleteDoc(doc(db, 'teacherRequests', uid));
         return true;
       },
       async loadProfile() {
