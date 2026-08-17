@@ -592,6 +592,142 @@ input[type=email]:focus,input[type=password]:focus,input[type=number]:focus,
 input[type=search]:focus,input[type=tel]:focus,input[type=url]:focus{
   outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);
 }
+
+/* ==========================================================================
+   PEÇAS 2–6 — ÍCONES, ESTADOS, PROGRESSO, AVATARES, TRANSIÇÕES
+   --------------------------------------------------------------------------
+   Tudo em CSS do próprio projeto, com os tokens que já existem. Nada aqui
+   depende de biblioteca, de rede ou de framework — o app continua sendo um
+   arquivo que abre offline.
+   ========================================================================== */
+
+/* ============================ 2 · ÍCONES ================================= */
+/* Os 7 SVGs inline já tinham stroke-linecap:round; faltava o linejoin em seis
+   deles, que é o que arredonda os CANTOS (o linecap só arredonda as PONTAS).
+   Aplicado por CSS e não atributo por atributo: pega os que existem hoje e
+   qualquer um que entre depois, que é onde a inconsistência costuma voltar. */
+svg{ stroke-linecap:round; stroke-linejoin:round; }
+/* A curva da Baloo 2 é gorda; traço de 1.5 ao lado dela parece fio solto. */
+svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
+
+/* ============================ 3 · ESTADOS ================================ */
+/* --- carregando: silhueta, não spinner ---------------------------------- */
+/* Spinner diz "espere". Silhueta diz "vai aparecer um cartão aqui, deste
+   tamanho" — o aluno já sabe o que vem antes de vir. */
+.sk{ background:var(--surface-alt); border-radius:var(--r-sm); display:block; }
+.sk-line{ height:.72rem; margin:.45rem 0; }
+.sk-line.w90{ width:90%; } .sk-line.w70{ width:70%; } .sk-line.w40{ width:40%; }
+.sk-title{ height:1rem; width:45%; margin-bottom:.8rem; }
+.sk-card{ background:var(--surface); border:1px solid var(--border);
+  border-radius:var(--r-md); padding:1.1rem; box-shadow:var(--shadow); margin-bottom:.9rem; }
+@media (prefers-reduced-motion:no-preference){
+  .sk{ animation:sk-pulse 1.6s ease-in-out infinite; }
+  @keyframes sk-pulse{ 0%,100%{ opacity:1 } 50%{ opacity:.55 } }
+}
+
+/* --- vazio / erro: o mascote em vez de "nada encontrado" ----------------- */
+.state{ text-align:center; padding:1.4rem 1.2rem .4rem; }
+.state-mascot{ width:104px; height:104px; margin:0 auto .9rem; display:block; }
+.state h3{ font-family:var(--font-display); font-size:1.12rem; margin:0 0 .35rem; }
+.state p{ color:var(--text-dim); font-size:.9rem; line-height:1.55;
+  max-width:30ch; margin:0 auto 1.1rem; }
+.state .btn{ margin:0 auto; }
+/* O erro é âmbar, não vermelho: a IA não ter respondido não é culpa de
+   ninguém e não é perda de dado. Vermelho aqui assusta sem informar. */
+.state-error h3{ color:var(--amber); }
+
+/* --- sucesso: o check cresce, e some sozinho ----------------------------- */
+.ok-burst{ display:inline-flex; align-items:center; justify-content:center;
+  width:52px; height:52px; border-radius:999px;
+  background:var(--green-soft); color:var(--green); }
+@media (prefers-reduced-motion:no-preference){
+  .ok-burst{ animation:ok-pop .42s cubic-bezier(.34,1.5,.64,1) both; }
+  .ok-burst svg{ animation:ok-draw .34s .12s ease both; }
+  @keyframes ok-pop{ from{ transform:scale(.4); opacity:0 } to{ transform:scale(1); opacity:1 } }
+  @keyframes ok-draw{ from{ stroke-dashoffset:26 } to{ stroke-dashoffset:0 } }
+}
+.ok-burst svg path{ stroke-dasharray:26; }
+
+/* ============================ 4 · PROGRESSO ============================== */
+/* Anel em SVG puro: stroke-dasharray na circunferência, deslocado por
+   --pct. Sem canvas, sem lib, e o número no meio é texto de verdade — dá
+   para selecionar, e o leitor de tela lê pelo role=progressbar no wrapper. */
+.ring{ position:relative; width:var(--ring-size,86px); height:var(--ring-size,86px); display:inline-block; }
+.ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.ring circle{ fill:none; stroke-width:var(--ring-w,8); }
+.ring .ring-track{ stroke:var(--surface-alt); }
+.ring .ring-fill{
+  stroke:var(--accent); stroke-linecap:round;
+  stroke-dasharray:var(--circ); stroke-dashoffset:calc(var(--circ) - (var(--circ) * var(--pct) / 100));
+}
+@media (prefers-reduced-motion:no-preference){
+  .ring .ring-fill{ transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.3,1); }
+}
+.ring-label{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-display); font-weight:700; font-size:1.02rem;
+  font-variant-numeric:tabular-nums; }
+
+/* --- streak: grade de dias, não bolinhas -------------------------------- */
+.streak{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,1fr);
+  gap:3px; overflow-x:auto; padding-bottom:2px; }
+.streak i{ width:13px; height:13px; border-radius:4px; background:var(--surface-alt);
+  display:block; }
+/* Quatro degraus, do mais fraco ao acento cheio. color-mix mantém tudo
+   derivado de --accent: trocar a paleta troca a grade junto, sem tabela
+   de hex paralela para esquecer de atualizar. */
+.streak i[data-n="1"]{ background:color-mix(in oklab, var(--accent) 26%, var(--surface-alt)); }
+.streak i[data-n="2"]{ background:color-mix(in oklab, var(--accent) 52%, var(--surface-alt)); }
+.streak i[data-n="3"]{ background:color-mix(in oklab, var(--accent) 76%, var(--surface-alt)); }
+.streak i[data-n="4"]{ background:var(--accent); }
+.streak-legend{ display:flex; align-items:center; gap:.35rem; font-size:.7rem;
+  color:var(--text-dim); margin-top:.5rem; }
+.streak-legend i{ width:11px; height:11px; border-radius:3px; display:block; }
+
+/* ============================ 5 · AVATARES =============================== */
+.avatar{ display:inline-flex; align-items:center; justify-content:center;
+  width:var(--av,34px); height:var(--av,34px); border-radius:999px;
+  font-family:var(--font-display); font-weight:700; font-size:calc(var(--av,34px) * .40);
+  letter-spacing:.01em; flex-shrink:0; user-select:none;
+  background:var(--accent-soft); color:var(--accent); }
+/* Seis tons para separar pessoas numa fila, todos já no tema. Não é decoração:
+   numa lista de aprovação, a cor é o que deixa a professora achar o mesmo
+   aluno duas vezes sem reler o nome. */
+.avatar[data-tone="1"]{ background:var(--green-soft);  color:var(--green); }
+.avatar[data-tone="2"]{ background:var(--amber-soft);  color:var(--amber); }
+.avatar[data-tone="3"]{ background:var(--purple-soft); color:var(--purple); }
+.avatar[data-tone="4"]{ background:var(--red-soft);    color:var(--red); }
+.avatar[data-tone="5"]{ background:var(--accent-soft); color:var(--accent); }
+.avatar[data-tone="0"]{ background:var(--surface-alt); color:var(--text-dim); }
+.avatar-row{ display:flex; align-items:center; gap:.55rem; }
+.avatar-row .who{ font-size:.86rem; font-weight:600; }
+.avatar-row .who small{ display:block; font-weight:400; font-size:.74rem; color:var(--text-dim); }
+
+/* ============================ 6 · TRANSIÇÕES ============================= */
+/* A troca de tela já tinha fade de 250ms; ganha o deslocamento, que é o que
+   dá direção — a tela ENTRA, não pisca. */
+.view.active{ animation:view-in .28s cubic-bezier(.2,.7,.3,1); }
+@keyframes view-in{ from{ opacity:0; transform:translateY(8px) } to{ opacity:1; transform:none } }
+@media (prefers-reduced-motion:reduce){ .view.active{ animation:none } }
+
+/* Botão que está processando: some o texto sem mudar a largura (senão a
+   linha inteira dança), aparece o disco girando, e o clique fica bloqueado
+   de fato — não só visualmente. */
+.btn.is-busy{ position:relative; color:transparent !important; pointer-events:none; }
+.btn.is-busy::after{
+  content:''; position:absolute; inset:0; margin:auto;
+  width:1.05em; height:1.05em; border-radius:999px;
+  border:2px solid currentColor; border-top-color:var(--btn-ink);
+  color:color-mix(in oklab, var(--btn-ink) 40%, transparent);
+}
+@media (prefers-reduced-motion:no-preference){
+  .btn.is-busy::after{ animation:spin .7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg) } }
+}
+/* Sem movimento, o estado ainda precisa ser visível: vira um traço fixo. */
+@media (prefers-reduced-motion:reduce){
+  .btn.is-busy::after{ border-top-color:var(--btn-ink); opacity:.8; }
+}
+.btn.is-done{ background:var(--green) !important; }
 </style>
 </head>
 <body>
@@ -12575,5 +12711,184 @@ loadSharedClassroomContent().then(()=>{
 <div id="tv-screen" class="tv" style="display:none" role="dialog" aria-modal="true" aria-label="Classroom screen"></div>
 
 
+
+<!-- ==========================================================================
+     LABORATÓRIO DE PEÇAS — visível só em #design-lab
+     Existe para revisar cada peça isolada antes de ligá-la nos caminhos reais
+     do app. Não aparece em nenhum fluxo: sem o hash, o bloco nem é renderizado.
+     Some daqui quando as peças estiverem ligadas.
+     ========================================================================== -->
+<div id="design-lab" hidden>
+  <div class="app" style="padding-top:1.5rem">
+    <div class="masthead">
+      <div class="brand">
+        <span class="brand-mark"><img src="logo.svg" alt=""></span>
+        <div class="brand-text"><h1>Laboratório de peças</h1></div>
+      </div>
+      <a class="btn ghost sm" href="#">← Voltar ao app</a>
+    </div>
+
+    <!-- ---------- 3 · CARREGANDO ---------- -->
+    <div class="panel">
+      <h2>3 · Carregando — silhueta, não spinner</h2>
+      <div class="sk-card">
+        <span class="sk sk-title"></span>
+        <span class="sk sk-line w90"></span>
+        <span class="sk sk-line w70"></span>
+        <span class="sk sk-line w40"></span>
+      </div>
+      <p class="small-note">Diz o formato do que vem, não só “espere”.</p>
+    </div>
+
+    <!-- ---------- 3 · VAZIO ---------- -->
+    <div class="panel">
+      <h2>3 · Vazio</h2>
+      <div class="state state-empty">
+        <svg class="state-mascot" viewBox="0 0 96 96" role="img" aria-label="Mascote do Ajar, expressão tranquila" style="color:var(--accent)">
+          <path d="M4 39 L27 20 C38 29 58 29 69 20 L92 39 C92 63 73 80 48 80 C23 80 4 63 4 39 Z" fill="currentColor"/>
+          <path d="M18 39c8-4 16-4 22 0 6 4 16 4 22 0" stroke="var(--surface)" stroke-width="5" fill="none"/>
+          <path d="M39 48h18v12a9 9 0 0 1-18 0Z" fill="currentColor" stroke="var(--surface)" stroke-width="4"/>
+        </svg>
+        <h3>Nada por aqui ainda</h3>
+        <p>Sua professora ainda não liberou o conjunto desta semana. Enquanto isso, dá para praticar por conta.</p>
+        <button class="btn">Praticar por conta</button>
+      </div>
+    </div>
+
+    <!-- ---------- 3 · ERRO ---------- -->
+    <div class="panel">
+      <h2>3 · Erro</h2>
+      <div class="state state-error">
+        <svg class="state-mascot" viewBox="0 0 96 96" role="img" aria-label="Mascote do Ajar, expressão pensativa" style="color:var(--amber)">
+          <path d="M9 41 L29 23 C39 31 57 31 67 23 L87 41 C87 62 70 77 48 77 C26 77 9 62 9 41 Z" fill="currentColor"/>
+          <path d="M23 41c7-3 14-3 19 0 5 3 14 3 19 0" stroke="var(--surface)" stroke-width="5" fill="none"/>
+          <path d="M36 57c5-4 14-4 19 1" stroke="var(--surface)" stroke-width="4.5" fill="none"/>
+        </svg>
+        <h3>Não consegui gerar agora</h3>
+        <p>A geração não respondeu. Nada do seu trabalho se perdeu — é só tentar de novo.</p>
+        <button class="btn ghost">Tentar de novo</button>
+      </div>
+    </div>
+
+    <!-- ---------- 3 · SUCESSO ---------- -->
+    <div class="panel">
+      <h2>3 · Sucesso</h2>
+      <div style="display:flex; align-items:center; gap:.9rem">
+        <span class="ok-burst">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <path d="M4 12.5 9.5 18 20 7"/>
+          </svg>
+        </span>
+        <div>
+          <b style="font-family:var(--font-display)">Exercício concluído</b>
+          <div class="small-note" style="margin:0">O check cresce e o traço se desenha. Nada de confete.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 4 · PROGRESSO ---------- -->
+    <div class="panel">
+      <h2>4 · Progresso</h2>
+      <div style="display:flex; align-items:center; gap:1.6rem; flex-wrap:wrap">
+        <div class="ring" style="--pct:68; --circ:245" role="progressbar"
+             aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso do exercício">
+          <svg viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"/><circle class="ring-fill" cx="43" cy="43" r="39"/></svg>
+          <span class="ring-label">68%</span>
+        </div>
+        <div class="ring" style="--pct:100; --circ:245; --ring-size:62px; --ring-w:7" role="progressbar"
+             aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="Seção concluída">
+          <svg viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"/><circle class="ring-fill" cx="43" cy="43" r="39"/></svg>
+          <span class="ring-label" style="font-size:.8rem">100%</span>
+        </div>
+        <div style="flex:1; min-width:230px">
+          <div class="streak" id="lab-streak" aria-label="Dias praticados nas últimas dez semanas"></div>
+          <div class="streak-legend">menos
+            <i style="background:var(--surface-alt)"></i>
+            <i style="background:color-mix(in oklab, var(--accent) 26%, var(--surface-alt))"></i>
+            <i style="background:color-mix(in oklab, var(--accent) 52%, var(--surface-alt))"></i>
+            <i style="background:color-mix(in oklab, var(--accent) 76%, var(--surface-alt))"></i>
+            <i style="background:var(--accent)"></i>
+          mais</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---------- 5 · AVATARES ---------- -->
+    <div class="panel">
+      <h2>5 · Avatares na fila de aprovação</h2>
+      <div style="display:grid; gap:.7rem">
+        <div class="avatar-row"><span class="avatar" data-tone="1">MC</span><span class="who">Marina Costa<small>Complete the Words · aguardando</small></span></div>
+        <div class="avatar-row"><span class="avatar" data-tone="2">JP</span><span class="who">João Pedro<small>Discussion · aguardando</small></span></div>
+        <div class="avatar-row"><span class="avatar" data-tone="3">AS</span><span class="who">Ana Silva<small>Passage · aguardando</small></span></div>
+        <div class="avatar-row"><span class="avatar" data-tone="5" style="--av:44px">RC</span><span class="who">Rony Croxatte<small>professora · cabeçalho</small></span></div>
+      </div>
+    </div>
+
+    <!-- ---------- 6 · BOTÃO PROCESSANDO ---------- -->
+    <div class="panel">
+      <h2>6 · Retorno de ação</h2>
+      <div class="ex-actions">
+        <button class="btn" id="lab-save">Salvar e publicar</button>
+        <button class="btn ghost" onclick="labReset()">Reiniciar demo</button>
+      </div>
+      <p class="small-note">Clique: o texto some sem a largura mudar, o disco gira, o clique fica bloqueado de verdade, depois confirma.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Rota do laboratório. Estritamente fechada: sem o hash exato o bloco fica
+   hidden e o app segue idêntico. É andaime de revisão, não feature — sai
+   daqui quando as peças estiverem ligadas nos caminhos reais. */
+(function () {
+  var lab = document.getElementById('design-lab');
+  if (!lab) return;
+  var app = document.querySelector('body > .app');
+  function route() {
+    var on = location.hash === '#design-lab';
+    lab.hidden = !on;
+    if (app) app.style.display = on ? 'none' : '';
+    if (on) buildStreak();
+  }
+  var built = false;
+  function buildStreak() {
+    if (built) return; built = true;
+    var g = document.getElementById('lab-streak');
+    if (!g) return;
+    // 70 dias com um padrão plausível: fins de semana mais fracos, uma
+    // sequência forte no meio. Só demonstração — os dados reais entram
+    // quando a peça for ligada no histórico do aluno.
+    for (var d = 0; d < 70; d++) {
+      var wk = d % 7, n;
+      if (wk === 5 || wk === 6) n = d % 3 === 0 ? 1 : 0;
+      else if (d > 27 && d < 52) n = 3 + (d % 2);
+      else n = (d * 7) % 5;
+      var i = document.createElement('i');
+      i.setAttribute('data-n', Math.min(n, 4));
+      g.appendChild(i);
+    }
+  }
+  window.addEventListener('hashchange', route);
+  route();
+  var save = document.getElementById('lab-save');
+  if (save) save.addEventListener('click', function () {
+    // Congela a largura ANTES de trocar de estado. Sem isto o botao encolhe
+    // quando o rotulo vira "Publicado" e a linha inteira pula no instante da
+    // confirmacao — o unico momento em que a pessoa esta olhando para ele.
+    // Este e o padrao a repetir quando a peca for ligada nos caminhos reais.
+    save.style.minWidth = save.getBoundingClientRect().width + 'px';
+    save.classList.add('is-busy');
+    setTimeout(function () {
+      save.classList.remove('is-busy');
+      save.classList.add('is-done');
+      save.textContent = 'Publicado \u2713';
+    }, 1400);
+  });
+  window.labReset = function () {
+    var b = document.getElementById('lab-save');
+    b.className = 'btn'; b.textContent = 'Salvar e publicar'; b.style.minWidth = '';
+  };
+})();
+</script>
 </body>
 </html>
