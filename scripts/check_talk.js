@@ -71,7 +71,7 @@ ${combined}
         spread += mx - Math.min(...L); nq++;
       }
   assert('picking the longest option is no better than chance (got '
-    + Math.round(100*longestWins/nq) + '%, chance 25%)', longestWins/nq <= 0.35);
+    + Math.round(100*longestWins/nq) + '%, chance 25%)', longestWins/nq <= 0.30);
   assert('options within a question are near-equal in length', spread/nq <= 1.2);
 
   const pos = {};

@@ -109,7 +109,7 @@ ${combined}
         spread += mx - Math.min(...L); nq++;
       }
   assert('picking the longest option is no better than chance (got '
-    + Math.round(100*longestWins/nq) + '%, chance 25%)', longestWins/nq <= 0.35);
+    + Math.round(100*longestWins/nq) + '%, chance 25%)', longestWins/nq <= 0.30);
 
   const pos = {};
   for(let i=0;i<200;i++)
