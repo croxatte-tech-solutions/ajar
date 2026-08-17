@@ -184,6 +184,29 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
    overwritten. Checking a draft twice is the normal way to use this, and
    keeping the previous reply visible is what lets a student SEE that the
    revision worked -- which a single replaced panel actively hides. */
+/* Read in Daily Life. The whole point of the task is that these are NOT
+   paragraphs, so each layout is drawn as the object it claims to be: a
+   receipt has aligned columns, a departure board has rows, a message
+   thread alternates sides. A student who can read prose but freezes at a
+   bill is exactly who this task is looking for. */
+.dl-doc{ border:1px solid var(--border); border-radius:12px; background:var(--surface); padding:1rem 1.1rem; margin:.2rem 0 .9rem; }
+.dl-title{ font-weight:800; font-size:1rem; margin:0 0 .55rem; }
+.dl-doc p{ margin:.45rem 0; }
+.dl-rows{ width:100%; border-collapse:collapse; font-size:.9rem; }
+.dl-rows td{ padding:.4rem 0; border-bottom:1px dashed var(--border); vertical-align:top; }
+.dl-rows tr:last-child td{ border-bottom:none; }
+.dl-rows td:first-child{ color:var(--text-dim); padding-right:1rem; white-space:nowrap; }
+.dl-rows td:last-child{ text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+.dl-msgs{ display:flex; flex-direction:column; gap:.35rem; }
+.dl-msg{ max-width:80%; padding:.45rem .7rem; border-radius:12px; font-size:.9rem; }
+.dl-msg.a{ align-self:flex-start; background:var(--surface-alt); border-bottom-left-radius:4px; }
+.dl-msg.b{ align-self:flex-end; background:var(--accent-soft); border-bottom-right-radius:4px; }
+.dl-who{ font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-dim); display:block; }
+.dl-sec{ font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin:.7rem 0 .25rem; }
+.dl-sec:first-of-type{ margin-top:0; }
+.dl-item{ display:flex; justify-content:space-between; gap:1rem; font-size:.9rem; padding:.2rem 0; }
+.dl-item b{ font-variant-numeric:tabular-nums; font-weight:600; }
+.dl-note{ font-size:.78rem; color:var(--text-dim); margin:.7rem 0 0; padding-top:.55rem; border-top:1px dashed var(--border); }
 .fb-thread{ margin-top:1rem; display:flex; flex-direction:column; gap:.6rem; }
 .fb-msg{ background:var(--amber-soft); border:1px solid var(--border); border-radius:12px 12px 12px 4px; padding:.8rem .95rem; }
 .fb-msg.older{ opacity:.62; }
@@ -2729,6 +2752,7 @@ var qrcode = function() {
 
 const TASK_TYPES = [
   { id:'complete-words', tag:'Complete the Words', section:'Reading' },
+  { id:'daily-read',     tag:'Read in Daily Life',  section:'Reading' },
   { id:'choose-response', tag:'Listen and Choose a Response', section:'Listening' },
   { id:'announcement',     tag:'Listen to an Announcement',    section:'Listening' },
   { id:'conversation',     tag:'Listen to a Conversation',     section:'Listening' },
@@ -4677,6 +4701,53 @@ const CONVERSATION_BANK = {
 // out means the browser-speech fallback reads something sensible instead
 // of announcing "M" and "W" before every line.
 function conversationText(turns){ return turns.map(t => t[1]).join(' '); }
+// Draws an everyday text as the object it is. Speaker letters in a message
+// thread decide only which side a bubble sits on -- they are never shown as
+// "A"/"B", since a real phone does not label who you are talking to.
+function dailyDocHtml(d){
+  const title = `<div class="dl-title">${escapeHtml(d.title)}</div>`;
+  if(d.layout === 'rows'){
+    return `<div class="dl-doc">${title}<table class="dl-rows">${
+      d.rows.map(r => `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1])}</td></tr>`).join('')
+    }</table></div>`;
+  }
+  if(d.layout === 'messages'){
+    // Sides are decided by who spoke first, exactly like a phone: the other
+    // party on the left, you on the right. Names only appear once there are
+    // three or more people, because a group chat labels its senders and a
+    // two-person one does not — and because with three speakers and two
+    // sides, two different people would otherwise look like the same one.
+    const senders = [...new Set(d.msgs.map(m => m[0]))];
+    const group = senders.length > 2;
+    const first = d.msgs[0][0];
+    return `<div class="dl-doc">${title}<div class="dl-msgs">${
+      d.msgs.map(m => `<div class="dl-msg ${m[0] === first ? 'a' : 'b'}">${
+        group ? `<span class="dl-who">${escapeHtml(m[0])}</span>` : ''
+      }${escapeHtml(m[1])}</div>`).join('')
+    }</div></div>`;
+  }
+  if(d.layout === 'menu'){
+    return `<div class="dl-doc">${title}${
+      d.sections.map(sec => `<div class="dl-sec">${escapeHtml(sec[0])}</div>${
+        sec[1].map(i => `<div class="dl-item"><span>${escapeHtml(i[0])}</span><b>${escapeHtml(i[1])}</b></div>`).join('')
+      }`).join('')
+    }${d.note ? `<p class="dl-note">${escapeHtml(d.note)}</p>` : ''}</div>`;
+  }
+  return `<div class="dl-doc">${title}${d.body.map(x => `<p>${escapeHtml(x)}</p>`).join('')}</div>`;
+}
+
+// One everyday text per exercise with its two or three questions.
+// Options are reshuffled on every draw.
+function genDailyRead(theme, topicIndex){
+  const bank = DAILY_READ_BANK[theme] || DAILY_READ_BANK.campus;
+  const d = (topicIndex != null && bank[topicIndex]) ? bank[topicIndex] : pickN(bank, 1)[0];
+  return { ...d, questions: d.questions.map(q => {
+    const correct = q.options[q.answer];
+    const options = shuffle(q.options);
+    return { q: q.q, options, answer: options.indexOf(correct) };
+  }) };
+}
+
 // One talk per exercise with its four questions, as on the real test.
 // Options are reshuffled on every draw.
 function genTalk(theme, topicIndex){
@@ -4699,6 +4770,229 @@ function genConversation(theme, topicIndex){
     return { q: q.q, options, answer: options.indexOf(correct) };
   }) };
 }
+
+// ---- Read in Daily Life ----
+// The Reading task that is deliberately NOT prose. ETS names the skill it
+// measures as understanding "information in common, nonlinear text
+// formats" and "telegraphic language" -- the clipped register of a sign, a
+// receipt, a departure board. Rendering a receipt as a paragraph would
+// look like the task and test something else entirely, so each item
+// carries a layout and is drawn as the thing it claims to be.
+//
+// Four layouts cover the formats ETS lists:
+//   notice   -- a sign, poster, ad, news item, email, or social post
+//   rows     -- a receipt, invoice, bill, schedule, form, warranty card
+//   messages -- a chain of text messages
+//   menu     -- sections of items with prices
+//
+// Length and question count follow the published spec: 15-150 words, with
+// two questions on the short texts and three on the longer ones.
+const DAILY_READ_BANK = {
+  campus: [
+    { context:"a notice on a residence noticeboard", layout:"notice", title:"Laundry Room — Machine 3",
+      body:["Out of order. Engineer booked for Thursday morning.", "Please do not leave washing inside; anything left will be removed so the repair can go ahead. Machines 1, 2 and 4 are working normally."],
+      questions:[
+      { q:"Why was this notice written?", options:["To warn that one machine is unusable", "To announce a change in laundry hours", "To ask residents to clean the room", "To advertise a new machine"], answer:0 },
+      { q:"What should residents do?", options:["Take their washing out of machine 3", "Book a slot for Thursday morning", "Use only machines 1 and 2", "Report the fault to the engineer"], answer:0 },
+    ]},
+    { context:"a chain of text messages between two students", layout:"messages", title:"Marisol",
+      msgs:[["Marisol", "are you coming to the library thing at 4"], ["Me", "thought that was tomorrow?"], ["Marisol", "moved. tutor emailed last night"], ["Me", "never got it. what do i need to bring"], ["Marisol", "just the draft. she's marking them there"], ["Me", "mine's not finished 😩"], ["Marisol", "bring what you have, she said that's fine"]],
+      questions:[
+      { q:"Why did the reply say \"never got it\"?", options:["They did not receive the email", "They forgot the meeting entirely", "They went to the wrong building", "They thought it was cancelled"], answer:0 },
+      { q:"What does Marisol say about the draft?", options:["An unfinished one is acceptable", "It must be printed beforehand", "It should be emailed instead", "It is due the following week"], answer:0 },
+    ]},
+  ],
+  register: [
+    { context:"an email from a university office", layout:"notice", title:"Re: Reference request",
+      body:["Thank you for your message. I am happy to write the reference, but I will need the deadline and the name of the person it should be addressed to.", "Please also send me a short note on what the application is for. I can write something much more useful if I know what they are looking for than if I write in general terms."],
+      questions:[
+      { q:"What is the writer's main purpose?", options:["To ask for missing details", "To decline the request politely", "To confirm a deadline was met", "To explain a delay in replying"], answer:0 },
+      { q:"Why does the writer want to know the purpose?", options:["To make the reference more useful", "To decide whether to agree", "To check the deadline is realistic", "To pass it to a colleague"], answer:0 },
+    ]},
+    { context:"a sign at a reception desk", layout:"notice", title:"Reception",
+      body:["Back in 10 minutes.", "Deliveries: please leave at the desk and sign the book.", "Urgent only: ext. 4021."],
+      questions:[
+      { q:"What should a delivery driver do?", options:["Leave the parcel and sign", "Wait ten minutes at reception", "Ring the urgent extension", "Take the parcel away again"], answer:0 },
+      { q:"When should someone ring the extension?", options:["Only if the matter is urgent", "If nobody returns in ten minutes", "To arrange a delivery", "To book an appointment"], answer:0 },
+    ]},
+  ],
+  current: [
+    { context:"a short news item", layout:"notice", title:"Bus lane trial extended",
+      body:["The trial bus lane on Prospect Avenue will stay in place until March, the city said on Tuesday.", "Journey times for buses fell by an average of four minutes during the first three months. Traffic on nearby residential streets rose slightly, which the council says it will monitor before deciding whether to make the lane permanent."],
+      questions:[
+      { q:"What has the city decided?", options:["To continue the trial for now", "To make the bus lane permanent", "To remove the bus lane in March", "To open a second bus lane"], answer:0 },
+      { q:"What concern is mentioned?", options:["More traffic on nearby streets", "Buses becoming more crowded", "The cost of the new lane", "Longer journeys for drivers"], answer:0 },
+      { q:"How much faster were the buses?", options:["About four minutes", "About three minutes", "About ten minutes", "About half an hour"], answer:0 },
+    ]},
+    { context:"a post on a community page", layout:"notice", title:"Anyone else without water?",
+      body:["No water since about 7am on Elm Row. Called the company and they said a burst main two streets over, back by this evening.", "Sharing so nobody else wastes an hour on hold. They are handing out bottles at the corner shop if you need some — no charge, just ask at the counter."],
+      questions:[
+      { q:"Why did this person post?", options:["To save neighbours a phone call", "To complain about the water company", "To ask whether others have water", "To organise a collection of bottles"], answer:0 },
+      { q:"What is available at the corner shop?", options:["Free bottled water", "Discounted bottled water", "Information about the repair", "A sign-up list for updates"], answer:0 },
+    ]},
+  ],
+  grammar: [
+    { context:"a notice in a language school", layout:"notice", title:"Speaking Club — Thursdays",
+      body:["Open to all levels. No booking, no preparation, just turn up.", "One rule: whatever your level, the hour runs in English. If you get stuck, describe the word instead of switching — that is the whole exercise."],
+      questions:[
+      { q:"What is the one rule?", options:["Stay in English for the hour", "Book a place in advance", "Come only if you are advanced", "Prepare a topic beforehand"], answer:0 },
+      { q:"What should someone do if stuck for a word?", options:["Describe it in English", "Ask a neighbour to translate", "Look it up on their phone", "Move on to another topic"], answer:0 },
+    ]},
+    { context:"a page from a course handbook", layout:"rows", title:"Written Assignments — at a glance",
+      rows:[["Length", "900–1,100 words"], ["Deadline", "Friday 17:00, week 6"], ["Submission", "Online only"], ["Late", "−5% per day, up to 5 days"], ["After 5 days", "Not accepted"], ["Extensions", "Apply before the deadline, not after"]],
+      questions:[
+      { q:"What happens to work submitted six days late?", options:["It will not be accepted", "It loses thirty percent", "It is marked as normal", "It needs an extension form"], answer:0 },
+      { q:"When must an extension be requested?", options:["Before the deadline passes", "Within five days after", "At the start of week 6", "At any point during term"], answer:0 },
+    ]},
+  ],
+  social: [
+    { context:"a poster for a community event", layout:"notice", title:"Language Exchange Night",
+      body:["Every second Tuesday · 6–8pm · Room B", "Bring nothing. Take a card at the door with a language on it, find someone holding the other half of the pair, and talk. Swap after twenty minutes.", "Tea and biscuits provided. All levels, all languages."],
+      questions:[
+      { q:"How do participants find a partner?", options:["By matching halves of a card", "By signing up in advance", "By choosing a table on arrival", "By asking the organisers"], answer:0 },
+      { q:"How often does the event run?", options:["Every two weeks", "Every Tuesday", "Twice a week", "Once a month"], answer:0 },
+    ]},
+    { context:"a chain of text messages in a group", layout:"messages", title:"Saturday dinner (3)",
+      msgs:[["Tomas", "dinner saturday still on?"], ["Priya", "yes! 7 at the place on king street"], ["Jae", "which one, there are two"], ["Priya", "the one with the green door"], ["Jae", "ah the other one is nicer tbh"], ["Priya", "booked already sorry 😅"], ["Tomas", "green door is fine, it's closer to the bus anyway"]],
+      questions:[
+      { q:"Why does Priya keep the same place?", options:["A booking has already been made", "The other place is too far", "Jae is the only one objecting", "The green door one is nicer"], answer:0 },
+      { q:"What does Tomas say about the chosen place?", options:["It is nearer the bus", "It is cheaper than the other", "It has better food", "It is easier to book"], answer:0 },
+    ]},
+  ],
+  career: [
+    { context:"a job advertisement", layout:"notice", title:"Weekend Café Assistant",
+      body:["Saturdays and Sundays, 8am–3pm. No experience needed — training given.", "We are looking for someone reliable who can talk to customers comfortably. Apply in person with a short note about your availability; please do not email, as the inbox is not checked at weekends."],
+      questions:[
+      { q:"How should someone apply?", options:["By going there in person", "By sending an email", "By calling at the weekend", "By filling in a form online"], answer:0 },
+      { q:"What quality is the employer looking for?", options:["Being reliable and sociable", "Previous café experience", "Availability on weekdays", "A formal qualification"], answer:0 },
+    ]},
+    { context:"an email confirming an interview", layout:"notice", title:"Interview — Thursday 14 March, 10:30",
+      body:["Please arrive by 10:15 and report to the second-floor desk, not the main reception.", "The interview will last about forty minutes and includes a short task; nothing to prepare, but bring photo identification. If you cannot make this time, reply today and we will offer another slot."],
+      questions:[
+      { q:"Where should the candidate go on arrival?", options:["The second-floor desk", "The main reception", "The interview room directly", "The security office"], answer:0 },
+      { q:"What must the candidate bring?", options:["A form of photo identification", "A presentation prepared beforehand", "A printed copy of this email", "Two written references"], answer:0 },
+      { q:"What should they do if the time does not suit?", options:["Reply the same day", "Arrive fifteen minutes early", "Call on the day itself", "Wait for another email"], answer:0 },
+    ]},
+  ],
+  health: [
+    { context:"a pharmacy label", layout:"rows", title:"Take with food",
+      rows:[["Dose", "One tablet"], ["When", "Twice daily, morning and evening"], ["Course", "7 days — finish all of them"], ["Avoid", "Do not take with grapefruit juice"], ["If a dose is missed", "Take it when you remember, unless the next is due"]],
+      questions:[
+      { q:"What should someone do if they forget a dose?", options:["Take it unless the next is due", "Take two at the next dose", "Skip that day and continue", "Start the whole course again"], answer:0 },
+      { q:"How long should the tablets be taken?", options:["For the full seven days", "Until the symptoms stop", "For twice as long if needed", "Only in the morning"], answer:0 },
+    ]},
+    { context:"a notice at a clinic", layout:"notice", title:"Walk-in clinic — how it works",
+      body:["No appointment. Arrive, take a ticket, wait for your number.", "Tickets are not called strictly in order: a nurse reviews each one and more urgent cases go first. If you have waited more than an hour, come and ask — occasionally a ticket is missed, and we would rather you told us."],
+      questions:[
+      { q:"Why might a later ticket be called first?", options:["That case is more urgent", "The tickets are called randomly", "Some patients booked ahead", "Staff work through them backwards"], answer:0 },
+      { q:"What does the clinic ask patients to do?", options:["Speak up after waiting an hour", "Take a fresh ticket every hour", "Book an appointment instead", "Explain their symptoms first"], answer:0 },
+    ]},
+  ],
+  environment: [
+    { context:"a collection schedule on a bin lid", layout:"rows", title:"Collections — Elm Row",
+      rows:[["Green bin", "Every Wednesday"], ["Blue bin", "Alternate Wednesdays, even weeks"], ["Glass", "First Saturday of the month"], ["Garden waste", "April to October only"], ["Missed?", "Report within 48 hours"], ["Bins out by", "6:30am"]],
+      questions:[
+      { q:"How often is the blue bin collected?", options:["Once a fortnight", "Once a week", "Once a month", "Twice a month"], answer:0 },
+      { q:"What is true of garden waste?", options:["It is seasonal only", "It goes in the green bin", "It is collected on Saturdays", "It must be reported first"], answer:0 },
+    ]},
+    { context:"a sign at a nature reserve", layout:"notice", title:"Ground-nesting birds — April to July",
+      body:["Dogs on leads for these months. Nests are on the ground, not in trees, and a dog running through will destroy one without ever seeing it.", "The path is unchanged and you are welcome as always. From August the leads come off again."],
+      questions:[
+      { q:"Why must dogs be kept on leads?", options:["Nests are on the ground", "Dogs disturb other visitors", "The path is being repaired", "Birds are nesting in the trees"], answer:0 },
+      { q:"What changes in August?", options:["Dogs may run free again", "The reserve reopens fully", "A new path is available", "Nesting season begins"], answer:0 },
+    ]},
+  ],
+  daily: [
+    { context:"a café menu board", layout:"menu", title:"Corner Kitchen",
+      sections:[["Breakfast — until 11:30", [["Porridge with fruit", "4.20"], ["Two eggs on toast", "5.50"], ["Full breakfast", "8.90"]]], ["All day", [["Soup of the day", "5.00"], ["Sandwich + soup", "7.50"], ["Jacket potato", "6.20"]]]],
+      note:"Student discount 10% with card, weekdays before 4pm only.",
+      questions:[
+      { q:"When can a student get the discount?", options:["Weekday afternoons before four", "At any time with a card", "Only during breakfast hours", "At weekends before four"], answer:0 },
+      { q:"What is available after 11:30?", options:["Soup and a sandwich", "Two eggs on toast", "Porridge with fruit", "The full breakfast"], answer:0 },
+    ]},
+    { context:"a parcel delivery card", layout:"rows", title:"Sorry we missed you",
+      rows:[["Attempted", "Tuesday, 11:40"], ["Left with", "No one available"], ["Now at", "Elm Road Post Office"], ["Collect from", "Wednesday 09:00"], ["Bring", "This card and photo ID"], ["Held until", "10 days, then returned"]],
+      questions:[
+      { q:"When can the parcel be collected?", options:["From Wednesday morning", "On Tuesday afternoon", "After ten days", "Any time from now"], answer:0 },
+      { q:"What is needed to collect it?", options:["This card and photo ID", "Only this card", "A signature from a neighbour", "Proof of purchase"], answer:0 },
+      { q:"What happens after ten days?", options:["It goes back to the sender", "It is delivered again", "It is held at the depot", "A charge is added"], answer:0 },
+    ]},
+  ],
+  money: [
+    { context:"a receipt", layout:"rows", title:"Elm Road Stores — 14 Mar",
+      rows:[["Bread", "2.10"], ["Milk 2L", "1.85"], ["Coffee 200g", "6.40"], ["Subtotal", "10.35"], ["Member discount", "−1.00"], ["Total", "9.35"], ["Paid by", "Card ending 4417"], ["Returns", "14 days with receipt"]],
+      questions:[
+      { q:"How much was taken off the subtotal?", options:["One pound", "Two pounds", "Ten pounds", "Nothing at all"], answer:0 },
+      { q:"What is the returns policy?", options:["Fourteen days with the receipt", "Thirty days with the receipt", "No returns on food items", "Returns to the card only"], answer:0 },
+    ]},
+    { context:"a letter from a bank", layout:"notice", title:"Change to your account",
+      body:["From 1 June the monthly fee on this account rises from £2 to £3.50. Everything else about the account stays the same.", "You do not need to do anything if you are happy to continue. If you would rather move to the basic account, which has no monthly fee but no travel insurance either, reply to this letter or call us before 25 May.", "If you switch after 1 June we will refund the difference for that month, so there is no rush if the post is slow."],
+      questions:[
+      { q:"What is the main purpose of this letter?", options:["To announce a higher fee", "To offer a new account", "To confirm a switch request", "To warn about a missed payment"], answer:0 },
+      { q:"What does the basic account lack?", options:["Travel insurance", "A monthly statement", "A debit card", "Online access"], answer:0 },
+      { q:"What happens if someone switches late?", options:["The difference is refunded", "The old fee still applies", "A charge is added", "The switch is refused"], answer:0 },
+    ]},
+  ],
+  housing: [
+    { context:"an energy bill summary", layout:"rows", title:"Statement — Flat 4B",
+      rows:[["Period", "1 Jan – 31 Mar"], ["Electricity used", "642 kWh"], ["Reading type", "Estimated"], ["This period", "£118.40"], ["Previous balance", "£0.00"], ["Due by", "28 April"], ["To correct an estimate", "Submit a reading online"]],
+      questions:[
+      { q:"Why might this amount be wrong?", options:["The reading was estimated", "The period is incomplete", "A previous balance is missing", "The flat number is unclear"], answer:0 },
+      { q:"What can the customer do about it?", options:["Send a reading online", "Wait for the next bill", "Call to arrange a visit", "Pay a lower amount"], answer:0 },
+    ]},
+    { context:"a notice from a building manager", layout:"notice", title:"Water off — Tuesday 09:00 to 15:00",
+      body:["Contractors are replacing a valve in the basement. All flats in this block are affected; the block opposite is not.", "Fill a container the night before if you need water during the day. When it comes back on, run the cold tap for a minute before drinking — the water may look cloudy at first, which is air in the pipes and clears on its own.", "If it is still cloudy on Wednesday, tell the office rather than assuming it will settle."],
+      questions:[
+      { q:"What should residents do the night before?", options:["Store some water", "Turn off their taps", "Empty the water tank", "Move their belongings"], answer:0 },
+      { q:"Why might the water look cloudy?", options:["Air has entered the pipes", "The valve is still leaking", "Sediment has been disturbed", "The supply has been switched"], answer:0 },
+      { q:"When should the office be told?", options:["If it is cloudy on Wednesday", "As soon as the water returns", "Before the work begins", "Only if the water stays off"], answer:0 },
+    ]},
+  ],
+  travel: [
+    { context:"a departure board", layout:"rows", title:"Departures — Platform information",
+      rows:[["09:42 City Centre", "Platform 4 · On time"], ["09:55 Northgate", "Platform 2 · Delayed 20 min"], ["10:03 Airport", "Platform 4 · On time"], ["10:15 Northgate", "Platform 2 · Cancelled"], ["10:28 City Centre", "Platform 1 · On time"]],
+      questions:[
+      { q:"Which service will not run at all?", options:["The 10:15 to Northgate", "The 09:55 to Northgate", "The 10:03 to the Airport", "The 10:28 to City Centre"], answer:0 },
+      { q:"What do the two City Centre trains have in common?", options:["Both are running on time", "Both leave from platform 4", "Both are delayed slightly", "Both go via the airport"], answer:0 },
+    ]},
+    { context:"a hostel booking confirmation", layout:"rows", title:"Booking KX-4482 — confirmed",
+      rows:[["Nights", "3 (Fri to Mon)"], ["Room", "Shared, 6 beds, mixed"], ["Check-in", "From 15:00"], ["Check-out", "By 10:00"], ["Late arrival", "Tell us if after 22:00"], ["Cancellation", "Free until 48 hours before"], ["Deposit", "£10, refunded on key return"]],
+      questions:[
+      { q:"What must a guest do if arriving at 23:00?", options:["Let the hostel know beforehand", "Pay an extra night", "Collect the key next morning", "Cancel and rebook"], answer:0 },
+      { q:"How is the deposit handled?", options:["Returned when the key is", "Kept towards the final night", "Charged only for damage", "Taken at check-out"], answer:0 },
+      { q:"Until when is cancellation free?", options:["Two days before arrival", "Until check-in time", "Until the first night", "At any point"], answer:0 },
+    ]},
+  ],
+  media: [
+    { context:"a cinema listing", layout:"rows", title:"Screen 2 — Today",
+      rows:[["14:00", "Subtitled screening"], ["16:45", "Standard"], ["19:30", "Standard"], ["21:50", "Standard, over-18s"], ["Tickets", "£6 before 17:00, £9 after"], ["Wednesdays", "All screenings £5"]],
+      questions:[
+      { q:"How much is the 16:45 screening?", options:["Nine pounds", "Six pounds", "Five pounds", "Free of charge"], answer:0 },
+      { q:"Which screening has subtitles?", options:["The one at 14:00", "The one at 16:45", "The one at 19:30", "The one at 21:50"], answer:0 },
+    ]},
+    { context:"a message thread about a podcast", layout:"messages", title:"Dani",
+      msgs:[["Dani", "did you finish that episode i sent"], ["Me", "halfway. the first bit is so slow"], ["Dani", "yes but stick with it, 20 mins in it changes completely"], ["Me", "that's a lot of faith to ask for 😄"], ["Dani", "i know. i nearly gave up too"], ["Me", "ok fine. is it the one about the flood?"], ["Dani", "no that's episode 4. this is the one after"]],
+      questions:[
+      { q:"What does Dani advise?", options:["To keep listening past the slow start", "To skip the first twenty minutes", "To start with episode 4 instead", "To listen at a faster speed"], answer:0 },
+      { q:"Which episode are they discussing?", options:["The one after the flood episode", "The episode about the flood", "The first of the series", "The one B has finished"], answer:0 },
+    ]},
+  ],
+  innovation: [
+    { context:"a warranty card", layout:"rows", title:"Warranty — 24 months",
+      rows:[["Covers", "Manufacturing faults"], ["Does not cover", "Accidental damage, water, wear"], ["Battery", "12 months only"], ["Proof needed", "Original receipt"], ["Repairs by others", "Voids the warranty"], ["Claim", "Online or in store"]],
+      questions:[
+      { q:"How long is the battery covered?", options:["For one year only", "For the full two years", "For six months", "It is not covered"], answer:0 },
+      { q:"What cancels the warranty entirely?", options:["A repair by someone else", "Losing the original receipt", "Normal daily wear", "Claiming more than once"], answer:0 },
+    ]},
+    { context:"an announcement about an app update", layout:"notice", title:"Version 4.2 — what changed",
+      body:["Offline mode now keeps the last thirty days instead of seven, so a week without signal no longer wipes what you saved.", "We also removed the automatic weekly email. Several of you said it arrived at the same time as everything else on a Monday and was ignored; you can switch it back on under Settings if you liked it.", "Two people reported the app closing when opening a large file. We have not reproduced that yet — if it happens to you, please send the report from inside the app rather than by email, because that version includes the details we need."],
+      questions:[
+      { q:"What is the main change to offline mode?", options:["It stores more days than before", "It works without an account", "It saves files more quickly", "It has been removed entirely"], answer:0 },
+      { q:"Why was the weekly email removed?", options:["Users said they ignored it", "It arrived at the wrong address", "It was expensive to send", "It contained an error"], answer:0 },
+      { q:"What do the developers ask users to do?", options:["Report the crash inside the app", "Avoid opening large files", "Reinstall the latest version", "Email a copy of the file"], answer:0 },
+    ]},
+  ],
+};
 
 // ---- Listen to an Academic Talk ----
 // The last Listening task, and the only one that is genuinely academic.
@@ -5844,6 +6138,7 @@ function generateOne(type, theme, topicIndex){
     case 'announcement': return { type, data: genAnnouncement(theme) };
     case 'conversation': return { type, data: genConversation(theme, topicIndex) };
     case 'talk': return { type, data: genTalk(theme, topicIndex) };
+    case 'daily-read': return { type, data: genDailyRead(theme, topicIndex) };
   }
 }
 // The named situations/topics a given type+theme offers, for the teacher's
@@ -5855,6 +6150,7 @@ function topicsFor(type, theme){
   // Two talks per theme share a context ("a talk in an economics class"),
   // so the teacher is offered the opening words of each instead.
   if(type === 'talk') return (TALK_BANK[theme] || []).map(t => t.text.split(' ').slice(0,6).join(' ') + '...');
+  if(type === 'daily-read') return (DAILY_READ_BANK[theme] || []).map(d => d.context.replace(/^an? /, ''));
   return [];
 }
 function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
@@ -5865,7 +6161,7 @@ function tagFor(type){ return TASK_TYPES.find(t=>t.id===type).tag; }
 // consistent.
 function generateBatchItems(type, theme, topicIndex){
   const items = [];
-  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement' || type === 'conversation' || type === 'talk'){
+  if(type === 'listen-repeat' || type === 'interview' || type === 'choose-response' || type === 'announcement' || type === 'conversation' || type === 'talk' || type === 'daily-read'){
     // Real TOEFL structure: both Speaking tasks are ONE connected unit —
     // Listen and Repeat is 7 sentences, Take an Interview is 4 questions
     // on a single topic — approved/discarded as a set, not as 4 separate
@@ -6134,6 +6430,10 @@ function renderTypeTabs(){
 
 function cardBody(item){
   const d = item.data;
+  if(item.type==='daily-read') return `
+    <div class="ex-body">Read ${escapeHtml(d.context)} — ${d.questions.length} questions. The text stays on screen while the student answers; this is a reading task, not a memory one.</div>
+    ${dailyDocHtml(d)}
+    ${d.questions.map(q=>`<div class="small-note">• ${escapeHtml(q.q)} <b>${escapeHtml(q.options[q.answer])}</b></div>`).join('')}`;
   if(item.type==='talk') return `
     <div class="ex-body">A ${d.text.split(' ').length}-word academic talk, ${d.questions.length} questions. The student hears it and answers from listening — the transcript is never shown to them.</div>
     <div style="margin-top:.7rem">
@@ -6465,6 +6765,7 @@ function renderStudent(){
       : item.type==='announcement' ? `${item.data.set.length} announcements · answer questions`
       : item.type==='conversation' ? `A conversation · ${item.data.questions.length} questions`
       : item.type==='talk' ? `An academic talk · ${item.data.questions.length} questions`
+      : item.type==='daily-read' ? `${item.data.context} · ${item.data.questions.length} questions`
       : item.type==='listen-repeat' ? `7 sentences · increasing difficulty`
       : `${item.data.topic} · 4 questions`;
     const b = document.createElement('button');
@@ -6721,6 +7022,14 @@ function renderPractice(){
     renderTalkStep(item);
     return;
   }
+
+  if(item.type==='daily-read'){
+    if(!window._drState || window._drState.itemId !== item.id){
+      window._drState = { itemId:item.id, q:0, results:[], chosen:null };
+    }
+    renderDailyReadStep(item);
+    return;
+  }
 }
 // Listen to an Announcement. Same rule as every other Listening task: the
 // announcement is heard, never written. It stays hidden even while the
@@ -6814,6 +7123,72 @@ function advanceAnnouncement(){
       <p class="small-note">Announcements carry one or two facts that matter and a good deal that does not. If you missed one, it is usually worth checking whether the answer was stated outright or only implied.</p>
     </div>` + PRACTICE_AGAIN_BTN;
 }
+// Read in Daily Life. The mirror image of the Listening tasks: the text
+// stays on screen the whole time, because this measures whether a student
+// can FIND information in an unfamiliar format, not whether they can hold
+// it in their head. Hiding it would quietly turn a reading task into a
+// memory test, which is the opposite of what ETS describes.
+function renderDailyReadStep(item){
+  const st = window._drState;
+  const d = item.data;
+  const q = d.questions[st.q];
+  const wrap = document.getElementById('practice-wrap');
+  const answered = st.chosen !== null;
+
+  const options = q.options.map((o,i)=>{
+    let cls = 'mc-option';
+    if(answered){
+      if(i === q.answer) cls += ' mc-correct';
+      else if(i === st.chosen) cls += ' mc-wrong';
+    }
+    return `<button class="${cls}" ${answered?'disabled':''} onclick="answerDailyRead(${i})">
+      <span class="mc-letter">${'ABCD'[i]}</span><span>${escapeHtml(o)}</span></button>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="compose">
+      <div class="wordcount">Question ${st.q+1} of ${d.questions.length}</div>
+      <div class="interview-scenario"><span class="interview-scenario-label">📄 The setup</span>Read ${escapeHtml(d.context)}.</div>
+      ${dailyDocHtml(d)}
+      <div class="ex-body">${escapeHtml(q.q)}</div>
+      <div class="mc-options">${options}</div>
+      <div id="dr-result"></div>
+      ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
+        <button class="btn" onclick="advanceDailyRead()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
+      </div>` : ''}
+    </div>`;
+  wrap.innerHTML += PRACTICE_AGAIN_BTN;
+}
+function answerDailyRead(i){
+  const st = window._drState, item = currentItem();
+  if(!st || st.chosen !== null) return;
+  const q = item.data.questions[st.q];
+  st.chosen = i;
+  const ok = i === q.answer;
+  st.results.push(ok ? 1 : 0);
+  renderDailyReadStep(item);
+  document.getElementById('dr-result').innerHTML = `
+    <div class="result-msg ${ok?'ok':'no'}">${ok ? '✓ Correct' : '✕ Not quite'}</div>
+    ${ok ? '' : `<p class="small-note">The answer was <b>${'ABCD'[q.answer]}</b>. The text is still above — the part that settles it is in there.</p>`}`;
+}
+function advanceDailyRead(){
+  const st = window._drState, item = currentItem();
+  if(!st || !item) return;
+  st.chosen = null;
+  if(st.q < item.data.questions.length - 1){
+    st.q++;
+    renderDailyReadStep(item);
+    return;
+  }
+  const score = st.results.reduce((x,y)=>x+y,0);
+  logUsage('daily-read', item.theme, score / st.results.length);
+  document.getElementById('practice-wrap').innerHTML = `
+    <div class="compose">
+      <div class="ex-body"><b>Done — ${score} of ${st.results.length} correct.</b></div>
+      <p class="small-note">These texts are not written to be read start to finish. A receipt, a timetable, a warranty card — you scan them for the one line that answers the question. If one felt slow, try finding the answer <i>before</i> reading the whole thing next time.</p>
+    </div>` + PRACTICE_AGAIN_BTN;
+}
+
 // Listen to an Academic Talk. Four questions on one ~200-word talk, and
 // the longest thing the app asks a student to hold in their head. Same
 // rule as the rest of the section -- heard, never read -- but with one
@@ -7888,6 +8263,7 @@ function guideContent(role){
     <h3>The ${TASK_TYPES.length} task types, matching the real exam</h3>
     <ul>
       <li><b>Complete the Words</b> — fill in missing letters in a short passage.</li>
+      <li><b>Read in Daily Life</b> — read a sign, receipt or message thread, answer questions.</li>
       <li><b>Listen and Choose a Response</b> — hear a short question, pick the best reply.</li>
       <li><b>Listen to an Announcement</b> — hear a notice, answer questions about it.</li>
       <li><b>Listen to a Conversation</b> — hear two people talking, answer questions about it.</li>

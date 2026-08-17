@@ -18,7 +18,7 @@ The name was chosen after several candidates were dropped for real trademark col
 
 A free, browser-based companion app covering the real TOEFL 2026 task types, generated around 14 real-life themes (campus & F1 student life, work & career, health, environment, money, housing, travel, media, and more) instead of abstract grammar drills. No app install, no account, no cost.
 
-**Reading** — Complete the Words
+**Reading** — Complete the Words · Read in Daily Life
 **Listening** — Listen and Choose a Response · Listen to an Announcement · Listen to a Conversation · Listen to an Academic Talk
 **Writing** — Build a Sentence · Write an Email · Write for an Academic Discussion
 **Speaking** — Listen and Repeat · Take an Interview
@@ -35,7 +35,7 @@ The app also never touches SEVIS/I-20 or any immigration data — its scope is s
 
 ## Features
 
-- 10 task types × 14 real-life themes, unlimited fresh practice ("practice again" regenerates without repeating content)
+- 11 task types × 14 real-life themes, unlimited fresh practice ("practice again" regenerates without repeating content)
 - Pre-rendered audio for every spoken line, so a student on an old phone hears the same voice as a student on a new one; two-speaker conversations are stitched from two voices at build time
 - Teacher batch-approval workflow, individual per-student assignment (own task type + theme, independent of the class), whole-class QR-code sharing
 - Classroom-aware audio: one shared playback through the room speakers instead of 13 phones firing out of sync, with a "who's speaking this round" control to avoid mic crosstalk
