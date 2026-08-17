@@ -107,26 +107,41 @@ const testScript = `
 
   assert('the swap delay is computed, not a constant',
     typeof welcomeSwapDelay === 'function');
-  assert('the delay grows with the text',
-    welcomeSwapDelay('one two three four five') < welcomeSwapDelay(enText + ' ' + enText));
-
-  assert('the word count is the real one, not an artefact', enWords === 61);
+  // Was 'the delay grows with the text', which was true while it was computed
+  // and is the opposite of true now. Left as its inverse rather than deleted,
+  // because the assertion that used to hold is worth being contradicted on
+  // purpose by the one that replaced it.
+  assert('the delay no longer grows with the text',
+    welcomeSwapDelay('one two three four five') === welcomeSwapDelay(enText + ' ' + enText));
 
   // THREE PHASES: English, their language for the same length, then English
-  // again and it stays. The third phase is why the first can be halved — it is
-  // no longer anybody's only chance to read the English.
-  assert('the first phase is half the reading estimate',
-    Math.abs(delayMs - welcomeReadMs(enText) / 2) < 1200);
-  assert('and it is not the whole estimate any more',
-    delayMs < welcomeReadMs(enText) * 0.6);
+  // again and it stays.
+  //
+  // Eighteen seconds, chosen rather than computed. That is a change of KIND,
+  // not just of number: while the swap was one-way the length was a
+  // reading-comprehension constraint and had to be measured, which is why 7
+  // seconds was a bug and 43.7 was the honest answer. With English returning
+  // permanently the first phase is nobody's only chance at it, so what is left
+  // is pacing — a judgement call.
+  assert('a phase is eighteen seconds', delayMs === 18000);
+  assert('and it no longer depends on the text',
+    welcomeSwapDelay('two words') === welcomeSwapDelay(enText.repeat(10)));
 
-  // Who finishes inside the first phase, stated rather than assumed. The two
-  // who do not are the reason English comes back permanently.
+  // Stated rather than assumed, because it is the trade the third phase buys.
   const finishes = wpm => (enWords / wpm) * 60000 <= delayMs;
-  assert('a native adult finishes the English in the first phase', finishes(238));
-  assert('so does a fluent second-language reader', finishes(180));
-  assert('an intermediate reader does not, by design', !finishes(120));
-  assert('nor does a slower one', !finishes(90));
+  // The copy is 49 words now, not the 61 it was — the door explanation got
+  // shorter when it stopped being philosophy. So more readers clear the first
+  // phase than my first version of these assertions assumed, and the honest
+  // thing is to state who, from the real count.
+  assert('the word count is read from the copy, not remembered', enWords === 49);
+  assert('a native adult finishes the English in the first phase (12.4s)', finishes(238));
+  assert('and so does a fluent second-language reader (16.3s)', finishes(180));
+  assert('an intermediate reader does not (24.5s)', !finishes(120));
+  assert('nor does a slower one (32.7s)', !finishes(90));
+  // Which is only acceptable because of the third phase. If that ever goes,
+  // this file should stop passing.
+  assert('so the reading estimate is still there to reason with',
+    typeof welcomeReadMs === 'function' && welcomeReadMs(enText) > delayMs);
 
   // So the third phase has to exist, and has to be the last word.
   const wel = __html.slice(__html.indexOf('function renderWelcome'),
@@ -137,8 +152,11 @@ const testScript = `
   assert('and English comes back with no timer after it',
     (wel.match(/setTimeout/g) || []).length === 2);
 
-  assert('a very short translation still gets a floor', welcomeSwapDelay('hi') >= 12000);
-  assert('and a very long one is capped', welcomeSwapDelay(enText.repeat(20)) <= 30000);
+  // The floor and the cap are gone with the computation they guarded — a
+  // minimum and a maximum around a fixed number protect nothing, and a dead
+  // constant is the next one somebody reads as if it were load-bearing.
+  assert('the floor and cap constants are gone',
+    !/WELCOME_SWAP_(?:MIN|MAX)_MS/.test(__html));
 
   // --- the numbers come from the app, not from prose ---
   // A guide that hard-codes "50 questions" goes wrong the day the section
