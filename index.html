@@ -10135,7 +10135,9 @@ function renderWhoAmI(){
   else { const n = getStudentName(); el.textContent = n ? `Hi, ${n}` : ''; }
 }
 
-let currentView = 'teacher';
+// Never 'teacher': that is a sign-in wall now, so anything reaching the
+// app without an explicit setView should land on the door instead.
+let currentView = 'welcome';
 function setView(v){
   currentView = v;
   if(v==='teacher') clearPracticeTimer();
@@ -10324,7 +10326,9 @@ function paintWelcomeCopy(t, animate){
   }catch(e){}
 }
 function enterAs(role){
-  localStorage.setItem('cse_entered', '1');
+  // No 'has entered before' flag any more. It existed to skip the welcome
+  // screen on later visits, and skipping it is exactly what dropped a
+  // returning student onto the teacher sign-in.
   setView(role);
 }
 
@@ -10734,13 +10738,24 @@ if('serviceWorker' in navigator){
 // the correct tab is showing no matter what happens afterward.
 const sharedParams = new URLSearchParams(location.search);
 const openedFromSharedLink = sharedParams.get('s') === '1' || !!sharedParams.get('ex');
-// The welcome screen is for someone typing the address. A student who
-// scanned a QR code has already answered the question it asks, and putting
-// it in their way would be a wall in front of the thing that works.
-// Someone who has been through it once does not see it again either.
-const skipWelcome = openedFromSharedLink || localStorage.getItem('cse_entered') === '1';
+// Typing the address always lands on the welcome screen. Scanning a QR
+// code never does.
+//
+// That split is the whole rule, and it used to have a third case that
+// broke it: anyone who had been through the door once was sent nowhere at
+// all. No setView ran, so they stayed on whatever currentView happened to
+// be initialised to — which was 'teacher'. A student who had opened the
+// site before, typing the address on their own phone, landed on a teacher
+// sign-in wall. That was already wrong and got worse the day the panel
+// started demanding a password.
+//
+// So the door is shown every time. It is two buttons and it names the app
+// in the visitor's own language, which is worth one tap from a returning
+// student and is the right answer for everyone else. A shared link still
+// goes straight through: that visitor already answered the question the
+// door asks.
 if(openedFromSharedLink) setView('student');
-else if(!skipWelcome) setView('welcome');
+else setView('welcome');
 renderTypeTabs();
 renderIndividualControls();
 renderTeacher();
@@ -10764,9 +10779,10 @@ renderWhoAmI();
 })();
 loadSharedClassroomContent().then(()=>{
   renderStudent();
-  // Don't stack the guide on top of the welcome screen — one question at
-  // a time. It appears when they actually enter.
-  if(!openedFromSharedLink && skipWelcome && !localStorage.getItem('cse_guide_seen_teacher')) showGuide('teacher');
+  // No guide on load. This used to open the TEACHER guide unasked for
+  // anyone returning to the site — students included, who were never its
+  // audience. It is a button in the header for whoever wants it, and
+  // enterAs() offers the right one on the way in.
 });
 </script>
 
