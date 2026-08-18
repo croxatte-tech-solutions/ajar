@@ -293,6 +293,43 @@ service cloud.firestore {
         allow write: if isTeacherOf(schoolId);
       }
 
+      /* THE LIVE ROUND. One answer per student, per open question.
+      
+         Why this exists: thirteen phones each playing the same clip in one
+         room is thirteen copies of a shared thing, and it is unusable. The
+         audio belongs on the one screen at the front; the phones carry only
+         the four options. That split needs the class to move together, which
+         needs a document the teacher writes and the phones watch.
+         
+         Each student writes their OWN answer and can read it back. Nobody
+         reads anybody else's — the count on the wall says "11 of 13 got it",
+         which is the class against the material, and never a ranking of
+         thirteen people who know each other by name. Only the teacher can
+         read the collection, because only she needs the count.
+         
+         'index' is which question was open. Storing it with the answer is
+         what stops a late tap on question 2 being counted against question 3
+         after she has moved on. */
+      match /live/{uid} {
+        function validAnswer() {
+          return request.resource.data.keys().hasOnly(['index', 'choice', 'correct', 'at'])
+            && request.resource.data.index is int
+            && request.resource.data.index >= 0
+            && request.resource.data.index <= 50
+            && request.resource.data.choice is int
+            && request.resource.data.choice >= 0
+            && request.resource.data.choice <= 9
+            && request.resource.data.correct is bool;
+        }
+        allow read: if isTeacherOf(schoolId)
+          || (isSignedIn() && request.auth.uid == uid);
+        allow create, update: if isMemberOf(schoolId)
+          && request.auth.uid == uid
+          && validAnswer();
+        // Clearing the round between questions is hers to do.
+        allow delete: if isTeacherOf(schoolId);
+      }
+
       // A student's practice history, scoped to their school.
       match /students/{studentId} {
 

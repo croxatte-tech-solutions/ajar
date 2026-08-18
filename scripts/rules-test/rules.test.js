@@ -290,6 +290,44 @@ await check('the full date is still readable only by the person it belongs to', 
   assertFails(getDoc(doc(student2, 'users', 'anon_student'))));
 
 //===================================================================
+// THE LIVE ROUND: EVERYONE ANSWERS, NOBODY WATCHES ANYONE ELSE
+//===================================================================
+// Thirteen phones playing one clip in one room is unusable, so the audio goes
+// to the screen at the front and the phones carry only the four options. The
+// count on the wall is the class against the material — never a ranking of
+// thirteen people who know each other by name.
+const ANS = { index: 2, choice: 1, correct: true, at: 1755400000000 };
+await check('a student in the class answers the open question', () =>
+  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'live', 'signed_in_student'), ANS)));
+await check('and can read their own answer back', () =>
+  assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'live', 'signed_in_student'))));
+await check('A CLASSMATE CANNOT SEE WHAT THEY ANSWERED', () =>
+  assertFails(getDoc(doc(otherSchoolStudent, 'schools', SCHOOL, 'live', 'signed_in_student'))));
+await check('the teacher can, because the count is hers to show', () =>
+  assertSucceeds(getDoc(doc(alpha, 'schools', SCHOOL, 'live', 'signed_in_student'))));
+await check('nobody answers in somebody else\'s name', () =>
+  assertFails(setDoc(doc(outsider, 'schools', SCHOOL, 'live', 'signed_in_student'), ANS)));
+await check('an anonymous visitor does not join the round at all', () =>
+  assertFails(setDoc(doc(student2, 'schools', SCHOOL, 'live', 'anon_other'), ANS)));
+await check('a student of another school cannot answer here', () =>
+  assertFails(setDoc(doc(otherSchoolStudent, 'schools', SCHOOL, 'live', 'other_school_student'), ANS)));
+// The index travels with the answer so a late tap on question 2 cannot be
+// counted against question 3 after she has moved on.
+await check('an answer must say which question it was for', () =>
+  assertFails(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'live', 'signed_in_student'),
+    { choice: 1, correct: true, at: 1 })));
+await check('and cannot smuggle a field nobody asked for', () =>
+  assertFails(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'live', 'signed_in_student'),
+    { ...ANS, points: 500 })));
+await check('a choice outside the options is refused', () =>
+  assertFails(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'live', 'signed_in_student'),
+    { ...ANS, choice: 99 })));
+await check('clearing the round between questions is the teacher\'s', () =>
+  assertSucceeds(deleteDoc(doc(alpha, 'schools', SCHOOL, 'live', 'signed_in_student'))));
+await check('and not a student\'s', () =>
+  assertFails(deleteDoc(doc(signedInStudent, 'schools', SCHOOL, 'live', 'nobody'))));
+
+//===================================================================
 // HISTORY IS A RECORD OF WHAT HAPPENED
 //===================================================================
 await check('a student may log their own attempt', () =>

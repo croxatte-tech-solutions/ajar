@@ -495,6 +495,10 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 
     <div id="sec-progress"><div id="progress-box"></div></div>
 
+    <!-- What she drives the room from. It is projected, so it carries the
+         question number and the counts and never a name. -->
+    <div id="live-panel"></div>
+
     <div class="panel" id="sec-generate">
       <h2>Generate today's batch</h2>
       <details class="brief"><summary>How the daily batch works</summary><p>Generate and share a fresh set every class day — the weekly theme keeps you on the 12-week plan, but each day gets its own link and QR code.</p></details>
@@ -8305,6 +8309,7 @@ function renderTeacher(){
   const empty = document.getElementById('teacher-empty');
   renderTeacherNav();
   renderClassHealth();
+  renderLivePanel();
   renderTeacherSignIn();
   renderRoster();
   renderClassProgress();
@@ -8982,6 +8987,22 @@ function renderStudent(){
   // student saw free practice — which still reads as "nothing happened", which
   // is what they saw in the classroom. A scan that fails has to say so.
   if(window.__exError){ renderScanError(window.__exError); return; }
+
+  /* A live round owns the screen while it is running.
+
+     Above the scan error would be wrong — a student who cannot open a code
+     needs to know that first. Below everything else is right: whatever they
+     were doing on their own, the room has moved and they are meant to be
+     with it. It ends the moment she closes the round, and they land back
+     wherever they were. */
+  if(liveActive()){
+    ['student-empty','scenario-list'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el){ el.style.display = 'none'; el.innerHTML = ''; }
+    });
+    renderLiveForStudent();
+    return;
+  }
 
   // Redrawn here, not only on load: the week appears the moment a student
   // taps their name, and the name is typed after the page is already up.
@@ -11890,8 +11911,17 @@ window.__onCloudSyncReady = function(){
   // used to make this look like "already loaded" and skip the retry —
   // leaving the stale exercise showing instead of the new one.
   if(!window.__classroomContentApplied){
-    loadSharedClassroomContent().then(()=>{ renderStudent(); return syncSchoolMembership(); });
+    loadSharedClassroomContent()
+    .then(()=>{ renderStudent(); return syncSchoolMembership(); });
   }
+  /* OUTSIDE the guard above, and that is the point.
+
+     It was inside it, which meant a student whose class content loaded on the
+     first attempt — every student for whom this works — never subscribed to
+     the live round at all. Only the ones who had already failed once would
+     have joined it. Caught by the check before anyone stood in front of a
+     class with it. */
+  syncSchoolMembership().then(() => startWatchingLive());
 };
 // Generic, per-skill tips (not per-theme — the theme is just the content,
 // the tip is about the task itself) shown next to a flagged weak spot.
@@ -12788,6 +12818,290 @@ async function adminDecline(uid){
   }
 }
 
+/* =========================================================
+   THE LIVE ROUND
+   One room, one clip, thirteen phones carrying only the answers.
+   ========================================================= */
+
+/* Reported from a real lesson: the class was doing a listening exercise, the
+   teacher had the audio on the room speakers, and every student ALSO had it
+   playing on their own phone. Thirteen unsynchronised copies of one clip in
+   one room is not thirteen times better, it is unusable.
+
+   The fix is the split every classroom response system makes: the stimulus
+   belongs to the shared screen at the front, and the response belongs to the
+   device in each hand. What the phone shows is four options and nothing else.
+
+   And a phase this idea implied without stating. On the real test you listen
+   FIRST and see the questions AFTER — options visible during the audio teach
+   a student to read instead of to listen. So while the clip is playing the
+   phones show no options at all. The class mode ends up MORE faithful to the
+   exam than practising alone, not less.
+
+   Practising at home and sitting a full section are untouched. */
+const LIVE_PHASES = ['idle', 'listening', 'answering', 'revealed', 'ended'];
+let LIVE = null;           // the round as the teacher last wrote it
+let LIVE_UNSUB = null;
+let LIVE_MY_ANSWER = null; // { index, choice } for the question now open
+let LIVE_ERROR = null;
+
+function liveActive(){
+  return !!(LIVE && LIVE.phase && LIVE.phase !== 'idle' && LIVE.phase !== 'ended');
+}
+function liveItem(){
+  if(!LIVE || !LIVE.itemId) return null;
+  return loadBatch().find(i => i.id === LIVE.itemId) || null;
+}
+// The five prompts of a Choose the Response set, or the questions of any
+// other four-option exercise. One shape for the renderer to hold.
+function liveQuestion(){
+  const item = liveItem();
+  if(!item || !item.data) return null;
+  const set = item.data.set || item.data.questions || [];
+  const q = set[LIVE ? LIVE.index : 0];
+  if(!q || !q.options) return null;
+  return q;
+}
+
+function startWatchingLive(){
+  if(LIVE_UNSUB || !window.CloudSync || typeof window.CloudSync.watchLiveRound !== 'function') return;
+  if(!currentSchool() || !hasAccount()) return;
+  LIVE_UNSUB = window.CloudSync.watchLiveRound(
+    state => {
+      const before = LIVE && LIVE.index;
+      LIVE = state;
+      LIVE_ERROR = null;
+      // A new question clears the previous answer. Without this a student
+      // who answered question 2 sees question 3 already marked.
+      if(!LIVE || LIVE.index !== before) LIVE_MY_ANSWER = null;
+      if(currentView === 'student') renderStudent();
+    },
+    () => {
+      // Losing the listener mid-lesson is exactly the silence this project
+      // keeps removing: the phone would sit on question 2 for ever while the
+      // room moved on, and the student would think they had answered.
+      LIVE_ERROR = 'lost';
+      if(currentView === 'student') renderStudent();
+    });
+}
+// Checked rather than wrapped. An unsubscribe that throws would mean the
+// listener was already torn down, which is the state being asked for — but
+// swallowing is swallowing, and this file has spent long enough removing it.
+function stopWatchingLive(){
+  if(typeof LIVE_UNSUB === 'function') LIVE_UNSUB();
+  LIVE_UNSUB = null;
+  LIVE = null; LIVE_MY_ANSWER = null;
+}
+
+function renderLiveForStudent(){
+  const wrap = document.getElementById('practice-wrap');
+  if(!wrap) return;
+  const q = liveQuestion();
+  const n = (LIVE.index || 0) + 1;
+  const head = `<p class="small-note" style="text-align:center;margin:0 0 .6rem">
+      Question ${n} with your class</p>`;
+
+  if(LIVE_ERROR){
+    wrap.innerHTML = head + `<div class="compose" role="alert"><div class="ex-body" style="text-align:center">
+      <div style="font-size:2.4rem">📶</div>
+      <h2 style="margin:.5rem 0 .2rem">You dropped out of the round</h2>
+      <p class="small-note" style="max-width:34ch;margin:.2rem auto 0">Your class has carried on
+        without you. Reconnect and you will land on whatever question they are on now.</p>
+      <div class="ex-actions" style="margin-top:1rem;justify-content:center">
+        <button class="btn" onclick="location.reload()">Rejoin</button></div></div></div>`;
+    return;
+  }
+
+  if(LIVE.phase === 'listening' || !q){
+    // No options, on purpose. This is the phase that makes the class mode
+    // more like the real test than practising alone.
+    wrap.innerHTML = head + `<div class="compose"><div class="ex-body" style="text-align:center">
+      <div style="font-size:2.6rem">👂</div>
+      <h2 style="margin:.5rem 0 .2rem">Listen</h2>
+      <p class="small-note" style="max-width:32ch;margin:.2rem auto 0">The audio is playing in the
+        room. Your answers appear here when it finishes — just like the real test.</p>
+      </div></div>`;
+    return;
+  }
+
+  if(LIVE.phase === 'answering'){
+    const chosen = LIVE_MY_ANSWER && LIVE_MY_ANSWER.index === LIVE.index ? LIVE_MY_ANSWER.choice : null;
+    wrap.innerHTML = head + `<div class="compose"><div class="ex-body">
+      ${q.options.map((o, i) => `
+        <button class="btn ghost live-opt" style="width:100%;text-align:left;margin-bottom:.5rem;padding:.8rem"
+          ${chosen === i ? 'aria-pressed="true" style="width:100%;text-align:left;margin-bottom:.5rem;padding:.8rem;border-color:var(--accent)"' : 'aria-pressed="false"'}
+          onclick="answerLive(${i})">${escapeHtml(o)}</button>`).join('')}
+      ${chosen !== null
+        ? '<p class="small-note" style="text-align:center;margin:.4rem 0 0">Answer sent. You can change it until your teacher closes the question.</p>'
+        : ''}
+      </div></div>`;
+    return;
+  }
+
+  // revealed
+  const chosen = LIVE_MY_ANSWER ? LIVE_MY_ANSWER.choice : null;
+  const right = q.answer;
+  wrap.innerHTML = head + `<div class="compose"><div class="ex-body">
+    ${q.options.map((o, i) => {
+      const isRight = i === right, mine = i === chosen;
+      const colour = isRight ? 'var(--accent)' : (mine ? 'var(--red)' : 'var(--border)');
+      return `<div class="panel" style="border-color:${colour};margin-bottom:.5rem;padding:.7rem">
+        ${isRight ? '✓ ' : (mine ? '✗ ' : '')}${escapeHtml(o)}
+        ${mine && !isRight ? '<span class="small-note"> — you chose this</span>' : ''}</div>`;
+    }).join('')}
+    ${chosen === null ? '<p class="small-note" style="text-align:center">You did not answer this one.</p>' : ''}
+    </div></div>`;
+}
+
+async function answerLive(choice){
+  const q = liveQuestion();
+  if(!q || !LIVE || LIVE.phase !== 'answering') return;
+  const index = LIVE.index || 0;
+  const correct = choice === q.answer;
+  LIVE_MY_ANSWER = { index, choice };
+  renderStudent();
+  try{
+    await window.CloudSync.sendLiveAnswer(index, choice, correct);
+  }catch(e){
+    // Not swallowed, and not silently reverted either: the tap is theirs and
+    // the screen should keep showing it. What they need to know is that the
+    // count at the front does not include them.
+    console.error('Ajar: your answer did not reach the class —', e);
+    LIVE_ERROR = 'lost';
+    renderStudent();
+    return;
+  }
+  // The same funnel every other exercise reports through, so a live round
+  // counts towards the patterns the teacher already reads.
+  logUsage('choose-response', (liveItem() || {}).theme || 'campus', correct ? 1 : 0);
+}
+
+
+/* Her half of the live round: the controls, and the count.
+
+   These are what ends up on the projector, because the classroom screen
+   mirrors her screen. So they carry the question number, how many have
+   answered, and after she closes it, how many were right — and never who
+   answered what. The count is the class against the material. Thirteen
+   students who know each other by name do not need a ranking of themselves,
+   and the promise on their own screens is that nothing here becomes a grade.
+
+   The correct option appears only once she reveals it, which is the moment it
+   stops being an answer key and becomes the teaching. */
+let LIVE_ANSWERS = [];
+let LIVE_ANSWERS_UNSUB = null;
+
+function teacherWatchAnswers(){
+  if(LIVE_ANSWERS_UNSUB || !window.CloudSync || !window.CloudSync.watchLiveAnswers) return;
+  LIVE_ANSWERS_UNSUB = window.CloudSync.watchLiveAnswers(rows => {
+    LIVE_ANSWERS = rows;
+    renderLivePanel();
+  });
+}
+function liveCounts(){
+  const idx = LIVE ? LIVE.index : 0;
+  const forThis = LIVE_ANSWERS.filter(a => a.index === idx);
+  return { answered: forThis.length, correct: forThis.filter(a => a.correct).length,
+           roster: (loadRoster().students || []).length };
+}
+
+async function startLiveRound(itemId){
+  const item = loadBatch().find(i => i.id === itemId);
+  if(!item || publishState(itemId) !== 'live'){
+    ADMIN_MSG = null;
+    alert('Share this exercise with the class first — the live round reads the same document the codes point at.');
+    return;
+  }
+  // Subscribe BEFORE writing. Firestore happens to echo the current document
+  // back to a new listener, so the other order works by accident — but it
+  // leaves a window in which she has started a round she is not listening to,
+  // and her own panel is driven by the same stream the phones are.
+  teacherWatchAnswers();
+  startWatchingLive();
+  await window.CloudSync.clearLiveAnswers();
+  await window.CloudSync.setLiveRound({ itemId, index: 0, phase: 'listening' });
+  renderLivePanel();
+}
+async function liveGo(phase){
+  if(!LIVE) return;
+  await window.CloudSync.setLiveRound({ ...LIVE, phase });
+  renderLivePanel();
+}
+async function liveNext(){
+  if(!LIVE) return;
+  const item = liveItem();
+  const set = item && item.data ? (item.data.set || item.data.questions || []) : [];
+  const next = (LIVE.index || 0) + 1;
+  if(next >= set.length){ await liveEnd(); return; }
+  await window.CloudSync.clearLiveAnswers();
+  await window.CloudSync.setLiveRound({ ...LIVE, index: next, phase: 'listening' });
+  renderLivePanel();
+}
+async function liveEnd(){
+  await window.CloudSync.endLiveRound();
+  await window.CloudSync.clearLiveAnswers();
+  if(typeof LIVE_ANSWERS_UNSUB === 'function') LIVE_ANSWERS_UNSUB();
+  LIVE_ANSWERS_UNSUB = null;
+  LIVE_ANSWERS = [];
+  renderLivePanel();
+}
+// The clip plays HERE and only here. That is the whole feature.
+function livePlay(){
+  const q = liveQuestion();
+  const item = liveItem();
+  if(!q || !item) return;
+  const text = q.prompt || q.text || (item.data && item.data.text) || '';
+  if(text) speak(text);
+}
+
+function renderLivePanel(){
+  const box = document.getElementById('live-panel');
+  if(!box) return;
+  if(!teacherIsSignedIn()){ box.innerHTML = ''; return; }
+  if(!liveActive()){
+    const ready = loadBatch().filter(i => i.status === 'approved'
+      && publishState(i.id) === 'live' && i.type === 'choose-response');
+    box.innerHTML = `<div class="panel">
+      <h2 style="margin-top:0">Run it with the class</h2>
+      <p class="small-note" style="margin:.2rem 0 .7rem">
+        The audio plays here, on the room speakers. Their phones show only the four
+        answers — which is also how the real test works: you listen first, the
+        questions come after.</p>
+      ${ready.length
+        ? ready.map(i => `<button class="btn sm" style="margin:0 .4rem .4rem 0"
+             onclick="startLiveRound('${escapeHtml(i.id)}')">▶ ${escapeHtml(i.tag)}</button>`).join('')
+        : '<p class="small-note">Approve and share a Choose the Response set first.</p>'}
+    </div>`;
+    return;
+  }
+  const c = liveCounts();
+  const q = liveQuestion();
+  const item = liveItem();
+  const set = item && item.data ? (item.data.set || item.data.questions || []) : [];
+  const n = (LIVE.index || 0) + 1;
+  box.innerHTML = `<div class="panel" style="border-color:var(--accent)">
+    <h2 style="margin-top:0">Question ${n} of ${set.length}</h2>
+    <p style="font-size:1.6rem;font-weight:700;margin:.2rem 0">
+      ${c.answered}${c.roster ? ' of ' + c.roster : ''} answered</p>
+    ${LIVE.phase === 'revealed'
+      ? `<p style="font-size:1.2rem;font-weight:600;color:var(--accent);margin:.2rem 0">
+           ${c.correct} got it right</p>
+         <p class="small-note" style="margin:.2rem 0 .6rem">Answer:
+           <b>${q ? escapeHtml(q.options[q.answer]) : ''}</b></p>`
+      : '<p class="small-note" style="margin:.2rem 0 .6rem">Nobody sees who answered what.</p>'}
+    <div class="ex-actions">
+      ${LIVE.phase === 'listening'
+        ? `<button class="btn" onclick="livePlay()">🔊 Play</button>
+           <button class="btn" onclick="liveGo('answering')">Open the answers</button>` : ''}
+      ${LIVE.phase === 'answering'
+        ? `<button class="btn" onclick="liveGo('revealed')">Close and show the answer</button>` : ''}
+      ${LIVE.phase === 'revealed'
+        ? `<button class="btn" onclick="liveNext()">Next question &rarr;</button>` : ''}
+      <button class="btn ghost sm" onclick="liveEnd()">End</button>
+    </div>
+  </div>`;
+}
+
 function renderWelcome(){
   // Runs during start-up. Anything thrown here takes the whole app down
   // before a single screen renders, so the welcome — which is decoration
@@ -13490,6 +13804,10 @@ loadSharedClassroomContent().then(()=>{
   // anyone returning to the site — students included, who were never its
   // audience. It is a button in the header for whoever wants it, and
   // enterAs() offers the right one on the way in.
+  // Joining the live round is attempted here as well as on the CloudSync
+  // callback, because whichever of the two runs second is the one that finds
+  // both a school and an account, and startWatchingLive() is idempotent.
+  return syncSchoolMembership().then(() => startWatchingLive());
 });
 </script>
 
@@ -13524,7 +13842,7 @@ loadSharedClassroomContent().then(()=>{
            EmailAuthProvider, updateProfile,
            signOut, setPersistence, browserLocalPersistence, browserSessionPersistence }
     from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, collection, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, collection, onSnapshot, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
   // Infrastructure identifiers, not brand: the project id keeps its
   // original string because renaming it means a new Firebase project.
@@ -13973,6 +14291,64 @@ loadSharedClassroomContent().then(()=>{
         const p = snap.data();
         if(p.schoolId === schoolId) return false;   // already a member
         await setDoc(ref, { ...p, schoolId });
+        return true;
+      },
+      /* THE LIVE ROUND.
+
+         The first realtime listener in this app. Everything else reads once
+         and stops; a room full of phones has to move together, so these
+         subscribe and the caller gets an unsubscribe back.
+
+         The shape is deliberately one document. Thirteen phones watching one
+         doc is thirteen cheap listeners on a value that changes maybe twenty
+         times a lesson — a collection of per-question documents would cost
+         more and buy nothing, because only ever one question is open. */
+      watchLiveRound(onChange, onError) {
+        if(noSchool()) return () => {};
+        return onSnapshot(doc(db, 'schools', school(), 'classroom', 'live'),
+          snap => onChange(snap.exists() ? snap.data() : null),
+          err => {
+            // A dropped listener is silence, and silence in this app has cost
+            // a lesson before. The caller decides what to say; it is never
+            // swallowed here.
+            console.error('Ajar: the live round listener stopped —', err);
+            if(onError) onError(err);
+          });
+      },
+      async setLiveRound(state) {
+        if(noSchool()) return NO_SCHOOL;
+        await setDoc(doc(db, 'schools', school(), 'classroom', 'live'),
+          { ...state, at: Date.now() });
+        return true;
+      },
+      async endLiveRound() {
+        if(noSchool()) return NO_SCHOOL;
+        await setDoc(doc(db, 'schools', school(), 'classroom', 'live'), { phase: 'ended', at: Date.now() });
+        return true;
+      },
+      async sendLiveAnswer(index, choice, correct) {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous || noSchool()) return NO_SCHOOL;
+        await setDoc(doc(db, 'schools', school(), 'live', u.uid),
+          { index, choice, correct, at: Date.now() });
+        return true;
+      },
+      // Watched rather than polled, so the count on the wall moves as the
+      // hands go up. Teacher only: the rules refuse this to a student, which
+      // is what keeps "11 of 13" from ever becoming a list of names.
+      watchLiveAnswers(onChange, onError) {
+        if(noSchool()) return () => {};
+        return onSnapshot(collection(db, 'schools', school(), 'live'),
+          snap => onChange(snap.docs.map(d => ({ uid: d.id, ...d.data() }))),
+          err => {
+            console.error('Ajar: the answer count stopped updating —', err);
+            if(onError) onError(err);
+          });
+      },
+      async clearLiveAnswers() {
+        if(noSchool()) return NO_SCHOOL;
+        const snap = await getDocs(collection(db, 'schools', school(), 'live'));
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
         return true;
       },
       async loadProfile() {
