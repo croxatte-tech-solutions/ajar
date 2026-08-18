@@ -113,6 +113,100 @@ ${blocks.join('\n;\n')}
   }
   assert('Complete the Words: 10 clean gaps per passage, slots match what is graded', cwBad.length === 0, cwBad.slice(0,6).join('\\n      '));
 
+
+/* TWO TELLS NOBODY HAD MEASURED.
+   ---------------------------------------------------------------
+   The length work went looking for one surface a student can read without
+   understanding, found it, and stopped. These are the other two, and the
+   first is bigger than the length bias ever was.
+
+   1. LEXICAL OVERLAP. "Pick the option that repeats the passage most" scores
+      47% to 58% depending on the bank, against 25% for a guess. That is the
+      word-matching habit an exam-prep app is supposed to train AGAINST: in a
+      well-made item the correct answer is a PARAPHRASE and the distractors
+      are the ones echoing the text. Here it is the other way round.
+
+   2. NEGATION. Where exactly one option contains not/never/except, it is the
+      correct one far more often than chance — 79% in Choose the Response,
+      though on only 17 questions, and 61% in a talk on 9.
+
+   Held rather than fixed. Correcting these means rewriting hundreds of
+   distractors, which is authorship, and the one time this bank was edited in
+   bulk without a person reading each result it put "it's the whole only way"
+   into an answer key. The numbers may not get worse; lowering one is a
+   deliberate act with a measurement behind it.
+
+   The metric is crude and should be read as a direction, not a verdict: it
+   counts how many of an option's content words appear in the source, so a
+   correct answer that legitimately quotes a phrase scores high too. What it
+   cannot explain away is the SHAPE — the right answer should not be the most
+   text-like one, and in four banks it is. */
+const NEG_RE = /\\b(not|never|except|least|nor|unlike|rather than|instead of|no longer)\\b/i;
+const STOPW = new Set('a an the of to in on at for and or but is are was were be been being it its this that these those with as by from about not no i you he she they we his her their there what which who how why when where do does did have has had will would can could should may might must'.split(' '));
+const contentWords = s => (String(s || '').toLowerCase().match(/[a-z']+/g) || [])
+  .filter(w => w.length > 3 && !STOPW.has(w));
+
+const SOURCE_OF = {
+  announcement: a => a.text,
+  conversation: a => (a.turns || []).map(t => t.line || t.text || t).join(' '),
+  talk: a => a.text,
+  'daily-read': a => [].concat(a.title || '', a.body || []).join(' '),
+  passage: a => a.text,
+};
+const withSource = [];
+for(const [type, key] of [['announcement','ANNOUNCEMENT_BANK'],['conversation','CONVERSATION_BANK'],
+                          ['talk','TALK_BANK'],['daily-read','DAILY_READ_BANK'],['passage','PASSAGE_BANK']]){
+  const bank = eval(key);
+  for(const th in bank) bank[th].forEach(a => (a.questions || []).forEach(q =>
+    withSource.push({ type, src: String(SOURCE_OF[type](a) || ''), q })));
+}
+// Every question of a bank that has a source text must HAVE one, or the
+// measurement below is quietly reading nothing. daily-read reported 0%
+// overlap for exactly this reason: the extractor looked for a field that
+// bank does not have.
+const noSource = {};
+withSource.forEach(x => { if(!x.src) noSource[x.type] = (noSource[x.type] || 0) + 1; });
+assert('every question with a source text actually has one',
+  Object.keys(noSource).length === 0, JSON.stringify(noSource));
+
+const OVERLAP_MAX = { announcement: 0.60, conversation: 0.59, talk: 0.54, 'daily-read': 0.60, passage: 0.49 };
+const byType2 = {};
+withSource.forEach(x => { (byType2[x.type] = byType2[x.type] || []).push(x); });
+for(const type in byType2){
+  const list = byType2[type];
+  const rate = list.reduce((acc, x) => {
+    const S = new Set(contentWords(x.src));
+    const v = x.q.options.map(o => { const c = contentWords(o);
+      return c.length ? c.filter(w => S.has(w)).length / c.length : 0; });
+    const mx = Math.max(...v), k = v.filter(z => z === mx).length;
+    return acc + (v[x.q.answer] === mx ? 1 / k : 0);
+  }, 0) / list.length;
+  assert(type + ': "pick the option that repeats the text" is held at its measured level (' +
+    Math.round(rate * 100) + '%, chance 25%, n=' + list.length + ')',
+    rate <= (OVERLAP_MAX[type] || 0.5), 'OPEN FINDING — may not get worse');
+}
+
+const NEG_MAX = { 'choose-response': 0.80, talk: 0.62, passage: 0.56, 'daily-read': 0.70,
+                  announcement: 0.60, conversation: 0.60 };
+// Grouped here rather than from byType, which is built further down: this
+// probe sits above it on purpose, so the two length tells and these two read
+// in the order somebody would want to compare them.
+const negGroups = {};
+qs.forEach(x => { (negGroups[x.type] = negGroups[x.type] || []).push(x.q); });
+for(const type in negGroups){
+  const list = negGroups[type];
+  let n = 0, score = 0;
+  list.forEach(q => {
+    const neg = q.options.map((o, i) => NEG_RE.test(o) ? i : -1).filter(i => i >= 0);
+    if(!neg.length) return;
+    n++; if(neg.indexOf(q.answer) > -1) score += 1 / neg.length;
+  });
+  if(n < 5) continue;   // too few to say anything about
+  assert(type + ': "pick the option with a negative in it" is held at its measured level (' +
+    Math.round(score / n * 100) + '%, chance 25%, n=' + n + ')',
+    score / n <= (NEG_MAX[type] || 0.6), 'OPEN FINDING — may not get worse');
+}
+
   //=================================================================
   // 5. SURFACE TELLS — is the key findable with the sound off?
   //=================================================================
