@@ -13095,9 +13095,13 @@ function startLiveClock(){
     renderLivePanel();
     // Only her device closes it. A phone whose clock is a few seconds fast
     // must not end the question for everybody else.
-    if(left <= 0 && teacherIsSignedIn() && LIVE && LIVE.phase === 'answering'){
-      stopLiveClock();
-      liveGo('revealed');
+    // The count is the signal she acts on; the clock is only the backstop for
+    // the student who never answers. So once everybody is in, the remaining
+    // seconds are dead waiting and the clock stands down — she still decides
+    // when to reveal.
+    if(teacherIsSignedIn() && LIVE && LIVE.phase === 'answering'){
+      if(liveCounts().allIn){ stopLiveClock(); renderLivePanel(); return; }
+      if(left <= 0){ stopLiveClock(); liveGo('revealed'); }
     }
   }, 500);
 }
@@ -13130,10 +13134,14 @@ function teacherWatchAnswers(){
   });
 }
 function liveCounts(){
-  const idx = LIVE ? LIVE.index : 0;
+  const idx = LIVE ? (LIVE.index || 0) : 0;
   const forThis = LIVE_ANSWERS.filter(a => a.index === idx);
-  return { answered: forThis.length, correct: forThis.filter(a => a.correct).length,
-           roster: (loadRoster().students || []).length };
+  const roster = (loadRoster().students || []).length;
+  return { answered: forThis.length, correct: forThis.filter(a => a.correct).length, roster,
+    // Only knowable against a class list. Without one there is no "everyone"
+    // to be complete, and claiming there is would be the app inventing a fact
+    // about a room it cannot see.
+    allIn: roster > 0 && forThis.length >= roster };
 }
 
 async function startLiveRound(itemId){
@@ -13233,9 +13241,11 @@ function renderLivePanel(){
     : `Question ${p.q} of ${p.qs}`;
   box.innerHTML = `<div class="panel" style="border-color:var(--accent)">
     <h2 style="margin-top:0">${where}</h2>
-    <p style="font-size:1.6rem;font-weight:700;margin:.2rem 0">
-      ${c.answered}${c.roster ? ' of ' + c.roster : ''} answered${
-        LIVE.phase === 'answering' && left !== null ? ' \u00b7 ' + left + 's' : ''}</p>
+    <p style="font-size:1.6rem;font-weight:700;margin:.2rem 0;color:${
+        c.allIn ? 'var(--accent)' : 'inherit'}">
+      ${c.allIn ? '\u2713 Everyone has answered'
+                : c.answered + (c.roster ? ' of ' + c.roster : '') + ' answered'}${
+        !c.allIn && LIVE.phase === 'answering' && left !== null ? ' \u00b7 ' + left + 's' : ''}</p>
     ${LIVE.phase === 'revealed'
       ? `<p style="font-size:1.2rem;font-weight:600;color:var(--accent);margin:.2rem 0">
            ${c.correct} got it right</p>

@@ -119,7 +119,7 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,currentSchool,renderLiveForStudent,liveActive,liveQuestion,answerLive,'+
     'renderLivePanel,liveCounts,startLiveRound,liveGo,liveNext,liveEnd,teacherIsSignedIn,renderStudent,'+
-    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,'+
+    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,saveRoster,'+
     'saveBatch,loadBatch,setPublishState,generateOne,setStudentName,setView};', sandbox);
   return { api: sandbox.__api, sandbox, asked, store, live, answersCb, rounds, sent,
            push(st){ live.forEach(f => f(st)); },
@@ -304,7 +304,41 @@ function cr(t){
   assert('AND STOPS THERE — the clock never moves the class on',
     t.rounds[t.rounds.length-1].phase === 'revealed');
   assert('only her device is allowed to close it',
-    html.indexOf('left <= 0 && teacherIsSignedIn()') > -1);
+    html.indexOf("if(teacherIsSignedIn() && LIVE && LIVE.phase === 'answering'){") > -1);
+  assert('a phone whose clock runs fast cannot end the question for the room',
+    html.indexOf('liveGo(\'revealed\')') > html.indexOf('teacherIsSignedIn() && LIVE'));
+
+  //===================================================================
+  // THE COUNT IS THE SIGNAL. THE CLOCK IS ONLY THE BACKSTOP.
+  //===================================================================
+  // She is looking at the room, not at the screen, so "everybody is in" has
+  // to be unmissable rather than something she works out from two numbers.
+  t.api.saveRoster({ students: ['Ana', 'Bo', 'Cy'], present: [] });
+  await t.api.liveGo('answering');
+  t.pushAnswers([{ uid:'a', index:0, choice:1, correct:true },
+                 { uid:'b', index:0, choice:2, correct:false }]);
+  assert('with some still out, it counts them', t.api.liveCounts().allIn === false,
+    t.api.liveCounts());
+  assert('and shows the clock, because somebody may never answer',
+    tvPanel().indexOf('s</p>') > -1 || tvPanel().indexOf('answered') > -1);
+
+  t.pushAnswers([{ uid:'a', index:0, choice:1, correct:true },
+                 { uid:'b', index:0, choice:2, correct:false },
+                 { uid:'c', index:0, choice:1, correct:true }]);
+  assert('once the room is in, it says so in words',
+    t.api.liveCounts().allIn === true && tvPanel().indexOf('Everyone has answered') > -1,
+    tvPanel().slice(0, 200));
+  assert('and the seconds stop being shown, because they no longer decide anything',
+    tvPanel().indexOf('· ') === -1 || tvPanel().indexOf('Everyone has answered') > -1);
+  assert('SHE STILL REVEALS IT HERSELF — the app never takes that click',
+    tvPanel().indexOf("liveGo('revealed')") > -1, tvPanel().slice(0, 400));
+
+  // Without a class list there is no "everyone" to be complete, and claiming
+  // there is would be the app inventing a fact about a room it cannot see.
+  t.api.saveRoster({ students: [], present: [] });
+  assert('with no class list, completeness is not claimed',
+    t.api.liveCounts().allIn === false, t.api.liveCounts());
+  t.api.saveRoster({ students: ['Ana', 'Bo', 'Cy'], present: [] });
 
   //===================================================================
   // AND THE TWO DIFFERENT KINDS OF "NEXT"
