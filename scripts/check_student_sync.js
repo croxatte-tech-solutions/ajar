@@ -120,7 +120,8 @@ function boot(opts){
   vm.runInContext(blocks.join('\n;\n') +
     ';globalThis.__api={loadSharedClassroomContent,renderStudent,getStudentBatch,setStudentName,' +
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
-    'itemShareLink,dismissScanError,currentSchool,logUsage,syncState,renderSyncWarning,setStudentName};', sandbox);
+    'itemShareLink,dismissScanError,currentSchool,logUsage,syncState,renderSyncWarning,setStudentName,'+
+    'syncSchoolMembership};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, store };
 }
 
@@ -195,6 +196,29 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
   // fired while the app does exactly what it promised them.
   assert('and an anonymous session does not attempt a write it cannot make',
     html.indexOf('|| !hasAccount()) return NO_SCHOOL;') > -1);
+
+  //===================================================================
+  // THE HISTORY THAT WAS FILED UNDER A NAME COMES ACROSS
+  //===================================================================
+  // e6ed7df moved the record to students/{uid} and left everything thirteen
+  // students had practised at students/{typed name}. Nothing reads it,
+  // nothing writes it, and to them it looks deleted — and nobody was told,
+  // because a document nobody asks for is not an error.
+  const src = html.slice(html.indexOf('async migrateLegacyStudent'),
+                         html.indexOf('async migrateLegacyStudent') + 2200);
+  assert('there is a migration at all', src.length > 100);
+  assert('IT COPIES AND NEVER DELETES — the rules forbid deleting a student, ' +
+         'and not deleting cannot lose anything',
+    src.indexOf('deleteDoc') === -1, src.slice(0, 120));
+  assert('it refuses to overwrite an account that has practised since',
+    src.indexOf('if(already) return false;') > -1);
+  assert('the summary crosses before the attempts, so a failure loses the ' +
+         'smaller half',
+    src.indexOf("{ merge: true }") < src.indexOf("'attempts'"));
+  assert('and it is hung off being in the class, which is when a uid exists',
+    html.indexOf('migrateLegacyStudent(name)') > html.indexOf('async function syncSchoolMembership'));
+  assert('a failure is said out loud, because nobody found out last time',
+    html.indexOf('could not be carried across') > -1);
 
   //===================================================================
   // THE WARNING LIVES WHERE A RE-RENDER CANNOT EAT IT

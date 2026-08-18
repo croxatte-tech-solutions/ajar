@@ -13358,6 +13358,20 @@ async function syncSchoolMembership(){
   if(!sid) return;
   try{ await window.CloudSync.joinSchool(sid); }
   catch(e){ console.error('Ajar: could not join this class —', e); }
+  // Being in the class is the moment a uid exists to carry the old history
+  // to. Not awaited into anything the student is waiting for: a slow copy
+  // must not hold up a lesson, and it is safe to run again next time.
+  try{
+    const name = getStudentName();
+    if(name){
+      const r = await window.CloudSync.migrateLegacyStudent(name);
+      if(r && r.moved !== undefined)
+        console.info('Ajar: carried ' + r.moved + ' past attempts across from ' + r.from);
+    }
+  }catch(e){
+    // Loud, because the whole point is that nobody found out last time.
+    console.error('Ajar: your earlier practice history could not be carried across —', e);
+  }
 }
 
 async function refreshAccountProfile(){
@@ -15300,6 +15314,62 @@ loadSharedClassroomContent().then(()=>{
         const snap = await getDocs(collection(db, 'schools', school(), 'live'));
         await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
         return true;
+      },
+      /* THE HISTORY THAT WAS FILED UNDER A NAME.
+
+         e6ed7df moved the student record to students/{uid} and did not carry
+         the old documents across. Everything thirteen students had practised
+         was left at students/{typed name}: nothing reads it, nothing writes
+         it, and to them it looks like their history was deleted. Nobody was
+         told, because a document nobody asks for is not an error.
+
+         PROMPT-TURMA decision 7 hangs this off the teacher approving a
+         student into the class, which is where a uid first exists. There is
+         no approval queue yet, so it hangs off the next moment that is just
+         as true: the student signs in and their profile names this school.
+
+         TWO DEVIATIONS FROM THAT PLAN, BOTH DELIBERATE.
+
+         It copies and does not delete. The plan says the old document goes
+         once the new one is confirmed, and the rules say students are never
+         deleted by anybody — "history is a record of what happened" — which
+         was written on purpose and is the stricter of the two. Not deleting
+         cannot lose anything; deleting can. The old row stays, read by
+         nothing.
+
+         And it will not overwrite. If the account already has a summary, the
+         student has practised since, and yesterday's numbers must not land on
+         top of today's. */
+      async migrateLegacyStudent(name) {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous || noSchool() || !name) return false;
+        const oldKey = String(name).trim().toLowerCase();
+        if(!oldKey || oldKey === u.uid) return false;
+        const oldRef = doc(db, 'schools', school(), 'students', oldKey);
+        const newRef = doc(db, 'schools', school(), 'students', u.uid);
+        const [oldSnap, newSnap] = await Promise.all([getDoc(oldRef), getDoc(newRef)]);
+        if(!oldSnap.exists()) return false;
+        const already = newSnap.exists() && newSnap.data().summary;
+        if(already) return false;
+        const old = oldSnap.data();
+        await setDoc(newRef, {
+          displayName: old.displayName || name,
+          lastSeen: serverTimestamp(),
+          ...(old.summary ? { summary: old.summary } : {}),
+          ...(old.birthday ? { birthday: old.birthday } : {}),
+        }, { merge: true });
+        // The attempts, one at a time, after the summary is safely across.
+        // A failure here leaves the summary migrated and the detail behind,
+        // which is a smaller loss than the reverse and is reported either way.
+        const q = query(collection(db, 'schools', school(), 'students', oldKey, 'attempts'),
+                        orderBy('ts', 'desc'), limit(60));
+        const rows = await getDocs(q);
+        for(const d of rows.docs){
+          const a = d.data();
+          await addDoc(collection(db, 'schools', school(), 'students', u.uid, 'attempts'),
+            { type: a.type, theme: a.theme, outcome: a.outcome, ts: a.ts });
+        }
+        return { moved: rows.size, from: oldKey };
       },
       async loadProfile() {
         const u = auth.currentUser;
