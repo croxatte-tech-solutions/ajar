@@ -162,7 +162,15 @@ O professor não entra em turma nenhuma ao se cadastrar. Ele entra na fila.
 4. **Cadastro** — o formulário, o portão de idade, a política de privacidade.
 5. **Painel do administrador** — a fila, aprovar, recusar.
 6. **Identidade do aluno** — `students/{uid}` no lugar de `students/{nome}`, as
-   notas privadas movidas, e as duas falhas conhecidas fechadas de vez.
+   notas privadas movidas, e as duas falhas conhecidas fechadas. *(feito)*
+
+   O que as causava não era o modo anônimo. Todo visitante anônimo já tinha
+   uid estável. Era o registro ser arquivado por `nome.toLowerCase()` — e nome
+   não é identidade: nenhuma regra consegue dizer "só a Ana" sobre uma string
+   que alguém digitou numa caixa. Sobre um uid, consegue.
+
+   Sobra uma coisa menor e proposital: um colega vê o **nome de exibição** e o
+   resumo do outro na lista da turma. É para isso que uma lista de turma serve.
 
 A ordem não é negociável: cada fase depende da anterior, e a 2 vem antes de
 qualquer tela porque uma regra escrita depois da UI é uma regra escrita para

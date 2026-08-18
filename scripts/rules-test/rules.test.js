@@ -362,6 +362,33 @@ await check('including at the old pre-multi-tenancy paths', () =>
   assertFails(getDoc(doc(student, 'classroom', 'current'))));
 
 //===================================================================
+// THE TEACHER'S PRIVATE NOTE, WHERE ONLY TWO PEOPLE CAN REACH IT
+//===================================================================
+// The first of the two known gaps, closed. It used to live under classroom/,
+// keyed by a typed name, on a path that must stay readable without an account
+// for a QR to work — and the class list publishes every classmate's name.
+await env.withSecurityRulesDisabled(async c => {
+  await setDoc(doc(c.firestore(), 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'),
+    { text: 'Still confuses -ed endings.' });
+});
+await check('a student reads the note their teacher wrote about them', () =>
+  assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'))));
+await check('their teacher writes it', () =>
+  assertSucceeds(setDoc(doc(alpha, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'),
+    { text: 'Much better this week.' })));
+await check('A CLASSMATE CANNOT READ IT ANY MORE', () =>
+  assertFails(getDoc(doc(otherSchoolStudent, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'))));
+await check('nor can an anonymous visitor holding the school id', () =>
+  assertFails(getDoc(doc(student2, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'))));
+await check('nor a teacher of another school', () =>
+  assertFails(getDoc(doc(beta, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'))));
+await check('nor the administrator, who is not in this class', () =>
+  assertFails(getDoc(doc(admin, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'))));
+await check('and a student cannot write a note about somebody else', () =>
+  assertFails(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'other_school_student', 'private', 'note'),
+    { text: 'anything' })));
+
+//===================================================================
 // AND THE PART THESE RULES DO NOT CLOSE, ASSERTED SO IT IS ON PURPOSE
 //===================================================================
 // A student holding the school id can read a classmate's private note and a

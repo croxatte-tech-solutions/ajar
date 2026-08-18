@@ -59,8 +59,14 @@ function boot(opts){
     get(_, prop){
       if(prop === 'currentUser') return () => (opts.teacher
         ? { isTeacher: true, schoolId: 'notes-school' } : null);
-      if(prop === 'pullNote') return async name => { asked.push(name); return cloudNotes[String(name).toLowerCase()] || ''; };
-      if(prop === 'pushNote') return async (name, text) => { wrote.push({ name, text }); cloudNotes[String(name).toLowerCase()] = text; };
+      // Undefined is the student asking for THEIR OWN, which the module
+      // resolves from the signed-in account — the caller cannot name anybody.
+      if(prop === 'pullNote') return async uid => {
+        asked.push(uid === undefined ? '(mine)' : uid);
+        return uid === undefined ? (opts.myNote || '') : (cloudNotes[String(uid)] || '');
+      };
+      if(prop === 'pushNote') return async (uid, text) => { wrote.push({ uid, text }); cloudNotes[String(uid)] = text; };
+      if(prop === 'pullClassMembers') return async () => (opts.members || []);
       if(prop === 'pullClassSummaries') return async () => ({});
       // The old whole-class methods must not exist any more.
       if(prop === 'pullNotes' || prop === 'pushNotes') return undefined;
@@ -95,6 +101,7 @@ function boot(opts){
   vm.createContext(sandbox);
   vm.runInContext(blocks.join('\n;\n') +
     ';globalThis.__api={setStudentName,getStudentName,loadTeacherNotes,saveTeacherNote,' +
+    'setClassMembers,uidForName,refreshClassMembers,' +
     'hydrateNotesFromCloud,pruneForeignNotes,teacherNoteHtml,saveRoster,loadRoster,' +
     'hydrateAllNotesForTeacher};', sandbox);
   return { api: sandbox.__api, store, asked, wrote, cloudNotes };
@@ -110,16 +117,20 @@ const CLASS_NOTES = {
 // A STUDENT'S DEVICE FETCHES ONLY ITS OWN NOTE
 //=====================================================================
 (async () => {
-  const s = boot({ cloudNotes: CLASS_NOTES });
+  const s = boot({ cloudNotes: CLASS_NOTES, myNote: 'Watch the -ed endings.' });
   s.api.setStudentName('Ana');
   await s.api.hydrateNotesFromCloud();
 
   assert('the device asked for exactly one note', s.asked.length === 1, s.asked);
-  assert('and it was its own', s.asked[0] === 'Ana', s.asked);
+  // Stronger than "it asked for its own": it cannot ask for anyone else's.
+  // No id crosses the wire, so the account decides what comes back and the
+  // page has no way to name a classmate even if its code were changed.
+  assert('AND IT NAMED NOBODY — the account decides what comes back',
+    s.asked[0] === '(mine)', s.asked);
 
   const stored = s.api.loadTeacherNotes();
   assert('only one note is stored on the device', Object.keys(stored).length === 1, Object.keys(stored));
-  assert('and it is the right one', stored['Ana'] === CLASS_NOTES.ana);
+  assert('and it is the right one', stored['Ana'] === 'Watch the -ed endings.');
   assert('no classmate note is anywhere in this device storage',
     JSON.stringify(s.store).indexOf('Struggling with listening') === -1
     && JSON.stringify(s.store).indexOf('Excellent progress') === -1);
@@ -172,18 +183,39 @@ const CLASS_NOTES = {
   // SHE PUBLISHES ONLY THE NOTE SHE CHANGED
   //===================================================================
   const w = boot({ teacher: true, cloudNotes: {} });
+  // She types a name; the database files people by account. The class members
+  // list is the bridge, and it is the only thing that resolves one to the
+  // other.
+  w.api.setClassMembers([{ uid: 'uid_bruno', displayName: 'Bruno' },
+                         { uid: 'uid_ana', displayName: 'Ana' }]);
   w.api.saveTeacherNote('Bruno', 'Try the announcements again tonight.');
   assert('one write, not a whole-class object', w.wrote.length === 1, w.wrote.length);
-  assert('addressed to the one student', w.wrote[0].name === 'Bruno');
+  assert('ADDRESSED TO THE ACCOUNT, NOT TO A TYPED NAME',
+    w.wrote[0].uid === 'uid_bruno', w.wrote[0]);
   assert('carrying only that text', w.wrote[0].text === 'Try the announcements again tonight.');
+
+  // A name on her list belonging to nobody who has signed in is a real state,
+  // not an error — and writing a note into a document no account can reach
+  // would be the silent failure this project keeps removing.
+  const orphan = boot({ teacher: true, cloudNotes: {} });
+  orphan.api.setClassMembers([]);
+  orphan.api.saveTeacherNote('Nobody', 'anything');
+  assert('a name with no account behind it writes nothing to the cloud',
+    orphan.wrote.length === 0, orphan.wrote);
+  assert('but the note is still kept on her own device',
+    (orphan.api.loadTeacherNotes() || {}).Nobody === 'anything');
 
   //===================================================================
   // AND HER OWN PANEL STILL GETS ALL OF THEM, ONE BY ONE
   //===================================================================
-  const panel = boot({ teacher: true, cloudNotes: CLASS_NOTES });
+  const panel = boot({ teacher: true, cloudNotes: { uid_a: 'a', uid_b: 'b', uid_c: 'c' } });
+  panel.api.setClassMembers([{ uid:'uid_a', displayName:'Ana' },
+                             { uid:'uid_b', displayName:'Bruno' },
+                             { uid:'uid_c', displayName:'Carla' }]);
   panel.api.saveRoster({ students: ['Ana', 'Bruno', 'Carla'], present: [] });
   await panel.api.hydrateAllNotesForTeacher();
-  assert('she fetches one document per student on her roster', panel.asked.length === 3, panel.asked);
+  assert('she fetches one document per student', panel.asked.length === 3, panel.asked);
+  assert('each by account', panel.asked.every(a => String(a).indexOf('uid_') === 0), panel.asked);
   assert('and ends up with all three', Object.keys(panel.api.loadTeacherNotes()).length === 3);
 
   //===================================================================
@@ -193,7 +225,20 @@ const CLASS_NOTES = {
   assert('nothing pulls one', html.indexOf('pullNotes(') === -1);
   assert('no code writes to the shared classroom/notes document',
     html.indexOf("'classroom', 'notes'") === -1);
-  assert('notes go to a per-student document id', html.indexOf("'note_' + String(name)") > -1);
+  /* THE GAP THAT WAS ASSERTED AS KNOWN, CLOSED.
+
+     The note used to sit at classroom/note_{typed name}. classroom/ has to
+     stay readable without an account for a QR to work at all, and the class
+     list publishes every classmate's name — so any student in the class could
+     read what their teacher had written about the one beside them, and no
+     rule could stop it. "Only Ana" is not expressible about a string in a
+     text box. It is expressible about a uid. */
+  assert('no note is filed under a typed name any more',
+    html.indexOf("'note_' + String(name)") === -1);
+  assert('notes hang off the student record they are about',
+    html.indexOf("'students', uid, 'private', 'note'") > -1);
+  assert('and a student reading their own passes no id at all, so they can only get theirs',
+    html.indexOf('await window.CloudSync.pullNote();') > -1);
 
   console.log(results.join('\n'));
   const fails = results.filter(r => r.includes('FAIL'));

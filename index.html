@@ -8310,6 +8310,7 @@ function renderTeacher(){
   renderTeacherNav();
   renderClassHealth();
   renderLivePanel();
+  refreshClassMembers();
   renderTeacherSignIn();
   renderRoster();
   renderClassProgress();
@@ -8484,6 +8485,34 @@ function renderRosterStatus(){
 }
 function retryRoster(){ saveRoster(loadRoster()); }
 
+/* The bridge between the two ways this app knows a student.
+
+   She types names. The database now files people by account. Between those
+   sits the class members list — the accounts that actually joined, each
+   carrying the displayName its owner gave. This resolves one to the other,
+   and it is the only place that does, so there is one answer to "which
+   account is Ana" rather than one per caller.
+
+   Unmatched is a real state and not an error: a name on her list belongs to
+   somebody who has not signed in yet, and the panel says so rather than
+   silently writing a note nobody will ever read. */
+let CLASS_MEMBERS = [];
+function setClassMembers(rows){ CLASS_MEMBERS = rows || []; }
+function uidForName(name){
+  const want = String(name || '').trim().toLowerCase();
+  if(!want) return null;
+  const hit = CLASS_MEMBERS.find(m => String(m.displayName || '').trim().toLowerCase() === want);
+  return hit ? hit.uid : null;
+}
+async function refreshClassMembers(){
+  if(!window.CloudSync || !window.CloudSync.pullClassMembers) return;
+  try{
+    setClassMembers(await window.CloudSync.pullClassMembers());
+  }catch(e){
+    console.error('Ajar: could not read who has joined the class —', e);
+  }
+}
+
 function loadRoster(){
   try{ return JSON.parse(localStorage.getItem('ajar_roster') || '{"students":[],"present":[]}'); }
   catch(e){ return { students:[], present:[] }; }
@@ -8591,7 +8620,16 @@ function saveTeacherNote(name, text){
   localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes));
   // Only the note that changed, to its own document. Pushing the whole object
   // is what put every student's note on every student's phone.
-  if(window.CloudSync && window.CloudSync.pushNote) window.CloudSync.pushNote(name, t).catch(()=>{});
+  // Addressed to the account, because that is what the rules compare against
+  // now. A name with no account behind it has nowhere to put a note, and
+  // saying so beats writing one into a document nobody can reach.
+  const uid = uidForName(name);
+  if(!uid){
+    console.warn('Ajar: no account has joined under the name ' + name + ' — the note stayed on this device.');
+  } else if(window.CloudSync && window.CloudSync.pushNote){
+    window.CloudSync.pushNote(uid, t)
+      .catch(e => console.error('Ajar: the note did not reach that student —', e));
+  }
 }
 function noteFieldId(name){ return 'note-' + name.replace(/[^a-zA-Z0-9]/g,''); }
 function onTeacherNoteChange(name){
@@ -8627,7 +8665,10 @@ async function hydrateAllNotesForTeacher(){
   if(!roster.length) return;
   const notes = loadTeacherNotes();
   await Promise.all(roster.map(async n => {
-    try{ const t = await window.CloudSync.pullNote(n); if(t) notes[n] = t; }catch(e){}
+    const uid = uidForName(n);
+    if(!uid) return;
+    try{ const t = await window.CloudSync.pullNote(uid); if(t) notes[n] = t; }
+    catch(e){ console.error('Ajar: could not read the note for ' + n + ' —', e); }
   }));
   localStorage.setItem('ajar_teacher_notes', JSON.stringify(notes));
   if(currentView === 'teacher') renderClassProgress();
@@ -11789,7 +11830,9 @@ async function hydrateNotesFromCloud(){
   // the class regardless, before anyone had even said who they were.
   if(!name) return;
   try{
-    const note = await window.CloudSync.pullNote(name);
+    // Their own, so no uid is passed — the module falls back to the signed-in
+    // account, which is the only note they are allowed to read anyway.
+    const note = await window.CloudSync.pullNote();
     // Only this student's own note is ever stored on this device now. Written
     // as a one-key object rather than a bare string so loadTeacherNotes() and
     // teacherNoteHtml() keep working unchanged.
@@ -14174,14 +14217,28 @@ loadSharedClassroomContent().then(()=>{
       // there is no teacher, and nothing is wrong.
       //
       // NO_SCHOOL is that third answer, distinct from success and failure.
-      async pullHistory(name) {
+      // Their own history by default; a teacher passes the uid of the student
+      // whose record she is looking at.
+      async pullHistory(uidOrNull) {
         await authReady;
         if(noSchool()) return [];
-        const key = name.toLowerCase();
+        const key = uidOrNull || (auth.currentUser && auth.currentUser.uid);
+        if(!key) return [];
         const q = query(collection(db, 'schools', school(), 'students', key, 'attempts'), orderBy('ts', 'desc'), limit(60));
         const snap = await getDocs(q);
         return snap.docs.map(d => d.data());
       },
+      /* KEYED BY THE ACCOUNT, NOT BY THE NAME THEY TYPED.
+
+         This is what closes the two gaps asserted as KNOWN in firestore.rules
+         since the emulator went in. Neither existed because anonymous
+         sessions were allowed — every anonymous visitor already had a stable
+         uid. They existed because a student record was filed under
+         name.toLowerCase(), and a name is not an identity: no rule can say
+         "only Ana" about a string somebody typed into a box.
+
+         It can say it about a uid. displayName travels alongside, so the
+         class panel still shows a person rather than an identifier. */
       async pushAttempt(name, entry) {
         await authReady;
         // Anonymous is local-only now, by design and by rule. Attempting the
@@ -14189,7 +14246,7 @@ loadSharedClassroomContent().then(()=>{
         // not reaching their teacher — which would be a warning fired while
         // the app does exactly what it promised.
         if(noSchool() || !hasAccount()) return NO_SCHOOL;
-        const key = name.toLowerCase();
+        const key = auth.currentUser.uid;
         await setDoc(doc(db, 'schools', school(), 'students', key), { displayName: name, lastSeen: serverTimestamp() }, { merge: true });
         await addDoc(collection(db, 'schools', school(), 'students', key, 'attempts'), entry);
       },
@@ -14223,7 +14280,7 @@ loadSharedClassroomContent().then(()=>{
         if(!summary) return;
         await authReady;
         if(noSchool() || !hasAccount()) return NO_SCHOOL;
-        await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
+        await setDoc(doc(db, 'schools', school(), 'students', auth.currentUser.uid),
           { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
       },
       async pullClassSummaries(names) {
@@ -14267,21 +14324,36 @@ loadSharedClassroomContent().then(()=>{
       // document, the same accepted limit as attempts history — anonymous
       // auth gives no identity to check a request against. What it removes is
       // the automatic whole-class dump, which is a different thing entirely.
-      async pushNote(name, text) {
-        if(noSchool() || !name) return;
+      /* The note now hangs off the student it is about, and the rules let
+         exactly two accounts near it: hers, and theirs.
+
+         It used to sit at classroom/note_{typed name} — a path that has to
+         stay readable without an account for a QR to work at all, keyed by a
+         name the class list publishes. Any student could read what their
+         teacher had written about the one sitting next to them. That was
+         asserted as a KNOWN GAP rather than hidden, and this is it closing. */
+      async pushNote(uid, text) {
+        if(noSchool() || !uid) return;
         await authReady;
-        const id = 'note_' + String(name).toLowerCase().slice(0, 60);
-        if(text) await setDoc(doc(db, 'schools', school(), 'classroom', id),
-          { note: text, forName: String(name), updatedAt: serverTimestamp() });
-        else await setDoc(doc(db, 'schools', school(), 'classroom', id),
-          { note: '', forName: String(name), updatedAt: serverTimestamp() });
+        await setDoc(doc(db, 'schools', school(), 'students', uid, 'private', 'note'),
+          { note: text || '', updatedAt: serverTimestamp() });
       },
-      async pullNote(name) {
-        if(noSchool() || !name) return '';
+      async pullNote(uid) {
+        if(noSchool()) return '';
         await authReady;
-        const id = 'note_' + String(name).toLowerCase().slice(0, 60);
-        const snap = await getDoc(doc(db, 'schools', school(), 'classroom', id));
+        const key = uid || (auth.currentUser && auth.currentUser.uid);
+        if(!key) return '';
+        const snap = await getDoc(doc(db, 'schools', school(), 'students', key, 'private', 'note'));
         return snap.exists() ? (snap.data().note || '') : '';
+      },
+      // Who has actually joined this class, as opposed to who she typed into
+      // the list. The roster is the names she expects; this is the accounts
+      // that turned up, and it is what her panel works from now.
+      async pullClassMembers() {
+        if(noSchool()) return [];
+        await authReady;
+        const snap = await getDocs(collection(db, 'schools', school(), 'students'));
+        return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
       },
       async pullRoster() {
         if(noSchool()) return null;
@@ -14421,7 +14493,7 @@ loadSharedClassroomContent().then(()=>{
       async shareBirthday(name, mmdd) {
         const u = auth.currentUser;
         if(!u || u.isAnonymous || noSchool() || !/^[0-9]{2}-[0-9]{2}$/.test(String(mmdd || ''))) return NO_SCHOOL;
-        await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
+        await setDoc(doc(db, 'schools', school(), 'students', u.uid),
           { displayName: name, birthday: mmdd }, { merge: true });
         return true;
       },

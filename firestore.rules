@@ -30,16 +30,23 @@ rules_version = '2';
 //    school. Closing that needs per-student accounts, which costs more
 //    than it buys for a class of 13 who share a room with their teacher.
 //
-//    That limit is wider than it first reads, and it got wider when the
-//    teacher's private note was added: a note lives at
-//    classroom/note_{name}, the class list publishes every classmate's
-//    name, and classroom/* is readable by any signed-in visitor because
-//    that is how a QR works without an account. So a student in the class
-//    can read what their teacher wrote about the student next to them.
-//    No rule can express "only Ana" while Ana is anonymous. This is
-//    asserted in scripts/rules-test/rules.test.js as a KNOWN GAP rather
-//    than left to be rediscovered, and it is the strongest single argument
-//    for per-student identity.
+//    CLOSED 2026-08-17. It was wider than it first read, and it read at its
+//    widest around the teacher's private note: that note lived at
+//    classroom/note_{typed name}, classroom/* has to stay readable without
+//    an account for a QR to work at all, and the class list publishes every
+//    classmate's name — so any student could read what their teacher had
+//    written about the one beside them.
+//
+//    What made it unfixable was never anonymous auth. Every anonymous
+//    visitor already had a stable uid. It was that a student record was
+//    filed under name.toLowerCase(), and a name is not an identity: no rule
+//    can say "only Ana" about a string somebody typed into a box. It can say
+//    it about a uid, so records are keyed by account now and the note hangs
+//    off the student it is about, where exactly two accounts can reach it.
+//
+//    What remains, and is smaller: a classmate can still see another
+//    student's DISPLAY NAME and summary in the class list, which is what a
+//    class list is for.
 //
 // 2. Because students are anonymous, the schoolId in a share link is what
 //    separates one school's material from another's for READING. It is
@@ -380,6 +387,28 @@ service cloud.firestore {
         // History is a record of what happened. Nothing in the app deletes
         // a student, so nothing should be able to.
         allow delete: if false;
+
+        /* THE TEACHER'S PRIVATE NOTE, FINALLY PRIVATE.
+
+           This closes the first of the two gaps asserted as KNOWN in this
+           file. The note used to live at classroom/note_{name}: keyed by the
+           name a student typed, under a path that has to stay readable
+           without an account for a QR to work at all. The class list
+           publishes every classmate's name. So any student in the class could
+           read what their teacher had written about the student next to them,
+           and no rule could stop it — "only Ana" is not expressible while Ana
+           is a name in a text box rather than an account.
+
+           It is expressible now. The note hangs off the student's own record,
+           and studentId is their uid, so the comparison the database makes is
+           against who they actually are. Her, and them, and nobody else.
+
+           Her own device still holds a copy of every note, because she wrote
+           them and reads them all at once. */
+        match /private/{docId} {
+          allow read, write: if isTeacherOf(schoolId)
+            || (isSignedIn() && request.auth.uid == studentId);
+        }
 
         match /attempts/{attemptId} {
 
