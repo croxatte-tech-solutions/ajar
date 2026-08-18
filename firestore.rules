@@ -400,9 +400,27 @@ service cloud.firestore {
         allow create, update: if (isMemberOf(schoolId) || isTeacherOf(schoolId))
           && studentId.size() <= 60
           && validStudent();
-        // History is a record of what happened. Nothing in the app deletes
-        // a student, so nothing should be able to.
-        allow delete: if false;
+        /* Their own, and nobody else's — including their teacher's.
+
+           This was `if false`, and the reason was good: history is a record
+           of what happened, and a student who could delete a bad afternoon
+           before their teacher looked would make every panel a fiction.
+
+           It cannot stay `if false`. The privacy notice promises that asking
+           removes their profile and their practice, because erasure of your
+           own data is a right and not a favour, and a promise a product
+           cannot keep is worse than one it never made.
+
+           The tension is real and this is where it lands: a student may
+           delete their OWN record, and the app only ever offers that as part
+           of deleting the whole account — there is no control that erases
+           results while keeping the login. Somebody determined could still
+           delete everything and sign up again with a clean slate. In a class
+           of thirteen whose teacher knows every name, a student who vanishes
+           and reappears is the most visible thing in the room, and the
+           alternative is refusing a right to avoid an abuse that announces
+           itself. */
+        allow delete: if isSignedIn() && request.auth.uid == studentId;
 
         /* THE TEACHER'S PRIVATE NOTE, FINALLY PRIVATE.
 
@@ -445,9 +463,12 @@ service cloud.firestore {
 
           allow read: if isMemberOf(schoolId) || isTeacherOf(schoolId);
           allow create: if (isMemberOf(schoolId) || isTeacherOf(schoolId)) && validAttempt();
-          // An attempt is a fact about the past. Editing or deleting one
-          // would let a student rewrite the history their teacher reads.
-          allow update, delete: if false;
+          // Editing one would let a student rewrite the history their
+          // teacher reads, so that stays shut. Deleting their own is the
+          // erasure right again: a profile removed while its attempts stayed
+          // behind would leave the data the person asked to be rid of.
+          allow update: if false;
+          allow delete: if isSignedIn() && request.auth.uid == studentId;
         }
       }
     }

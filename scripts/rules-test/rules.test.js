@@ -344,10 +344,22 @@ await check('a student record with an invented field is refused', () =>
     { displayName: 'Zed', band: 30 })));
 await check('a student record with an empty name is refused', () =>
   assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'zed'), { displayName: '' })));
-await check('nothing can delete a student', () =>
-  assertFails(deleteDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'))));
-await check('not even the teacher', () =>
+// Erasure of your own data is a right, not a favour, and the privacy notice
+// promises it. What stays shut is deleting somebody ELSE's record — which is
+// what the old blanket rule was really protecting.
+await check('a student can erase their own record, because the notice promises it', () =>
+  assertSucceeds(deleteDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'))));
+await check('and their own attempts, or the profile goes and the data stays', () =>
+  assertSucceeds(deleteDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts', 'a1'))));
+await check('A CLASSMATE CANNOT DELETE THEIRS', () =>
+  assertFails(deleteDoc(doc(otherSchoolStudent, 'schools', SCHOOL, 'students', 'ana'))));
+await check('and neither can their teacher', () =>
   assertFails(deleteDoc(doc(alpha, 'schools', SCHOOL, 'students', 'ana'))));
+await check('nor an anonymous visitor', () =>
+  assertFails(deleteDoc(doc(student2, 'schools', SCHOOL, 'students', 'ana'))));
+await check('editing an attempt is still impossible, for anyone', () =>
+  assertFails(updateDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts', 'a1'),
+    { outcome: 1 })));
 
 //===================================================================
 // THE SCHOOL DOCUMENT ANSWERS NOBODY

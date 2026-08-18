@@ -13238,6 +13238,19 @@ function accountSignedInHtml(u){
         <p class="small-note" style="margin:.3rem 0 0">Until it is, you can practice
         like any student. Nothing about a class is visible to you yet.</p></div>` : ''}
       <button class="btn ghost sm" style="margin-top:.9rem" onclick="accountSignOut()">Sign out</button>
+      <!-- Last, small, and behind two confirmations. A destructive control
+           that is easy to reach is a destructive control somebody reaches by
+           accident; one that is hidden is a right the product is pretending
+           to offer. This is the middle: findable, and hard to do by mistake. -->
+      <details style="margin-top:1.2rem">
+        <summary class="small-note" style="cursor:pointer">Delete my account</summary>
+        <p class="small-note" style="margin:.5rem 0 .6rem">
+          This removes your profile, your practice history and the note your
+          teacher wrote about you. It cannot be undone, and your teacher will
+          see you disappear from the class list.</p>
+        <button class="btn sm" style="border-color:var(--red);color:var(--red)"
+                onclick="deleteMyAccount()">Delete everything</button>
+      </details>
     </div>`;
 }
 
@@ -13426,6 +13439,36 @@ async function refreshAccountProfile(){
   if(ACCOUNT_PROFILE) await syncSchoolMembership();
   renderAccount();
   renderWhoAmI();
+}
+
+/* Two confirmations and a typed word, which is the shape every product that
+   has been burned by this converges on. The second one asks them to type,
+   because a person tapping through a dialog is not the same as a person
+   deciding, and this is the one action here that nothing can put back. */
+async function deleteMyAccount(){
+  const p = ACCOUNT_PROFILE || {};
+  if(!confirm('Delete your account and everything in it?\n\nYour practice history and the note your teacher wrote about you go too. This cannot be undone.')) return;
+  const typed = prompt('Type DELETE to confirm.');
+  if(String(typed || '').trim().toUpperCase() !== 'DELETE'){
+    accountMsg('Nothing was deleted.', false);
+    return;
+  }
+  accountBusy(true);
+  try{
+    await window.CloudSync.deleteEverything();
+    ACCOUNT_PROFILE = null;
+    ACCOUNT_MODE = 'choose';
+    setStudentName('');
+    accountMsg('Your account and everything in it are gone.', true);
+  }catch(e){
+    console.error('Ajar: deleting the account failed —', e);
+    // Firebase refuses to delete an account whose sign-in is old, and that is
+    // the one failure here a person can actually act on.
+    const stale = e && e.code === 'auth/requires-recent-login';
+    accountMsg(stale
+      ? 'For safety, this needs a fresh sign-in. Sign out, sign back in, and try again.'
+      : 'Some of it could not be deleted. Nothing is lost that was already gone — try again, or write to us.', false);
+  }finally{ accountBusy(false); }
 }
 
 function accountSignOut(){
@@ -14499,9 +14542,13 @@ function privacyText(){
     </ul>
 
     <h3>Getting it back, or getting rid of it</h3>
-    <p>Ask, and we will send you everything held about you, or delete it. Write to
-      <b>${escapeHtml(CONFIG.devEmail || '')}</b> from the address you signed up with.
-      Deleting your account removes your profile and your practice history.</p>
+    <p><b>You can delete everything yourself</b>, from the Account screen — your
+      profile, your practice history, and the note your teacher wrote about you.
+      It happens straight away and it cannot be undone. No email, no waiting for
+      somebody to get round to it.</p>
+    <p>If you would rather have a copy of it first, or you cannot get into your
+      account, write to <b>${escapeHtml(CONFIG.devEmail || '')}</b> from the address
+      you signed up with.</p>
 
     <h3>Practicing without an account</h3>
     <p>You do not need one. Everything works signed out — your practice is then
@@ -14992,7 +15039,7 @@ loadSharedClassroomContent().then(()=>{
            createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
            GoogleAuthProvider, signInWithPopup, linkWithPopup, linkWithCredential,
            EmailAuthProvider, updateProfile,
-           signOut, setPersistence, browserLocalPersistence, browserSessionPersistence }
+           deleteUser, signOut, setPersistence, browserLocalPersistence, browserSessionPersistence }
     from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
   import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
            doc, getDoc, setDoc, addDoc, deleteDoc, collection, onSnapshot, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
@@ -15607,6 +15654,34 @@ loadSharedClassroomContent().then(()=>{
             { type: a.type, theme: a.theme, outcome: a.outcome, ts: a.ts });
         }
         return { moved: rows.size, from: oldKey };
+      },
+      /* Erasing yourself, in the order that cannot leave orphans.
+
+         The account goes LAST. Firebase deleting the login first would leave
+         every document behind with no signed-in user able to reach them —
+         the rules compare against request.auth.uid, and there would not be
+         one. So: attempts, then the class record, then the profile, then the
+         login. Each step is the thing that authorises the next.
+
+         A failure halfway leaves less data than before and an account that
+         still works, which is the direction to fail in. It is reported rather
+         than swallowed, and running it again picks up where it stopped. */
+      async deleteEverything() {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous) throw new Error('not signed in');
+        const uid = u.uid;
+        if(!noSchool()){
+          const rows = await getDocs(collection(db, 'schools', school(), 'students', uid, 'attempts'));
+          for(const d of rows.docs) await deleteDoc(d.ref);
+          await deleteDoc(doc(db, 'schools', school(), 'students', uid));
+          // The teacher's note about them lives under that record and is
+          // theirs to be rid of too.
+          try{ await deleteDoc(doc(db, 'schools', school(), 'students', uid, 'private', 'note')); }
+          catch(e){ console.warn('Ajar: no note to remove, or it was already gone —', e); }
+        }
+        await deleteDoc(doc(db, 'users', uid));
+        await deleteUser(u);
+        return true;
       },
       async loadProfile() {
         const u = auth.currentUser;

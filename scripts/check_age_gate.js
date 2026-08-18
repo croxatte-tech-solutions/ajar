@@ -263,8 +263,33 @@ function boot(opts){
   assert('it says the teacher does not get the date of birth',
     pv.indexOf('does not receive your date of birth') > -1);
   assert('it says the birthday year is never shared', pv.indexOf('Never the year') > -1);
-  assert('it gives a real address to ask for deletion',
+  /* THE PROMISE THE APP COULD NOT KEEP.
+
+     The notice said asking would remove your profile and your practice
+     history. The rules said students/{uid} could be deleted by nobody at all,
+     so the only way to keep it was a person reading an inbox — legal, and a
+     promise resting on somebody remembering.
+
+     It is a control now, and these assertions exist because a privacy notice
+     that describes a different product than the one running is the one kind
+     of documentation that can be held against you. */
+  assert('deletion is something they can do, not something they must ask for',
+    pv.indexOf('delete everything yourself') > -1, pv.slice(0, 200));
+  assert('and the control it describes actually exists',
+    html.indexOf('deleteMyAccount()') > -1 && html.indexOf('async deleteEverything()') > -1);
+  assert('it still gives a real address, for a copy or a locked-out account',
     pv.indexOf('croxattetechsolutions@gmail.com') > -1);
+  assert('the notice does not promise it is reversible, because it is not',
+    pv.indexOf('cannot be undone') > -1);
+  // Two confirmations and a typed word: the shape every product that has been
+  // burned by a one-tap delete converges on.
+  assert('deleting asks twice, and the second one has to be typed',
+    html.indexOf("prompt('Type DELETE to confirm.')") > -1);
+  // The account goes last, or the documents are orphaned with no signed-in
+  // user able to reach them — the rules compare against request.auth.uid.
+  assert('the login is deleted last, so nothing is left unreachable',
+    html.indexOf("await deleteDoc(doc(db, 'users', uid));") <
+    html.indexOf('await deleteUser(u);'));
   assert('and it says practicing without an account still works',
     pv.indexOf('without an account') > -1);
 
