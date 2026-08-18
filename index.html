@@ -12242,7 +12242,30 @@ const COUNTRIES = ('Afghanistan,Albania,Algeria,Andorra,Angola,Antigua and Barbu
 +'Taiwan,Tajikistan,Tanzania,Thailand,Timor-Leste,Togo,Tonga,Trinidad and Tobago,Tunisia,Turkey,Turkmenistan,Tuvalu,'
 +'Uganda,Ukraine,United Arab Emirates,United Kingdom,United States,Uruguay,Uzbekistan,Vanuatu,Vatican City,Venezuela,Vietnam,Yemen,Zambia,Zimbabwe').split(',');
 
-let ACCOUNT_MODE = 'choose';     // choose | create | password | profile
+let ACCOUNT_MODE = 'choose';     // choose | role | create | password | profile
+/* WHICH OF THE TWO YOU ARE, ASKED BEFORE ANYTHING ELSE.
+
+   It used to be a radio button in the middle of the form, which is where a
+   question goes when nobody has decided how much it matters. It matters: a
+   teacher and a student are answering different forms, land on different
+   screens, and one of the two answers opens a request that a person has to
+   review.
+
+   What it is NOT is a second sign-in button. Google returns the same account
+   whichever button you press, so "Sign in as a teacher" could only ever mean
+   "the button you clicked" — the same information a radio carries, with more
+   screens to walk through, and with the added cost that it LOOKS like a
+   security boundary. The boundary is teachers/{uid}, which no form can write. */
+let ACCOUNT_ROLE = null;         // 'student' | 'teacher', chosen at step one
+function chooseRole(r){
+  ACCOUNT_ROLE = r;
+  // Already signed in means the account exists and only the profile is
+  // missing — sending them to the create-an-account form would ask for an
+  // email and a password they have already got.
+  ACCOUNT_MODE = accountUser() ? 'profile' : 'create';
+  ACCOUNT_MSG = null;
+  renderAccount();
+}
 let ACCOUNT_MSG = null;          // { text, ok }
 let ACCOUNT_BUSY = false;
 let ACCOUNT_PROFILE = null;      // the loaded users/{uid} record, or null
@@ -12298,6 +12321,11 @@ function renderAccount(){
     ? `<div class="result-msg ${ACCOUNT_MSG.ok ? 'ok' : 'no'}" role="alert" style="margin:.6rem 0">${escapeHtml(ACCOUNT_MSG.text)}</div>` : '';
 
   if(u && ACCOUNT_PROFILE) { box.innerHTML = accountSignedInHtml(u) ; return; }
+  // Before the profile form, not after: somebody who signed in with Google
+  // never walked through step one, so the Change link on that form is the
+  // only way they reach the question at all. Checking the profile first left
+  // that link doing nothing — a control that looks live and is not.
+  if(ACCOUNT_MODE === 'role')     { box.innerHTML = msg + roleChoiceHtml(); return; }
   if(u) { box.innerHTML = msg + profileFormHtml(u); return; }
   if(ACCOUNT_MODE === 'create')   { box.innerHTML = msg + createFormHtml(); return; }
   if(ACCOUNT_MODE === 'password') { box.innerHTML = msg + passwordFormHtml(); return; }
@@ -12318,8 +12346,30 @@ function chooseHtml(){
       <button class="btn ghost" style="width:100%" onclick="accountMode('password')"${busy}>
         Sign in with an email and password</button>
       <p class="small-note" style="margin:.9rem 0 0">
-        New here? <a href="#" onclick="accountMode('create');return false">Create an account</a>
+        New here? <a href="#" onclick="accountMode('role');return false">Create an account</a>
       </p>
+    </div>`;
+}
+
+function roleChoiceHtml(){
+  return `
+    <div class="panel">
+      <h2 style="margin-top:0">Which are you?</h2>
+      <p class="small-note" style="margin:.2rem 0 .9rem">
+        This decides what you are asked next, and where you land.</p>
+      <button class="btn ghost" style="width:100%;text-align:left;margin-bottom:.6rem;padding:.8rem"
+              onclick="chooseRole('student')">
+        <b>🎓 I am a student</b>
+        <div class="small-note" style="margin-top:.2rem">Practise, keep your history, and
+          join your class from the code your teacher shows.</div></button>
+      <button class="btn ghost" style="width:100%;text-align:left;padding:.8rem"
+              onclick="chooseRole('teacher')">
+        <b>👩‍🏫 I am a teacher</b>
+        <div class="small-note" style="margin-top:.2rem">Make and approve exercises for a class.
+          Teacher access is checked by a person first, so this asks rather than grants —
+          you can practise straight away while you wait.</div></button>
+      <p class="small-note" style="margin:.9rem 0 0">
+        <a href="#" onclick="accountMode('choose');return false">Back</a></p>
     </div>`;
 }
 
@@ -12357,14 +12407,10 @@ function profileFieldsHtml(prefillName){
         <input type="checkbox" id="acct-share-bday" checked>
         <span class="small-note">Let my class see the day and month, so they know
         when to say happy birthday. The year is never shared.</span></label>
-      <fieldset style="border:0;padding:0;margin:0 0 .5rem">
-        <legend class="small-note" style="padding:0;margin-bottom:.3rem">I am a…</legend>
-        <label style="margin-right:1rem"><input type="radio" name="acct-role" value="student"
-          checked onchange="toggleSchoolField()"> Student</label>
-        <label><input type="radio" name="acct-role" value="teacher"
-          onchange="toggleSchoolField()"> Teacher</label>
-      </fieldset>
-      <div id="acct-school-wrap" style="display:none">
+      <p class="small-note" style="margin:0 0 .5rem">
+        Signing up as <b>${ACCOUNT_ROLE === 'teacher' ? 'a teacher' : 'a student'}</b>.
+        <a href="#" onclick="accountMode('role');return false">Change</a></p>
+      <div id="acct-school-wrap" style="display:${ACCOUNT_ROLE === 'teacher' ? '' : 'none'}">
         <div class="field" style="margin-bottom:.4rem">
           <label for="acct-school">Name of your school</label>
           <input type="text" id="acct-school" maxlength="120" placeholder="The school where you teach">
@@ -12446,14 +12492,10 @@ function accountSignedInHtml(u){
     </div>`;
 }
 
-function toggleSchoolField(){
-  const wrap = document.getElementById('acct-school-wrap');
-  if(wrap) wrap.style.display = pickedRole() === 'teacher' ? '' : 'none';
-}
-function pickedRole(){
-  const el = document.querySelector('input[name="acct-role"]:checked');
-  return (el && el.value) || 'student';
-}
+// The answer comes from step one, not from a control inside the form. A
+// Google user completing their profile has not been through step one, so it
+// defaults to student — the choice that grants nothing and asks nobody.
+function pickedRole(){ return ACCOUNT_ROLE === 'teacher' ? 'teacher' : 'student'; }
 function readProfileForm(){
   const val = id => ((document.getElementById(id) || {}).value || '').trim();
   const on  = id => !!((document.getElementById(id) || {}).checked);

@@ -130,7 +130,7 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,dismissScanError,currentSchool,teacherIsSignedIn,applyTeacherGate,'+
     'renderTeacherSignIn,renderAccount,ageGate,ageOn,birthdayFrom,MIN_AGE,COUNTRIES,'+
-    'validateProfileForm,privacyText,authErrorText};', sandbox);
+    'validateProfileForm,privacyText,authErrorText,roleChoiceHtml,chooseRole,pickedRole,renderAccount};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, store };
 }
 
@@ -208,6 +208,34 @@ function boot(opts){
     a.birthdayFrom('nonsense') === '');
   assert('the only writer of that field refuses anything else',
     html.indexOf("/^[0-9]{2}-[0-9]{2}$/.test(String(mmdd") > -1);
+
+  //===================================================================
+  // WHICH OF THE TWO YOU ARE IS ASKED FIRST, NOT BURIED
+  //===================================================================
+  // It used to be a radio in the middle of the form, which is where a
+  // question goes when nobody decided how much it matters. It matters: the
+  // two answers lead to different forms, different landing screens, and one
+  // of them opens a request a person has to review.
+  const rc = a.roleChoiceHtml();
+  assert('the two doors are offered before anything is typed',
+    rc.indexOf("chooseRole('student')") > -1 && rc.indexOf("chooseRole('teacher')") > -1, rc.slice(0,120));
+  assert('and the teacher door says plainly that it asks rather than grants',
+    rc.indexOf('asks rather than grants') > -1, rc.slice(0,400));
+  assert('and that they can practise while they wait',
+    rc.indexOf('practise straight away') > -1);
+
+  // The point of the whole design: Google returns the same account whichever
+  // door was used, so a second SIGN-IN button could only ever mean "the one
+  // you clicked" — while looking like a security boundary it is not.
+  assert('there is no second Google button pretending to be a teacher login',
+    (html.match(/signInWithGoogle\(\)/g) || []).length <= 2,
+    (html.match(/signInWithGoogle\(\)/g) || []).length);
+  assert('the role is read from the choice, never from a control in the form',
+    html.indexOf("input[name=\"acct-role\"]") === -1);
+  a.chooseRole('teacher');
+  assert('choosing teacher is remembered', a.pickedRole() === 'teacher');
+  a.chooseRole('student');
+  assert('and so is choosing student', a.pickedRole() === 'student');
 
   //===================================================================
   // THE REST OF THE FORM
