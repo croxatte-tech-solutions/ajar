@@ -13046,7 +13046,13 @@ async function answerLive(choice){
   }
   // The same funnel every other exercise reports through, so a live round
   // counts towards the patterns the teacher already reads.
-  logUsage('choose-response', (liveItem() || {}).theme || 'campus', correct ? 1 : 0);
+  // The item's OWN type. It was hard-coded to choose-response, which was
+  // true while that was the only type a round could run — and would have
+  // filed every talk, conversation and announcement answered in class under
+  // the wrong skill the moment the others were let in, quietly bending the
+  // patterns their teacher reads.
+  const li = liveItem() || {};
+  logUsage(li.type || 'choose-response', li.theme || 'campus', correct ? 1 : 0);
 }
 
 
@@ -13217,8 +13223,19 @@ function renderLivePanel(){
   if(!box) return;
   if(!teacherIsSignedIn()){ box.innerHTML = ''; return; }
   if(!liveActive()){
+    /* All four listening types, not just the one this shipped with.
+    
+       They are different shapes — five clips of one question, two clips of
+       about two, one clip of two, one clip of four — and liveSegments()
+       already holds that difference, so widening this is letting the others
+       in rather than writing three more cases.
+       
+       Reading types are deliberately out. The problem this solves is thirteen
+       phones playing one clip in one room; a passage on thirteen screens is
+       not a problem, it is how reading works. */
+    const LIVE_TYPES = ['choose-response', 'talk', 'conversation', 'announcement'];
     const ready = loadBatch().filter(i => i.status === 'approved'
-      && publishState(i.id) === 'live' && i.type === 'choose-response');
+      && publishState(i.id) === 'live' && LIVE_TYPES.indexOf(i.type) > -1);
     box.innerHTML = `<div class="panel">
       <h2 style="margin-top:0">Run it with the class</h2>
       <p class="small-note" style="margin:.2rem 0 .7rem">
@@ -13226,9 +13243,15 @@ function renderLivePanel(){
         answers — which is also how the real test works: you listen first, the
         questions come after.</p>
       ${ready.length
-        ? ready.map(i => `<button class="btn sm" style="margin:0 .4rem .4rem 0"
-             onclick="startLiveRound('${escapeHtml(i.id)}')">▶ ${escapeHtml(i.tag)}</button>`).join('')
-        : '<p class="small-note">Approve and share a Choose the Response set first.</p>'}
+        ? ready.map(i => {
+            const sg = liveSegments(i);
+            const qs = sg.reduce((a, x) => a + x.questions.length, 0);
+            return `<button class="btn sm" style="margin:0 .4rem .4rem 0"
+              onclick="startLiveRound('${escapeHtml(i.id)}')">▶ ${escapeHtml(i.tag)}
+              <span class="small-note">${sg.length} clip${sg.length === 1 ? '' : 's'},
+              ${qs} question${qs === 1 ? '' : 's'}</span></button>`;
+          }).join('')
+        : '<p class="small-note">Approve and share a listening exercise first — Choose the Response, a talk, a conversation or an announcement.</p>'}
     </div>`;
     return;
   }

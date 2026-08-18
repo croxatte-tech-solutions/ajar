@@ -119,7 +119,7 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,currentSchool,renderLiveForStudent,liveActive,liveQuestion,answerLive,'+
     'renderLivePanel,liveCounts,startLiveRound,liveGo,liveNext,liveEnd,teacherIsSignedIn,renderStudent,'+
-    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,saveRoster,'+
+    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,saveRoster,tagFor,'+
     'saveBatch,loadBatch,setPublishState,generateOne,setStudentName,setView};', sandbox);
   return { api: sandbox.__api, sandbox, asked, store, live, answersCb, rounds, sent,
            push(st){ live.forEach(f => f(st)); },
@@ -360,6 +360,39 @@ function cr(t){
   await t.api.liveNext();
   assert('and the end of the last clip finishes the round',
     t.rounds[t.rounds.length-1].phase === 'ended', t.rounds[t.rounds.length-1]);
+
+  //===================================================================
+  // ALL FOUR LISTENING TYPES, AND ONLY THOSE
+  //===================================================================
+  // The problem is thirteen phones playing one clip in one room. A passage on
+  // thirteen screens is not a problem — it is how reading works — so reading
+  // types stay out on purpose rather than by omission.
+  const offered = ['choose-response', 'talk', 'conversation', 'announcement'];
+  const excluded = ['passage', 'daily-read', 'complete-words', 'email', 'listen-repeat'];
+  const t2 = boot({ search: '?school=scan-school', teacher: true });
+  t2.api.setView('teacher');
+  t2.api.saveBatch(offered.concat(excluded).map((ty, n) => ({
+    id: 'i' + n, type: ty, tag: ty, theme: 'campus', status: 'approved',
+    data: t2.api.generateOne(ty, 'campus').data })));
+  offered.concat(excluded).forEach((ty, n) => t2.api.setPublishState('i' + n, 'live'));
+  t2.api.renderLivePanel();
+  const shelf = el('live-panel').innerHTML || '';
+  offered.forEach(ty => assert('a ' + ty + ' can be run with the class',
+    shelf.indexOf('>▶ ' + ty) > -1, shelf.slice(0, 300)));
+  excluded.forEach(ty => assert('a ' + ty + ' is not offered, because it has no shared clip',
+    shelf.indexOf('>▶ ' + ty) === -1));
+  assert('and each says how much of the lesson it will take',
+    shelf.indexOf('clip') > -1 && shelf.indexOf('question') > -1, shelf.slice(0, 400));
+
+  //===================================================================
+  // AN ANSWER IS FILED UNDER THE EXERCISE IT CAME FROM
+  //===================================================================
+  // It was hard-coded to choose-response, true while that was the only type a
+  // round could run — and it would have filed every talk answered in class
+  // under the wrong skill the moment the others were let in, quietly bending
+  // the patterns their teacher reads.
+  assert('the live round logs the item\'s own type, not a fixed one',
+    html.indexOf("logUsage(li.type || 'choose-response'") > -1);
 
   //===================================================================
   // AND IT ENDS
