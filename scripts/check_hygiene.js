@@ -67,6 +67,28 @@ const missingFns = [...called].filter(c => !defined.has(c) && !JS_KEYWORDS.has(c
 assert('every inline handler names a function that exists',
   missingFns.length === 0, missingFns.join(', '));
 
+//=====================================================================
+// THE RECORD BELONGS TO THE ACCOUNT, NOT TO THE TYPED NAME
+//=====================================================================
+// e6ed7df moved the student record from students/{typed name} to
+// students/{uid} and updated three of the four readers. The fourth kept
+// fetching by name, so the teacher's class panel drew an empty class while
+// thirteen people practised into it — and said nothing, because a document
+// that does not exist is not an error. Two static rules, because 3296 green
+// checks did not notice and a silent empty panel is exactly the shape of
+// failure this project keeps paying for.
+const nameKeyedPaths = [...html.matchAll(/'students',\s*[^,)]*?\.toLowerCase\(\)/g)].map(m => m[0]);
+assert('no students/ path is addressed by a typed name',
+  nameKeyedPaths.length === 0, nameKeyedPaths.join(' | '));
+
+// The caller side of the same mistake: pullHistory, pullNote and pushNote all
+// want an account. Handing them a variable called `name` is how the history
+// half broke. A name-shaped heuristic and not a proof — but it is the exact
+// call that shipped, and it costs nothing to refuse it twice.
+const nameForUid = [...html.matchAll(/\b(pullHistory|pullNote|pushNote)\(\s*name\s*[,)]/g)].map(m => m[0]);
+assert('no call hands a typed name to a function that wants an account',
+  nameForUid.length === 0, nameForUid.join(' | '));
+
 // getElementById on an id that is neither in the markup nor created in code.
 const markupIds = new Set([...html.matchAll(/id="([^"${]+)"/g)].map(m => m[1]));
 const createdIds = new Set([...html.matchAll(/\.id\s*=\s*'([^']+)'/g)].map(m => m[1]));
