@@ -12840,6 +12840,63 @@ async function adminDecline(uid){
 
    Practising at home and sitting a full section are untouched. */
 const LIVE_PHASES = ['idle', 'listening', 'answering', 'revealed', 'ended'];
+
+/* ONE AUDIO, THEN THE QUESTIONS THAT BELONG TO IT.
+
+   The four listening types are not the same shape, and pretending they were
+   would have meant four special cases later:
+
+     choose-response   5 clips, one question each
+     announcement      2 clips, about two questions each
+     conversation      1 clip, two questions
+     talk              1 clip, four questions
+
+   So the unit is a SEGMENT — one piece of audio and the questions that hang
+   off it. Within a segment the audio is not replayed between questions,
+   because that is how the test works: you hear it once and answer several.
+   She keeps a Play again for when the room needs it, but the default is the
+   exam's. */
+function liveSegments(item){
+  if(!item || !item.data) return [];
+  const d = item.data;
+  // 5 clips, one question each.
+  if(item.type === 'choose-response')
+    return (d.set || []).map(it => ({ audio: it.prompt, questions: [it] }));
+  // 2 clips, their own questions each.
+  if(item.type === 'announcement')
+    return (d.set || []).map(a => ({ audio: a.text, questions: a.questions || [] }));
+  // One clip, several questions.
+  const text = d.text || (d.turns ? d.turns.map(t => t.line || t.text || t).join(' ') : '');
+  return [{ audio: text, questions: d.questions || [] }];
+}
+
+/* HOW LONG THEY GET, FROM WHAT THERE IS TO READ.
+
+   A fixed number would be wrong in both directions at once, and the banks say
+   so: a Choose the Response question puts 43 to 58 words in front of a
+   student, an announcement question 15 to 27. Thirty seconds is too little
+   for one and too much for the other.
+
+   So it is computed. 120 words a minute is an intermediate second-language
+   academic reading rate — these students are reading English, not skimming
+   their own language — and eight seconds is for deciding once it has been
+   read rather than for reading it.
+
+   The result lands on 35s for Choose the Response and 24s for a talk, and the
+   exam's own budget for a listening item, once its audio is taken out, is
+   about 25 seconds. The talk figure matching that is the check on the
+   formula, not a coincidence arranged for it. */
+const LIVE_READ_WPM = 120;
+const LIVE_DECIDE_SECONDS = 8;
+const LIVE_MIN_SECONDS = 18;
+const LIVE_MAX_SECONDS = 45;
+function liveSecondsFor(q){
+  if(!q || !q.options) return LIVE_MIN_SECONDS;
+  const words = t => String(t || '').trim().split(/\s+/).filter(Boolean).length;
+  const total = words(q.q || q.prompt) + q.options.reduce((a, o) => a + words(o), 0);
+  const s = LIVE_DECIDE_SECONDS + Math.round(total / (LIVE_READ_WPM / 60));
+  return Math.max(LIVE_MIN_SECONDS, Math.min(LIVE_MAX_SECONDS, s));
+}
 let LIVE = null;           // the round as the teacher last wrote it
 let LIVE_UNSUB = null;
 let LIVE_MY_ANSWER = null; // { index, choice } for the question now open
@@ -12855,12 +12912,21 @@ function liveItem(){
 // The five prompts of a Choose the Response set, or the questions of any
 // other four-option exercise. One shape for the renderer to hold.
 function liveQuestion(){
-  const item = liveItem();
-  if(!item || !item.data) return null;
-  const set = item.data.set || item.data.questions || [];
-  const q = set[LIVE ? LIVE.index : 0];
-  if(!q || !q.options) return null;
-  return q;
+  const segs = liveSegments(liveItem());
+  const seg = segs[(LIVE && LIVE.segment) || 0];
+  if(!seg) return null;
+  const q = seg.questions[(LIVE && LIVE.index) || 0];
+  return (q && q.options) ? q : null;
+}
+// Where the class is, in words she can say out loud.
+function livePosition(){
+  const segs = liveSegments(liveItem());
+  const si = (LIVE && LIVE.segment) || 0, qi = (LIVE && LIVE.index) || 0;
+  const seg = segs[si];
+  return { segs: segs.length, seg: si + 1, q: qi + 1,
+           qs: seg ? seg.questions.length : 0,
+           lastQ: seg ? qi >= seg.questions.length - 1 : true,
+           lastSeg: si >= segs.length - 1 };
 }
 
 function startWatchingLive(){
@@ -12868,12 +12934,16 @@ function startWatchingLive(){
   if(!currentSchool() || !hasAccount()) return;
   LIVE_UNSUB = window.CloudSync.watchLiveRound(
     state => {
-      const before = LIVE && LIVE.index;
+      // Segment AND index. Comparing the index alone was wrong the moment
+      // clips held one question each: moving from clip 1 to clip 2 keeps the
+      // index at 0, so a student who had answered clip 1 opened clip 2
+      // already marked, and tapped nothing because it looked done.
+      const before = LIVE ? (LIVE.segment || 0) + ':' + (LIVE.index || 0) : null;
       LIVE = state;
       LIVE_ERROR = null;
-      // A new question clears the previous answer. Without this a student
-      // who answered question 2 sees question 3 already marked.
-      if(!LIVE || LIVE.index !== before) LIVE_MY_ANSWER = null;
+      const now = LIVE ? (LIVE.segment || 0) + ':' + (LIVE.index || 0) : null;
+      if(now !== before) LIVE_MY_ANSWER = null;
+      if(LIVE && LIVE.phase === 'answering' && LIVE.endsAt) startLiveClock(); else stopLiveClock();
       if(currentView === 'student') renderStudent();
     },
     () => {
@@ -12925,8 +12995,10 @@ function renderLiveForStudent(){
   }
 
   if(LIVE.phase === 'answering'){
-    const chosen = LIVE_MY_ANSWER && LIVE_MY_ANSWER.index === LIVE.index ? LIVE_MY_ANSWER.choice : null;
-    wrap.innerHTML = head + `<div class="compose"><div class="ex-body">
+    const chosen = LIVE_MY_ANSWER
+      && LIVE_MY_ANSWER.segment === (LIVE.segment || 0)
+      && LIVE_MY_ANSWER.index === (LIVE.index || 0) ? LIVE_MY_ANSWER.choice : null;
+    wrap.innerHTML = head + liveClockHtml() + `<div class="compose"><div class="ex-body">
       ${q.options.map((o, i) => `
         <button class="btn ghost live-opt" style="width:100%;text-align:left;margin-bottom:.5rem;padding:.8rem"
           ${chosen === i ? 'aria-pressed="true" style="width:100%;text-align:left;margin-bottom:.5rem;padding:.8rem;border-color:var(--accent)"' : 'aria-pressed="false"'}
@@ -12957,8 +13029,9 @@ async function answerLive(choice){
   const q = liveQuestion();
   if(!q || !LIVE || LIVE.phase !== 'answering') return;
   const index = LIVE.index || 0;
+  const segment = LIVE.segment || 0;
   const correct = choice === q.answer;
-  LIVE_MY_ANSWER = { index, choice };
+  LIVE_MY_ANSWER = { segment, index, choice };
   renderStudent();
   try{
     await window.CloudSync.sendLiveAnswer(index, choice, correct);
@@ -12988,6 +13061,64 @@ async function answerLive(choice){
 
    The correct option appears only once she reveals it, which is the moment it
    stops being an answer key and becomes the teaching. */
+
+/* THE CLOCK CLOSES THE QUESTION. IT DOES NOT MOVE THE LESSON ON.
+
+   Two different jobs, and only one of them belongs to a timer. Locking the
+   answers when time is up is mechanical, and it is the pressure the test
+   applies. Deciding when the class is ready for the next question is not: she
+   is in the room looking at thirteen faces, and she is the only one who can
+   see whether they have got it. Taking that from her would remove the whole
+   advantage the class mode has over practising alone.
+
+   And the reveal is where the lesson is — "nine of thirteen got it, so why did
+   four of you choose B" is the teaching, and a clock that skipped past it
+   would leave a quiz where a lesson should be.
+
+   It runs on HER device only. Thirteen phones each counting their own copy of
+   the same seconds is the same mistake as thirteen phones each playing the
+   same clip; the phones are told the deadline and draw it, and the one clock
+   that decides anything is hers. */
+let LIVE_TICK = null;
+function liveDeadline(){ return (LIVE && LIVE.endsAt) || 0; }
+function liveSecondsLeft(){
+  const d = liveDeadline();
+  if(!d) return null;
+  return Math.max(0, Math.ceil((d - Date.now()) / 1000));
+}
+function startLiveClock(){
+  stopLiveClock();
+  LIVE_TICK = setInterval(() => {
+    const left = liveSecondsLeft();
+    if(left === null) return;
+    if(currentView === 'student') renderStudent();
+    renderLivePanel();
+    // Only her device closes it. A phone whose clock is a few seconds fast
+    // must not end the question for everybody else.
+    if(left <= 0 && teacherIsSignedIn() && LIVE && LIVE.phase === 'answering'){
+      stopLiveClock();
+      liveGo('revealed');
+    }
+  }, 500);
+}
+function stopLiveClock(){
+  if(LIVE_TICK){ clearInterval(LIVE_TICK); LIVE_TICK = null; }
+}
+function liveClockHtml(){
+  const left = liveSecondsLeft();
+  if(left === null || !LIVE || LIVE.phase !== 'answering') return '';
+  const low = left <= 5;
+  return `<p style="text-align:center;font-size:1.4rem;font-weight:700;margin:.2rem 0;
+    color:${low ? 'var(--red)' : 'var(--text-dim)'}">${left}s</p>`;
+}
+// Her only override, and it is additive: a room stuck on a hard question gets
+// more time, never less. Taking time away mid-question would be unfair in a
+// way adding it never is.
+async function liveAddTime(){
+  if(!LIVE || LIVE.phase !== 'answering') return;
+  await window.CloudSync.setLiveRound({ ...LIVE, endsAt: (LIVE.endsAt || Date.now()) + 15000 });
+}
+
 let LIVE_ANSWERS = [];
 let LIVE_ANSWERS_UNSUB = null;
 
@@ -13019,22 +13150,41 @@ async function startLiveRound(itemId){
   teacherWatchAnswers();
   startWatchingLive();
   await window.CloudSync.clearLiveAnswers();
-  await window.CloudSync.setLiveRound({ itemId, index: 0, phase: 'listening' });
+  await window.CloudSync.setLiveRound({ itemId, segment: 0, index: 0, phase: 'listening' });
   renderLivePanel();
 }
 async function liveGo(phase){
   if(!LIVE) return;
-  await window.CloudSync.setLiveRound({ ...LIVE, phase });
+  const patch = { ...LIVE, phase };
+  if(phase === 'answering'){
+    // Computed from THIS question, not from a constant. The banks put 43 to
+    // 58 words in front of a student on Choose the Response and 15 to 27 on
+    // an announcement; one number cannot be right for both.
+    patch.endsAt = Date.now() + liveSecondsFor(liveQuestion()) * 1000;
+  } else {
+    delete patch.endsAt;
+    stopLiveClock();
+  }
+  await window.CloudSync.setLiveRound(patch);
+  if(phase === 'answering') startLiveClock();
   renderLivePanel();
 }
+/* Moving on, and the two different kinds of "on".
+
+   Within a segment the next question does NOT replay the audio — that is the
+   exam, and it is the whole reason a segment holds several questions. Only
+   crossing into a new segment goes back to listening. */
 async function liveNext(){
   if(!LIVE) return;
-  const item = liveItem();
-  const set = item && item.data ? (item.data.set || item.data.questions || []) : [];
-  const next = (LIVE.index || 0) + 1;
-  if(next >= set.length){ await liveEnd(); return; }
+  const p = livePosition();
   await window.CloudSync.clearLiveAnswers();
-  await window.CloudSync.setLiveRound({ ...LIVE, index: next, phase: 'listening' });
+  if(!p.lastQ){
+    await window.CloudSync.setLiveRound({ ...LIVE, index: p.q, phase: 'answering' });
+  } else if(!p.lastSeg){
+    await window.CloudSync.setLiveRound({ ...LIVE, segment: p.seg, index: 0, phase: 'listening' });
+  } else {
+    await liveEnd(); return;
+  }
   renderLivePanel();
 }
 async function liveEnd(){
@@ -13076,13 +13226,16 @@ function renderLivePanel(){
   }
   const c = liveCounts();
   const q = liveQuestion();
-  const item = liveItem();
-  const set = item && item.data ? (item.data.set || item.data.questions || []) : [];
-  const n = (LIVE.index || 0) + 1;
+  const p = livePosition();
+  const left = liveSecondsLeft();
+  const where = p.segs > 1
+    ? `Clip ${p.seg} of ${p.segs} \u00b7 question ${p.q} of ${p.qs}`
+    : `Question ${p.q} of ${p.qs}`;
   box.innerHTML = `<div class="panel" style="border-color:var(--accent)">
-    <h2 style="margin-top:0">Question ${n} of ${set.length}</h2>
+    <h2 style="margin-top:0">${where}</h2>
     <p style="font-size:1.6rem;font-weight:700;margin:.2rem 0">
-      ${c.answered}${c.roster ? ' of ' + c.roster : ''} answered</p>
+      ${c.answered}${c.roster ? ' of ' + c.roster : ''} answered${
+        LIVE.phase === 'answering' && left !== null ? ' \u00b7 ' + left + 's' : ''}</p>
     ${LIVE.phase === 'revealed'
       ? `<p style="font-size:1.2rem;font-weight:600;color:var(--accent);margin:.2rem 0">
            ${c.correct} got it right</p>
@@ -13091,12 +13244,18 @@ function renderLivePanel(){
       : '<p class="small-note" style="margin:.2rem 0 .6rem">Nobody sees who answered what.</p>'}
     <div class="ex-actions">
       ${LIVE.phase === 'listening'
-        ? `<button class="btn" onclick="livePlay()">🔊 Play</button>
+        ? `<button class="btn" onclick="livePlay()">\ud83d\udd0a Play</button>
            <button class="btn" onclick="liveGo('answering')">Open the answers</button>` : ''}
       ${LIVE.phase === 'answering'
-        ? `<button class="btn" onclick="liveGo('revealed')">Close and show the answer</button>` : ''}
+        ? `<button class="btn ghost sm" onclick="liveAddTime()">+15s</button>
+           <button class="btn" onclick="liveGo('revealed')">Close now</button>` : ''}
       ${LIVE.phase === 'revealed'
-        ? `<button class="btn" onclick="liveNext()">Next question &rarr;</button>` : ''}
+        ? (p.lastQ && p.lastSeg
+            ? `<button class="btn" onclick="liveEnd()">Finish</button>`
+            : `<button class="btn" onclick="liveNext()">${
+                 p.lastQ ? 'Next clip &rarr;' : 'Next question &rarr;'}</button>`)
+        : ''}
+      ${LIVE.phase !== 'listening' ? `<button class="btn ghost sm" onclick="livePlay()">Play again</button>` : ''}
       <button class="btn ghost sm" onclick="liveEnd()">End</button>
     </div>
   </div>`;

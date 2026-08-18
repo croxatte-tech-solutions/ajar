@@ -119,6 +119,7 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,currentSchool,renderLiveForStudent,liveActive,liveQuestion,answerLive,'+
     'renderLivePanel,liveCounts,startLiveRound,liveGo,liveNext,liveEnd,teacherIsSignedIn,renderStudent,'+
+    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,'+
     'saveBatch,loadBatch,setPublishState,generateOne,setStudentName,setView};', sandbox);
   return { api: sandbox.__api, sandbox, asked, store, live, answersCb, rounds, sent,
            push(st){ live.forEach(f => f(st)); },
@@ -156,7 +157,7 @@ function cr(t){
   assert('the phone subscribed to the round on its own, at start-up',
     s.live.length === 1, s.live.length);
 
-  s.push({ itemId: 'live1', index: 0, phase: 'listening' });
+  s.push({ itemId: 'live1', segment: 0, index: 0, phase: 'listening' });
   s.api.renderStudent();
   assert('a live round takes over the student screen', s.api.liveActive() === true);
   assert('the phone says to listen', panel().indexOf('Listen') > -1, panel().slice(0,140));
@@ -168,7 +169,7 @@ function cr(t){
   //===================================================================
   // THEN THE ANSWERS, AND ONLY THE ANSWERS
   //===================================================================
-  s.push({ itemId: 'live1', index: 0, phase: 'answering' });
+  s.push({ itemId: 'live1', segment: 0, index: 0, phase: 'answering' });
   s.api.renderStudent();
   const q = s.api.liveQuestion();
 
@@ -193,7 +194,7 @@ function cr(t){
   //===================================================================
   // Without this a student who answered question 1 opens question 2 already
   // marked, and taps nothing because it looks done.
-  s.push({ itemId: 'live1', index: 1, phase: 'answering' });
+  s.push({ itemId: 'live1', segment: 1, index: 0, phase: 'answering' });
   s.api.renderStudent();
   assert('the previous answer does not follow them to the next question',
     panel().indexOf('can change it') === -1, panel().slice(0,300));
@@ -201,10 +202,10 @@ function cr(t){
   //===================================================================
   // REVEALING TEACHES, WITHOUT PUBLISHING ANYBODY
   //===================================================================
-  s.push({ itemId: 'live1', index: 1, phase: 'answering' });
+  s.push({ itemId: 'live1', segment: 1, index: 0, phase: 'answering' });
   s.api.renderStudent();
   await s.api.answerLive(0);
-  s.push({ itemId: 'live1', index: 1, phase: 'revealed' });
+  s.push({ itemId: 'live1', segment: 1, index: 0, phase: 'revealed' });
   s.api.renderStudent();
   assert('the right answer is marked on their own screen', panel().indexOf('✓') > -1, panel().slice(0,200));
   assert('and their own choice is identifiable to them', panel().indexOf('you chose this') > -1
@@ -237,6 +238,94 @@ function cr(t){
   assert('the count is the class against the material', c.answered === 3 && c.correct === 2, c);
   assert('and that is what goes on the wall', tvPanel().indexOf('got it right') > -1, tvPanel().slice(0,300));
   assert('the answer appears only once she reveals it', tvPanel().indexOf('Answer:') > -1);
+
+  //===================================================================
+  // ONE AUDIO, THEN THE QUESTIONS THAT BELONG TO IT
+  //===================================================================
+  // The four listening types are not the same shape, and a flat question list
+  // would have meant four special cases later.
+  const segs = t.api.liveSegments(titem);
+  assert('Choose the Response is five clips of one question each',
+    segs.length === 5 && segs.every(x => x.questions.length === 1),
+    segs.map(x => x.questions.length));
+  // The shapes the other three take, asserted on real generated items.
+  for(const [type, clips, perClip] of [['talk', 1, 4], ['conversation', 1, 2]]){
+    const it = { id:'x', type, theme:'campus', status:'approved',
+                 data: t.api.generateOne(type, 'campus').data };
+    const sg = t.api.liveSegments(it);
+    assert(type + ' is one clip with ' + perClip + ' questions',
+      sg.length === clips && sg[0].questions.length === perClip,
+      sg.map(x => x.questions.length));
+    assert('and the clip carries text to read out', !!sg[0].audio);
+  }
+
+  //===================================================================
+  // HOW LONG THEY GET COMES FROM WHAT THERE IS TO READ
+  //===================================================================
+  // A fixed number is wrong in both directions at once: the banks put 43 to
+  // 58 words in front of a student on Choose the Response and 15 to 27 on an
+  // announcement.
+  const shortQ = { q: 'Why?', options: ['One', 'Two', 'Three', 'Four'] };
+  const longQ  = { q: 'What does the man suggest that she should do about the timetable?',
+                   options: ['Speak to the department office before the end of the week',
+                             'Wait until the revised timetable has been published online',
+                             'Ask another student who took the same module last year',
+                             'Change to the seminar group that meets on Thursday morning'] };
+  assert('a short question gets less time', t.api.liveSecondsFor(shortQ) < t.api.liveSecondsFor(longQ),
+    [t.api.liveSecondsFor(shortQ), t.api.liveSecondsFor(longQ)]);
+  assert('and nothing gets less than a floor', t.api.liveSecondsFor(shortQ) >= 18,
+    t.api.liveSecondsFor(shortQ));
+  assert('nor more than a ceiling', t.api.liveSecondsFor(longQ) <= 45, t.api.liveSecondsFor(longQ));
+  // The check on the formula rather than a number arranged to pass: the exam
+  // gives about 25 seconds per listening item once its audio is taken out.
+  const talkQs = t.api.liveSegments({ type:'talk', data: t.api.generateOne('talk','campus').data })[0].questions;
+  const avg = Math.round(talkQs.reduce((a,q) => a + t.api.liveSecondsFor(q), 0) / talkQs.length);
+  assert('a talk question lands near the exam\'s own per-item budget (' + avg + 's)',
+    avg >= 20 && avg <= 30, avg);
+
+  //===================================================================
+  // THE CLOCK CLOSES THE QUESTION. IT DOES NOT MOVE THE LESSON ON.
+  //===================================================================
+  await t.api.liveGo('answering');
+  assert('opening the answers sets a deadline', t.rounds[t.rounds.length-1].endsAt > Date.now(),
+    t.rounds[t.rounds.length-1]);
+  assert('and the deadline is this question\'s, not a constant',
+    t.rounds[t.rounds.length-1].endsAt - Date.now()
+      >= (t.api.liveSecondsFor(t.api.liveQuestion()) - 2) * 1000);
+  await t.api.liveAddTime();
+  assert('she can add time, and only add it',
+    t.rounds[t.rounds.length-1].endsAt > t.rounds[t.rounds.length-2].endsAt);
+  assert('nothing in the app takes time away mid-question',
+    html.indexOf('endsAt || Date.now()) + 15000') > -1
+    && html.indexOf('- 15000') === -1);
+  await t.api.liveGo('revealed');
+  assert('closing the question drops the deadline',
+    t.rounds[t.rounds.length-1].endsAt === undefined, t.rounds[t.rounds.length-1]);
+  assert('AND STOPS THERE — the clock never moves the class on',
+    t.rounds[t.rounds.length-1].phase === 'revealed');
+  assert('only her device is allowed to close it',
+    html.indexOf('left <= 0 && teacherIsSignedIn()') > -1);
+
+  //===================================================================
+  // AND THE TWO DIFFERENT KINDS OF "NEXT"
+  //===================================================================
+  // Within a clip the audio is not replayed — that is the exam, and it is the
+  // whole reason a clip holds several questions.
+  const conv = { id:'c1', type:'conversation', tag:'x', theme:'campus', status:'approved',
+                 data: t.api.generateOne('conversation','campus').data };
+  t.api.saveBatch([conv]);
+  t.api.setPublishState('c1', 'live');
+  await t.api.startLiveRound('c1');
+  await t.api.liveGo('answering');
+  await t.api.liveGo('revealed');
+  await t.api.liveNext();
+  let last = t.rounds[t.rounds.length-1];
+  assert('the second question of the same clip does NOT go back to listening',
+    last.phase === 'answering' && last.segment === 0 && last.index === 1, last);
+  await t.api.liveGo('revealed');
+  await t.api.liveNext();
+  assert('and the end of the last clip finishes the round',
+    t.rounds[t.rounds.length-1].phase === 'ended', t.rounds[t.rounds.length-1]);
 
   //===================================================================
   // AND IT ENDS
