@@ -107,7 +107,19 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 .field-row{ display:flex; gap:.6rem; flex-wrap:wrap; align-items:flex-end; }
 .field{ flex:1; min-width:170px; }
 .field label{ display:block; font-size:.7rem; font-weight:600; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; margin-bottom:.35rem; }
-select,textarea,input[type=text]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
+/* Every textual input, not three of them.
+
+   This read `select,textarea,input[type=text]`, which is the whole list of
+   what an author remembers to type and not the list of what a form contains.
+   The teacher's sign-in uses type=email and type=password, so those two
+   matched nothing: 147px wide, square corners and the browser's own border,
+   on the first screen she touches.
+
+   Fixed at the cause. email and password are the two that were showing, and
+   number, search, tel and url would each have arrived the same way — a field
+   added later, styled by nobody, discovered by whoever it is shown to. */
+select,textarea,input[type=text],input[type=email],input[type=password],
+input[type=number],input[type=search],input[type=tel],input[type=url]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
 select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
 /* THE CLASSROOM SCREEN
    Read from the back of a room, so everything is bigger than the app would
@@ -464,7 +476,12 @@ body{ font-family:var(--font-body); line-height:1.62; }
 .switcher,.switcher button,.ex-status,#teacher-nav a,.timer-badge,
 .guide-btn{ border-radius:var(--r-pill); }
 .btn,.type-tabs button,.word-chip{ border-radius:var(--r-pill); }
-select,textarea,input[type=text]{ border-radius:var(--r-sm); }
+/* The same list, because a rule that overrides a rule has to see the same
+   elements as the one it overrides. Extending only the base above would have
+   left email and password with the old 9px corners while everything beside
+   them took the theme's radius — styled, and visibly not the same. */
+select,textarea,input[type=text],input[type=email],input[type=password],
+input[type=number],input[type=search],input[type=tel],input[type=url]{ border-radius:var(--r-sm); }
 .panel,.compose,.guide-modal{ border-radius:var(--r-lg); }
 .ex-card,.scenario-pick,.dl-doc,.fb-msg,.welcome-meaning{ border-radius:var(--r-md); }
 .tech-note,.padrao-c,.interview-scenario,.interview-figure,.forum-post,
@@ -613,23 +630,19 @@ body{ font-family:var(--font-body); }
   .welcome-door:hover{ transform:translateY(-2px); box-shadow:0 6px 18px rgba(15,30,25,.16); }
 }
 
-/* ---- conserto de um bug PRÉ-EXISTENTE, não introduzido por esta peça ----
-   O seletor de campo do projeto é `select,textarea,input[type=text]`. O login
-   da professora usa type="email" e type="password", que não casam com ele —
-   então esses dois campos nunca receberam estilo: 147px de largura, cantos
-   retos e borda padrão do navegador, na primeira tela que ela toca.
-   Corrigido pela causa (todos os tipos textuais), não pelos dois do sintoma.
-   O mesmo conserto vale para o main. */
-input[type=email],input[type=password],input[type=number],
-input[type=search],input[type=tel],input[type=url]{
-  width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem;
-  border-radius:var(--r-sm); border:1px solid var(--border);
-  background:var(--bg); color:var(--text);
-}
-input[type=email]:focus,input[type=password]:focus,input[type=number]:focus,
-input[type=search]:focus,input[type=tel]:focus,input[type=url]:focus{
-  outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);
-}
+/* The separate block that used to sit here is gone.
+
+   It carried its own copy of every property for the six missing input types,
+   plus its own :focus rule. It was right, and it fixed the bug — and after
+   the base selector above learned the same list it became a third rule
+   describing what two rules already say. Three places to change the padding
+   of a text field is two places to forget.
+
+   Its :focus half is not replaced, on purpose. The base :focus rule is
+   `select:focus,textarea:focus,input:focus` — no type at all — so it already
+   covers every input, and enumerating types there would LOSE the checkboxes
+   and radios it currently reaches. That is the one part of this consolidation
+   that must not be made to look consistent. */
 
 /* ==========================================================================
    PEÇAS 2–6 — ÍCONES, ESTADOS, PROGRESSO, AVATARES, TRANSIÇÕES
