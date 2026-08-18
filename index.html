@@ -13323,13 +13323,36 @@ async function accountSaveProfile(){
 
    A teacher does not become a teacher here. They file a request. */
 async function finishProfile(f){
-  await window.CloudSync.saveProfile({
-    displayName: f.name, country: f.country, birthDate: f.dob,
-    role: f.role, research: f.research, schoolId: currentSchool() || '',
-  });
+  /* Its own try, and its own sentence.
+
+     The callers wrap this whole function and can only say "something went
+     wrong". From here it is possible to say WHICH half did not land, and the
+     two halves mean different things to somebody who has just typed their
+     date of birth into a form: the account exists either way, but one of them
+     means their details are gone and the other means a request was not filed. */
+  try{
+    await window.CloudSync.saveProfile({
+      displayName: f.name, country: f.country, birthDate: f.dob,
+      role: f.role, research: f.research, schoolId: currentSchool() || '',
+    });
+  }catch(e){
+    console.error('Ajar: the profile did not save —', e);
+    accountMsg('Your account exists, but your details did not save. Press Finish again.', false);
+    return;
+  }
+
   setStudentName(f.name);
   if(f.role === 'teacher'){
-    await window.CloudSync.requestTeacherAccess(f.name, f.school);
+    // Separate from the profile write above on purpose: the account exists
+    // either way, and "we could not file your teacher request" is a different
+    // sentence from "your details did not save".
+    try{
+      await window.CloudSync.requestTeacherAccess(f.name, f.school);
+    }catch(e){
+      console.error('Ajar: the teacher request was not filed —', e);
+      accountMsg('Your account is created, but the request for teacher access did not go through. Open this screen again to retry.', false);
+      return;
+    }
   }
   // Best effort, and deliberately not fatal: the class-visible record is a
   // convenience, and failing to share a birthday must not undo an account
@@ -13801,11 +13824,40 @@ function liveClockHtml(){
 // way adding it never is.
 async function liveAddTime(){
   if(!LIVE || LIVE.phase !== 'answering') return;
-  await window.CloudSync.setLiveRound({ ...LIVE, endsAt: (LIVE.endsAt || Date.now()) + 15000 });
+  await liveWrite('add more time',
+    () => window.CloudSync.setLiveRound({ ...LIVE, endsAt: (LIVE.endsAt || Date.now()) + 15000 }));
 }
 
 let LIVE_ANSWERS = [];
 let LIVE_ANSWERS_UNSUB = null;
+let LIVE_WRITE_ERROR = null;
+
+/* EVERY CONTROL IN THIS PANEL IS A WRITE, AND SHE IS STANDING UP.
+
+   Play, open the answers, close them, next, end — each one writes the round
+   to Firestore and each one was awaited with nothing around it. A dropped
+   connection meant an unhandled rejection: the button did nothing, the room
+   waited, and the only person who could act had no idea whether she had
+   pressed it. In front of thirteen students that is worse than an error.
+
+   So the writes go through here, and a failure says which control did not
+   take and that the class has not moved. The panel redraws either way, so
+   the state she is looking at is the state that exists. */
+async function liveWrite(what, run){
+  LIVE_WRITE_ERROR = null;
+  try{
+    await run();
+  }catch(e){
+    console.error('Ajar: the live round could not ' + what + ' —', e);
+    LIVE_WRITE_ERROR = what;
+  }
+  renderLivePanel();
+}
+function liveWriteErrorHtml(){
+  if(!LIVE_WRITE_ERROR) return '';
+  return `<p class="small-note" role="alert" style="color:var(--red);font-weight:600;margin:.2rem 0">
+    \u26a0 Could not ${escapeHtml(LIVE_WRITE_ERROR)} — the class has not moved. Try again.</p>`;
+}
 
 function teacherWatchAnswers(){
   if(LIVE_ANSWERS_UNSUB || !window.CloudSync || !window.CloudSync.watchLiveAnswers) return;
@@ -13841,9 +13893,10 @@ async function startLiveRound(itemId){
   // and her own panel is driven by the same stream the phones are.
   teacherWatchAnswers();
   startWatchingLive();
-  await window.CloudSync.clearLiveAnswers();
-  await window.CloudSync.setLiveRound({ itemId, segment: 0, index: 0, phase: 'listening' });
-  renderLivePanel();
+  await liveWrite('start the round', async () => {
+    await window.CloudSync.clearLiveAnswers();
+    await window.CloudSync.setLiveRound({ itemId, segment: 0, index: 0, phase: 'listening' });
+  });
 }
 async function liveGo(phase){
   if(!LIVE) return;
@@ -13857,9 +13910,9 @@ async function liveGo(phase){
     delete patch.endsAt;
     stopLiveClock();
   }
-  await window.CloudSync.setLiveRound(patch);
-  if(phase === 'answering') startLiveClock();
-  renderLivePanel();
+  await liveWrite(phase === 'answering' ? 'open the answers' : 'close the question',
+    () => window.CloudSync.setLiveRound(patch));
+  if(phase === 'answering' && !LIVE_WRITE_ERROR) startLiveClock();
 }
 /* Moving on, and the two different kinds of "on".
 
@@ -13869,19 +13922,19 @@ async function liveGo(phase){
 async function liveNext(){
   if(!LIVE) return;
   const p = livePosition();
-  await window.CloudSync.clearLiveAnswers();
-  if(!p.lastQ){
-    await window.CloudSync.setLiveRound({ ...LIVE, index: p.q, phase: 'answering' });
-  } else if(!p.lastSeg){
-    await window.CloudSync.setLiveRound({ ...LIVE, segment: p.seg, index: 0, phase: 'listening' });
-  } else {
-    await liveEnd(); return;
-  }
-  renderLivePanel();
+  if(p.lastQ && p.lastSeg){ await liveEnd(); return; }
+  await liveWrite('move to the next question', async () => {
+    await window.CloudSync.clearLiveAnswers();
+    await window.CloudSync.setLiveRound(!p.lastQ
+      ? { ...LIVE, index: p.q, phase: 'answering' }
+      : { ...LIVE, segment: p.seg, index: 0, phase: 'listening' });
+  });
 }
 async function liveEnd(){
-  await window.CloudSync.endLiveRound();
-  await window.CloudSync.clearLiveAnswers();
+  await liveWrite('end the round', async () => {
+    await window.CloudSync.endLiveRound();
+    await window.CloudSync.clearLiveAnswers();
+  });
   if(typeof LIVE_ANSWERS_UNSUB === 'function') LIVE_ANSWERS_UNSUB();
   LIVE_ANSWERS_UNSUB = null;
   LIVE_ANSWERS = [];
@@ -13947,6 +14000,7 @@ function renderLivePanel(){
       ${c.allIn ? '\u2713 Everyone has answered'
                 : c.answered + (c.roster ? ' of ' + c.roster : '') + ' answered'}${
         !c.allIn && LIVE.phase === 'answering' && left !== null ? ' \u00b7 ' + left + 's' : ''}</p>
+    ${liveWriteErrorHtml()}
     ${LIVE.phase === 'revealed'
       ? `<p style="font-size:1.2rem;font-weight:600;color:var(--accent);margin:.2rem 0">
            ${c.correct} got it right</p>
