@@ -59,6 +59,13 @@ assert('no teacher account address is hardcoded',
 const defined = new Set([
   ...[...html.matchAll(/function\s+([A-Za-z_$][\w$]*)/g)].map(m => m[1]),
   ...[...html.matchAll(/(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:function|\(|async)/g)].map(m => m[1]),
+  // window.NAME = function — the third way this file gets a global, and the
+  // one the rule could not see. An inline handler reaches it exactly like the
+  // other two, so calling it missing was a false alarm: labReset is defined,
+  // is callable, and the button works. Left unfixed it teaches the reader to
+  // skim a rule that exists to catch dead buttons, which is the failure
+  // PROGRESS.md already records about four checker rules crying wolf.
+  ...[...html.matchAll(/window\.([A-Za-z_$][\w$]*)\s*=\s*(?:function|\(|async)/g)].map(m => m[1]),
 ]);
 const ATTR_HANDLERS = /\bon(?:click|change|input|submit|focus|blur)="\s*([A-Za-z_$][\w$]*)\s*\(/g;
 const called = new Set([...html.matchAll(ATTR_HANDLERS)].map(m => m[1]));

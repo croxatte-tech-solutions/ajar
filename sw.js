@@ -3,13 +3,17 @@
 // break CDN version pinning, and they already fail gracefully offline.
 // KNOWN CEILING: app-shell-only cache, no runtime asset versioning strategy —
 // bump CACHE_NAME by hand when index.html changes meaningfully.
-const CACHE_NAME = 'ajar-shell-v2';
+const CACHE_NAME = 'ajar-shell-v3';
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have
 // just because index.html was fixed.
 const AUDIO_CACHE = 'ajar-audio-v1';
-const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
+  // As duas webfonts self-hosted. Precisam estar AQUI: sem elas no shell,
+  // o app abre offline com a fonte de fallback e a identidade some
+  // exatamente na aula em que o wi-fi da escola caiu.
+  './fonts/baloo2-latin.woff2', './fonts/nunitosans-latin.woff2'];
 
 self.addEventListener('install', event => {
   event.waitUntil(

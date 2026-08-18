@@ -23,6 +23,14 @@ const combined = blocks.join('\n;\n');
 function makeElStub(){
   return { style:{}, innerHTML:'', textContent:'', value:'', checked:false,
     classList:{toggle(){},add(){},remove(){}}, appendChild(){}, addEventListener(){},
+    // ChildNode.remove(). A real element has it everywhere the app runs, and
+    // this stub did not — so hideStudentSkeleton() threw inside renderStudent
+    // and took nine checkers down with it. The stub being LESS capable than
+    // the browser is the mirror of the trap 54e2f1d recorded, and it fails
+    // the same way: the tests disagree with a shape the app produces fine.
+    // Detachment is not modelled because nothing under test asks whether the
+    // element went away, only that removing it does not throw.
+    remove(){},
     querySelector(){return makeElStub();}, closest(){return null;}, select(){}, focus(){} };
 }
 function makeDocStub(){
