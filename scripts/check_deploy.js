@@ -62,7 +62,7 @@ assert('every host the app really loads from is allowed',
    running up the bill. The token comes from reCAPTCHA, which loads from
    google.com and draws an invisible iframe. The CSP shipped this morning
    allowed neither, so enforcing App Check first would have refused every
-   request and nobody could practise.
+   request and nobody could practice.
    These assert the CSP is ready BEFORE the switch is thrown. */
 assert('the CSP admits the reCAPTCHA script App Check needs',
   /script-src[^;]*www\.google\.com\/recaptcha/.test(csp));

@@ -193,7 +193,7 @@ function boot(opts){
   assert('and the message says what the rule is, not "invalid"',
     a.validateProfileForm(tooYoung).indexOf('16 and over') > -1,
     a.validateProfileForm(tooYoung));
-  assert('and still tells them they can practise anyway',
+  assert('and still tells them they can practice anyway',
     a.validateProfileForm(tooYoung).indexOf('without one') > -1);
   assert('nothing writes a profile from a form that did not validate',
     html.indexOf('const bad = validateProfileForm(f);') > -1
@@ -221,8 +221,8 @@ function boot(opts){
     rc.indexOf("chooseRole('student')") > -1 && rc.indexOf("chooseRole('teacher')") > -1, rc.slice(0,120));
   assert('and the teacher door says plainly that it asks rather than grants',
     rc.indexOf('asks rather than grants') > -1, rc.slice(0,400));
-  assert('and that they can practise while they wait',
-    rc.indexOf('practise straight away') > -1);
+  assert('and that they can practice while they wait',
+    rc.indexOf('practice straight away') > -1);
 
   // The point of the whole design: Google returns the same account whichever
   // door was used, so a second SIGN-IN button could only ever mean "the one
@@ -265,7 +265,7 @@ function boot(opts){
   assert('it says the birthday year is never shared', pv.indexOf('Never the year') > -1);
   assert('it gives a real address to ask for deletion',
     pv.indexOf('croxattetechsolutions@gmail.com') > -1);
-  assert('and it says practising without an account still works',
+  assert('and it says practicing without an account still works',
     pv.indexOf('without an account') > -1);
 
   //===================================================================

@@ -102,7 +102,7 @@ const testScript = `
 
   logUsage('passage', 'campus', 1);
   logUsage('daily-read', 'money', 0.5);
-  assert('practising during an exam writes nothing to the practice log',
+  assert('practicing during an exam writes nothing to the practice log',
     localStorage.getItem('ajar_usage_log_by_name') === null);
 
   const mid = JSON.parse(localStorage.getItem('ajar_exam_current'));

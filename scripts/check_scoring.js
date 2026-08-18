@@ -86,14 +86,14 @@ ${combined}
   // --- best of DAY, not best ever ---
   // Two days, 100% and 40%: the score must sit between them, because
   // best-ever would report 100% and mean-of-all would report something
-  // dragged down by however many times they practised on the bad day.
+  // dragged down by however many times they practiced on the bad day.
   setLog([mk(1.0,1), mk(0.4,0,0), mk(0.4,0,1), mk(0.4,0,2)]);
   s = usageSummary('x');
   assert('two days average to the middle (got '+pct(s.rows[0].avg)+'%)', pct(s.rows[0].avg) === 70);
   assert('the day count is what is averaged', s.rows[0].days === 2);
   assert('and the attempt count is separate', s.rows[0].attempts === 4);
 
-  // Practising more on one day cannot move that day's contribution.
+  // Practicing more on one day cannot move that day's contribution.
   setLog([mk(1.0,1), mk(0.4,0)]);
   const twoAttempts = usageSummary('x').rows[0].avg;
   setLog([mk(1.0,1), mk(0.4,0,0), mk(0.1,0,1), mk(0.2,0,2), mk(0.3,0,3)]);

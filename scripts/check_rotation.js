@@ -99,7 +99,7 @@ const testScript = `
   const twoBag = __STORE[bagKeys.find(k => k.indexOf('student two') > -1)];
   setStudentName('Student Two');
   drawFromBank('talk', 'health', TALK_BANK.health);
-  assert('one student practising does not drain another\\'s rotation',
+  assert('one student practicing does not drain another\\'s rotation',
     twoBag !== undefined);
   setStudentName('Rotation Student');
 

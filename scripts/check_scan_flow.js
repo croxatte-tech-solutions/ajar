@@ -149,7 +149,7 @@ function panel(){ return el('practice-wrap').innerHTML || ''; }
   assert('the screen says the exercise is no longer available',
     shown.indexOf('no longer available') > -1, shown.slice(0, 120));
   assert('and does not show a list to pick from', shown.indexOf('scenario-pick') === -1);
-  assert('and offers a way to keep working', shown.indexOf('Practise on my own') > -1);
+  assert('and offers a way to keep working', shown.indexOf('Practice on my own') > -1);
   assert('it is announced, not just drawn', shown.indexOf('role="alert"') > -1);
 
   //===================================================================
@@ -196,8 +196,8 @@ function panel(){ return el('practice-wrap').innerHTML || ''; }
     panel().indexOf('sign in to open it') > -1, panel().slice(0, 160));
   assert('with a button that goes there, not a reload that will fail again',
     panel().indexOf("setView('account')") > -1, panel().slice(0, 400));
-  assert('and it still offers to practise alone, which needs no account',
-    panel().indexOf('Practise on my own') > -1);
+  assert('and it still offers to practice alone, which needs no account',
+    panel().indexOf('Practice on my own') > -1);
   assert('nothing about them is written to the school',
     noAcct.api.loadBatch().length === 0);
 

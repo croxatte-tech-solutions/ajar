@@ -164,7 +164,7 @@ function signinBox(){ return el('teacher-signin').innerHTML || ''; }
   assert('they are told they are on the wrong screen, not that they failed',
     signinBox().indexOf('not a teacher account') > -1, signinBox().slice(0, 140));
   assert('and pointed at what IS theirs',
-    signinBox().indexOf('Practise screen') > -1);
+    signinBox().indexOf('Practice screen') > -1);
   assert('with a way back out',
     signinBox().indexOf('teacherSignOut()') > -1);
 

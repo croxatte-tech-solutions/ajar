@@ -143,7 +143,7 @@ function cr(t){
   // The phase the idea implied without stating it. On the real test you
   // listen FIRST and see the questions AFTER — options visible during the
   // audio teach a student to read instead of to listen. This makes the class
-  // mode MORE faithful to the exam than practising alone, not less.
+  // mode MORE faithful to the exam than practicing alone, not less.
   const s = boot({ search: '?school=scan-school' });
   const item = cr(s);
   s.api.saveBatch([item]);

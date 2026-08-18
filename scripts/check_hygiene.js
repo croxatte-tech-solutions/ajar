@@ -80,7 +80,7 @@ assert('every inline handler names a function that exists',
 // e6ed7df moved the student record from students/{typed name} to
 // students/{uid} and updated three of the four readers. The fourth kept
 // fetching by name, so the teacher's class panel drew an empty class while
-// thirteen people practised into it — and said nothing, because a document
+// thirteen people practiced into it — and said nothing, because a document
 // that does not exist is not an error. Two static rules, because 3296 green
 // checks did not notice and a silent empty panel is exactly the shape of
 // failure this project keeps paying for.
@@ -258,6 +258,31 @@ const silent = [...html.matchAll(/catch\s*\(\s*\w*\s*\)\s*\{\s*\}/g)].length;
 assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CATCH_BASELINE + ')',
   silent <= SILENT_CATCH_BASELINE,
   'was ' + SILENT_CATCH_BASELINE + ', now ' + silent + ' — if the new one is deliberate, move the baseline');
+
+/* THE APP'S OWN VOICE SPELLS LIKE THE SCHOOL IT IS IN.
+
+   Not the exercise banks — those are a separate and open question, because
+   the TOEFL Listening deliberately carries British, Australian and New
+   Zealand accents and ETS says so. Removing British English from a listening
+   bank would make this app LESS like the exam, not more.
+
+   This is only the app talking: buttons, notices, the privacy text. Thirty-six
+   of those said "practise" and "practising", which is the British verb, in an
+   app used by students at a school in Denver. Nobody is harmed by it and
+   nobody is taught by it either — it is simply the wrong dialect coming out
+   of the wrong mouth, and it costs nothing to be consistent.
+
+   Deliberately narrow: two words, checked outside the banks, chosen because
+   they appear zero times inside them. A wider rule here would start deleting
+   the British English that belongs in the listening content. */
+{
+  const bankStart = html.indexOf('const CHOOSE_RESPONSE_BANK');
+  const bankEnd = html.indexOf('};', html.lastIndexOf('const PASSAGE_BANK'));
+  const appVoice = html.slice(0, bankStart) + html.slice(bankEnd);
+  const brit = (appVoice.match(/\bpractis(e|ed|ing)\b/gi) || []);
+  assert('the app speaks the English of the school it is in (' + brit.length + ' British forms in its own voice)',
+    brit.length === 0, brit.slice(0, 6).join(', '));
+}
 
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));

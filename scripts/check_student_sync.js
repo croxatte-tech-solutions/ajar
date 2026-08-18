@@ -133,7 +133,7 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
   // THE WRITE THAT NOBODY WAS WATCHING
   //===================================================================
   // schools/*/students held exactly one document and it was a test. Nothing
-  // could tell whether the class had never practised or whether every save
+  // could tell whether the class had never practiced or whether every save
   // had failed in silence, because both catches were empty. That ambiguity
   // is the bug; the missing data is only its symptom.
   const ok = boot({ search: '?school=scan-school' });
@@ -163,8 +163,8 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
       warning().indexOf('not reaching your teacher') > -1, warning().slice(0, 120));
     assert('it is announced, not just coloured (' + mode + ')',
       warning().indexOf('role="alert"') > -1);
-    assert('and it does not tell them to stop practising (' + mode + ')',
-      warning().indexOf('Keep practising') > -1);
+    assert('and it does not tell them to stop practicing (' + mode + ')',
+      warning().indexOf('Keep practicing') > -1);
     // Practice must still work. A sync that blocks the exercise turns a
     // reporting problem into a teaching one.
     assert('their own history still records it locally (' + mode + ')',
@@ -201,7 +201,7 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
   // THE HISTORY THAT WAS FILED UNDER A NAME COMES ACROSS
   //===================================================================
   // e6ed7df moved the record to students/{uid} and left everything thirteen
-  // students had practised at students/{typed name}. Nothing reads it,
+  // students had practiced at students/{typed name}. Nothing reads it,
   // nothing writes it, and to them it looks deleted — and nobody was told,
   // because a document nobody asks for is not an error.
   const src = html.slice(html.indexOf('async migrateLegacyStudent'),
@@ -210,7 +210,7 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
   assert('IT COPIES AND NEVER DELETES — the rules forbid deleting a student, ' +
          'and not deleting cannot lose anything',
     src.indexOf('deleteDoc') === -1, src.slice(0, 120));
-  assert('it refuses to overwrite an account that has practised since',
+  assert('it refuses to overwrite an account that has practiced since',
     src.indexOf('if(already) return false;') > -1);
   assert('the summary crosses before the attempts, so a failure loses the ' +
          'smaller half',

@@ -357,7 +357,7 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
    front of someone who arrived by QR code — a shared link goes straight to
    the exercise, because a wall in front of the thing that works is a worse
    idea than no welcome at all. */
-/* Short by design. A student who came to practise will not read a
+/* Short by design. A student who came to practice will not read a
    paragraph, so the first line carries the essential fact and the rest
    folds away for whoever wants it. */
 .brief{ font-size:.78rem; color:var(--text-dim); margin:.5rem 0 .2rem; }
@@ -1097,7 +1097,7 @@ const CONFIG = {
   // The class meets in Denver. Every date this app says out loud is a school
   // date — which class day it is, which week of the plan — so it is computed
   // in the school's timezone and not in whatever timezone the phone holding
-  // it happens to be in. A student practising from another state, or a
+  // it happens to be in. A student practicing from another state, or a
   // teacher checking on a trip, should see the same class day the classroom
   // sees.
   //
@@ -1158,7 +1158,7 @@ const CONFIG = {
 
    Renaming a storage key is not free: on a device that has already been used,
    the app would look for ajar_student_name, find nothing, and ask a student
-   who has been practising for weeks to introduce themselves again — losing the
+   who has been practicing for weeks to introduce themselves again — losing the
    name their history is filed under, their teacher's note, and the batch they
    were part-way through.
 
@@ -3782,7 +3782,7 @@ function drawFromBank(kind, theme, bank){
 // used to make 3 of 4 items in a batch read as near-duplicates.
 // Real TOEFL 2026 emails always list exactly 3 required details as a
 // numbered list in the prompt — every entry below follows that pattern.
-// Word count stays 80-120: what a practising teacher reports the real
+// Word count stays 80-120: what a practicing teacher reports the real
 // test asks for, which takes precedence over the 130-140 figure a few web
 // guides suggest. ETS itself publishes no number for this task.
 // Write an Email — rebuilt to the real ETS task shape, taken from the
@@ -4009,7 +4009,7 @@ const DISCUSSION_BANK = {
     { course: 'a course on higher education',
       professor: { name: 'Dr. Okonjo', post: `Living arrangements shape a student's experience as much as their classes do. Some institutions encourage international students to live with host families, arguing that constant exposure to the language accelerates learning. Others point out that students who share flats with peers develop independence and build their own support networks. Which arrangement do you think benefits a language student more, and why?` },
       posts: [
-        { name: 'Sofia', text: `A host family, without question. You practise English at breakfast, during dinner, while watching television — situations no classroom reproduces. You also learn the small everyday expressions that textbooks never include, simply by hearing them used naturally. My own speaking improved faster in three months there than in a year of evening classes beforehand.` },
+        { name: 'Sofia', text: `A host family, without question. You practice English at breakfast, during dinner, while watching television — situations no classroom reproduces. You also learn the small everyday expressions that textbooks never include, simply by hearing them used naturally. My own speaking improved faster in three months there than in a year of evening classes beforehand.` },
         { name: 'Kenji', text: `I understand Sofia's point about constant exposure, but living with a family can also mean constant pressure. When I shared a flat, I could switch off when I needed to, and that made me more willing to speak the rest of the time. Independence matters too.` },
       ] },
   ],
@@ -6978,7 +6978,7 @@ function speakWithTTS(text, onEnd){
 function supportsSTT(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
 function listenOnce(onResult, onError){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ onError('This browser cannot record speech. On iPhone, Safari needs Dictation switched on in Settings → General → Keyboard. You can still practise — the sentence plays normally.'); return; }
+  if(!SR){ onError('This browser cannot record speech. On iPhone, Safari needs Dictation switched on in Settings → General → Keyboard. You can still practice — the sentence plays normally.'); return; }
   let settled = false;
   try{
     const rec = new SR();
@@ -7095,7 +7095,7 @@ async function loadSharedClassroomContent(){
      is a true message about the wrong thing, and it would send them to their
      teacher instead of to the sign-in button two taps away.
 
-     So the state is named before the request goes out. Practising alone is
+     So the state is named before the request goes out. Practicing alone is
      untouched: this only fires on a link that names a class. */
   if(isSharedLink && !hasAccount()){
     window.__exError = 'needs-account';
@@ -7354,7 +7354,7 @@ function renderTeacherSignIn(){
         <b>You are signed in, but this is not a teacher account.</b>
         <p class="small-note" style="margin:.3rem 0 .6rem">
           ${escapeHtml(u.email || 'This account')} does not have teacher access.
-          If you are a student, everything you need is on the Practise screen —
+          If you are a student, everything you need is on the Practice screen —
           nothing here is for you. If you should have teacher access, ask for
           your account to be approved.</p>
         <button class="btn sm ghost" onclick="teacherSignOut()">Sign out</button>
@@ -8141,7 +8141,7 @@ function renderSchoolClock(){
 
   // The student page adds the week once the device belongs to the class —
   // same anchor their teacher published, same arithmetic her panel does, so
-  // the two cannot drift. A visitor practising on their own sees the date
+  // the two cannot drift. A visitor practicing on their own sees the date
   // only, which is the honest answer: they are not in a week.
   const student = document.getElementById('student-clock');
   if(!student) return;
@@ -9145,7 +9145,7 @@ async function refreshClassProgress(){
        This used to fetch one document per roster name, at
        students/{name.toLowerCase()} — a path nothing has written since the
        record became the account. Every student came back missing, so the
-       panel drew an empty class while thirteen people were practising into
+       panel drew an empty class while thirteen people were practicing into
        it, and said nothing, because a document that does not exist is not
        an error.
 
@@ -9252,7 +9252,7 @@ function renderClassProgress(){
     ${privateAlarmHtml('Every student\'s weakest skill is')}
     <div class="panel" id="sec-class">
       <h2>📊 How the class is doing</h2>
-      <p class="small-note" style="margin-top:0">Updates as students practise. The app points at the weak spot; the advice is yours — it knows a number, you know the student.</p>
+      <p class="small-note" style="margin-top:0">Updates as students practice. The app points at the weak spot; the advice is yours — it knows a number, you know the student.</p>
       <div class="ex-actions" style="margin:.6rem 0 .9rem">
         <button class="btn sm" onclick="refreshClassProgress()">↻ Refresh now</button>
         <button class="btn ghost sm" onclick="togglePrivate('${PRIVATE_INSIGHT_KEY}')">🙈 Hide this again</button>
@@ -9278,7 +9278,7 @@ function renderNamePrompt(){
   const privacy = '<p class="small-note">Your name and practice history sync privately to this project\'s database, so your progress follows you if you switch phones or use a tablet — nothing is shared publicly or with classmates.</p>';
 
   // With a class list there is nothing to type, so nothing to mistype.
-  // Without one — a new school, or a student practising alone — the text
+  // Without one — a new school, or a student practicing alone — the text
   // box is still there, because the app must work before a teacher has
   // set anything up.
   // Still waiting to hear whether this class has a list. Offering the text box
@@ -9441,7 +9441,7 @@ const SCAN_ERRORS = {
     icon: '\u{1F511}',
     title: 'This is your class\u2019s link \u2014 sign in to open it',
     body: 'Your class keeps your work with you, so it needs to know who you are. ' +
-          'It takes a minute, once. You can also carry on practising on your own ' +
+          'It takes a minute, once. You can also carry on practicing on your own ' +
           'without an account \u2014 nothing here is lost either way.',
     action: '<button class="btn" onclick="dismissScanError();setView(\'account\')">Sign in</button>',
   },
@@ -9473,7 +9473,7 @@ function renderScanError(kind){
       </div>
       <div class="ex-actions" style="margin-top:1rem;justify-content:center">
         ${e.action || '<button class="btn" onclick="location.reload()">Try again</button>'}
-        <button class="btn ghost" onclick="dismissScanError()">Practise on my own instead</button>
+        <button class="btn ghost" onclick="dismissScanError()">Practice on my own instead</button>
       </div>
     </div>`;
 }
@@ -9521,7 +9521,7 @@ function renderSelfPractice(){
              shows whenever their teacher has not published anything, which is
              every time they open the app outside a lesson. They are worth
              reading ONCE, before a first full section, and never again; a
-             student practising for ten minutes on the bus should not have to
+             student practicing for ten minutes on the bus should not have to
              scroll past them. <details> is already the pattern for this in
              three other places in this file. -->
         <details style="margin:.6rem 0 0">
@@ -11492,7 +11492,7 @@ const INTERVIEW_MAX_LISTENS = 2;
    briefs say so plainly — "Two listens here, one on the real test."
 
    Carrying that into a rehearsal would hide the single fact the rehearsal
-   exists to teach. A student who has only ever practised with a second
+   exists to teach. A student who has only ever practiced with a second
    listen learns to rely on one that will not be there, and finds out on
    test day. So a section plays it once, and says so.
 
@@ -12039,7 +12039,7 @@ function renderListenRepeatStep(item){
       </div>
       ${!myTurn ? '' : (supportsSTT()
         ? '<p class="small-note">Press play, then repeat the sentence out loud — recording starts by itself the moment the sentence ends, with no extra tap, exactly like the real test.</p>'
-        : '<p class="small-note">This browser cannot record your voice, so your repetition will not be scored — you can still play each sentence and practise out loud, then use "Mark as practiced" to move on.</p>')}
+        : '<p class="small-note">This browser cannot record your voice, so your repetition will not be scored — you can still play each sentence and practice out loud, then use "Mark as practiced" to move on.</p>')}
       <div id="lr-timer" class="wordcount"></div>
       <div id="lr-result" role="status" aria-live="polite"></div>
       <div class="ex-actions" style="margin-top:.8rem">
@@ -12340,9 +12340,9 @@ function logUsage(type, theme, outcome01, name){
       //
       // It is not hypothetical. schools/*/students held one document, and
       // that document was a test — no way to tell, from the outside, whether
-      // nobody had practised or whether every save had failed in silence.
+      // nobody had practiced or whether every save had failed in silence.
       window.CloudSync?.pushAttempt(rawName, entry)
-        // 'no-school' is neither. Someone practising on their own has no
+        // 'no-school' is neither. Someone practicing on their own has no
         // teacher waiting, so warning them their work is not arriving would
         // be a lie about a working app.
         .then(res => { if(res !== 'no-school') setSyncState('live'); })
@@ -12379,7 +12379,7 @@ function renderSyncWarning(){
   if(SYNC_STATE !== 'failed'){ el.innerHTML = ''; return; }
   el.innerHTML = '<p class="small-note" role="alert" style="color:var(--amber);font-weight:600;margin:.4rem 0">' +
     '\u26a0 Your answers are saved on this phone, but they are not reaching your teacher. ' +
-    'Keep practising \u2014 tell her before the lesson ends.</p>';
+    'Keep practicing \u2014 tell her before the lesson ends.</p>';
 }
 // Combine this device's local history with whatever came back from the
 // cloud for this name, de-duped by timestamp (a fresh Date.now() per
@@ -12528,7 +12528,7 @@ window.__onCloudSyncReady = function(){
   // student's. Pulled on load rather than pushed, because a student may
   // open the link long after she saved it, and only redrawn when a name
   // has not been chosen yet — replacing the screen under someone who is
-  // already practising would be worse than a slightly stale list.
+  // already practicing would be worse than a slightly stale list.
   hydrateRosterFromCloud();
   // Order matters: prune first, so a device that still holds the old
   // whole-class object is cleaned even if the fetch below never resolves.
@@ -12738,7 +12738,7 @@ function setView(v){
 /* =========================================================
    WELCOME
    Three sentences, in the language of the phone reading them, and two
-   doors. Short on purpose twice over: a student who arrived to practise
+   doors. Short on purpose twice over: a student who arrived to practice
    will not read a paragraph, and a short text is one I can translate with
    far more confidence than a page — these renderings are mine, not a
    native speaker's, and that is worth a proofread before this goes wide.
@@ -13074,14 +13074,14 @@ function roleChoiceHtml(){
       <button class="btn ghost" style="width:100%;text-align:left;margin-bottom:.6rem;padding:.8rem"
               onclick="chooseRole('student')">
         <b>🎓 I am a student</b>
-        <div class="small-note" style="margin-top:.2rem">Practise, keep your history, and
+        <div class="small-note" style="margin-top:.2rem">Practice, keep your history, and
           join your class from the code your teacher shows.</div></button>
       <button class="btn ghost" style="width:100%;text-align:left;padding:.8rem"
               onclick="chooseRole('teacher')">
         <b>👩‍🏫 I am a teacher</b>
         <div class="small-note" style="margin-top:.2rem">Make and approve exercises for a class.
           Teacher access is checked by a person first, so this asks rather than grants —
-          you can practise straight away while you wait.</div></button>
+          you can practice straight away while you wait.</div></button>
       <p class="small-note" style="margin:.9rem 0 0">
         <a href="#" onclick="accountMode('choose');return false">Back</a></p>
     </div>`;
@@ -13131,7 +13131,7 @@ function profileFieldsHtml(prefillName){
         </div>
         <p class="small-note" style="margin:0 0 .7rem">
           A teacher account has to be approved before it can see a class, so this
-          creates a request rather than access. You can practise while you wait.</p>
+          creates a request rather than access. You can practice while you wait.</p>
       </div>
       <label style="display:block;margin-bottom:.5rem">
         <input type="checkbox" id="acct-consent">
@@ -13212,7 +13212,7 @@ function accountSignedInHtml(u){
       <p class="small-note" style="margin:0">${escapeHtml(u.email || '')} · ${escapeHtml(p.country || '')}</p>
       ${pending ? `<div class="panel" style="border-color:var(--amber);margin-top:.8rem">
         <b style="color:var(--amber)">⏳ Your teacher account is waiting to be approved.</b>
-        <p class="small-note" style="margin:.3rem 0 0">Until it is, you can practise
+        <p class="small-note" style="margin:.3rem 0 0">Until it is, you can practice
         like any student. Nothing about a class is visible to you yet.</p></div>` : ''}
       <button class="btn ghost sm" style="margin-top:.9rem" onclick="accountSignOut()">Sign out</button>
     </div>`;
@@ -13242,7 +13242,7 @@ function validateProfileForm(f){
   if(gate.reason === 'format' || gate.reason === 'impossible') return 'That date does not look right.';
   if(gate.reason === 'too-young')
     return `Ajar is for people aged ${MIN_AGE} and over, so we cannot create an account. ` +
-           `You can still practise here without one — nothing is saved about you.`;
+           `You can still practice here without one — nothing is saved about you.`;
   if(f.role === 'teacher' && !f.school) return 'Type the name of your school.';
   if(!f.consent) return 'Please read how your information is used, and tick the box.';
   return null;
@@ -13363,7 +13363,7 @@ async function finishProfile(f){
   }
   await refreshAccountProfile();
   accountMsg(f.role === 'teacher'
-    ? 'Account created. Your teacher access is waiting to be approved — you can practise in the meantime.'
+    ? 'Account created. Your teacher access is waiting to be approved — you can practice in the meantime.'
     : 'You are all set.', true);
 }
 
@@ -13534,9 +13534,9 @@ async function adminDecline(uid){
    FIRST and see the questions AFTER — options visible during the audio teach
    a student to read instead of to listen. So while the clip is playing the
    phones show no options at all. The class mode ends up MORE faithful to the
-   exam than practising alone, not less.
+   exam than practicing alone, not less.
 
-   Practising at home and sitting a full section are untouched. */
+   Practicing at home and sitting a full section are untouched. */
 const LIVE_PHASES = ['idle', 'listening', 'answering', 'revealed', 'ended'];
 
 /* ONE AUDIO, THEN THE QUESTIONS THAT BELONG TO IT.
@@ -13682,7 +13682,7 @@ function renderLiveForStudent(){
 
   if(LIVE.phase === 'listening' || !q){
     // No options, on purpose. This is the phase that makes the class mode
-    // more like the real test than practising alone.
+    // more like the real test than practicing alone.
     wrap.innerHTML = head + `<div class="compose"><div class="ex-body" style="text-align:center">
       <div style="font-size:2.6rem">👂</div>
       <h2 style="margin:.5rem 0 .2rem">Listen</h2>
@@ -13773,7 +13773,7 @@ async function answerLive(choice){
    applies. Deciding when the class is ready for the next question is not: she
    is in the room looking at thirteen faces, and she is the only one who can
    see whether they have got it. Taking that from her would remove the whole
-   advantage the class mode has over practising alone.
+   advantage the class mode has over practicing alone.
 
    And the reveal is where the lesson is — "nine of thirteen got it, so why did
    four of you choose B" is the teaching, and a clock that skipped past it
@@ -14029,7 +14029,7 @@ function renderLivePanel(){
 function renderWelcome(){
   // Runs during start-up. Anything thrown here takes the whole app down
   // before a single screen renders, so the welcome — which is decoration
-  // around two buttons — must never be the reason nobody can practise.
+  // around two buttons — must never be the reason nobody can practice.
   try{
     const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
     const en = WELCOME_TEXT.en;
@@ -14237,7 +14237,7 @@ function guideContent(role){
     <div class="rule">🛡️ Your teacher approves everything first, and nothing you do here
     touches your real grade.</div>
 
-    <h3>Practise as much as you want</h3>
+    <h3>Practice as much as you want</h3>
     <p>Redo anything, as many times as you like — only your <b>best score of the day</b>
     counts towards what your teacher sees. Getting it wrong three times costs you nothing.</p>
 
@@ -14307,7 +14307,7 @@ function privacyText(){
       <b>you and nobody else</b>. Not your classmates. Not your teacher. Not the
       person who runs the app. That is enforced by the database itself, not by
       a screen that hides a button.</p>
-    <p>What your class can see is your <b>name</b>, how much you have practised
+    <p>What your class can see is your <b>name</b>, how much you have practiced
       and how you did — and, only if you tick the box, <b>the day and month of
       your birthday</b>. Never the year, so nobody can work out your age from it.</p>
 
@@ -14345,7 +14345,7 @@ function privacyText(){
       <b>${escapeHtml(CONFIG.devEmail || '')}</b> from the address you signed up with.
       Deleting your account removes your profile and your practice history.</p>
 
-    <h3>Practising without an account</h3>
+    <h3>Practicing without an account</h3>
     <p>You do not need one. Everything works signed out — your practice is then
       saved on that device only, and nothing about you leaves it.</p>
 
@@ -14616,7 +14616,7 @@ function insightsHeaderHtml(s){
         '<i style="background:color-mix(in oklab, var(--accent) 76%, var(--surface-alt))"></i>' +
         '<i style="background:var(--accent)"></i>higher</div>' +
       '<p class="small-note" style="margin-top:.45rem">' + streakLine +
-        s.activeDays + ' day(s) practised &middot; shade is that day\'s best score, not how many times you tried.</p>' +
+        s.activeDays + ' day(s) practiced &middot; shade is that day\'s best score, not how many times you tried.</p>' +
     '</div></div>';
 }
 function showInsights(name){
@@ -14647,7 +14647,7 @@ function showInsights(name){
   const historyHtml = s.recentLog.map(e=>`<li>${new Date(e.ts).toLocaleDateString()} — ${tagFor(e.type)} (${THEME_LABELS[e.theme]||e.theme}): ${Math.round(e.outcome*100)}%</li>`).join('');
   modal.innerHTML = `<h2>📈 ${who} practice patterns</h2>
     <div class="sub">${s.total} attempt(s) logged${activeName ? ' under this name' : ' on this device'}</div>
-    <p class="small-note">Each score is your <b>best attempt of the day</b>, averaged across the days you practised — so repeating something until it clicks helps your number instead of dragging it down. Every attempt is still counted beside it.</p>
+    <p class="small-note">Each score is your <b>best attempt of the day</b>, averaged across the days you practiced — so repeating something until it clicks helps your number instead of dragging it down. Every attempt is still counted beside it.</p>
     ${streakHtml}
     ${trendHtml}
     <h3>💪 Strengths</h3><ul>${strengthsHtml}</ul>
@@ -14863,7 +14863,7 @@ loadSharedClassroomContent().then(()=>{
        NOTE FOR WHOEVER TURNS THIS ON: the Content-Security-Policy in _headers
        must already allow www.google.com/recaptcha and www.gstatic.com/recaptcha
        before you enforce. It does now. Enforcing first and widening the CSP
-       afterwards means every request is refused and nobody can practise. */
+       afterwards means every request is refused and nobody can practice. */
     if(CONFIG.appCheckSiteKey){
       try{
         const { initializeAppCheck, ReCaptchaV3Provider } =
@@ -14945,7 +14945,7 @@ loadSharedClassroomContent().then(()=>{
     // helper: this module loads before that code is guaranteed to exist.
     const hasAccount = () => !!(auth.currentUser && !auth.currentUser.isAnonymous);
     // Returned instead of writing when this device belongs to no class. The
-    // caller must not read it as a failure: practising alone is a supported
+    // caller must not read it as a failure: practicing alone is a supported
     // way to use this, not a broken one.
     const NO_SCHOOL = 'no-school';
     onAuthStateChanged(auth, user => {
@@ -14972,7 +14972,7 @@ loadSharedClassroomContent().then(()=>{
       // link, threw on every single exercise they finished. It was invisible
       // while the catch was empty. It is worse than invisible now that the
       // catch draws a warning, because "your work is not reaching your
-      // teacher" is the wrong thing to tell someone practising on their own:
+      // teacher" is the wrong thing to tell someone practicing on their own:
       // there is no teacher, and nothing is wrong.
       //
       // NO_SCHOOL is that third answer, distinct from success and failure.
@@ -15169,7 +15169,7 @@ loadSharedClassroomContent().then(()=>{
          reported rather than left as a button that does nothing.
 
          AND THE ANONYMOUS SESSION IS PROMOTED, NOT REPLACED. Someone who has
-         already practised has a history attached to an anonymous uid. link()
+         already practiced has a history attached to an anonymous uid. link()
          keeps that uid, so signing in carries their work across. Creating a
          fresh account instead would abandon it in silence, which is the exact
          failure this project spent a day removing. */
@@ -15197,7 +15197,7 @@ loadSharedClassroomContent().then(()=>{
         }
       },
       // Same promotion for the email route: an anonymous session that has
-      // practised keeps its uid and its history.
+      // practiced keeps its uid and its history.
       async createAccount(email, password, displayName) {
         await setPersistence(auth, browserLocalPersistence);
         const u = auth.currentUser;
@@ -15372,7 +15372,7 @@ loadSharedClassroomContent().then(()=>{
       /* THE HISTORY THAT WAS FILED UNDER A NAME.
 
          e6ed7df moved the student record to students/{uid} and did not carry
-         the old documents across. Everything thirteen students had practised
+         the old documents across. Everything thirteen students had practiced
          was left at students/{typed name}: nothing reads it, nothing writes
          it, and to them it looks like their history was deleted. Nobody was
          told, because a document nobody asks for is not an error.
@@ -15392,7 +15392,7 @@ loadSharedClassroomContent().then(()=>{
          nothing.
 
          And it will not overwrite. If the account already has a summary, the
-         student has practised since, and yesterday's numbers must not land on
+         student has practiced since, and yesterday's numbers must not land on
          top of today's. */
       async migrateLegacyStudent(name) {
         const u = auth.currentUser;
