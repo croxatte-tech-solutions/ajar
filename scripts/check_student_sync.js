@@ -189,7 +189,12 @@ function warning(){ return el('sync-warning').innerHTML || ''; }
   assert('and their own history still records it',
     (alone.store['ajar_usage_log_by_name'] || '').indexOf('passage') > -1);
   assert('the school-less path is guarded before it builds schools//students',
-    html.indexOf('if(noSchool()) return NO_SCHOOL;') > -1);
+    html.indexOf('if(noSchool() || !hasAccount()) return NO_SCHOOL;') > -1);
+  // Anonymous is local-only now. Attempting the write would be refused and
+  // reported to the student as work not reaching their teacher — a warning
+  // fired while the app does exactly what it promised them.
+  assert('and an anonymous session does not attempt a write it cannot make',
+    html.indexOf('|| !hasAccount()) return NO_SCHOOL;') > -1);
 
   //===================================================================
   // THE WARNING LIVES WHERE A RE-RENDER CANNOT EAT IT

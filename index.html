@@ -6650,10 +6650,37 @@ function applySharedPayload(payload){
 // full-payload hash if Firestore isn't reachable. Returns true when this
 // device should land straight on the student view (opened via a share
 // link/QR specifically, marked by "?s=1" or "?ex=<id>").
+/* Whether this visitor has a real account, as opposed to the anonymous
+   session every visitor gets. Read at call time: someone can sign in without
+   the page reloading, and the answer changes underneath. */
+function hasAccount(){
+  try{
+    const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
+    return !!(u && !u.isAnonymous);
+  }catch(e){ return false; }
+}
+
 async function loadSharedClassroomContent(){
   const params = new URLSearchParams(location.search);
   const exId = params.get('ex');
   const isSharedLink = params.get('s') === '1' || !!exId;
+
+  /* A class needs an account now, and the check is here rather than left to
+     the database.
+
+     The rules refuse these reads to an anonymous session, so without this the
+     student would scan the code on the wall and get a permission error — which
+     the app would honestly report as "this code belongs to a different class",
+     because from the outside a refusal looks the same whatever caused it. That
+     is a true message about the wrong thing, and it would send them to their
+     teacher instead of to the sign-in button two taps away.
+
+     So the state is named before the request goes out. Practising alone is
+     untouched: this only fires on a link that names a class. */
+  if(isSharedLink && !hasAccount()){
+    window.__exError = 'needs-account';
+    return true;
+  }
 
   /* "?ex=<id>" NEVER FALLS BACK. This is the bug that ruined a real class.
      ------------------------------------------------------------------
@@ -8838,6 +8865,14 @@ function getStudentBatch(){
    holding the phone, and one vague "something went wrong" would send all five
    to the teacher. */
 const SCAN_ERRORS = {
+  'needs-account': {
+    icon: '\u{1F511}',
+    title: 'This is your class\u2019s link \u2014 sign in to open it',
+    body: 'Your class keeps your work with you, so it needs to know who you are. ' +
+          'It takes a minute, once. You can also carry on practising on your own ' +
+          'without an account \u2014 nothing here is lost either way.',
+    action: '<button class="btn" onclick="dismissScanError();setView(\'account\')">Sign in</button>',
+  },
   gone: { icon: '🔎', title: 'This exercise is no longer available',
     body: 'Your teacher may have replaced it with a newer one. Ask her for the current code — the one on the screen now.' },
   'wrong-class': { icon: '🚪', title: 'This code is for a different class',
@@ -8865,7 +8900,7 @@ function renderScanError(kind){
         <p class="small-note" style="max-width:34ch;margin:.2rem auto 0">${escapeHtml(e.body)}</p>
       </div>
       <div class="ex-actions" style="margin-top:1rem;justify-content:center">
-        <button class="btn" onclick="location.reload()">Try again</button>
+        ${e.action || '<button class="btn" onclick="location.reload()">Try again</button>'}
         <button class="btn ghost" onclick="dismissScanError()">Practise on my own instead</button>
       </div>
     </div>`;
@@ -13594,6 +13629,9 @@ loadSharedClassroomContent().then(()=>{
     // nothing rather than to throw inside a fire-and-forget promise nobody
     // reads.
     const noSchool = () => !school();
+    // Asked of the auth object directly rather than through the page's
+    // helper: this module loads before that code is guaranteed to exist.
+    const hasAccount = () => !!(auth.currentUser && !auth.currentUser.isAnonymous);
     // Returned instead of writing when this device belongs to no class. The
     // caller must not read it as a failure: practising alone is a supported
     // way to use this, not a broken one.
@@ -13636,7 +13674,11 @@ loadSharedClassroomContent().then(()=>{
       },
       async pushAttempt(name, entry) {
         await authReady;
-        if(noSchool()) return NO_SCHOOL;
+        // Anonymous is local-only now, by design and by rule. Attempting the
+        // write would be refused and reported to the student as work that is
+        // not reaching their teacher — which would be a warning fired while
+        // the app does exactly what it promised.
+        if(noSchool() || !hasAccount()) return NO_SCHOOL;
         const key = name.toLowerCase();
         await setDoc(doc(db, 'schools', school(), 'students', key), { displayName: name, lastSeen: serverTimestamp() }, { merge: true });
         await addDoc(collection(db, 'schools', school(), 'students', key, 'attempts'), entry);
@@ -13670,7 +13712,7 @@ loadSharedClassroomContent().then(()=>{
       async pushSummary(name, summary) {
         if(!summary) return;
         await authReady;
-        if(noSchool()) return NO_SCHOOL;
+        if(noSchool() || !hasAccount()) return NO_SCHOOL;
         await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
           { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
       },
@@ -13868,7 +13910,7 @@ loadSharedClassroomContent().then(()=>{
       // and this is the only writer of that field.
       async shareBirthday(name, mmdd) {
         const u = auth.currentUser;
-        if(!u || noSchool() || !/^[0-9]{2}-[0-9]{2}$/.test(String(mmdd || ''))) return NO_SCHOOL;
+        if(!u || u.isAnonymous || noSchool() || !/^[0-9]{2}-[0-9]{2}$/.test(String(mmdd || ''))) return NO_SCHOOL;
         await setDoc(doc(db, 'schools', school(), 'students', name.toLowerCase()),
           { displayName: name, birthday: mmdd }, { merge: true });
         return true;

@@ -69,6 +69,38 @@ const outsider  = env.authenticatedContext('outsider').firestore();
 const owner     = env.authenticatedContext('the_admin').firestore();
 
 //===================================================================
+// AN ACCOUNT IS WHAT PUTS YOU IN A CLASS
+//===================================================================
+// Anonymous stays, and is now exactly what it says: practise alone, nothing
+// about you written anywhere. It buys no place in a class.
+await check('an anonymous visitor cannot read the class batch', () =>
+  assertFails(getDoc(doc(student, 'schools', SCHOOL, 'classroom', 'current'))));
+await check('nor a single shared exercise', () =>
+  assertFails(getDoc(doc(student, 'schools', SCHOOL, 'classroom', 'item_ok'))));
+await check('nor the class list of names', () =>
+  assertFails(getDoc(doc(student, 'schools', SCHOOL, 'classroom', 'roster'))));
+await check('AND THE PRIVATE NOTE THEY COULD READ BEFORE IS NOW SHUT TO THEM', () =>
+  assertFails(getDoc(doc(student, 'schools', SCHOOL, 'classroom', 'note_ana'))));
+await check('nor does anything about them get written to a school', () =>
+  assertFails(setDoc(doc(student2, 'schools', SCHOOL, 'students', 'someone'),
+    { displayName: 'Someone' })));
+// The hole the emulator found on this very change: isMemberOf() asks only
+// whether a profile names this school, so an anonymous session able to write
+// itself a profile could issue its own membership card.
+await check('AN ANONYMOUS SESSION CANNOT WRITE ITSELF A PROFILE', () =>
+  assertFails(setDoc(doc(student2, 'users', 'anon_other'),
+    { displayName: 'X', email: 'x@x.test', country: 'Brazil',
+      birthDate: '2000-01-01', role: 'student', schoolId: SCHOOL, createdAt: 1 })));
+await check('and therefore cannot make itself a member of a class', () =>
+  assertFails(setDoc(doc(student2, 'schools', SCHOOL, 'students', 'x'), { displayName: 'X' })));
+await check('nor read its own profile, having none it may write', () =>
+  assertFails(getDoc(doc(student2, 'users', 'anon_other'))));
+await check('an account holder who has not joined yet can still read the class', () =>
+  assertSucceeds(getDoc(doc(outsider, 'schools', SCHOOL, 'classroom', 'current'))));
+await check('but writes nothing there until their profile names the school', () =>
+  assertFails(setDoc(doc(outsider, 'schools', SCHOOL, 'students', 'zed'), { displayName: 'Zed' })));
+
+//===================================================================
 // A STUDENT WITH AN ACCOUNT CAN STILL RECORD THEIR OWN PRACTICE
 //===================================================================
 // The case that did not exist when these rules were tightened. Students were
@@ -155,29 +187,31 @@ await check('a teacher cannot promote themselves to another school', () =>
 //===================================================================
 // Email, country and date of birth live in users/{uid} and nowhere else.
 // A teacher does not need any student's date of birth in order to teach them.
+// Every actor here holds a real account: an anonymous session cannot have a
+// profile at all any more, which is a state the old fixtures pretended to.
 await check('a student reads their own profile', () =>
-  assertSucceeds(getDoc(doc(student, 'users', 'anon_student'))));
+  assertSucceeds(getDoc(doc(signedInStudent, 'users', 'signed_in_student'))));
 await check('a classmate cannot read it', () =>
-  assertFails(getDoc(doc(student2, 'users', 'anon_student'))));
+  assertFails(getDoc(doc(otherSchoolStudent, 'users', 'signed_in_student'))));
 await check('THEIR OWN TEACHER CANNOT READ IT EITHER', () =>
-  assertFails(getDoc(doc(alpha, 'users', 'anon_student'))));
+  assertFails(getDoc(doc(alpha, 'users', 'signed_in_student'))));
 await check('nor can the administrator', () =>
-  assertFails(getDoc(doc(admin, 'users', 'anon_student'))));
+  assertFails(getDoc(doc(admin, 'users', 'signed_in_student'))));
 await check('a profile with an invented field is refused', () =>
-  assertFails(setDoc(doc(student, 'users', 'anon_student'),
-    { displayName: 'Ana', country: 'Brazil', birthDate: '2007-04-11', role: 'student', isAdmin: true })));
+  assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student', isAdmin: true })));
 await check('a profile claiming a role that is not a role is refused', () =>
-  assertFails(setDoc(doc(student, 'users', 'anon_student'),
-    { displayName: 'Ana', country: 'Brazil', birthDate: '2007-04-11', role: 'admin' })));
+  assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'admin' })));
 await check('a profile with no country is refused', () =>
-  assertFails(setDoc(doc(student, 'users', 'anon_student'),
-    { displayName: 'Ana', country: '', birthDate: '2007-04-11', role: 'student' })));
+  assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: '', birthDate: '2005-01-01', role: 'student' })));
 await check('a malformed birth date is refused', () =>
-  assertFails(setDoc(doc(student, 'users', 'anon_student'),
-    { displayName: 'Ana', country: 'Brazil', birthDate: '11/04/07', role: 'student' })));
+  assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '01/01/05', role: 'student' })));
 await check('and nobody writes a profile under another person\'s id', () =>
-  assertFails(setDoc(doc(outsider, 'users', 'anon_student'),
-    { displayName: 'Ana', country: 'Brazil', birthDate: '2007-04-11', role: 'student' })));
+  assertFails(setDoc(doc(outsider, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student' })));
 
 //===================================================================
 // THE ONE GUARANTEE THE PRODUCT RESTS ON
@@ -296,10 +330,14 @@ await check('including at the old pre-multi-tenancy paths', () =>
 // classmate's summary. Anonymous auth is why: there is no identity to compare
 // a name against, so no rule can express "only Ana". These pass as WRITTEN,
 // not as WANTED — the day student accounts exist, they must flip to assertFails.
+// Narrowed, not closed. Anonymous can no longer reach either of these, so
+// the gap is now only between CLASSMATES — people who are in the class and
+// have every reason to be reading it. It closes for good when the student
+// record is keyed by uid instead of by the name they typed.
 await check('KNOWN GAP: a classmate can read another student\'s teacher note', () =>
-  assertSucceeds(getDoc(doc(student2, 'schools', SCHOOL, 'classroom', 'note_ana'))));
+  assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'classroom', 'note_ana'))));
 await check('KNOWN GAP: a classmate can read another student\'s summary', () =>
-  assertSucceeds(getDoc(doc(student2, 'schools', SCHOOL, 'students', 'ana'))));
+  assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'ana'))));
 await check('but a teacher of another school still cannot', () =>
   assertFails(getDoc(doc(beta, 'teachers', 'teacher_alpha'))));
 

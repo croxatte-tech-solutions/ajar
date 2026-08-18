@@ -54,7 +54,15 @@ function boot(opts){
   const asked = [];
   const cloud = new Proxy({}, {
     get(_, prop){
-      if(prop === 'currentUser') return () => (opts.teacher ? { isTeacher: true, schoolId: 'scan-school' } : null);
+      /* A class needs an account now, so the student scanning a code has one
+         unless a case says otherwise. Before this change the stub returned
+         null here and every scan below was being made by a visitor the
+         product no longer serves. */
+      if(prop === 'currentUser') return () => {
+        if(opts.teacher) return { uid:'t1', isAnonymous:false, roleKnown:true, isTeacher:true, schoolId:'scan-school' };
+        if(opts.anonymous) return { uid:'a1', isAnonymous:true, roleKnown:true, isTeacher:false, schoolId:null };
+        return { uid:'s1', email:'ana@x.test', isAnonymous:false, roleKnown:true, isTeacher:false, schoolId:null };
+      };
       if(prop === 'pullClassroomItem') return async id => {
         asked.push(id);
         if(opts.itemMode === 'denied'){ const e = new Error('Missing or insufficient permissions.'); e.code = 'permission-denied'; throw e; }
@@ -167,6 +175,31 @@ function panel(){ return el('practice-wrap').innerHTML || ''; }
   const bad = boot({ search: '?ex=has/slash&school=scan-school', docs: {} });
   await bad.api.loadSharedClassroomContent();
   assert('a malformed id is refused before it reaches Firestore', bad.asked.length === 0, bad.asked);
+
+  //===================================================================
+  // AN ANONYMOUS VISITOR IS SENT TO SIGN IN, NOT TOLD THEY ARE LOST
+  //===================================================================
+  // The rules refuse these reads to an anonymous session, and a refusal looks
+  // identical from outside whatever caused it — so without naming this state
+  // before the request goes out, a student scanning the code on the wall would
+  // be told the code belongs to a different class. True about the wrong thing,
+  // and it would send them to their teacher rather than to the sign-in button.
+  const noAcct = boot({ search: '?ex=ex_wanted&school=scan-school', anonymous: true,
+                        docs: { 'item_ex_wanted': itemDoc('ex_wanted') } });
+  await noAcct.api.loadSharedClassroomContent();
+  assert('a class link is not even fetched without an account',
+    noAcct.asked.length === 0, noAcct.asked);
+  noAcct.sandbox.currentView = 'student';
+  noAcct.api.setStudentName('Ana');
+  noAcct.api.renderStudent();
+  assert('and the screen asks them to sign in',
+    panel().indexOf('sign in to open it') > -1, panel().slice(0, 160));
+  assert('with a button that goes there, not a reload that will fail again',
+    panel().indexOf("setView('account')") > -1, panel().slice(0, 400));
+  assert('and it still offers to practise alone, which needs no account',
+    panel().indexOf('Practise on my own') > -1);
+  assert('nothing about them is written to the school',
+    noAcct.api.loadBatch().length === 0);
 
   //===================================================================
   // AND THE HAPPY PATH STILL WORKS

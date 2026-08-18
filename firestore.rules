@@ -112,6 +112,23 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId == schoolId;
     }
 
+    /* SOMEBODY WITH A REAL ACCOUNT, of either kind.
+
+       The line between practising alone and being in a class. Anonymous is
+       kept on purpose — a fifteen-year-old is below the age we may hold an
+       account for and must still be able to practise, a blocked pop-up on a
+       school network must not lock somebody out of the whole app, and a
+       stranger should be able to try this without handing over a birth date.
+       What anonymous no longer buys is a place in a class.
+
+       Note this is NOT what closes the two known gaps below. Every anonymous
+       visitor already has a stable uid; the gaps exist because a student
+       record is keyed by the name they typed rather than by that uid, and
+       they close when that changes, with or without anonymous. */
+    function hasAccount() {
+      return isSignedIn() && !isAnonymous();
+    }
+
     function isAnonymous() {
       return isSignedIn()
         && request.auth.token.firebase.sign_in_provider == 'anonymous';
@@ -179,8 +196,18 @@ service cloud.firestore {
           && request.resource.data.birthDate.size() == 10
           && request.resource.data.role in ['student', 'teacher'];
       }
-      allow read, delete: if isSignedIn() && request.auth.uid == uid;
-      allow create, update: if isSignedIn() && request.auth.uid == uid
+      /* hasAccount(), not isSignedIn(). Every visitor is signed in, because
+         students are signed in anonymously, so isSignedIn() here let an
+         ANONYMOUS session write itself a profile — and since isMemberOf()
+         asks only whether a profile names this school, that profile was a
+         self-issued membership card. An anonymous visitor could have named
+         any school and then read and written its student records.
+
+         Found by the emulator, on the change that made an account the thing
+         which puts you in a class. The hole existed the moment isMemberOf
+         was written; nothing reached it until membership started to matter. */
+      allow read, delete: if hasAccount() && request.auth.uid == uid;
+      allow create, update: if hasAccount() && request.auth.uid == uid
         && validProfile();
     }
 
@@ -259,7 +286,10 @@ service cloud.firestore {
       // read — that is how a QR code works without an account. Only that
       // school's teacher may write.
       match /classroom/{docId} {
-        allow read: if isSignedIn();
+        // Was isSignedIn(), which every visitor satisfies because the app
+        // signs everyone in anonymously — so "sign in to join a class" would
+        // have been a screen with nothing behind it.
+        allow read: if hasAccount();
         allow write: if isTeacherOf(schoolId);
       }
 
@@ -302,8 +332,12 @@ service cloud.firestore {
         // thing the multi-tenancy comment two screens up promises cannot
         // happen. It never showed up in review because the check looks
         // present until you ask what it actually compares.
-        allow read: if isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId);
-        allow create, update: if (isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId))
+        // Anonymous is gone from here entirely. Practising alone is a local
+        // activity now: nothing about that person is written to a school,
+        // which is a smaller claim on them than the old rule made and the
+        // honest meaning of "nothing is saved about you".
+        allow read: if isMemberOf(schoolId) || isTeacherOf(schoolId);
+        allow create, update: if (isMemberOf(schoolId) || isTeacherOf(schoolId))
           && studentId.size() <= 60
           && validStudent();
         // History is a record of what happened. Nothing in the app deletes
@@ -327,9 +361,8 @@ service cloud.firestore {
               && request.resource.data.ts is number;
           }
 
-          allow read: if isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId);
-          allow create: if (isAnonymous() || isMemberOf(schoolId) || isTeacherOf(schoolId))
-            && validAttempt();
+          allow read: if isMemberOf(schoolId) || isTeacherOf(schoolId);
+          allow create: if (isMemberOf(schoolId) || isTeacherOf(schoolId)) && validAttempt();
           // An attempt is a fact about the past. Editing or deleting one
           // would let a student rewrite the history their teacher reads.
           allow update, delete: if false;
