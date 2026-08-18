@@ -14112,6 +14112,78 @@ function britishNoteHtml(text){
     </ul></div>`;
 }
 
+/* =========================================================
+   WHEN SOMETHING BREAKS THAT NOTHING EXPECTED
+   ========================================================= */
+
+/* Nothing anywhere caught an uncaught error. That is the last and most
+   ironic version of the failure this project has spent a week removing: every
+   deliberate write now reports itself, and a plain programming mistake — a
+   renderer throwing on a shape it did not expect — still killed the screen in
+   total silence. A student sees a page that stopped responding and thinks
+   they broke it; the teacher sees a student who has stopped working.
+
+   It is deliberately NOT a crash screen. Most of what reaches here is
+   survivable: one render failed, the rest of the app is fine, and replacing
+   the whole page would destroy work that is still there. So it says what
+   happened, says their practice is saved, offers a reload, and gets out of
+   the way.
+
+   Kept locally rather than sent anywhere. There is no error-reporting service
+   here on purpose — these are minors, the app promises their data does not
+   leave except to their teacher, and shipping a third-party script that
+   receives stack traces from their phones would quietly break that promise
+   for a convenience only the developer enjoys. The last few are stored on the
+   device so a student can read the number out to their teacher, and the
+   console holds the detail for whoever is looking. */
+const ERROR_LOG_KEY = 'ajar_last_errors';
+function recordUnexpected(kind, message, where){
+  const entry = { kind, message: String(message || '').slice(0, 300),
+                  where: String(where || '').slice(0, 200), at: Date.now() };
+  try{
+    const past = JSON.parse(localStorage.getItem(ERROR_LOG_KEY) || '[]');
+    past.push(entry);
+    localStorage.setItem(ERROR_LOG_KEY, JSON.stringify(past.slice(-10)));
+  }catch(e){
+    // Storage refused — private mode, or full. The console still has it, and
+    // failing to record a failure must not become a second failure.
+    console.warn('Ajar: could not store the error record —', e);
+  }
+  showUnexpectedNotice();
+}
+function showUnexpectedNotice(){
+  let box = document.getElementById('unexpected-error');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'unexpected-error';
+    box.setAttribute('role', 'alert');
+    box.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:1rem;' +
+      'z-index:9999;max-width:min(92vw,34rem);background:var(--surface);color:var(--text);' +
+      'border:1px solid var(--red);border-radius:12px;padding:.8rem 1rem;box-shadow:var(--shadow)';
+    document.body.appendChild(box);
+  }
+  box.innerHTML = '<b style="color:var(--red)">⚠ Something on this screen stopped working.</b>' +
+    '<p class="small-note" style="margin:.3rem 0 .6rem">Your practice is saved. ' +
+    'Reloading usually fixes it — and if it keeps happening, tell your teacher.</p>' +
+    '<button class="btn sm" onclick="location.reload()">Reload</button> ' +
+    '<button class="btn ghost sm" onclick="dismissUnexpected()">Keep going</button>';
+}
+function dismissUnexpected(){
+  const box = document.getElementById('unexpected-error');
+  if(box) box.remove();
+}
+// Both halves. An exception and a rejected promise are the same event to the
+// person looking at the screen, and only one of them fires window.onerror.
+window.addEventListener('error', e => {
+  console.error('Ajar: unexpected error —', e.error || e.message);
+  recordUnexpected('error', (e.error && e.error.message) || e.message,
+                   (e.filename || '') + ':' + (e.lineno || ''));
+});
+window.addEventListener('unhandledrejection', e => {
+  console.error('Ajar: unhandled rejection —', e.reason);
+  recordUnexpected('rejection', (e.reason && e.reason.message) || e.reason, '');
+});
+
 function renderWelcome(){
   // Runs during start-up. Anything thrown here takes the whole app down
   // before a single screen renders, so the welcome — which is decoration
@@ -14922,7 +14994,8 @@ loadSharedClassroomContent().then(()=>{
            EmailAuthProvider, updateProfile,
            signOut, setPersistence, browserLocalPersistence, browserSessionPersistence }
     from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc, addDoc, deleteDoc, collection, onSnapshot, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+  import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+           doc, getDoc, setDoc, addDoc, deleteDoc, collection, onSnapshot, serverTimestamp, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
   // Infrastructure identifiers, not brand: the project id keeps its
   // original string because renaming it means a new Firebase project.
@@ -14964,7 +15037,31 @@ loadSharedClassroomContent().then(()=>{
     }
 
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    /* THE SCHOOL'S WIFI, ANSWERED WHERE IT ACTUALLY BREAKS.
+
+       Every incident this project has fixed had the same first domino: a
+       write that did not reach Firestore because the connection dropped for a
+       second. The roster that never arrived. The QR codes pointing at
+       documents never written. A student's practice invisible to their
+       teacher. Each was fixed by REPORTING the failure, which is right and
+       which still leaves the person to try again.
+
+       This stops most of them happening. With a persistent local cache,
+       Firestore queues writes on disk and sends them when the network comes
+       back — so a dropped second in a lesson becomes a delay instead of a
+       loss, and reads keep working from cache while it is down. It is one
+       call, it is on the free tier, and it needs no backend.
+
+       Multi-tab, because she runs the classroom screen in a second tab and
+       two tabs fighting over one IndexedDB is the failure mode this manager
+       exists to prevent.
+
+       It falls back to an in-memory cache on its own if IndexedDB is refused
+       — Firefox private browsing, a full disk, an old WebView — so the worst
+       case is exactly today's behaviour rather than a broken app. */
+    const db = initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    });
 
     let authReadyResolve;
     const authReady = new Promise(res => { authReadyResolve = res; });

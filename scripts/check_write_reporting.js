@@ -95,6 +95,53 @@ assert('every CloudSync write can report its own failure (' + uncovered.length +
 assert('the list of writes has not quietly shrunk to make this pass',
   WRITES.length >= 18, WRITES.length);
 
+/* AND THE ERRORS NOBODY WROTE A WRITE FOR.
+
+   Every deliberate write reports itself now. A plain programming mistake — a
+   renderer throwing on a shape it did not expect — still killed the screen in
+   silence, which is the same failure wearing different clothes: the student
+   thinks they broke it, the teacher sees somebody who stopped working. */
+assert('an uncaught error is caught', body.indexOf("addEventListener('error'") > -1);
+assert('and so is a rejected promise nobody handled',
+  body.indexOf("addEventListener('unhandledrejection'") > -1);
+assert('the person is told, not just the console',
+  body.indexOf('stopped working') > -1);
+assert('and told their work is safe, which is the part they need',
+  body.indexOf('Your practice is saved') > -1);
+assert('it offers a way on without a reload, because most of these survive',
+  body.indexOf('dismissUnexpected()') > -1);
+
+/* NO STACK TRACES LEAVE THESE PHONES.
+
+   The obvious move is an error-reporting service, and every one of them is a
+   third-party script receiving data from a minor's device. This app promises
+   their data does not leave except to their teacher, and a convenience only
+   the developer enjoys is a poor reason to break it. */
+// Matched on script SOURCES, not on any mention of the word. The first
+// version of this fired on `scrollbar-width`, which contains "rollbar" — a
+// rule that reads the whole file for a brand name will find one eventually,
+// and a false alarm in a security-ish check is how people learn to skip it.
+{
+  const scriptSrcs = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/g)].map(m => m[1]);
+  const external = scriptSrcs.filter(u => /sentry|bugsnag|rollbar|logrocket|datadog|fullstory|hotjar/i.test(u));
+  assert('no third-party error reporter was added', external.length === 0, external.join(', '));
+}
+
+/* THE BAD WIFI, ANSWERED WHERE IT BREAKS.
+
+   Every incident this project fixed started the same way: a write that did
+   not reach Firestore because the connection dropped for a second. Reporting
+   the failure is right and still leaves the person to retry. A persistent
+   cache queues the write and sends it when the network returns, so the second
+   becomes a delay instead of a loss. */
+{
+  const moduleBlock = html.slice(html.search(/<script[^>]*type\s*=\s*["']module["']/));
+  assert('Firestore keeps a local cache, so a dropped second is not a lost write',
+    moduleBlock.indexOf('persistentLocalCache(') > -1);
+  assert('and handles the second tab she runs the classroom screen in',
+    moduleBlock.indexOf('persistentMultipleTabManager()') > -1);
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.indexOf('FAIL') > -1);
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
