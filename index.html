@@ -8701,9 +8701,25 @@ function onTeacherNoteChange(name){
 }
 
 let _classProgress = {};
+/* THE SAME BUG A SECOND TIME, BY A DIFFERENT ROUTE.
+
+   The fix above corrected WHERE this reads from — accounts rather than typed
+   names. It left the gate: return early unless loadRoster().students has
+   entries. That gate was written when she typed the list, and one commit
+   earlier that list stopped being typed. Nothing writes students to the
+   roster any more, so on any device that has not got her old localStorage the
+   length is zero, this returns immediately, and the panel is empty again —
+   the exact symptom the fix exists to remove, reached from the other side.
+
+   It survives on her current laptop only because what she typed last term is
+   still sitting in that browser. A new device, or a second teacher, gets the
+   empty class. That is the worst shape a bug can have: working where it is
+   being watched.
+
+   So the gate is the accounts too, and the roster is out of this function
+   entirely. */
 async function refreshClassProgress(){
-  const roster = loadRoster().students || [];
-  if(!roster.length || !window.CloudSync || !window.CloudSync.pullClassMembers) return;
+  if(!window.CloudSync || !window.CloudSync.pullClassMembers) return;
   try{
     /* READ THE ACCOUNTS, THEN ASK THE BRIDGE WHICH ONE IS ANA.
 
@@ -8734,14 +8750,14 @@ async function refreshClassProgress(){
     //
     // The catch below cannot help, whatever its comment says. The assignment
     // succeeds and the throw happens later, in a different function.
+    // Keyed by the name each student chose for themselves, which is what the
+    // rest of the panel draws with and what she calls them.
     const out = {};
-    roster.forEach(n => {
-      // No account behind the name is a real state, not a failure: somebody
-      // she typed in who has not signed in yet. They stay off the panel.
-      const uid = uidForName(n);
-      if(uid && byUid[uid]) out[n] = byUid[uid];
+    members.forEach(m => {
+      const name = String(m.displayName || '').trim();
+      if(name) out[name] = m;
     });
-    _classProgress = out || {};
+    _classProgress = out;
     if(currentView === 'teacher') renderClassProgress();
   }catch(e){ /* offline — the panel keeps whatever it last showed */ }
 }

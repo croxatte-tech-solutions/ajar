@@ -48,6 +48,28 @@ ${combined}
   setClassMembers([{ uid:'u_alex', displayName:'Alex' }, { uid:'u_sam', displayName:'Sam' }]);
   saveRoster({ students: ['Alex','Sam'], present: [] });
 
+  /* THE PANEL MUST NOT DEPEND ON A LIST NOBODY TYPES.
+
+     The read was fixed to fetch accounts instead of typed names, and the GATE
+     was left behind: return early unless loadRoster().students has entries.
+     That gate was written when she typed the list; the list stopped being
+     typed one commit before the fix landed. So the panel went empty again on
+     any device without her old browser storage — the same symptom, reached
+     from the other side, and invisible on the one laptop anybody was
+     watching.
+
+     Asserted on the source, because the failure is an early return: a
+     behavioural probe of an empty function body cannot tell "returned early"
+     from "found nothing". */
+  const refreshSrc = __html.slice(__html.indexOf('async function refreshClassProgress()'),
+                                  __html.indexOf('async function refreshClassProgress()') + 900);
+  assert('the class panel does not gate on the typed roster',
+    refreshSrc.indexOf('roster.length') === -1, refreshSrc.slice(0, 200));
+  assert('nor read students out of it at all',
+    refreshSrc.indexOf('loadRoster()') === -1, refreshSrc.slice(0, 200));
+  assert('it gates on the accounts it is about to read',
+    refreshSrc.indexOf('pullClassMembers') > -1);
+
   // --- the diagnosis comes from real attempts, not from nothing ---
   assert('a student with no attempts has no summary', progressSummary('Alex') === null);
   for(let i=0;i<4;i++) logUsage('daily-read','money', 1, 'Alex');
@@ -164,6 +186,9 @@ const sandbox = {
 };
 sandbox.self = sandbox.window;
 sandbox.globalThis = sandbox;
+// Some assertions read the source rather than the behaviour, because an early
+// return and an empty result look identical from outside.
+sandbox.__html = html;
 // The panel refuses to render without a signed-in teacher, and showSection
 // bails for the same reason — so the tab-switching assertions below need one.
 const cloudStub = new Proxy({}, {
