@@ -281,11 +281,23 @@ service cloud.firestore {
 
     match /schools/{schoolId} {
 
-      // The school document itself holds only a display name. Nothing
-      // reads it yet; it exists so a school is a real record rather than a
-      // string that happens to appear in paths.
-      allow read: if isSignedIn();
-      allow write: if false;
+      /* CLOSED. Nothing reads this document — the app never fetches it, and
+         the display name a school shows comes from the teacher's own private
+         record. It existed so a school would be a real row rather than a
+         string appearing in paths, and that is all it needs to be.
+
+         It was `isSignedIn()`, which every visitor satisfies because students
+         are signed in anonymously. That made it an ENUMERATION ORACLE for the
+         one secret this model rests on: an attacker with no account could ask
+         whether a guessed schoolId exists and read the answer off exists(),
+         then spend one throwaway account on the ones that came back true.
+         Every other read under schools/ already required a real account or
+         membership; this was the last isSignedIn() in the file that mattered,
+         and the third time that pattern has been found here.
+
+         Shut entirely rather than narrowed to hasAccount(), because a
+         document nothing reads should not be readable. */
+      allow read, write: if false;
 
       // Everything the class receives: the whole-class batch
       // (classroom/current) and one document per shared exercise

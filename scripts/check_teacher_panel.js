@@ -277,11 +277,22 @@ assert('schoolId is still not editable from the app',
 assert('and her record is still readable only by her',
   /allow read: if isSignedIn\(\) && request\.auth\.uid == uid/.test(teacherRule2));
 
-// The public school document must NOT have gained a writable display name.
+/* It is not publicly readable any more, and that is the stronger claim.
+
+   This asserted the school document stayed read-only — written when it was
+   readable by anyone signed in, to stop a display name being made writable
+   there. A security audit found the read itself was the problem: isSignedIn()
+   is satisfied by the anonymous session every visitor gets, so guessing a
+   school id and reading the answer off exists() turned the one secret this
+   model rests on into something searchable.
+
+   Nothing reads the document. So the assertion is now that nothing CAN. */
 const schoolRule = rules.slice(rules.indexOf('match /schools/{schoolId}'),
                                rules.indexOf('match /classroom/'));
-assert('the publicly readable school document stays read-only',
-  /allow write: if false/.test(schoolRule));
+assert('the school document is readable by nobody, since nothing reads it',
+  /allow read, write: if false;/.test(schoolRule), schoolRule.slice(0, 200));
+assert('and no rule under it grants a bare signed-in read',
+  !/allow read: if isSignedIn\(\);/.test(schoolRule));
 
 // --- the class-day flow lives on one screen ---
 //

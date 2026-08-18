@@ -350,6 +350,24 @@ await check('not even the teacher', () =>
   assertFails(deleteDoc(doc(alpha, 'schools', SCHOOL, 'students', 'ana'))));
 
 //===================================================================
+// THE SCHOOL DOCUMENT ANSWERS NOBODY
+//===================================================================
+// It was readable by anyone signed in — which is everyone, since students are
+// signed in anonymously — and that made it an enumeration oracle for the one
+// secret this model rests on: guess a schoolId, read the answer off exists(),
+// then spend a throwaway account on the ones that came back true.
+await check('an anonymous visitor cannot confirm a school exists', () =>
+  assertFails(getDoc(doc(student, 'schools', SCHOOL))));
+await check('nor can an account holder who is not in it', () =>
+  assertFails(getDoc(doc(outsider, 'schools', SCHOOL))));
+await check('nor a student who IS in it, since nothing reads this document', () =>
+  assertFails(getDoc(doc(signedInStudent, 'schools', SCHOOL))));
+await check('nor its own teacher', () =>
+  assertFails(getDoc(doc(alpha, 'schools', SCHOOL))));
+await check('and a guessed id gives away nothing either', () =>
+  assertFails(getDoc(doc(student, 'schools', 'school-guessed-0001'))));
+
+//===================================================================
 // SIGNED OUT IS OUT
 //===================================================================
 await check('a stranger who is not signed in reads nothing', () =>

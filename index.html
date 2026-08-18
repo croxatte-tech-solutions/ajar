@@ -720,15 +720,17 @@ const CONFIG = {
   // whose own tests exist to catch exactly that.
   appCheckSiteKey: '6LeWCYstAAAAALcXbg8hCCRY4kKzJOujQIq3GzRG',
 
-  // TODO(auth): there is no authentication anywhere in this app.
-  // Anyone holding a share link can write to the classroom document,
-  // INCLUDING the teacher-approval path in shareApproved(). That is a
-  // pilot-scale shortcut, not a design decision, and it is the first
-  // thing to close when a real server exists. Flip this to true and
-  // wire the sign-in then; the flag exists so "no auth" is a stated
-  // temporary state in one place rather than an unexamined premise
-  // spread through the code.
-  authRequired: false,
+  /* The authRequired flag that used to sit here is gone, and so is the
+     comment warning that anyone with a share link could write to the
+     classroom document including the approval path. Neither was true any
+     more: nothing read the flag, and writing to classroom/ has required
+     isTeacherOf(schoolId) — enforced by the database, not by the page —
+     since multi-tenancy landed.
+
+     Removed rather than corrected because a comment describing a hole that
+     was closed is worse than no comment: the next person to read it, human
+     or otherwise, goes looking for a bypass that does not exist, or worse,
+     believes one is available. */
 };
 
 // Which school the current visitor belongs to. A share link carries it, so
