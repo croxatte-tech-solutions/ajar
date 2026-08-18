@@ -7072,7 +7072,13 @@ function teacherResetPassword(){
 }
 function teacherSignOut(){
   if(!window.CloudSync) return;
-  window.CloudSync.signOutTeacher().then(()=>{ renderTeacherSignIn(); renderShareBox(); renderWhoAmI(); });
+  window.CloudSync.signOutTeacher()
+    .then(()=>{ renderTeacherSignIn(); renderShareBox(); renderWhoAmI(); })
+    // signOutTeacher signs back in anonymously afterwards, which needs the
+    // network — so this can reject, and without a catch the button simply
+    // did nothing visible. Its twin on the account screen already said so.
+    .catch(e => { console.error('Ajar: sign-out failed —', e);
+                  teacherSignInMsg('Could not sign out. Check the connection and try again.', false); });
 }
 // Fired by the auth listener in the module script, including on the
 // initial anonymous sign-in.
@@ -7154,6 +7160,11 @@ function publishOneItem(item){
     });
 }
 
+// One string, two places: the optimistic paint and the confirmation. Written
+// out twice it would drift, and the pair that must agree is the one saying
+// the class has nothing.
+const SHARE_EMPTY_HTML = '<div class="panel"><p class="small-note">\u{1F4E4} Nothing approved yet — once you approve at least one item above, the link/QR here goes live automatically. Until then, students who scan it won\u2019t see anything new.</p></div>';
+
 function renderShareBox(){
   const box = document.getElementById('share-box');
   const approved = loadBatch().filter(i=>i.status==='approved');
@@ -7178,10 +7189,31 @@ function renderShareBox(){
     // student scanning the QR right after a re-generate would silently
     // get served yesterday's (or five-minutes-ago's) exercise instead of
     // whatever the teacher is currently looking at. This closes that gap.
+    /* The one write in this file that still swallowed, and the worst one to.
+
+       Her screen goes to "nothing approved" from LOCAL state, so it says that
+       whether or not the clear reached Firestore. If it did not — a second of
+       school wifi is enough — the document on the far side still holds the old
+       batch, and the code on the wall keeps handing out yesterday's exercise
+       to anyone who scans it. She has no way to know, because her screen is
+       already telling her the class has nothing.
+
+       Exactly the shape that cost a lesson, on the write whose entire job is
+       to stop students being served stale material. */
     if(window.CloudSync){
-      window.CloudSync.pushClassroomBatch({ items: [], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null, termStart }).catch(()=>{});
+      window.CloudSync.pushClassroomBatch({ items: [], individual: {}, speakingTurn: speakTurn.length ? speakTurn : null, teacherEmail: teacherEmailRaw || null, announcement: announcementRaw || null, termStart })
+        .then(() => { box.innerHTML = SHARE_EMPTY_HTML; })
+        .catch(err => {
+          console.error('Ajar: clearing the class batch failed —', err);
+          box.innerHTML = `<div class="panel" style="border-color:var(--red)">
+            <b style="color:var(--red)">\u26a0 Your students may still be seeing the old exercises.</b>
+            <p class="small-note" style="margin:.3rem 0 .6rem">Nothing is approved on this device, but
+            clearing it for the class did not go through. Until it does, the code on the wall still
+            opens what was shared before.</p>
+            <button class="btn sm" onclick="renderShareBox()">Try again</button></div>`;
+        });
     }
-    box.innerHTML = `<div class="panel"><p class="small-note">📤 Nothing approved yet — once you approve at least one item above, the link/QR here goes live automatically. Until then, students who scan it won't see anything new.</p></div>`;
+    box.innerHTML = SHARE_EMPTY_HTML;
     return;
   }
 
@@ -11684,7 +11716,7 @@ function getStudentName(){ return localStorage.getItem('ajar_student_name') || '
    across the whole class — it can only summarize what happened
    on THIS device, per name typed on it. Real classwide
    auto-flagging needs the local-server phase already planned.
-   ponytail: per-device-per-name signal only, no cross-device
+   KNOWN CEILING: per-device-per-name signal only, no cross-device
    rollup — upgrade to a shared backend if the pilot needs that.
    ========================================================= */
 function loadUsageLogAll(){
@@ -11704,9 +11736,19 @@ function migrateLegacyUsageLog(){
       const key = (getStudentName() || '_anon').toLowerCase();
       all[key] = (all[key] || []).concat(log).slice(-60);
       localStorage.setItem('ajar_usage_log_by_name', JSON.stringify(all));
+      localStorage.removeItem('ajar_usage_log');
+    } else {
+      // Nothing to carry across, so dropping it loses nothing.
+      localStorage.removeItem('ajar_usage_log');
     }
-  }catch(e){}
-  localStorage.removeItem('ajar_usage_log');
+  }catch(e){
+    /* The removal used to sit OUT here, after the catch, so a legacy log that
+       failed to parse was deleted anyway — the one case where there was
+       something to save and we could not read it, answered by throwing it
+       away. It is kept now, and said out loud, because a corrupt file you
+       still have can be recovered and one you deleted cannot. */
+    console.error('Ajar: the old practice history could not be read, so it was left in place —', e);
+  }
 }
 // What the teacher's screen reads, one small document per student instead
 // of their whole history. Pulling 13 full histories every refresh would be
@@ -11771,8 +11813,14 @@ function logUsage(type, theme, outcome01, name){
         .then(res => { if(res !== 'no-school') setSyncState('live'); })
         .catch(err => { console.error('Ajar: this attempt did not reach your teacher —', err);
                         setSyncState('failed'); });
+      // Same signal as the attempt beside it. These are two independent
+      // writes, so one can land and the other not — and this is the one her
+      // class panel actually reads. A student seeing "saved" while her screen
+      // stays blank is the asymmetry that made this worth fixing.
       window.CloudSync?.pushSummary?.(rawName, progressSummary(rawName))
-        .catch(err => console.error('Ajar: the progress summary did not reach your teacher —', err));
+        .then(res => { if(res !== 'no-school') setSyncState('live'); })
+        .catch(err => { console.error('Ajar: the progress summary did not reach your teacher —', err);
+                        setSyncState('failed'); });
     }
   }catch(e){
     console.error('Ajar: logging this attempt failed —', e);
@@ -13777,7 +13825,7 @@ function renderWelcomeBack(){
    script/language typed on the phone's keyboard; what this
    adds is making the invitation itself legible in that
    language instead of silently defaulting to English-only copy.
-   ponytail: curated, Claude-drafted translations for one short
+   KNOWN CEILING: curated, Claude-drafted translations for one short
    sentence in ~12 likely languages, not a full localization
    layer — worth a native-speaker proofread before real rollout,
    flagged here rather than silently assumed correct.

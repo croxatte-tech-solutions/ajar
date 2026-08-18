@@ -85,11 +85,22 @@ assert('and shows nothing to sign out of when nobody is signed in',
   whoAmI.indexOf('u && u.isTeacher') > -1);
 assert('signing out actually clears the session',
   /signOutTeacher\(\)/.test(html));
-// Line-based, not [^;]*: the call chain is several statements on one line,
-// so a "no semicolons between" regex misses text that is plainly there.
-// Third time that pattern has produced a false failure in this repo.
-const signOutLine = (html.split('\n').find(l => l.indexOf('signOutTeacher()') > -1 && l.indexOf('then') > -1) || '');
-assert('and redraws the header afterwards', signOutLine.indexOf('renderWhoAmI') > -1);
+/* The whole chain, not one line of it.
+
+   This read a single line, because the call used to be a single line. It is
+   now a .then and a .catch across several, so the line-based read found the
+   call and missed everything hanging off it — the fourth time in this repo
+   that a scan sized to today's formatting has produced a false failure.
+   Sized to the statement instead. */
+const signOutAt = html.indexOf('window.CloudSync.signOutTeacher()');
+const signOutChain = signOutAt === -1 ? '' : html.slice(signOutAt, signOutAt + 700);
+assert('and redraws the header afterwards', signOutChain.indexOf('renderWhoAmI') > -1);
+// signOutTeacher signs back in anonymously afterwards, which needs the
+// network — so it can reject, and a button that then does nothing visible is
+// a button that reads as broken.
+assert('and says so if signing out does not go through',
+  /\.catch\(/.test(signOutChain) && signOutChain.indexOf('teacherSignInMsg') > -1,
+  signOutChain.slice(0, 200));
 
 // --- a teacher's name is hers, and shown in full ---
 //

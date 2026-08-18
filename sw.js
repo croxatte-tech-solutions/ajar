@@ -1,7 +1,7 @@
 // Minimal offline app-shell cache. Deliberately leaves Firebase/gstatic
 // requests alone (network-only) — caching those could serve stale data or
 // break CDN version pinning, and they already fail gracefully offline.
-// ponytail: app-shell-only cache, no runtime asset versioning strategy —
+// KNOWN CEILING: app-shell-only cache, no runtime asset versioning strategy —
 // bump CACHE_NAME by hand when index.html changes meaningfully.
 const CACHE_NAME = 'ajar-shell-v2';
 // Audio lives in its own cache that is NOT wiped when the shell version
