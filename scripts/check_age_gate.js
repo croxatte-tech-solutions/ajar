@@ -269,6 +269,30 @@ function boot(opts){
     pv.indexOf('without an account') > -1);
 
   //===================================================================
+  // THE OPTIONAL CONSENT IS OPTIONAL, AND SAYS SO
+  //===================================================================
+  // Bundling this into the required box would make the account conditional on
+  // agreeing to it — and consent that is a condition of the service is not
+  // freely given, which means it is not consent and the data could not
+  // lawfully be used for this at all. Tying them together would have produced
+  // the opposite of the intention: the data collected, and no right to use it.
+  assert('the research consent is a separate control from the required one',
+    html.indexOf('id="acct-research"') > -1 && html.indexOf('id="acct-consent"') > -1);
+  assert('AND IT IS NOT TICKED FOR THEM',
+    html.indexOf('id="acct-research" checked') === -1
+    && html.indexOf('id="acct-research"') > -1);
+  assert('refusing it does not stop an account being created',
+    a.validateProfileForm({ name:'Ana', country:'Brazil', dob:'2000-01-01',
+                            role:'student', consent:true, research:false }) === null);
+  assert('and the form never demands it', html.indexOf("!f.research") === -1);
+  assert('the notice says leaving it unticked changes nothing',
+    pv.indexOf('Leave it unticked and nothing changes') > -1);
+  assert('and that it is never a condition of having an account',
+    pv.indexOf('never will be') > -1);
+  assert('and that counts naming nobody are worked out either way',
+    pv.indexOf('name nobody') > -1);
+
+  //===================================================================
   // ERRORS A PERSON CAN ACT ON
   //===================================================================
   assert('a blocked popup says to allow pop-ups',

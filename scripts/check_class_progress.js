@@ -43,7 +43,10 @@ ${combined}
   localStorage.removeItem('ajar_teacher_notes');
   localStorage.removeItem('ajar_usage_log_by_name');
   localStorage.removeItem('ajar_student_name');
-  ['Alex','Sam'].forEach(n => { document.getElementById('roster-name').value = n; rosterAddStudent(); });
+  // The class list is read from the accounts that joined now — nobody types
+  // a name anywhere, so seeding it is seeding members.
+  setClassMembers([{ uid:'u_alex', displayName:'Alex' }, { uid:'u_sam', displayName:'Sam' }]);
+  saveRoster({ students: ['Alex','Sam'], present: [] });
 
   // --- the diagnosis comes from real attempts, not from nothing ---
   assert('a student with no attempts has no summary', progressSummary('Alex') === null);

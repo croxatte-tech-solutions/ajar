@@ -1,4 +1,24 @@
 <!DOCTYPE html>
+<!--
+  WHAT IS IN THIS FILE
+
+  One file, ~14,700 lines, no build step — a decision, not an accident. The
+  cost of that decision is navigation, so this is the map. Search for the
+  words, not for a line number: a name survives the next commit and a number
+  does not.
+
+    THE CLASSROOM SCREEN
+    CARRYING FORWARD WHAT IS ALREADY ON A DEVICE
+    THE SCHOOL'S CALENDAR AND THE SCHOOL'S CLOCK
+    DENSO WAVE INCORPORATED
+    THE SCHOOL CLOCK ON SCREEN
+    HER SCREEN IS THE CLASSROOM SCREEN
+    NOTHING STARTS UNTIL THE STUDENT SAYS SO
+    NO SCREEN WITHOUT A WAY OFF IT
+    THE SCREEN SCROLLS AND THE FOCUS DOES NOT FOLLOW
+    WHAT ALREADY LEAKED, CLEANED UP
+    SPOKEN TEXT TRAVELS AS DATA, NOT AS CODE
+-->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8344,7 +8364,10 @@ function renderTeacher(){
   renderTeacherNav();
   renderClassHealth();
   renderLivePanel();
-  refreshClassMembers();
+  // Fetched, then the list redrawn — the class list IS this now, so drawing
+  // before it arrives shows an empty class to a teacher whose class is full.
+  refreshClassMembers().then(() => { try{ renderRoster(); }catch(e){
+    console.error('Ajar: could not redraw the class list —', e); } });
   renderTeacherSignIn();
   renderRoster();
   renderClassProgress();
@@ -8573,29 +8596,15 @@ function saveRoster(r){
       });
   }
 }
-function rosterAddStudent(){
-  const el = document.getElementById('roster-name');
-  const name = (el && el.value || '').trim();
-  if(!name) return;
-  const r = loadRoster();
-  // Same normalisation the history uses, so adding "Ana" twice in
-  // different cases cannot create the split this feature exists to stop.
-  if(r.students.some(x => x.toLowerCase() === name.toLowerCase())){
-    el.value = '';
-    return;
-  }
-  r.students.push(name);
-  saveRoster(r);
-  el.value = '';
-  renderRoster();
-}
-function rosterRemove(name){
-  const r = loadRoster();
-  r.students = r.students.filter(x => x !== name);
-  r.present = (r.present || []).filter(x => x !== name);
-  saveRoster(r);
-  renderRoster();
-}
+/* rosterAddStudent and rosterRemove used to live here.
+
+   They were how she built the class list by hand, and the list builds itself
+   now — from the accounts that joined, each carrying the name its owner
+   chose. Deleted rather than left unreachable: a function nobody calls is a
+   function somebody wires back up.
+
+   What survives is the attendance tick below. That one is genuinely hers and
+   about the room in front of her, and no account can report it. */
 function rosterTogglePresent(name){
   const r = loadRoster();
   r.present = r.present || [];
@@ -8608,28 +8617,48 @@ function renderRoster(){
   if(!box) return;
   const r = loadRoster();
   const present = r.present || [];
+  /* WHO JOINED, NOT WHO SHE TYPED.
+
+     She used to add each student by hand at the start of term. That was
+     wrong twice over, and the second reason is the one that settles it.
+
+     It was work nobody needed to do: students have accounts now, and an
+     account already carries a name its owner chose.
+
+     And the name she would type is often not the name the student uses.
+     Several of them come from Vietnam and Indonesia and take a Western name
+     when they arrive, because their own is not pronounced here. She would
+     write one and they would register the other, and the two would never
+     meet — so the bridge from a typed name to an account, which this panel
+     used to require, was built on a mismatch that happens by default rather
+     than by accident.
+
+     So the list is read from the accounts that turned up. The ticking of who
+     is here today stays, because that is hers and about the room. */
+  const members = CLASS_MEMBERS.slice().sort((a, b) =>
+    String(a.displayName || '').localeCompare(String(b.displayName || '')));
   box.innerHTML = `
     <div class="panel" id="sec-roster">
       <h2>👥 Class list</h2>
-      <p class="small-note" style="margin-top:0">Add each student once, at the start of term. They tap their own name instead of typing it, so a name can never be spelled two ways and split one student's history in two. Ticking someone as here today is only for your own record — it does not change what they can practise.</p>
-      <div class="field-row" style="margin-top:.7rem">
-        <div class="field">
-          <label for="roster-name">Student's first name</label>
-          <input type="text" id="roster-name" placeholder="First name" onkeydown="if(event.key==='Enter'){event.preventDefault();rosterAddStudent();}">
-        </div>
-        <button class="btn sm" onclick="rosterAddStudent()">Add</button>
-      </div>
-      ${r.students.length ? `
-        <p class="small-note" style="margin:.8rem 0 .4rem">${r.students.length} student(s) &middot; ${present.length} here today</p>
-        <div class="mc-options" role="group">${r.students.map(n => `
-          <div class="mc-option" style="cursor:default">
+      <p class="small-note" style="margin-top:0">This fills itself. Each student
+        creates their own account and appears here under the name they chose —
+        which matters, because a student who goes by a different name here than
+        the one on their passport should be called what they answer to.
+        Ticking someone as here today is only for your own record.</p>
+      ${members.length ? `
+        <p class="small-note" style="margin:.8rem 0 .4rem">${members.length} student(s) &middot; ${present.length} here today</p>
+        <div class="mc-options" role="group">${members.map(m => {
+          const n = String(m.displayName || '(no name)');
+          const esc = n.replace(/'/g, "\\'");
+          return `<div class="mc-option" style="cursor:default">
             <label style="display:flex;align-items:center;gap:.55rem;flex:1;cursor:pointer;margin:0">
-              <input type="checkbox" style="width:auto;margin:0" ${present.includes(n)?'checked':''} onchange="rosterTogglePresent('${n.replace(/'/g,"\\'")}')">
+              <input type="checkbox" style="width:auto;margin:0" ${present.includes(n)?'checked':''} onchange="rosterTogglePresent('${esc}')">
               <span>${escapeHtml(n)}</span>
             </label>
-            <button class="btn ghost sm" onclick="rosterRemove('${n.replace(/'/g,"\\'")}')">Remove</button>
-          </div>`).join('')}</div>`
-        : '<p class="small-note" style="margin-top:.8rem">No one added yet. Until you add someone, students type their own name as before.</p>'}
+            ${m.birthday ? `<span class="small-note">🎂 ${escapeHtml(m.birthday)}</span>` : ''}
+          </div>`; }).join('')}</div>`
+        : `<p class="small-note" style="margin-top:.8rem">Nobody has joined yet.
+           Share the class link or code — each student signs in once and appears here.</p>`}
     </div>`;
 }
 
@@ -9024,9 +9053,20 @@ function renderSelfPractice(){
         <div class="ex-actions">
           ${Object.keys(EXAM_SECTIONS).map(k => `<button class="btn" onclick="confirmStartExam('${k}')">${EXAM_SECTIONS[k].label} &middot; ${EXAM_SECTIONS[k].items} questions, ${Math.round(EXAM_SECTIONS[k].seconds/60)} min</button>`).join(' ')}
         </div>
-        <p class="small-note" style="margin:.6rem 0 0">🎧 In the Listening section the audio plays <b>once</b>, as on test day — practice gives you two.</p>
-        <p class="small-note" style="margin:.3rem 0 0">🎙️ Speaking needs your microphone, and marks only the repeated sentences — the app can check those word by word. Your spoken interview answer goes to your teacher, because judging how someone sounds needs an ear this app does not have yet.</p>
-        <p class="small-note" style="margin:.3rem 0 0">✍️ Writing gives you one clock for all 23 minutes; the real test splits that time per task, so pace yourself. The email and the discussion post are not marked here — nothing in this app reads writing — so they go to your teacher and the score covers the ten sentences.</p>
+        <!-- Folded away. These three notes are 110 of the 243 words this
+             screen carried, on the screen a student sees most — the one that
+             shows whenever their teacher has not published anything, which is
+             every time they open the app outside a lesson. They are worth
+             reading ONCE, before a first full section, and never again; a
+             student practising for ten minutes on the bus should not have to
+             scroll past them. <details> is already the pattern for this in
+             three other places in this file. -->
+        <details style="margin:.6rem 0 0">
+          <summary class="small-note" style="cursor:pointer">What a full section does differently</summary>
+          <p class="small-note" style="margin:.4rem 0 0">🎧 In the Listening section the audio plays <b>once</b>, as on test day — practice gives you two.</p>
+          <p class="small-note" style="margin:.3rem 0 0">🎙️ Speaking needs your microphone, and marks only the repeated sentences — the app can check those word by word. Your spoken interview answer goes to your teacher, because judging how someone sounds needs an ear this app does not have yet.</p>
+          <p class="small-note" style="margin:.3rem 0 0">✍️ Writing gives you one clock for all 23 minutes; the real test splits that time per task, so pace yourself. The email and the discussion post are not marked here — nothing in this app reads writing — so they go to your teacher and the score covers the ten sentences.</p>
+        </details>
       </div>
       <p class="small-note" style="margin-top:.8rem">💡 Tip: save this page to your browser's favorites/bookmarks to come back anytime.</p>
     </div>`;
@@ -12577,10 +12617,22 @@ function profileFieldsHtml(prefillName){
           A teacher account has to be approved before it can see a class, so this
           creates a request rather than access. You can practise while you wait.</p>
       </div>
-      <label style="display:block;margin-bottom:.2rem">
+      <label style="display:block;margin-bottom:.5rem">
         <input type="checkbox" id="acct-consent">
         <span class="small-note">I have read how my information is used and stored.
-        <a href="#" onclick="showPrivacy();return false">Read it</a></span></label>`;
+        <a href="#" onclick="showPrivacy();return false">Read it</a></span></label>
+      <!-- SEPARATE, OPTIONAL, AND UNTICKED. Bundling this into the box above
+           would make the account conditional on agreeing to it, and consent
+           that is a condition of the service is not freely given — which
+           means it is not consent, and the data could not lawfully be used
+           for this at all. Tying them together would have produced the
+           opposite of the intention: the data collected, and no right to use
+           it. Refusing changes nothing about the account. -->
+      <label style="display:block;margin-bottom:.2rem">
+        <input type="checkbox" id="acct-research">
+        <span class="small-note">Optional: you may use my results to work out how
+        to teach this better — for example, which mistakes are common for students
+        from my country. Say no and everything works exactly the same.</span></label>`;
 }
 
 function createFormHtml(){
@@ -12658,7 +12710,7 @@ function readProfileForm(){
   const val = id => ((document.getElementById(id) || {}).value || '').trim();
   const on  = id => !!((document.getElementById(id) || {}).checked);
   return { name: val('acct-name'), country: val('acct-country'), dob: val('acct-dob'),
-           shareBirthday: on('acct-share-bday'), role: pickedRole(),
+           shareBirthday: on('acct-share-bday'), research: on('acct-research'), role: pickedRole(),
            school: val('acct-school'), consent: on('acct-consent'),
            email: val('acct-email'), pass: val('acct-pass') };
 }
@@ -12757,7 +12809,7 @@ async function accountSaveProfile(){
 async function finishProfile(f){
   await window.CloudSync.saveProfile({
     displayName: f.name, country: f.country, birthDate: f.dob,
-    role: f.role, schoolId: currentSchool() || '',
+    role: f.role, research: f.research, schoolId: currentSchool() || '',
   });
   setStudentName(f.name);
   if(f.role === 'teacher'){
@@ -13235,7 +13287,10 @@ function teacherWatchAnswers(){
 function liveCounts(){
   const idx = LIVE ? (LIVE.index || 0) : 0;
   const forThis = LIVE_ANSWERS.filter(a => a.index === idx);
-  const roster = (loadRoster().students || []).length;
+  // The class that joined, not a list she no longer types. Counting against
+  // the old roster would have compared today's answers to a number that stops
+  // being maintained the moment nobody maintains it.
+  const roster = CLASS_MEMBERS.length;
   return { answered: forThis.length, correct: forThis.filter(a => a.correct).length, roster,
     // Only knowable against a class list. Without one there is no "everyone"
     // to be complete, and claiming there is would be the app inventing a fact
@@ -13676,6 +13731,22 @@ function privacyText(){
     <p>Your name, your practice results, and any note she writes about your work.
       She does not receive your date of birth, your country or your email,
       because she does not need them in order to teach you.</p>
+    <p>The name she sees is the one you typed when you signed up — not one she
+      chose for you. If you go by a different name here than the one on your
+      passport, put the one you answer to.</p>
+
+    <h3>Helping us teach this better — your choice, and only yours</h3>
+    <p>There is one optional box when you sign up. Tick it and we may use your
+      results to work out how to teach this better — for example, which mistakes
+      are common for students from a particular country, so we can write better
+      practice for them.</p>
+    <p><b>Leave it unticked and nothing changes.</b> You get the same app, the
+      same exercises, the same everything. It is not a condition of having an
+      account, and it never will be. You can change your mind at any time by
+      writing to us.</p>
+    <p>Counts that name nobody — "students from Vietnam find -ed endings harder
+      than students from Brazil" — are not about you, and we work those out
+      whatever you tick.</p>
 
     <h3>What we never do</h3>
     <ul>
@@ -14534,6 +14605,7 @@ loadSharedClassroomContent().then(()=>{
           birthDate: profile.birthDate,
           role: profile.role,
           schoolId: profile.schoolId || '',
+          research: !!profile.research,
           createdAt: Date.now(),
         });
         return true;

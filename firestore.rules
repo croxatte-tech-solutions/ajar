@@ -191,8 +191,12 @@ service cloud.firestore {
     // not need any student's date of birth in order to teach them.
     match /users/{uid} {
       function validProfile() {
+        // 'research' is the optional, separately-given consent to use results
+        // for working out how to teach better. It lives on the profile so it
+        // travels with the person and can be withdrawn by them, and it is a
+        // bool so there is no version of it that means "sort of".
         return request.resource.data.keys().hasOnly(
-                 ['displayName', 'email', 'country', 'birthDate', 'role', 'schoolId', 'createdAt'])
+                 ['displayName', 'email', 'country', 'birthDate', 'role', 'schoolId', 'research', 'createdAt'])
           && request.resource.data.displayName is string
           && request.resource.data.displayName.size() > 0
           && request.resource.data.displayName.size() <= 80

@@ -119,7 +119,7 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,currentSchool,renderLiveForStudent,liveActive,liveQuestion,answerLive,'+
     'renderLivePanel,liveCounts,startLiveRound,liveGo,liveNext,liveEnd,teacherIsSignedIn,renderStudent,'+
-    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,saveRoster,tagFor,'+
+    'liveSegments,liveSecondsFor,livePosition,liveSecondsLeft,liveAddTime,saveRoster,tagFor,setClassMembers,'+
     'saveBatch,loadBatch,setPublishState,generateOne,setStudentName,setView};', sandbox);
   return { api: sandbox.__api, sandbox, asked, store, live, answersCb, rounds, sent,
            push(st){ live.forEach(f => f(st)); },
@@ -313,7 +313,9 @@ function cr(t){
   //===================================================================
   // She is looking at the room, not at the screen, so "everybody is in" has
   // to be unmissable rather than something she works out from two numbers.
-  t.api.saveRoster({ students: ['Ana', 'Bo', 'Cy'], present: [] });
+  // "X of 13" counts the class that joined, not a list she stopped typing.
+  t.api.setClassMembers([{ uid:'a', displayName:'Ana' }, { uid:'b', displayName:'Bo' },
+                         { uid:'c', displayName:'Cy' }]);
   await t.api.liveGo('answering');
   t.pushAnswers([{ uid:'a', index:0, choice:1, correct:true },
                  { uid:'b', index:0, choice:2, correct:false }]);
@@ -335,10 +337,11 @@ function cr(t){
 
   // Without a class list there is no "everyone" to be complete, and claiming
   // there is would be the app inventing a fact about a room it cannot see.
-  t.api.saveRoster({ students: [], present: [] });
-  assert('with no class list, completeness is not claimed',
+  t.api.setClassMembers([]);
+  assert('with nobody joined, completeness is not claimed',
     t.api.liveCounts().allIn === false, t.api.liveCounts());
-  t.api.saveRoster({ students: ['Ana', 'Bo', 'Cy'], present: [] });
+  t.api.setClassMembers([{ uid:'a', displayName:'Ana' }, { uid:'b', displayName:'Bo' },
+                         { uid:'c', displayName:'Cy' }]);
 
   //===================================================================
   // AND THE TWO DIFFERENT KINDS OF "NEXT"
