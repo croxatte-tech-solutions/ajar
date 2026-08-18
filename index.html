@@ -8703,8 +8703,27 @@ function onTeacherNoteChange(name){
 let _classProgress = {};
 async function refreshClassProgress(){
   const roster = loadRoster().students || [];
-  if(!roster.length || !window.CloudSync || !window.CloudSync.pullClassSummaries) return;
+  if(!roster.length || !window.CloudSync || !window.CloudSync.pullClassMembers) return;
   try{
+    /* READ THE ACCOUNTS, THEN ASK THE BRIDGE WHICH ONE IS ANA.
+
+       This used to fetch one document per roster name, at
+       students/{name.toLowerCase()} — a path nothing has written since the
+       record became the account. Every student came back missing, so the
+       panel drew an empty class while thirteen people were practising into
+       it, and said nothing, because a document that does not exist is not
+       an error.
+
+       Fetching the collection also removes a race that keying by uid would
+       otherwise have introduced. uidForName() answers out of CLASS_MEMBERS,
+       and renderTeacher fires refreshClassMembers() without awaiting it —
+       so on the first draw the bridge can be empty. Feeding it from the
+       read we just did means the answer is never staler than this line. */
+    const members = await window.CloudSync.pullClassMembers();
+    setClassMembers(members);
+    const byUid = {};
+    members.forEach(m => { byUid[m.uid] = m; });
+
     // `|| {}` is not defensive noise. renderClassProgress does
     // _classProgress[name] on every student, so one falsy result here does
     // not fail politely — it throws inside renderTeacher, which stops
@@ -8715,7 +8734,14 @@ async function refreshClassProgress(){
     //
     // The catch below cannot help, whatever its comment says. The assignment
     // succeeds and the throw happens later, in a different function.
-    _classProgress = (await window.CloudSync.pullClassSummaries(roster)) || {};
+    const out = {};
+    roster.forEach(n => {
+      // No account behind the name is a real state, not a failure: somebody
+      // she typed in who has not signed in yet. They stay off the panel.
+      const uid = uidForName(n);
+      if(uid && byUid[uid]) out[n] = byUid[uid];
+    });
+    _classProgress = out || {};
     if(currentView === 'teacher') renderClassProgress();
   }catch(e){ /* offline — the panel keeps whatever it last showed */ }
 }
@@ -8801,9 +8827,11 @@ function renderClassProgress(){
 }
 // Not an exercise id, and it must never collide with one.
 const PRIVATE_INSIGHT_KEY = 'class-insight';
-// Slow on purpose. Every refresh is one read per student, and a lesson runs
-// an hour — a five-second poll would burn the free quota to show a teacher
-// something she would not notice arriving sooner.
+// Slow on purpose. A refresh is now one collection read rather than one
+// document per student, which is cheaper than when this interval was
+// chosen — but not free, and a lesson runs an hour. A five-second poll
+// would still burn quota to show a teacher something she would not notice
+// arriving sooner.
 setInterval(() => {
   if(currentView === 'teacher' && (loadRoster().students || []).length) refreshClassProgress();
 }, 45000);
@@ -11897,12 +11925,23 @@ function mergeUsageLogs(local, cloud){
 }
 // Pulls this student's history down from Firestore (if reachable) and
 // folds it into the local cache — this is what makes "phone one day,
-// tablet the next" work: the phone can see practice logged on the
-// tablet, because both write to the same students/{name} record.
+// tablet the next" work: both devices read the same record, because the
+// record belongs to the account rather than to the device.
+//
+// It passes NO id. pullHistory falls back to the signed-in uid, which is
+// the only student this function is ever called for — all three callers
+// hand it the name of the person at the keyboard. It used to pass that
+// name, which after the record moved to the account addressed
+// students/{name}/attempts: a path nothing writes. The cross-device half
+// of practice was reading an empty collection and reporting nothing wrong,
+// because there is no error in a collection that is simply not there.
+//
+// The name is still the key of the LOCAL cache below, and that is correct:
+// the device knows who is typing, the database knows who is signed in.
 async function hydrateFromCloud(name){
   if(!window.CloudSync || !name) return;
   try{
-    const cloudEntries = await window.CloudSync.pullHistory(name);
+    const cloudEntries = await window.CloudSync.pullHistory();
     if(!cloudEntries.length) return;
     const key = name.toLowerCase();
     const all = loadUsageLogAll();
@@ -14404,18 +14443,12 @@ loadSharedClassroomContent().then(()=>{
         await setDoc(doc(db, 'schools', school(), 'students', auth.currentUser.uid),
           { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
       },
-      async pullClassSummaries(names) {
-        if(noSchool()) return {};
-        await authReady;
-        const out = {};
-        await Promise.all(names.map(async n => {
-          try{
-            const snap = await getDoc(doc(db, 'schools', school(), 'students', n.toLowerCase()));
-            if(snap.exists()) out[n] = snap.data();
-          }catch(e){ /* one student failing must not blank the whole class */ }
-        }));
-        return out;
-      },
+      // pullClassSummaries was here. It fetched students/{typed name}, which
+      // nothing has written since the record became the account, so it could
+      // only ever return nothing. Deleted rather than repaired: everything it
+      // returned is already in pullClassMembers, in one read instead of one
+      // per student, and leaving a method that reads a dead path is leaving a
+      // trap for whoever calls it next.
 
       // The class list rides in the same collection as everything else the
       // teacher publishes, so it inherits the same rule: she writes, the
