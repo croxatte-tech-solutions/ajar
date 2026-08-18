@@ -114,6 +114,68 @@ ${blocks.join('\n;\n')}
   assert('Complete the Words: 10 clean gaps per passage, slots match what is graded', cwBad.length === 0, cwBad.slice(0,6).join('\\n      '));
 
 
+/* WHICH ENGLISH, AND WHERE — THE THREE ANSWERS ARE DIFFERENT.
+
+   Verified against what ETS actually publishes, after assuming the opposite
+   once and being corrected:
+
+   Listening carries British, Australian and New Zealand voices on purpose,
+   North American being only the most common of four. So British vocabulary in
+   a listening bank is not a defect — it is what test day sounds like, and
+   scrubbing it would fail the student who has only ever heard American
+   English and meets a British lecturer.
+
+   Reading passages use American spelling; ETS writes its own materials that
+   way. So the reading banks do, now.
+
+   And Writing accepts either system while marking CONSISTENCY — "colour" and
+   "organize" in one essay counts against you though each is correct
+   somewhere. That is a mark these students were losing without being told
+   why, and the app now says it. */
+{
+  const BRIT_SPELLING = /\b(centre|colour|coloured|behaviour|organis(e|ed|ation)|recognis(e|ed)|realis(e|ed)|travell(ing|ed|er)|cancell(ed|ing)|labell(ed|ing)|programme|favourite|neighbour(hood)?|theatre|metres?|litres?|defence|licence|analys(e|ed)|whilst|learnt|spelt|storey s?|enrolment|fulfil|skilful|instalment)\b/gi;
+
+  const readingText = [];
+  for(const th in PASSAGE_BANK) PASSAGE_BANK[th].forEach(a => {
+    readingText.push(a.title || '', a.text || '');
+    (a.questions || []).forEach(q => { readingText.push(q.q); q.options.forEach(o => readingText.push(o)); });
+  });
+  for(const th in DAILY_READ_BANK) DAILY_READ_BANK[th].forEach(a => {
+    readingText.push(a.title || '', [].concat(a.body || []).join(' '));
+    (a.questions || []).forEach(q => { readingText.push(q.q); q.options.forEach(o => readingText.push(o)); });
+  });
+  const readHits = (readingText.join(' ').match(BRIT_SPELLING) || []);
+  assert('reading passages use the spelling the test shows (' + readHits.length + ' British forms)',
+    readHits.length === 0, readHits.slice(0, 8).join(', '));
+
+  // Listening is NOT held to that, and the assertion says so out loud so that
+  // nobody "finishes the job" later and takes the exam's own variety out.
+  const listeningText = [];
+  for(const [bank, get] of [[CONVERSATION_BANK, a => (a.turns || []).map(t => t[1]).join(' ')],
+                            [TALK_BANK, a => a.text || ''],
+                            [ANNOUNCEMENT_BANK, a => (a.set || [a]).map(x => x.text || '').join(' ')]])
+    for(const th in bank) bank[th].forEach(a => listeningText.push(get(a)));
+  /* Vocabulary, not spelling — because that is what listening actually
+     carries. The clips say "chemist" and "flat" and "queue"; nobody spells
+     anything aloud. Measuring spelling here returned zero, which would have
+     read as "the British English is gone" — the opposite of the truth.
+
+     Counted as plain substrings. This probe runs inside a template literal
+     where a backslash does not survive, and a lost \\b has now produced a
+     wrong number ten times in this repo. A rule that cannot be written with a
+     regex cannot lose one. */
+  const BRIT_WORDS = ['chemist', 'flat', 'lift', 'queue', 'car park', 'timetable',
+                      'petrol', 'autumn', 'rubbish', 'maths', 'lorry', 'torch',
+                      'jumper', 'trainers', 'biscuit'];
+  const heard = listeningText.join(' ').toLowerCase();
+  const heardBritish = BRIT_WORDS.reduce((n, w) => n + (heard.split(w).length - 1), 0);
+  assert('listening keeps the British English the exam actually plays (' + heardBritish + ' terms, deliberately)',
+    heardBritish > 0, 'if this reaches zero somebody has removed what ETS puts in on purpose');
+  assert('and each one is explained after the answer, not left as a trap',
+    HTML_SOURCE.indexOf('BRITISH_TO_AMERICAN') > -1
+    && HTML_SOURCE.split('britishNoteHtml(').length - 1 >= 5);
+}
+
 /* TWO TELLS NOBODY HAD MEASURED.
    ---------------------------------------------------------------
    The length work went looking for one surface a student can read without
