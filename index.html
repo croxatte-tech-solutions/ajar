@@ -1006,6 +1006,7 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     <!-- Sits above the exercise, not inside it: every renderer overwrites
          practice-wrap, and a warning that vanishes on the next question is
          worse than none. -->
+    <div id="install-offer"></div>
     <div id="sync-warning"></div>
     <div id="practice-wrap" tabindex="-1"></div>
   </div>
@@ -9065,7 +9066,8 @@ function renderRoster(){
         the one on their passport should be called what they answer to.
         Ticking someone as here today is only for your own record.</p>
       ${members.length ? `
-        <p class="small-note" style="margin:.8rem 0 .4rem">${members.length} student(s) &middot; ${present.length} here today</p>
+        <p class="small-note" style="margin:.8rem 0 .4rem">${members.length} student(s) &middot; ${present.length} here today
+          &middot; <a href="#" onclick="exportClassJson();return false">save a copy</a></p>
         <div class="mc-options" role="group">${members.map(m => {
           const n = String(m.displayName || '(no name)');
           const esc = n.replace(/'/g, "\\'");
@@ -12752,7 +12754,7 @@ function setView(v){
   document.getElementById('btn-teacher').classList.toggle('active', v==='teacher');
   document.getElementById('btn-student').classList.toggle('active', v==='student');
   if(v==='welcome'){ renderWelcome(); return; }
-  if(v==='student') renderStudent();
+  if(v==='student'){ renderStudent(); renderInstallOffer(); }
   if(v==='account'){ renderAccount(); refreshAdmin(); renderWhoAmI(); return; }
   renderWhoAmI();
   if(!localStorage.getItem('ajar_guide_seen_'+v)) showGuide(v);
@@ -13028,8 +13030,19 @@ function authErrorText(e){
     return 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.';
   if(c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request')
     return 'The sign-in window closed before it finished. Try again when you are ready.';
-  if(c === 'auth/unauthorized-domain')
-    return 'Sign-in is not switched on for this address yet. Tell the developer — it is a one-line setting.';
+  if(c === 'auth/unauthorized-domain'){
+    /* The one error whose cause is almost always the address bar rather than
+       the person. Cloudflare gives every branch its own *.pages.dev preview —
+       free, and the obvious way to test a change before it reaches a lesson —
+       and those hosts are not in Firebase's authorised list, so sign-in dies
+       there with a message about nothing the tester did. Naming the host is
+       what turns a mystery into a two-minute console fix. */
+    const here = (location.hostname || '');
+    return /pages\.dev$|localhost|127\.0\.0\.1/.test(here)
+      ? 'Sign-in is not enabled for this preview address (' + here + '). Add it under ' +
+        'Firebase Authentication → Settings → Authorized domains, or test on the live site.'
+      : 'Sign-in is not switched on for this address yet. Tell the developer — it is a one-line setting.';
+  }
   if(c === 'auth/email-already-in-use')
     return 'There is already an account with that email. Sign in instead.';
   if(c === 'auth/weak-password')
@@ -13225,6 +13238,39 @@ function passwordFormHtml(){
     </div>`;
 }
 
+/* SHOWN, NOT ENFORCED, AND THE REASON IS THE ROOM.
+
+   Anyone can sign up with somebody else's address, and the usual answer is to
+   block the account until the link is clicked. That answer is wrong here. The
+   moment this bites is a student sitting in a lesson who cannot open their
+   email on the school wifi, or whose message went to spam, and locking them
+   out of the exercise their teacher just put on the wall trades a small
+   security gain for the exact classroom failure this project keeps fixing.
+
+   So it is said and not enforced. Google accounts arrive verified, which is
+   most of them; the rest see a line with a button, and nothing they can do in
+   the app is withheld. If this ever needs to be a wall it should be a wall
+   for TEACHERS — where an unverified address really does mean somebody could
+   be claiming to be a colleague — and never for students. */
+function verifyNoticeHtml(u){
+  if(!u || u.isAnonymous || u.emailVerified) return '';
+  return `<div class="panel" style="border-color:var(--amber);margin-top:.8rem">
+    <b style="color:var(--amber)">✉ Confirm your email when you get a moment</b>
+    <p class="small-note" style="margin:.3rem 0 .6rem">We sent a link to
+      ${escapeHtml(u.email || 'your address')}. Nothing here is locked — this is
+      so you can get back in if you forget your password.</p>
+    <button class="btn ghost sm" onclick="resendVerification()">Send it again</button></div>`;
+}
+async function resendVerification(){
+  try{
+    await window.CloudSync.resendVerification();
+    accountMsg('Sent. Check your email, and your spam folder.', true);
+  }catch(e){
+    console.error('Ajar: the verification email did not send —', e);
+    accountMsg('Could not send it right now. Try again in a minute.', false);
+  }
+}
+
 function accountSignedInHtml(u){
   const p = ACCOUNT_PROFILE || {};
   const pending = p.role === 'teacher' && !u.isTeacher;
@@ -13233,6 +13279,7 @@ function accountSignedInHtml(u){
       <h2 style="margin-top:0">Your account</h2>
       <p style="margin:.2rem 0"><b>${escapeHtml(p.displayName || u.name || '')}</b></p>
       <p class="small-note" style="margin:0">${escapeHtml(u.email || '')} · ${escapeHtml(p.country || '')}</p>
+      ${verifyNoticeHtml(u)}
       ${pending ? `<div class="panel" style="border-color:var(--amber);margin-top:.8rem">
         <b style="color:var(--amber)">⏳ Your teacher account is waiting to be approved.</b>
         <p class="small-note" style="margin:.3rem 0 0">Until it is, you can practice
@@ -14226,6 +14273,112 @@ window.addEventListener('unhandledrejection', e => {
   console.error('Ajar: unhandled rejection —', e.reason);
   recordUnexpected('rejection', (e.reason && e.reason.message) || e.reason, '');
 });
+
+/* =========================================================
+   PUT IT ON THE HOME SCREEN
+   ========================================================= */
+
+/* The manifest and the service worker have been here for weeks and nothing
+   ever offered to install. On a phone that matters more than it sounds: an
+   installed copy opens without the browser chrome, keeps its own place in the
+   task switcher, and — the part that decides it in a classroom — starts from
+   the cached shell instead of a cold network request on school wifi.
+
+   Offered, never nagged. The browser fires beforeinstallprompt when it judges
+   the app worth installing; we keep that event and show one small line, and if
+   they dismiss it we do not ask again. iOS fires nothing at all, so Safari
+   gets a sentence telling them where the button is, because "install this" is
+   the one instruction that cannot be a button on that platform. */
+let INSTALL_EVENT = null;
+const INSTALL_DISMISSED = 'ajar_install_dismissed';
+function installDismissed(){
+  try{ return localStorage.getItem(INSTALL_DISMISSED) === '1'; }catch(e){ return false; }
+}
+window.addEventListener('beforeinstallprompt', e => {
+  // Held rather than let fire: the browser's own bar appears where it likes,
+  // and the moment to ask is when they have already used the thing.
+  e.preventDefault();
+  INSTALL_EVENT = e;
+  renderInstallOffer();
+});
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent || '')
+    && !(window.MSStream);
+}
+function alreadyInstalled(){
+  return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+    || navigator.standalone === true;
+}
+function renderInstallOffer(){
+  const box = document.getElementById('install-offer');
+  if(!box) return;
+  if(alreadyInstalled() || installDismissed()){ box.innerHTML = ''; return; }
+  if(INSTALL_EVENT){
+    box.innerHTML = `<p class="small-note" style="margin:.4rem 0">
+      📲 Put Ajar on your home screen — it opens faster and works better on the
+      school wifi. <button class="btn ghost sm" onclick="doInstall()">Add it</button>
+      <button class="btn ghost sm" onclick="dismissInstall()">No thanks</button></p>`;
+  } else if(isIOS()){
+    box.innerHTML = `<p class="small-note" style="margin:.4rem 0">
+      📲 To put Ajar on your home screen: tap the Share button, then
+      <b>Add to Home Screen</b>. It opens faster that way.
+      <button class="btn ghost sm" onclick="dismissInstall()">Got it</button></p>`;
+  } else box.innerHTML = '';
+}
+async function doInstall(){
+  if(!INSTALL_EVENT) return;
+  const e = INSTALL_EVENT;
+  INSTALL_EVENT = null;
+  try{
+    e.prompt();
+    await e.userChoice;
+  }catch(err){
+    console.error('Ajar: the install prompt failed —', err);
+  }
+  renderInstallOffer();
+}
+function dismissInstall(){
+  try{ localStorage.setItem(INSTALL_DISMISSED, '1'); }
+  catch(e){ console.warn('Ajar: could not remember that you dismissed this —', e); }
+  INSTALL_EVENT = null;
+  renderInstallOffer();
+}
+
+/* =========================================================
+   A COPY OF THE CLASS, IN HER HANDS
+   ========================================================= */
+
+/* Firestore's own scheduled backups need the paid plan. This is the free
+   version and it is arguably better for what she needs: a file she holds,
+   readable without this app, on the day the app is not the problem.
+
+   It is a download rather than an email because it contains her students'
+   names and results, and mail is the one place that data would sit in
+   somebody else's system on the way. */
+function exportClassJson(){
+  const rows = CLASS_MEMBERS.map(m => ({
+    name: m.displayName || '', birthday: m.birthday || '',
+    summary: m.summary || null, lastSeen: m.lastSeen ? String(m.lastSeen) : '',
+  }));
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    school: (window.CloudSync && window.CloudSync.currentUser && window.CloudSync.currentUser())
+              ? (window.CloudSync.currentUser().schoolName || '') : '',
+    students: rows,
+    note: 'Exported from Ajar. Names and practice summaries only — no email, no date of birth.',
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ajar-class-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoked on the next tick rather than immediately: some browsers have not
+  // finished reading the blob when click() returns.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 function renderWelcome(){
   // Runs during start-up. Anything thrown here takes the whole app down
@@ -15377,6 +15530,9 @@ loadSharedClassroomContent().then(()=>{
                  which is the one failure mode a hand-written stub has, and
                  the reason this field is now returned rather than assumed. */
               isAnonymous: !!currentUser.isAnonymous,
+              // Read but never acted on until now. Google accounts arrive
+              // verified; only the email-and-password route can be unverified.
+              emailVerified: !!currentUser.emailVerified,
               // So the UI can tell "not a teacher" from "we have not
               // finished asking" and keep the panel shut during the gap.
               roleKnown: currentUser.isAnonymous || teacherRecordLoaded }
@@ -15403,6 +15559,12 @@ loadSharedClassroomContent().then(()=>{
          keeps that uid, so signing in carries their work across. Creating a
          fresh account instead would abandon it in silence, which is the exact
          failure this project spent a day removing. */
+      async resendVerification() {
+        const u = auth.currentUser;
+        if(!u || u.isAnonymous) throw new Error('not signed in');
+        await sendEmailVerification(u);
+        return true;
+      },
       async signInWithGoogle() {
         await setPersistence(auth, browserLocalPersistence);
         const provider = new GoogleAuthProvider();

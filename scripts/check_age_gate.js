@@ -130,7 +130,8 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,dismissScanError,currentSchool,teacherIsSignedIn,applyTeacherGate,'+
     'renderTeacherSignIn,renderAccount,ageGate,ageOn,birthdayFrom,MIN_AGE,COUNTRIES,'+
-    'validateProfileForm,privacyText,authErrorText,roleChoiceHtml,chooseRole,pickedRole,renderAccount};', sandbox);
+    'validateProfileForm,privacyText,authErrorText,roleChoiceHtml,chooseRole,pickedRole,renderAccount,'+
+    'verifyNoticeHtml,renderInstallOffer,exportClassJson,setClassMembers,dismissInstall};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, store };
 }
 
@@ -326,6 +327,70 @@ function boot(opts){
     a.authErrorText({ code:'auth/unauthorized-domain' }).indexOf('developer') > -1);
   assert('and an unknown code still says something in words',
     a.authErrorText({ code:'auth/whatever' }).indexOf('auth/') === -1);
+
+  //===================================================================
+  // EMAIL VERIFICATION IS SAID, NOT ENFORCED, AND THE ROOM IS WHY
+  //===================================================================
+  // The usual answer is to lock the account until the link is clicked. The
+  // moment that bites is a student in a lesson who cannot open their email on
+  // the school wifi, locked out of the exercise their teacher just put on the
+  // wall — a small security gain traded for the exact classroom failure this
+  // project keeps fixing.
+  const unverified = { isAnonymous:false, email:'ana@x.test', emailVerified:false };
+  const verified   = { isAnonymous:false, email:'ana@x.test', emailVerified:true };
+  assert('an unverified account is told', a.verifyNoticeHtml(unverified).indexOf('Confirm your email') > -1);
+  assert('AND TOLD NOTHING IS LOCKED, which is the part that matters in a lesson',
+    a.verifyNoticeHtml(unverified).indexOf('Nothing here is locked') > -1);
+  assert('with a way to get the link again', a.verifyNoticeHtml(unverified).indexOf('resendVerification()') > -1);
+  assert('a verified account is not nagged', a.verifyNoticeHtml(verified) === '');
+  assert('an anonymous visitor is not asked to verify an email they never gave',
+    a.verifyNoticeHtml({ isAnonymous:true }) === '');
+  /* Counted where it is READ, not searched for as a phrase. The first version
+     of this fired on verifyNoticeHtml itself — the function that implements
+     the very behaviour it was checking — which is the twelfth time in this
+     repo a rule has caught its own documentation or its own implementation.
+
+     Three readings are the whole design: the module reports it, the sign-in
+     returns it, and one function draws a notice. A fourth means somebody has
+     started gating on it, which is the thing that must not happen quietly. */
+  // Lines, not occurrences: `emailVerified: !!currentUser.emailVerified` is
+  // one place and two matches, and counting matches made the number mean
+  // nothing. Three lines are the whole design — the module reports it, the
+  // sign-in returns it, one function draws a notice.
+  const readLines = html.split('\n').filter(l => l.indexOf('emailVerified') > -1);
+  assert('emailVerified is read in exactly the places that report it (' + readLines.length + ' lines)',
+    readLines.length <= 3, 'a fourth reader means somebody has started locking the app on it');
+
+  //===================================================================
+  // THE PREVIEW ADDRESS, NAMED BEFORE IT WASTES AN AFTERNOON
+  //===================================================================
+  // Cloudflare gives every branch a *.pages.dev preview — free, and the
+  // obvious way to test before a change reaches a lesson. Those hosts are not
+  // in Firebase's authorised list, so sign-in dies there talking about
+  // nothing the tester did.
+  assert('an unauthorised domain error names the host when it is a preview',
+    html.indexOf('Authorized domains') > -1 && html.indexOf('pages') > -1);
+
+  //===================================================================
+  // OFFERED, NEVER NAGGED
+  //===================================================================
+  a.renderInstallOffer();
+  assert('nothing is offered before the browser says it is installable',
+    (el('install-offer').innerHTML || '') === '', el('install-offer').innerHTML);
+  a.dismissInstall();
+  a.renderInstallOffer();
+  assert('and once dismissed it stays dismissed',
+    (el('install-offer').innerHTML || '') === '');
+
+  //===================================================================
+  // A COPY OF THE CLASS SHE HOLDS HERSELF
+  //===================================================================
+  // Firestore's scheduled backups need the paid plan. A file in her hands is
+  // free and readable on the day this app is the problem.
+  assert('the export exists and is a download, not an email',
+    html.indexOf('function exportClassJson()') > -1 && html.indexOf('a.download') > -1);
+  assert('and it carries names and results but no email or date of birth',
+    html.indexOf('no email, no date of birth') > -1);
 
   console.log(results.join('\n'));
   const fails = results.filter(r => r.indexOf('FAIL') > -1);
