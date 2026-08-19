@@ -7585,10 +7585,26 @@ function encodeBatchForShare(items, individual, speakingTurn, teacherEmail, anno
   const json = JSON.stringify({ items, individual: individual || {}, speakingTurn: (speakingTurn && speakingTurn.length) ? speakingTurn : null, teacherEmail: teacherEmail || null, announcement: announcement || null, termStart: classTermStart() || null });
   return encodeURIComponent(btoa(unescape(encodeURIComponent(json))));
 }
+// Everything this function returns came out of the URL, so everything it
+// returns is written by whoever sent the link -- which is not necessarily the
+// teacher. It is the ONLY untrusted producer of a payload: the other two call
+// sites of applySharedPayload read from Firestore, where Padrao C already
+// decided what a student may see. So the boundary is marked HERE, once, rather
+// than re-argued at each field.
+//
+// S-01: without this mark, a link anyone could build set `ajar_teacher_email`
+// -- and feedbackTo() reads that, so every piece of feedback the student sent
+// afterwards, including the free text where the app asks them to be frank,
+// opened a mail to the sender of the link. It also set `ajar_announcement`,
+// which draws as "Message from <the teacher's name>". Both survived in
+// localStorage long after the hash left the address bar.
 function decodeBatchFromShare(str){
   try{
     const payload = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(str)))));
-    return Array.isArray(payload) ? { items: payload, individual: {}, speakingTurn: null, teacherEmail: null, announcement: null } : payload; // back-compat
+    const base = Array.isArray(payload)
+      ? { items: payload, individual: {}, speakingTurn: null, teacherEmail: null, announcement: null } // back-compat
+      : payload;
+    return { ...base, fromHash: true };
   } catch(e){ return null; }
 }
 function applySharedPayload(payload){
@@ -7604,10 +7620,17 @@ function applySharedPayload(payload){
   else localStorage.removeItem('ajar_individual');
   if(payload.speakingTurn && payload.speakingTurn.length) localStorage.setItem('ajar_speaking_turn', JSON.stringify(payload.speakingTurn));
   else localStorage.removeItem('ajar_speaking_turn');
-  if(payload.teacherEmail) localStorage.setItem('ajar_teacher_email', payload.teacherEmail);
-  else localStorage.removeItem('ajar_teacher_email');
-  if(payload.announcement) localStorage.setItem('ajar_announcement', payload.announcement);
-  else localStorage.removeItem('ajar_announcement');
+  // Who the student writes to, and what the app says the teacher said. A
+  // payload that came from the URL may not touch either -- see the note on
+  // decodeBatchFromShare. It may not CLEAR them either: a student who already
+  // has an address from Firestore keeps it, so the hash can neither redirect
+  // the feedback nor quietly send it to the fallback instead.
+  if(!payload.fromHash){
+    if(payload.teacherEmail) localStorage.setItem('ajar_teacher_email', payload.teacherEmail);
+    else localStorage.removeItem('ajar_teacher_email');
+    if(payload.announcement) localStorage.setItem('ajar_announcement', payload.announcement);
+    else localStorage.removeItem('ajar_announcement');
+  }
   // The class's Monday. This is what lets a student on the roster see the
   // same week their teacher is on, computed rather than told — so it stays
   // right on Thursday without her republishing anything.

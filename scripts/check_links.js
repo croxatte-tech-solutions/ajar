@@ -412,6 +412,44 @@ function show(c){ c.sandbox.currentView = 'student'; c.api.setStudentName('Ana')
     both.store['ajar_announcement'] === undefined, both.store['ajar_announcement']);
 
   //-------------------------------------------------------------------
+  // THE LEGACY "#batch=" ROUTE ON ITS OWN — S-01
+  //-------------------------------------------------------------------
+  // The case above only proves "?ex=" does not fall through to the hash. The
+  // hash by ITSELF is the actual route, and it needs no code and no account:
+  // encodeBatchForShare is in the file the browser serves, so anyone can build
+  // the payload and send the link on the class WhatsApp, or paste a QR of it
+  // over the one on the wall.
+  //
+  // Two of the fields it carried were the dangerous ones, and they were
+  // dangerous in different ways. `teacherEmail` is read by feedbackTo(), so it
+  // redirected the channel where the app asks the student to be frank — and it
+  // stayed in localStorage after the hash left the address bar. `announcement`
+  // draws as "Message from <her name>": not XSS, the text is escaped, but
+  // authorship is the whole point of a notice.
+  const alone = boot({
+    hash: '#batch=' + forged.api.encodeBatchForShare(
+      [itemDoc('smuggled').items[0]], {}, [], 'attacker@else.test', 'Friday\u2019s test is cancelled.'),
+    storage: { ajar_teacher_email: 'michelle@her-school.test' },
+  });
+  await alone.api.loadSharedClassroomContent();
+  assert('a payload from the hash cannot redirect where the student sends feedback',
+    alone.store['ajar_teacher_email'] === 'michelle@her-school.test',
+    alone.store['ajar_teacher_email']);
+  assert('and it cannot post a notice in her name',
+    alone.store['ajar_announcement'] === undefined, alone.store['ajar_announcement']);
+  // Nor the other way round: a hash that carries neither field must not CLEAR
+  // the address a student already got from Firestore, or the feedback quietly
+  // goes to the fallback instead of to her.
+  const emptyHash = boot({
+    hash: '#batch=' + forged.api.encodeBatchForShare([itemDoc('x').items[0]], {}, [], '', ''),
+    storage: { ajar_teacher_email: 'michelle@her-school.test' },
+  });
+  await emptyHash.api.loadSharedClassroomContent();
+  assert('and a hash carrying no address does not erase the one she already sent',
+    emptyHash.store['ajar_teacher_email'] === 'michelle@her-school.test',
+    emptyHash.store['ajar_teacher_email']);
+
+  //-------------------------------------------------------------------
   // AN EXERCISE THE TEACHER HAS TAKEN BACK
   //-------------------------------------------------------------------
   // Nothing deletes the published document, so its code goes on working
