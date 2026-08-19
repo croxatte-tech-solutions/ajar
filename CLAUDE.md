@@ -73,6 +73,49 @@ licence and the promise that every student hears the identical voice.
 duration — by parsing MPEG-4 atoms in plain Node, because the suite promises to
 run on a machine that has only node.
 
+## The microphone: two of them, one device
+
+`listenOnce()` is SpeechRecognition and returns a **string**. `startVoiceClip()`
+is MediaRecorder and returns **audio**. They run at the same time, on the same
+microphone, and that is the normal case here rather than an edge one.
+
+**Order is load-bearing.** `getUserMedia` is awaited FIRST, then recognition
+starts on top. It is the half that rejects with a name — `NotAllowedError`,
+`NotFoundError`, `NotReadableError` — so asking first is the only way to tell
+"you refused it" from "there is no microphone" from "Zoom is holding it".
+Started second, its prompt lands behind a running recognition session and its
+refusal arrives too late to say anything useful.
+
+**The failure to expect** is that one of the two silently gets nothing: the
+transcript arrives, the student sees their words, and the recording is empty —
+so a play button would play silence. `voiceClipIsUsable()` is the guard, and
+the empty case says which half lost the device instead of pretending.
+
+**Never hardcode a mimeType.** Safari records `audio/mp4`, Chrome records
+`audio/webm`, and `isTypeSupported` can say yes to a type the constructor then
+refuses. Ask, then fall through to the browser's default.
+
+**The recording never leaves the device.** Not Firestore, not localStorage, not
+any network. It lives in `window._voiceClip` and is released on every way off a
+practice screen, because a stream whose tracks are not stopped is a microphone
+light still on after the exercise — which the student can see, and is right to
+mind. Note, separately and already true before this: the Chrome
+SpeechRecognition this app uses streams the student's audio to Google.
+
+**Fluency is read out of the waveform, not off the clock.** The old proxy was
+the wall time between opening the microphone and the transcript coming back —
+mostly the round trip to Google's recogniser, so a slow connection made a
+student read as hesitant. It is deleted, not demoted to a fallback. What
+replaces it is pace over VOICED seconds (words from the transcript, never from
+the typed box) and the pauses between the first and last word. Every degenerate
+recording — silence, one word, a clip shorter than one analysis window, a room
+with a fan in it — returns no number rather than a wrong one.
+
+`scripts/check_speech_capture.js` runs this against a fake microphone that can
+be denied, revoked mid-take or held by another app, and against waveforms built
+by hand. What it cannot prove is that real browsers behave like the fake; the
+manual list at the foot of that file is the part a person still has to do.
+
 ## Which English — three different answers, and one was got wrong
 
 The TOEFL Listening section carries North American, British, Australian and New
