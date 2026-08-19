@@ -1,13 +1,11 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "ajar", "runtimeExecutable": "python3", "runtimeArgs": ["-m", "http.server", "8936"], "port": 8936 },
     {
-      "name": "ajar-design-compare",
+      "name": "ajar",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4178"],
-      "port": 4178,
-      "autoPort": false
+      "runtimeArgs": ["-m", "http.server", "8899", "--directory", "/private/tmp/claude-501/-Users-croxatte-Downloads-claude-skills/a6c2c689-5c14-4925-8041-4a50024d9f36/scratchpad/real-life-english-repo"],
+      "port": 8899
     }
   ]
 }

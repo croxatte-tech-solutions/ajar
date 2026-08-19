@@ -7,3 +7,4 @@
 # worktrees a session creates are not.
 .claude/settings.local.json
 .claude/worktrees/
+.claude/

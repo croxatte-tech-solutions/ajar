@@ -256,6 +256,28 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
   assert('the way home is labelled for a screen reader',
     html.indexOf('back to the start') > -1);
 
+  //===================================================================
+  // THE HEADER CANNOT CRUSH ITS OWN WORDMARK
+  //===================================================================
+  /* "Who we are" used to be a third child of a space-between masthead,
+     sitting between the brand and the nav. Both of those wanted the space,
+     so the button in the middle got neither: its two words broke across two
+     lines and the second line landed on top of the wordmark. Reported from a
+     screenshot, not from here, because nothing here was looking at shape.
+
+     Substrings rather than patterns, on purpose — a regex inside this file
+     family has eaten its own backslashes often enough. */
+  assert('the header holds the brand and one nav, not three things competing',
+    html.indexOf('<nav class="masthead-nav"') > -1);
+  assert('AND the about button is inside that nav rather than loose beside it',
+    html.indexOf('<button class="guide-btn" onclick="showAbout()">Who we are</button>') > -1
+    && html.indexOf('<nav class="masthead-nav" aria-label="Main">') <
+       html.indexOf('<button class="guide-btn" onclick="showAbout()">Who we are</button>'));
+  assert('the nav takes the leftover width instead of sharing it with the brand',
+    html.indexOf('.masthead-nav{') > -1 && html.indexOf('margin-left:auto') > -1);
+  assert('and no pill in the header may break its own label across two lines',
+    html.indexOf('.guide-btn{ white-space:nowrap; }') > -1);
+
   console.log(results.join('\n'));
   const fails = results.filter(r => r.indexOf('FAIL') > -1);
   console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)

@@ -77,7 +77,23 @@ html{ font-size:112.5%; }
 body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; -webkit-font-smoothing:antialiased; }
 .app{ max-width:960px; margin:0 auto; padding:1.25rem 1rem 4rem; }
 
-.masthead{ display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+/* Two children, never three. The brand holds the left, the nav takes the
+   rest and pushes itself right — so a nav that grows eats its own slack
+   instead of the wordmark's.
+
+   row-gap is not the same as gap here: when the nav wraps, the second row
+   used to sit against the first with nothing between them, which read as one
+   crowded block rather than two rows. */
+.masthead{ display:flex; align-items:center; gap:1rem; margin-bottom:1rem; flex-wrap:wrap; }
+.masthead-nav{ display:flex; align-items:center; gap:.6rem; row-gap:.5rem;
+               flex-wrap:wrap; justify-content:flex-end; margin-left:auto; }
+/* A pill that wraps its own label is taller than the pills beside it and
+   stops looking like a control. Every one of these is two or three words. */
+.guide-btn{ white-space:nowrap; }
+/* Who is signed in reads as a label, not a control, so it is quieter than
+   the buttons and always last in the row. */
+.whoami{ font-size:.78rem; color:var(--text-dim); font-weight:600;
+         display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }
 .brand{ display:flex; align-items:center; gap:.6rem; }
 /* 34px -> 44px: 30% up. Went to 15% first and it was still small on an
    iPad in landscape, which is how this class actually uses it. Measured
@@ -821,11 +837,17 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
         <span>Working prototype &middot; not a system of record</span>
       </div>
     </a>
-    <button class="guide-btn" onclick="showAbout()">Who we are</button>
-    <!-- wrap: on a phone these five controls overflow the viewport, which
-         pushed the Teacher/Student switcher off the right edge entirely —
-         a student had no way back to her own view. -->
-    <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+    <!-- wrap: on a phone these controls overflow the viewport, which pushed
+         the Teacher/Student switcher off the right edge entirely — a student
+         had no way back to her own view.
+
+         "Who we are" used to sit outside this group, as a third child of a
+         space-between masthead. With the nav full it was the item that got
+         squeezed: its label broke across two lines and the second line
+         landed on top of the wordmark. A button between two blocks that both
+         want the space is a button that will be crushed by them. -->
+    <nav class="masthead-nav" aria-label="Main">
+      <button class="guide-btn" onclick="showAbout()">Who we are</button>
       <button class="guide-btn" onclick="showGuide(currentView)">❓ How this works</button>
       <!-- Everything below is hidden on the sign-in screen. Three of them were
            worse than clutter there, they were broken: My patterns has no
@@ -850,8 +872,8 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
       </span>
       <a id="pre-login-contact" class="guide-btn" style="display:none;text-decoration:none"
          href="#" onclick="contactUs();return false">✉️ Contact</a>
-      <span id="who-am-i" style="font-size:.78rem;color:var(--text-dim);font-weight:600"></span>
-    </div>
+      <span id="who-am-i" class="whoami"></span>
+    </nav>
   </header>
 
   <!-- The overlay sits outside <main>: it is a dialog over the page, not part
