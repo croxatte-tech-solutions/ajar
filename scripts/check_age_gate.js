@@ -304,8 +304,23 @@ function boot(opts){
   assert('the login is deleted last, so nothing is left unreachable',
     html.indexOf("await deleteDoc(doc(db, 'users', uid));") <
     html.indexOf('await deleteUser(u);'));
-  assert('and it says practicing without an account still works',
-    pv.indexOf('without an account') > -1);
+  /* It used to assert the opposite, and the opposite was true when it was
+     written: practice worked signed out and the notice said so.
+
+     The sign-in wall made that sentence false, and a privacy notice carrying a
+     promise the product no longer keeps is the one kind of documentation that
+     gets used against you. Found from a screenshot of the sign-in panel, which
+     still said the same thing — three places in total, all corrected in the
+     same change as this. */
+  assert('the notice explains that an account is required, rather than promising it is not',
+    pv.indexOf('Why an account is required') > -1, pv.slice(0, 200));
+  assert('and says plainly that this changed, instead of pretending it was always so',
+    pv.indexOf('It did not used to be') > -1);
+  assert('and ties the age to the wall, which is why the age moved',
+    pv.indexOf('the only way in') > -1);
+  // The claim that is gone: nothing anywhere still offers practice without one.
+  assert('no screen still promises the app works signed out',
+    html.indexOf('everything still works and stays on') === -1);
 
   //===================================================================
   // THE OPTIONAL CONSENT IS OPTIONAL, AND SAYS SO

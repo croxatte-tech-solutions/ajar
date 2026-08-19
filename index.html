@@ -9465,8 +9465,8 @@ const SCAN_ERRORS = {
     icon: '\u{1F511}',
     title: 'This is your class\u2019s link \u2014 sign in to open it',
     body: 'Your class keeps your work with you, so it needs to know who you are. ' +
-          'It takes a minute, once. You can also carry on practicing on your own ' +
-          'without an account \u2014 nothing here is lost either way.',
+          'It takes a minute, once, and then your work follows you between ' +
+          'devices instead of living on one of them.',
     action: '<button class="btn" onclick="dismissScanError();setView(\'account\')">Sign in</button>',
   },
   gone: { icon: '🔎', title: 'This exercise is no longer available',
@@ -13217,9 +13217,9 @@ function chooseHtml(){
     <div class="panel">
       <h2 style="margin-top:0">Sign in</h2>
       <p class="small-note" style="margin:.2rem 0 .9rem">
-        An account keeps your practice with you — on your phone, on a laptop, on
-        the computer in the lab. Without one, everything still works and stays on
-        this device only.</p>
+        Ajar needs an account. It is how your teacher knows whose work she is
+        looking at, and how your practice follows you from your phone to a
+        laptop to the computer in the lab.</p>
       ${rememberMeHtml()}
       ${googleButtonHtml(ACCOUNT_BUSY)}
       <!-- Always visible beside it, never behind a link. The pop-up Google
@@ -14991,9 +14991,16 @@ function privacyText(){
       account, write to <b>${escapeHtml(CONFIG.devEmail || '')}</b> from the address
       you signed up with.</p>
 
-    <h3>Practicing without an account</h3>
-    <p>You do not need one. Everything works signed out — your practice is then
-      saved on that device only, and nothing about you leaves it.</p>
+    <h3>Why an account is required</h3>
+    <p>It did not used to be. You could practice signed out and everything stayed
+      on your own device.</p>
+    <p>That changed because a class needs to know who is in it: your teacher has
+      to see whose work she is looking at, and your practice has to follow you
+      from one device to another. Neither is possible for somebody the app
+      cannot name.</p>
+    <p>It is also why the age here is ${MIN_AGE} rather than higher — with an
+      account as the only way in, that number stops being "the age we may keep
+      data about" and becomes the age this app starts at.</p>
 
     <h3>Who is responsible</h3>
     <p>Ajar is built and run by Croxatte Tech Solutions. Questions, complaints and
