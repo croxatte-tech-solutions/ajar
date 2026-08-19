@@ -129,15 +129,16 @@ const testScript = `
 
   // Stated rather than assumed, because it is the trade the third phase buys.
   const finishes = wpm => (enWords / wpm) * 60000 <= delayMs;
-  // The copy is 49 words now, not the 61 it was — the door explanation got
-  // shorter when it stopped being philosophy. So more readers clear the first
-  // phase than my first version of these assertions assumed, and the honest
-  // thing is to state who, from the real count.
-  assert('the word count is read from the copy, not remembered', enWords === 49);
-  assert('a native adult finishes the English in the first phase (12.4s)', finishes(238));
-  assert('and so does a fluent second-language reader (16.3s)', finishes(180));
-  assert('an intermediate reader does not (24.5s)', !finishes(120));
-  assert('nor does a slower one (32.7s)', !finishes(90));
+  // 48 words: it was 61, then 49 when the door explanation stopped being
+  // philosophy, and 48 the day "Free" came out of the lede — the app is not
+  // promising a price it may not keep. The count is pinned so that editing
+  // the copy lands here, on the four reading speeds below, instead of
+  // silently shifting who clears the first phase.
+  assert('the word count is read from the copy, not remembered', enWords === 48);
+  assert('a native adult finishes the English in the first phase (12.1s)', finishes(238));
+  assert('and so does a fluent second-language reader (16.0s)', finishes(180));
+  assert('an intermediate reader does not (24.0s)', !finishes(120));
+  assert('nor does a slower one (32.0s)', !finishes(90));
   // Which is only acceptable because of the third phase. If that ever goes,
   // this file should stop passing.
   assert('so the reading estimate is still there to reason with',
