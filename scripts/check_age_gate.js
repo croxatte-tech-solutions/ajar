@@ -524,8 +524,15 @@ function boot(opts){
       html2.indexOf('id="acct-callme"') > -1);
     assert('AND suggests their first name rather than leaving it blank',
       html2.indexOf('placeholder="Rony"') > -1, html2.slice(0, 400));
+    /* A phrase that does not span a line break. The first version of this
+       matched across one, and the check failed on a rewording that had not
+       changed the meaning at all — a false alarm is a check nobody trusts. */
     assert('and says which of the two names the class will see',
-      html2.indexOf('your class and your teacher see') > -1);
+      html2.indexOf('The name people here call you by') > -1);
+    assert('AND that the full name is for their own language, not the register',
+      html2.indexOf('In your own language') > -1);
+    assert('and that the class never sees it',
+      html2.indexOf('Nobody in your class sees this') > -1);
   }
   /* The record and the room, kept apart at the one place they are written. */
   assert('the profile stores the room name as displayName and the record as fullName',
@@ -546,6 +553,33 @@ function boot(opts){
      nobody. */
   assert('a restored session fills the corner from the profile',
     html.indexOf('if(ACCOUNT_PROFILE && ACCOUNT_PROFILE.displayName) setStudentName(ACCOUNT_PROFILE.displayName);') > -1);
+
+  //===================================================================
+  // THE FORM LOOKS LIKE THE REST OF THE FORM
+  //===================================================================
+  /* The comment above the input rules in this file warns that a type added
+     later gets "styled by nobody, discovered by whoever it is shown to". It
+     lists number, search, tel and url. It does not list date — so the date
+     of birth sat narrow and square in a row of wide rounded fields, and the
+     person who discovered it was the owner, typing the first real date of
+     birth this app has ever taken. */
+  assert('the date of birth is styled like every other field',
+    html.indexOf('input[type=date]{ border-radius:var(--r-sm); }') > -1);
+  assert('AND the browser is stopped from drawing its own narrow box',
+    html.indexOf('input[type=date]::-webkit-date-and-time-value') > -1);
+
+  //===================================================================
+  // A PASSWORD IS TYPED TWICE ON THE WAY OUT, ONCE ON THE WAY IN
+  //===================================================================
+  /* Asymmetric on purpose. A mistyped password signing IN is one failed
+     attempt and a clear message. A mistyped password signing UP locks
+     somebody out of an account they never got into, and the way back is a
+     reset email to an address they may have mistyped in the field above it. */
+  assert('creating an account asks for the password twice',
+    html.indexOf('id="acct-pass2"') > -1
+    && html.indexOf("if(f.pass !== f.pass2)") > -1);
+  assert('AND signing in does not, because there is nothing to protect there',
+    (html.match(/id="acct-pass2"/g) || []).length === 1);
 
   //===================================================================
   // SIGNING IN ANONYMOUSLY DOES NOT EVICT SOMEBODY WHO IS SIGNED IN

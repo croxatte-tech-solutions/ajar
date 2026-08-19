@@ -138,7 +138,18 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
    number, search, tel and url would each have arrived the same way — a field
    added later, styled by nobody, discovered by whoever it is shown to. */
 select,textarea,input[type=text],input[type=email],input[type=password],
-input[type=number],input[type=search],input[type=tel],input[type=url]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
+input[type=number],input[type=search],input[type=tel],input[type=url],
+input[type=date]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
+/* And date needs three lines the others do not, because the browser draws
+   its insides itself: the value is centred in its own box, the box
+   shrink-wraps instead of filling the field, and the picker icon arrives at
+   full contrast. Left as it came, it sat narrow and square beside a row of
+   wide rounded fields — reported by the owner, the first person to type a
+   real date of birth into it. */
+input[type=date]{ -webkit-appearance:none; appearance:none; min-height:2.6rem; }
+input[type=date]::-webkit-date-and-time-value{ text-align:left; margin:0; }
+input[type=date]::-webkit-calendar-picker-indicator{ opacity:.55; cursor:pointer; }
+input[type=date]::-webkit-calendar-picker-indicator:hover{ opacity:1; }
 select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent); }
 /* THE CLASSROOM SCREEN
    Read from the back of a room, so everything is bigger than the app would
@@ -500,7 +511,8 @@ body{ font-family:var(--font-body); line-height:1.62; }
    left email and password with the old 9px corners while everything beside
    them took the theme's radius — styled, and visibly not the same. */
 select,textarea,input[type=text],input[type=email],input[type=password],
-input[type=number],input[type=search],input[type=tel],input[type=url]{ border-radius:var(--r-sm); }
+input[type=number],input[type=search],input[type=tel],input[type=url],
+input[type=date]{ border-radius:var(--r-sm); }
 .panel,.compose,.guide-modal{ border-radius:var(--r-lg); }
 .ex-card,.scenario-pick,.dl-doc,.fb-msg,.welcome-meaning{ border-radius:var(--r-md); }
 .tech-note,.padrao-c,.interview-scenario,.interview-figure,.forum-post,
@@ -13366,11 +13378,22 @@ function countryOptions(selected){
 function profileFieldsHtml(prefillName, prefillCallMe){
   const today = new Date().toISOString().slice(0,10);
   return `
-      <div class="field" style="margin-bottom:.7rem">
-        <label for="acct-name">Full name</label>
+      <!-- "As your teacher would write it" was the wrong instruction, and it
+           was the wrong one for exactly the people this app is for. A student
+           from Vietnam or Korea has a name at home and a different name in
+           Denver, and asking for the one the teacher would write throws away
+           the first — the one that is actually theirs. This field takes it in
+           their own language and alphabet; the field below is the Denver
+           name, and it is the only one the class ever sees. -->
+      <div class="field" style="margin-bottom:.3rem">
+        <label for="acct-name">Your full name</label>
         <input type="text" id="acct-name" autocomplete="name" maxlength="80"
-               value="${escapeHtml(prefillName || '')}" placeholder="As your teacher would write it">
+               value="${escapeHtml(prefillName || '')}"
+               placeholder="In your own language, if you have one">
       </div>
+      <p class="small-note" style="margin:0 0 .7rem">
+        Write it however it is written at home — your own alphabet is fine.
+        Nobody in your class sees this.</p>
       <!-- Two names, because they do two jobs. The full one is the record;
            this one is what a person is called in a room, and a class list
            reading "Rony Croxatte Martins" is a list nobody talks like. It is
@@ -13383,8 +13406,8 @@ function profileFieldsHtml(prefillName, prefillCallMe){
                placeholder="${escapeHtml(firstNameOf(prefillName) || 'Ana')}">
       </div>
       <p class="small-note" style="margin:0 0 .3rem">
-        This is what your class and your teacher see. Leave it blank and we use
-        your first name.</p>
+        The name people here call you by — this is the one your class and your
+        teacher see. Leave it blank and we use your first name.</p>
       <div id="acct-callme-msg"></div>
       <div class="field-row" style="margin-bottom:.4rem">
         <div class="field">
@@ -13439,11 +13462,20 @@ function createFormHtml(){
     <div class="panel">
       <h2 style="margin-top:0">Create an account</h2>
       ${profileFieldsHtml('')}
-      <div class="field-row" style="margin:.7rem 0 0">
-        <div class="field"><label for="acct-email">Email</label>
-          <input type="email" id="acct-email" autocomplete="email" maxlength="200"></div>
+      <div class="field" style="margin:.7rem 0 0">
+        <label for="acct-email">Email</label>
+        <input type="email" id="acct-email" autocomplete="email" maxlength="200">
+      </div>
+      <!-- Typed twice, and only here. A mistyped password on the way IN is one
+           failed attempt and an obvious message; a mistyped password on the way
+           OUT locks somebody out of an account they never got into, and the only
+           way back is the reset email — to an address they may have mistyped in
+           the field above. -->
+      <div class="field-row" style="margin:.5rem 0 0">
         <div class="field"><label for="acct-pass">Password</label>
           <input type="password" id="acct-pass" autocomplete="new-password"></div>
+        <div class="field"><label for="acct-pass2">Type it again</label>
+          <input type="password" id="acct-pass2" autocomplete="new-password"></div>
       </div>
       <button class="btn" style="width:100%;margin-top:.6rem" onclick="accountCreate()"${busy}>
         ${ACCOUNT_BUSY ? 'Creating…' : 'Create my account'}</button>
@@ -13702,7 +13734,7 @@ function readProfileForm(){
            country: val('acct-country'), dob: val('acct-dob'),
            shareBirthday: on('acct-share-bday'), research: on('acct-research'), role: pickedRole(),
            school: val('acct-school'), consent: on('acct-consent'),
-           email: val('acct-email'), pass: val('acct-pass') };
+           email: val('acct-email'), pass: val('acct-pass'), pass2: val('acct-pass2') };
 }
 
 /* One validator for both routes. The rules refuse a bad profile anyway, but a
@@ -13750,6 +13782,7 @@ async function accountCreate(){
   if(bad){ accountMsg(bad, false); return; }
   if(!f.email){ accountMsg('Enter an email address.', false); return; }
   if((f.pass || '').length < 6){ accountMsg('Choose a password of at least six characters.', false); return; }
+  if(f.pass !== f.pass2){ accountMsg('The two passwords are not the same. Type it again.', false); return; }
   accountBusy(true);
   try{
     await window.CloudSync.createAccount(f.email, f.pass, f.name);
