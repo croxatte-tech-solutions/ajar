@@ -1,0 +1,83 @@
+# Is the app the class will open in an hour actually there, and is it the
+# version we think it is?
+#
+# WHY HERE AND NOT SOMEWHERE CLEVERER. This started as a scheduled cloud agent.
+# It failed on its first run: that environment's egress proxy answers 403 to
+# CONNECT for hiajar.com and api.github.com, so it could not reach the two
+# things it existed to check. GitHub's runners have no such policy, the repo is
+# already here, and the checks are curl and string comparison -- deterministic,
+# so a language model was the wrong tool for them anyway.
+#
+# THE SILENCE RULE. Green is silent: no summary, no mail, nothing. Red sends
+# GitHub's own failure mail. A report that says "all ok" thirty days running
+# stops being read, and on the thirty-first nobody opens it.
+name: daily
+
+on:
+  schedule:
+    # 12:30 UTC = 06:30 in Denver during MDT, ninety minutes before class.
+    # GitHub may delay a scheduled run under load; ninety minutes absorbs that.
+    # NOTE: this is fixed UTC. When Denver leaves daylight saving in November
+    # this fires at 05:30 local, and the number below has to move to 13:30.
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: the site answers
+        run: |
+          read -r CODE TTFB SIZE <<< "$(curl -s -o /tmp/live.html \
+            -w '%{http_code} %{time_starttransfer} %{size_download}' https://hiajar.com/)"
+          echo "http=$CODE ttfb=${TTFB}s size=$SIZE"
+          [ "$CODE" = "200" ] || { echo "::error::hiajar.com answered $CODE, not 200"; exit 1; }
+          # Measured 18/08/2026: 1093358 bytes, TTFB 0.33s. The ceiling is not
+          # tidiness: the shell is network-first, so every byte is downloaded
+          # again on every visit, on school wifi.
+          [ "$SIZE" -lt 1400000 ] || { echo "::error::the page grew to $SIZE bytes (was 1093358)"; exit 1; }
+          awk -v t="$TTFB" 'BEGIN{ exit (t<3.0)?0:1 }' \
+            || { echo "::error::first byte took ${TTFB}s"; exit 1; }
+
+      - name: the headers arrive on the real response
+        run: |
+          # check_deploy.js reads the _headers FILE. This is the other half:
+          # what Cloudflare actually sends. A header that quietly stops being
+          # applied looks exactly like a header that is working.
+          curl -sI https://hiajar.com/ | tr 'A-Z' 'a-z' > /tmp/h.txt
+          fail=0
+          need() {
+            grep -q "$2" /tmp/h.txt || { echo "::error::$1 missing or changed (expected: $2)"; fail=1; }
+          }
+          need "content-security-policy"   "content-security-policy:.*default-src 'self'"
+          need "csp object-src"            "object-src 'none'"
+          need "csp frame-ancestors"       "frame-ancestors 'none'"
+          need "strict-transport-security" "strict-transport-security: max-age=31536000; includesubdomains"
+          need "permissions-policy mic"    "permissions-policy:.*microphone=(self)"
+          need "permissions-policy camera" "camera=()"
+          need "referrer-policy"           "referrer-policy: strict-origin-when-cross-origin"
+          need "x-frame-options"           "x-frame-options: deny"
+          # no-cache, NOT no-store: no-cache still allows a 304, and never
+          # serves a stale copy. no-store would forbid caching outright.
+          need "cache-control"             "cache-control: no-cache"
+          exit $fail
+
+      - name: what is live is what is on main
+        run: |
+          # Byte-for-byte would be wrong: Cloudflare may still be propagating.
+          # Size is the signal, and a fifteen-minute grace covers a fresh push.
+          LIVE=$(stat -c%s /tmp/live.html)
+          REPO=$(stat -c%s index.html)
+          echo "live=$LIVE repo=$REPO"
+          if [ "$LIVE" != "$REPO" ]; then
+            AGE=$(( $(date +%s) - $(git log -1 --format=%ct) ))
+            if [ "$AGE" -lt 900 ]; then
+              echo "the last commit is $((AGE/60)) min old — Cloudflare is still propagating"
+            else
+              echo "::error::live is $LIVE bytes, main is $REPO — the deploy is $((AGE/60)) min behind"
+              git log -5 --format='  %h %s'
+              exit 1
+            fi
+          fi

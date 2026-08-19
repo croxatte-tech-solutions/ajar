@@ -1,0 +1,70 @@
+# Twenty identical runs of the suite, and a red build if they are not identical.
+#
+# WHY THIS MATTERS MORE THAN IT LOOKS. A check that fails one time in twenty is
+# worse than a check that fails every time: it teaches the person reading it to
+# shrug at red, and then a real red goes past unnoticed. The pre-commit hook
+# depends on that trust -- it is only respected because it is fast and honest.
+#
+# Like the daily, this is shell rather than a language model: running the same
+# command twenty times and diffing the output needs no judgement.
+name: weekly-flakiness
+
+on:
+  schedule:
+    # 13:00 UTC Sunday = 07:00 in Denver during MDT.
+    - cron: '0 13 * * 0'
+  workflow_dispatch:
+
+jobs:
+  twenty:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+
+      - name: run it twenty times
+        run: |
+          mkdir -p /tmp/runs
+          start=$(date +%s)
+          for i in $(seq 1 20); do
+            # Sorted, because the order scripts/check_*.js is walked is the
+            # filesystem's business and varying it is not instability.
+            sh scripts/qa.sh 2>&1 | sed 's/[0-9]\+ checks/N checks/' | sort > "/tmp/runs/$i.txt"
+          done
+          echo "twenty runs in $(( $(date +%s) - start ))s"
+
+      - name: they have to be identical
+        run: |
+          fail=0
+          for i in $(seq 2 20); do
+            if ! diff -q /tmp/runs/1.txt "/tmp/runs/$i.txt" >/dev/null; then
+              echo "::error::run $i differs from run 1"
+              diff /tmp/runs/1.txt "/tmp/runs/$i.txt" | head -20
+              fail=1
+            fi
+          done
+          [ "$fail" = "0" ] && echo "20/20 identical"
+          exit $fail
+
+      - name: and the totals have to match too
+        run: |
+          # The line above normalises per-file counts so ordering noise does not
+          # register. This one does not: if the TOTAL moved between runs, some
+          # check counted a different number of things, which is the subtler
+          # kind of flake and the one a diff of sorted lines can hide.
+          for i in $(seq 1 20); do
+            sh scripts/qa.sh --quiet 2>&1 | grep -oE '[0-9]+ checks across [0-9]+ files'
+          done | sort -u > /tmp/totals.txt
+          cat /tmp/totals.txt
+          [ "$(wc -l < /tmp/totals.txt)" = "1" ] \
+            || { echo "::error::the total moved between runs"; exit 1; }
+
+      - name: it also has to stay cheap
+        run: |
+          # It is a pre-commit hook. The day it costs a minute, somebody starts
+          # passing --no-verify, and then it protects nothing.
+          s=$(date +%s); sh scripts/qa.sh --quiet >/dev/null 2>&1; d=$(( $(date +%s) - s ))
+          echo "one run: ${d}s"
+          [ "$d" -lt 60 ] || { echo "::error::the suite takes ${d}s — too slow for a commit hook"; exit 1; }
