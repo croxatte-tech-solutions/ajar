@@ -51,7 +51,7 @@
   #
   # The googleapis hosts are what Firebase Auth and Firestore actually talk to:
   # identitytoolkit (sign-in), securetoken (refresh), firestore (data).
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; worker-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://real-life-english.firebaseapp.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/ https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; frame-src https://www.google.com/recaptcha/; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self'; font-src 'self'; worker-src 'self'; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://real-life-english.firebaseapp.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/ https://cloudflareinsights.com; object-src 'none'; base-uri 'self'; frame-src https://www.google.com/recaptcha/ https://real-life-english.firebaseapp.com https://accounts.google.com; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 
   # Cloudflare Web Analytics, allowed on request. It is a third-party beacon on
   # a page students use, and this app otherwise sends nothing anywhere — that
@@ -64,6 +64,23 @@
   # watching.
 
   # www.google.com/recaptcha appears in THREE directives and it has to.
+  # AND THE SAME MISTAKE AGAIN, ONE DIRECTIVE OVER.
+  #
+  # Signing in with Google failed on the live site with auth/internal-error,
+  # which says nothing and points nowhere. It was this line. signInWithPopup
+  # does not only open a window: the Firebase SDK also creates a hidden IFRAME
+  # to the auth domain, which is how the popup reports its result back. That
+  # iframe is governed by frame-src, frame-src allowed reCAPTCHA and nothing
+  # else, so the auth event manager never started and the SDK gave up with its
+  # most generic error.
+  #
+  # The authorised-domains list was checked first and was fine. The Google
+  # provider was checked and was fine. Both were necessary, neither was the
+  # cause, and the cause was a header I wrote — the second time a directive I
+  # forgot has broken Firebase in production, after connect-src and App Check.
+  #
+  # accounts.google.com is here for the same reason in the other direction:
+  # some browsers render the account chooser in a frame rather than a window.
   # I shipped it in script-src and frame-src and left connect-src out, and the
   # production console showed the result: reCAPTCHA loads, draws its frame, and
   # is then refused when it calls api2/clr to exchange the token. Nothing broke,

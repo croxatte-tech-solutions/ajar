@@ -221,6 +221,44 @@ if(m){
     code.indexOf('signInWithRedirect') === -1);
 }
 
+//===================================================================
+// THE CSP KNOWS EVERY DOMAIN THE APP ACTUALLY USES
+//===================================================================
+/* Twice now a forgotten directive has broken Firebase in production, and both
+   times the symptom pointed somewhere else.
+
+   App Check died because recaptcha was in script-src and frame-src and not in
+   connect-src. Google sign-in died with auth/internal-error because the auth
+   domain was in connect-src and not in frame-src — signInWithPopup does not
+   only open a window, it creates a hidden iframe to the auth domain to carry
+   the result back, and frame-src governs that.
+
+   Neither failure named the header. Both cost an afternoon of checking things
+   that were already correct: the authorised-domains list, the provider
+   config, the popup blocker. So the rule is per-directive and explicit —
+   a domain the app depends on must appear in EVERY directive that governs how
+   it is reached, and a list of what each one needs is cheaper than the
+   diagnosis. */
+{
+  const csp = (headers.match(/Content-Security-Policy:([^\n]*)/) || [])[1] || '';
+  const directive = name => {
+    const m = csp.match(new RegExp(name + '\\s+([^;]*)'));
+    return m ? m[1] : '';
+  };
+  const NEEDS = [
+    ['connect-src', 'https://real-life-english.firebaseapp.com', 'Firestore and Auth talk to it'],
+    ['connect-src', 'https://*.googleapis.com', 'every Firebase API call'],
+    ['connect-src', 'https://www.google.com/recaptcha/', 'App Check verifies through it'],
+    ['script-src',  'https://www.gstatic.com', 'the Firebase SDK is loaded from it'],
+    ['frame-src',   'https://real-life-english.firebaseapp.com', 'signInWithPopup reports back through a hidden iframe there'],
+    ['frame-src',   'https://www.google.com/recaptcha/', 'reCAPTCHA renders in a frame'],
+  ];
+  const missing = NEEDS.filter(([d, host]) => directive(d).indexOf(host) === -1)
+                       .map(([d, host, why]) => d + ' is missing ' + host + ' (' + why + ')');
+  assert('every directive lists the hosts that directive needs',
+    missing.length === 0, missing.join('\n    '));
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
