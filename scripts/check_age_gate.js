@@ -145,8 +145,21 @@ function boot(opts){
   //===================================================================
   // SIXTEEN, AND THE EDGES AROUND IT
   //===================================================================
-  assert('the floor is 16, not 13 — the only number correct in every country at once',
-    a.MIN_AGE === 16, a.MIN_AGE);
+  /* THIRTEEN NOW, AND THE WALL IS WHY.
+
+     This asserted sixteen, and sixteen was right while anonymous practice
+     existed: somebody too young for an account still had the app, they just
+     kept everything on their own device. With a sign-in wall the number stops
+     meaning "the age we may store data about" and starts meaning "the age we
+     let anyone in at all", and a fifteen-year-old is then excluded from the
+     product rather than from its storage.
+
+     13 covers COPPA and the LGPD. It is partially exposed in the EU, and what
+     holds the position is not the number but where consent comes from: a
+     school consenting in an educational setting, which is the path this app
+     is on. */
+  assert('the floor is 13, which is what a sign-in wall makes it',
+    a.MIN_AGE === 13, a.MIN_AGE);
   assert('somebody clearly old enough is let in', G('1990-01-01', '2026-08-17').ok === true);
   assert('somebody clearly too young is not', G('2015-01-01', '2026-08-17').ok === false);
   assert('and is told why, not just refused',
@@ -154,18 +167,18 @@ function boot(opts){
 
   // The day either side of a sixteenth birthday. Off-by-one here is the whole
   // control failing, in the direction that admits a fifteen-year-old.
-  assert('the day BEFORE their sixteenth birthday is refused',
-    G('2010-08-18', '2026-08-17').ok === false, G('2010-08-18', '2026-08-17'));
-  assert('the day OF their sixteenth birthday is accepted',
-    G('2010-08-17', '2026-08-17').ok === true, G('2010-08-17', '2026-08-17'));
+  assert('the day BEFORE their thirteenth birthday is refused',
+    G('2013-08-18', '2026-08-17').ok === false, G('2013-08-18', '2026-08-17'));
+  assert('the day OF their thirteenth birthday is accepted',
+    G('2013-08-17', '2026-08-17').ok === true, G('2013-08-17', '2026-08-17'));
   assert('the day after, obviously, too',
-    G('2010-08-16', '2026-08-17').ok === true);
+    G('2013-08-16', '2026-08-17').ok === true);
   // A birthday later in the same month, and in a later month, are the two
   // ways a naive year-subtraction lets somebody through.
   assert('a birthday later this month is still not reached',
-    G('2010-08-31', '2026-08-17').ok === false, a.ageOn('2010-08-31', '2026-08-17'));
-  assert('nor is one later this year', G('2010-12-01', '2026-08-17').ok === false);
-  assert('while one earlier this year has been', G('2010-01-01', '2026-08-17').ok === true);
+    G('2013-08-31', '2026-08-17').ok === false, a.ageOn('2013-08-31', '2026-08-17'));
+  assert('nor is one later this year', G('2013-12-01', '2026-08-17').ok === false);
+  assert('while one earlier this year has been', G('2013-01-01', '2026-08-17').ok === true);
 
   // 29 February exists in the bank of possible birth dates and stops existing
   // in three years out of four. Comparing month-then-day rather than building
@@ -188,11 +201,11 @@ function boot(opts){
   //===================================================================
   // Storing the birth date of somebody we have just told we cannot accept
   // would be collecting a minor's data at the exact moment of saying we do not.
-  const tooYoung = { name:'Kid', country:'Brazil', dob:'2015-01-01', role:'student', consent:true };
+  const tooYoung = { name:'Kid', country:'Brazil', dob:'2018-01-01', role:'student', consent:true };
   assert('a form for somebody too young does not validate',
     typeof a.validateProfileForm(tooYoung) === 'string');
   assert('and the message says what the rule is, not "invalid"',
-    a.validateProfileForm(tooYoung).indexOf('16 and over') > -1,
+    a.validateProfileForm(tooYoung).indexOf('13 and over') > -1,
     a.validateProfileForm(tooYoung));
   assert('and still tells them they can practice anyway',
     a.validateProfileForm(tooYoung).indexOf('without one') > -1);
@@ -260,7 +273,7 @@ function boot(opts){
   // A privacy notice describing a different app than the one running is worse
   // than none: it is a promise nobody is keeping.
   const pv = a.privacyText();
-  assert('it states the age floor as the code enforces it', pv.indexOf('16 or older') > -1);
+  assert('it states the age floor as the code enforces it', pv.indexOf('13 or older') > -1);
   assert('it says the teacher does not get the date of birth',
     pv.indexOf('does not receive your date of birth') > -1);
   assert('it says the birthday year is never shared', pv.indexOf('Never the year') > -1);
@@ -325,8 +338,23 @@ function boot(opts){
     a.authErrorText({ code:'auth/popup-blocked' }).indexOf('Allow pop-ups') > -1);
   assert('an unauthorised domain names it as a setting, not a fault of theirs',
     a.authErrorText({ code:'auth/unauthorized-domain' }).indexOf('developer') > -1);
-  assert('and an unknown code still says something in words',
-    a.authErrorText({ code:'auth/whatever' }).indexOf('auth/') === -1);
+  /* It used to require the opposite, and the opposite cost an afternoon.
+
+     The rule was "never show the person a Firebase code", which is right for
+     every error we recognise — "auth/invalid-credential" in front of a teacher
+     mid-class is worse than useless. It is wrong for the ones we do not. He
+     saw "Something went wrong" while the real answer was auth/internal-error,
+     and neither of us could act on it: he had nothing to search for and I had
+     nothing to read. An unknown error that hides its own name is a dead end
+     for both ends of it. */
+  const unknown = a.authErrorText({ code:'auth/whatever' });
+  assert('an unknown code still says something in words', unknown.indexOf('Try again') > -1);
+  assert('AND NAMES ITSELF, so it can be searched for', unknown.indexOf('auth/whatever') > -1, unknown);
+  assert('while a known code is still explained rather than quoted',
+    a.authErrorText({ code:'auth/invalid-credential' }).indexOf('auth/') === -1);
+  // The one that actually happened, given its own sentence and the fix in it.
+  assert('auth/internal-error points at the authorised-domains list, where it comes from',
+    a.authErrorText({ code:'auth/internal-error' }).indexOf('Authorized domains') > -1);
 
   //===================================================================
   // EMAIL VERIFICATION IS SAID, NOT ENFORCED, AND THE ROOM IS WHY

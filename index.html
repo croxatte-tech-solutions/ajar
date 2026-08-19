@@ -12764,6 +12764,15 @@ function setView(v){
   ['.padrao-c', '.tech-note'].forEach(sel => {
     document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
   });
+  /* And it holds on every route in, not only on the two doors.
+
+     A shared link, a reload, a bookmark and history.back() all reach setView
+     without passing the front page. Gating only the doors would leave the
+     wall standing with a gap beside it. */
+  if((v === 'student' || v === 'teacher') && !hasAccount()){
+    v = 'account';
+    currentView = 'account';
+  }
   document.getElementById('view-teacher').classList.toggle('active', v==='teacher');
   document.getElementById('view-student').classList.toggle('active', v==='student');
   document.getElementById('view-account').classList.toggle('active', v==='account');
@@ -12954,7 +12963,28 @@ function taskBriefHtml(type){
    A refused date is never written down. Storing the birth date of somebody we
    have just told we will not accept would be collecting a minor's data at the
    exact moment of saying we do not. */
-const MIN_AGE = 16;
+/* THIRTEEN, AND THE WALL IS WHY IT MOVED.
+
+   It was sixteen, chosen because these students are international and 16
+   satisfies COPPA and the GDPR at once. That reasoning held while anonymous
+   practice existed: somebody too young for an account still got the app, they
+   just kept everything on their own device.
+
+   The wall removes that. An account is now the only door, so MIN_AGE stops
+   being "the age we may store data about" and becomes "the age we let anyone
+   in at all" — and at sixteen a fifteen-year-old is excluded from the whole
+   product rather than from its storage.
+
+   13 covers COPPA, which uses 13, and Brazil's LGPD, where a child is under
+   12. It is partially exposed in the EU, where the GDPR defaults to 16 and
+   lets each country lower it to 13 — the UK 13, Spain 14, France 15, Germany
+   and the Netherlands 16.
+
+   What holds the position is not the number, it is where consent comes from:
+   the law makes room for a SCHOOL to consent in an educational setting, and
+   that is the path this app is on. A student here is enrolled by a teacher
+   whose school has already taken that decision. */
+const MIN_AGE = 13;
 function ageOn(birthISO, todayISO){
   const b = String(birthISO || '').split('-').map(Number);
   const t = String(todayISO || '').split('-').map(Number);
@@ -13070,7 +13100,18 @@ function authErrorText(e){
     return 'Too many attempts. Wait a few minutes and try again.';
   if(c === 'auth/network-request-failed')
     return 'No connection. Check the network and try again.';
-  return 'Something went wrong signing in. Try again.';
+  /* Say the code when there is nothing better to say.
+
+     "Something went wrong" is what he was looking at while I was looking at
+     nothing — the real answer was auth/internal-error, which Firebase returns
+     when the site's domain is not on the authorised list, where I had
+     expected auth/unauthorized-domain and handled only that. An unknown error
+     that hides its own name costs two people an afternoon each. */
+  if(c === 'auth/internal-error')
+    return 'Sign-in is not set up for this address yet (auth/internal-error). ' +
+           'It usually means ' + (location.hostname || 'this domain') +
+           ' is missing from Firebase → Authentication → Settings → Authorized domains.';
+  return 'Something went wrong signing in' + (c ? ' (' + c + ')' : '') + '. Try again.';
 }
 
 function renderAccount(){
@@ -13098,6 +13139,39 @@ function renderAccount(){
   box.innerHTML = msg + chooseHtml();
 }
 
+/* STAY SIGNED IN — and the default is what the room decides.
+
+   With a wall, this stops being a convenience and starts deciding whether a
+   student can open the app at the start of a lesson without typing anything.
+   So it is ticked by default: the phone in their pocket is theirs, and asking
+   thirteen people to sign in again every morning is how an app gets abandoned.
+
+   Unticking it is the shared-computer case, and the wording says which is
+   which rather than saying "remember me", because the school has a lab and a
+   teacher's laptop that students sometimes borrow. Session persistence means
+   closing the browser ends it, so the next person to sit down is not signed
+   in as them.
+
+   Firebase enforces this, not the app: browserLocalPersistence survives a
+   restart, browserSessionPersistence does not. */
+const REMEMBER_KEY = 'ajar_stay_signed_in';
+function rememberMe(){
+  try{ return localStorage.getItem(REMEMBER_KEY) !== '0'; }catch(e){ return true; }
+}
+function setRememberMe(on){
+  try{ localStorage.setItem(REMEMBER_KEY, on ? '1' : '0'); }
+  catch(e){ console.warn('Ajar: could not remember that choice —', e); }
+}
+function toggleRememberMe(el){ setRememberMe(!!(el && el.checked)); }
+function rememberMeHtml(){
+  return `<label style="display:block;margin-bottom:.7rem">
+    <input type="checkbox" id="acct-remember" ${rememberMe() ? 'checked' : ''}
+           onchange="toggleRememberMe(this)">
+    <span class="small-note">Keep me signed in on this device.
+    <b>Untick it on a shared or school computer</b> — then signing out happens
+    when the browser closes.</span></label>`;
+}
+
 function chooseHtml(){
   const busy = ACCOUNT_BUSY ? ' disabled' : '';
   return `
@@ -13107,9 +13181,13 @@ function chooseHtml(){
         An account keeps your practice with you — on your phone, on a laptop, on
         the computer in the lab. Without one, everything still works and stays on
         this device only.</p>
-      <button class="btn" style="width:100%;margin-bottom:.5rem" onclick="accountGoogle()"${busy}>
-        Continue with Google</button>
-      <button class="btn ghost" style="width:100%" onclick="accountMode('password')"${busy}>
+      ${rememberMeHtml()}
+      ${googleButtonHtml(ACCOUNT_BUSY)}
+      <!-- Always visible beside it, never behind a link. The pop-up Google
+           needs can be blocked by a browser, a school network or an old
+           WebView, and with a sign-in wall a blocked pop-up is a locked door
+           rather than an inconvenience. There is always a second way in. -->
+      <button class="btn ghost" style="width:100%;margin-top:.5rem" onclick="accountMode('password')"${busy}>
         Sign in with an email and password</button>
       <p class="small-note" style="margin:.9rem 0 0">
         New here? <a href="#" onclick="accountMode('role');return false">Create an account</a>
@@ -13391,7 +13469,7 @@ async function accountPasswordSignIn(){
   if(!f.email || !f.pass){ accountMsg('Type your email and password.', false); return; }
   accountBusy(true);
   try{
-    await window.CloudSync.signInWithPassword(f.email, f.pass, true);
+    await window.CloudSync.signInWithPassword(f.email, f.pass, rememberMe());
     await refreshAccountProfile();
     accountMsg(null);
   }catch(e){
@@ -14396,6 +14474,38 @@ function exportClassJson(){
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+/* THE GOOGLE BUTTON, IN THE SHAPE PEOPLE ALREADY TRUST.
+
+   Google's identity guidelines are specific about this: the four-colour "G",
+   a white or neutral surface, "Sign in with Google" as the words, and the
+   mark never redrawn or recoloured. A student who has seen that button on
+   twenty other sites reads it in a glance; a green rectangle saying "Continue
+   with Google" makes them stop and wonder whether this is the real thing.
+   On a page asking somebody to hand over a Google account, looking exactly
+   like every other place that asks is not decoration.
+
+   The mark is inlined rather than linked. The CSP forbids external images and
+   the app is a single self-contained file, so a CDN logo would be a broken
+   square on the one screen that most needs to look legitimate. */
+function googleMarkSvg(size){
+  const p = size || 18;
+  return `<svg width="${p}" height="${p}" viewBox="0 0 48 48" aria-hidden="true"
+    style="flex-shrink:0;display:block">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+  </svg>`;
+}
+// White surface, dark text, and the words Google asks for. Not the app's
+// green: a branded button that has been restyled is the one people hesitate on.
+function googleButtonHtml(busy){
+  return `<button class="btn" style="width:100%;display:flex;align-items:center;justify-content:center;
+      gap:.6rem;background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:600;
+      font-size:.92rem;padding:.7rem" onclick="accountGoogle()"${busy ? ' disabled' : ''}>
+    ${googleMarkSvg(18)}<span>Sign in with Google</span></button>`;
+}
+
 function renderWelcome(){
   // Runs during start-up. Anything thrown here takes the whole app down
   // before a single screen renders, so the welcome — which is decoration
@@ -14522,10 +14632,34 @@ function paintWelcomeCopy(t, animate){
     setTimeout(() => { apply(); [lede, meaning].forEach(el => { if(el) el.style.opacity = '1'; }); }, 260);
   }catch(e){}
 }
+/* BOTH DOORS LEAD TO THE SAME LOCK.
+
+   The two doors on the front page still say which of the two you are — the
+   choice is real and it decides what the next screen asks. What changed is
+   that neither of them opens onto content. Without an account, both arrive at
+   the sign-in screen carrying the role, and the app remembers it so the
+   signup form is already on the right side when they get there.
+
+   That is a harder position than the app held yesterday, and it was taken
+   knowing the cost. Anonymous practice was how somebody below the account age
+   still got the app, and how a blocked pop-up stayed an inconvenience rather
+   than a locked door. Both are answered rather than ignored: MIN_AGE moved to
+   13 in the same change, and email-and-password sits beside Google on every
+   screen that offers it, never behind a link.
+
+   No 'has entered before' flag, still. It existed to skip the front page on
+   later visits, and skipping it is exactly what once dropped a returning
+   student onto the teacher sign-in. */
+function currentViewName(){ return currentView; }
 function enterAs(role){
-  // No 'has entered before' flag any more. It existed to skip the welcome
-  // screen on later visits, and skipping it is exactly what dropped a
-  // returning student onto the teacher sign-in.
+  if(!hasAccount()){
+    // Carried, not guessed: somebody who pressed "I am a teacher" should not
+    // have to say so again two screens later.
+    ACCOUNT_ROLE = (role === 'teacher') ? 'teacher' : 'student';
+    ACCOUNT_MODE = 'choose';
+    setView('account');
+    return;
+  }
   setView(role);
 }
 
@@ -14669,7 +14803,10 @@ function privacyText(){
       <li><b>Your email</b> — so you can sign in, and get back in if you forget your password.</li>
       <li><b>Your country</b> — so the school can see where its class comes from.</li>
       <li><b>Your date of birth</b> — used once, to check you are ${MIN_AGE} or older.
-        We are not allowed to hold accounts for people younger than that.</li>
+        We are not allowed to hold accounts for people younger than that, and
+        since an account is now the only way in, that is also the age this app
+        starts at. Your school has agreed to this on your behalf, which is what
+        the law allows in a classroom.</li>
     </ul>
 
     <h3>Who can see it</h3>
@@ -15343,6 +15480,12 @@ loadSharedClassroomContent().then(()=>{
     // Asked of the auth object directly rather than through the page's
     // helper: this module loads before that code is guaranteed to exist.
     const hasAccount = () => !!(auth.currentUser && !auth.currentUser.isAnonymous);
+    // Asked of the page, which owns the checkbox. Defaults to staying signed
+    // in when the page has not loaded yet, which matches the box's own default.
+    const staySignedIn = () => {
+      try{ return typeof rememberMe === 'function' ? rememberMe() : true; }
+      catch(e){ return true; }
+    };
     // Returned instead of writing when this device belongs to no class. The
     // caller must not read it as a failure: practicing alone is a supported
     // way to use this, not a broken one.
@@ -15582,7 +15725,7 @@ loadSharedClassroomContent().then(()=>{
         return true;
       },
       async signInWithGoogle() {
-        await setPersistence(auth, browserLocalPersistence);
+        await setPersistence(auth, staySignedIn() ? browserLocalPersistence : browserSessionPersistence);
         const provider = new GoogleAuthProvider();
         const u = auth.currentUser;
         try{
@@ -15607,7 +15750,7 @@ loadSharedClassroomContent().then(()=>{
       // Same promotion for the email route: an anonymous session that has
       // practiced keeps its uid and its history.
       async createAccount(email, password, displayName) {
-        await setPersistence(auth, browserLocalPersistence);
+        await setPersistence(auth, staySignedIn() ? browserLocalPersistence : browserSessionPersistence);
         const u = auth.currentUser;
         const cred = EmailAuthProvider.credential(email, password);
         const res = (u && u.isAnonymous)

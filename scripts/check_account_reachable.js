@@ -137,7 +137,8 @@ function boot(opts){
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,dismissScanError,currentSchool,teacherIsSignedIn,applyTeacherGate,'+
     'renderTeacherSignIn,renderAccount,ageGate,ageOn,birthdayFrom,MIN_AGE,COUNTRIES,'+
-    'validateProfileForm,renderAdmin,refreshAdmin,renderWhoAmI,accountEntryHtml,setView};', sandbox);
+    'validateProfileForm,renderAdmin,refreshAdmin,renderWhoAmI,accountEntryHtml,setView,'+
+    'enterAs,pickedRole,currentViewName};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, approvals, declines, store };
 }
 
@@ -160,17 +161,28 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
   assert('something in the app navigates to the account view',
     html.indexOf("setView('account')") > -1);
 
+  /* THE WALL, ASSERTED WHERE IT ACTUALLY STANDS.
+
+     These asked whether a signed-out student on the practice screen was
+     offered an account. That state no longer exists: without an account,
+     asking for the student view lands on the account screen instead. The
+     stronger claim is the one worth checking — not "they are offered a way
+     in" but "there is no way past". */
   const anon = boot({ search:'?school=scan-school' });
   anon.api.setView('student');
+  assert('a signed-out visitor asking for practice lands on sign-in instead',
+    anon.api.currentViewName() === 'account', anon.api.currentViewName());
+  anon.api.setView('teacher');
+  assert('and so does one asking for the teacher panel',
+    anon.api.currentViewName() === 'account', anon.api.currentViewName());
+  anon.api.enterAs('teacher');
+  assert('the door they pressed is remembered, so they are not asked twice',
+    anon.api.pickedRole() === 'teacher', anon.api.pickedRole());
+  anon.api.enterAs('student');
+  assert('either door', anon.api.pickedRole() === 'student');
   anon.api.renderWhoAmI();
-  assert('a signed-out student is offered an account',
-    whoAmI().indexOf("setView('account')") > -1, whoAmI().slice(0,160));
-
-  anon.api.setStudentName('Ana');
-  anon.api.renderWhoAmI();
-  assert('and so is one who has typed a name',
-    whoAmI().indexOf("setView('account')") > -1 && whoAmI().indexOf('Hi, Ana') > -1,
-    whoAmI().slice(0,160));
+  assert('and the control on that screen is the way back, not another way in',
+    whoAmI().indexOf('Back') > -1, whoAmI().slice(0,160));
 
   const t = boot({ search:'?school=scan-school', teacher:true });
   t.api.setView('teacher');
