@@ -12717,11 +12717,21 @@ function setStudentName(name){ localStorage.setItem('ajar_student_name', name.tr
    and none of them were reachable, because nothing anywhere called
    setView('account'). A student had no way to sign out. */
 function accountEntryHtml(){
-  const on = currentView === 'account';
+  /* On the account screen this used to render a "← Back" button, and it was
+     removed rather than repointed.
+
+     It had been pointing at the student view, which behind the wall bounces
+     straight back — a control that looks live and does nothing. The first fix
+     was to send it to the front page instead. That worked and it was still
+     wrong, because the wordmark had just become the way home in the same
+     change: two controls, one job, one of them a leftover from before the
+     wall existed.
+
+     Everywhere else it stays the way IN, which is a different job and the
+     only one that still needs a button. */
+  if(currentView === 'account') return '';
   return `<button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
-            aria-current="${on ? 'page' : 'false'}"
-            onclick="setView('${on ? (hasAccount() ? (teacherIsSignedIn() ? 'teacher' : 'student') : 'welcome') : 'account'}')">${
-            on ? '&larr; Back' : '👤 Account'}</button>`;
+            onclick="setView('account')">👤 Account</button>`;
 }
 function renderWhoAmI(){
   const el = document.getElementById('who-am-i');

@@ -181,8 +181,8 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
   anon.api.enterAs('student');
   assert('either door', anon.api.pickedRole() === 'student');
   anon.api.renderWhoAmI();
-  assert('and the control on that screen is the way back, not another way in',
-    whoAmI().indexOf('Back') > -1, whoAmI().slice(0,160));
+  assert('and that screen offers no button back into itself',
+    whoAmI().indexOf("setView('account')") === -1, whoAmI().slice(0,160));
 
   const t = boot({ search:'?school=scan-school', teacher:true });
   t.api.setView('teacher');
@@ -200,24 +200,27 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
   const back = boot({ search:'?school=scan-school' });
   back.api.setView('account');
   back.api.renderWhoAmI();
-  assert('on the account screen the control turns into the way back',
-    whoAmI().indexOf('Back') > -1, whoAmI().slice(0,160));
-  assert('and it does not offer to open the screen you are already on',
-    whoAmI().indexOf("setView('account')") === -1, whoAmI().slice(0,160));
-  /* Back goes to the FRONT PAGE when there is no account, not to practice.
-
-     It pointed at the student view, which behind the wall bounces straight
-     back here — the button looked live and did nothing, which reads as a
-     frozen app. Without an account there is nothing behind this screen except
-     the two doors, so that is where back goes. */
-  assert('with no account, back goes to the front page — the only thing behind this screen',
-    whoAmI().indexOf("setView('welcome')") > -1, whoAmI().slice(0,200));
+  assert('the account screen carries no button of its own at all',
+    (whoAmI() || '').indexOf('<button') === -1, whoAmI().slice(0,160));
+  /* There is no Back button here at all, and that is the fix rather than a
+     regression. It pointed at the student view, which behind the wall bounces
+     straight back — live-looking and doing nothing. Repointing it at the front
+     page worked and was still wrong: the wordmark had become the way home in
+     the same change, leaving two controls for one job. The wordmark is the one
+     people already try. */
+  assert('the account screen carries no second way out',
+    whoAmI().indexOf('Back') === -1, whoAmI().slice(0,200));
+  assert('and does not offer a way in to the screen already open',
+    whoAmI().indexOf("setView('account')") === -1, whoAmI().slice(0,200));
+  assert('the wordmark is the way home, and it is always on screen',
+    html.indexOf("onclick=\"setView('welcome');return false\"") > -1);
 
   const tback = boot({ search:'?school=scan-school', teacher:true });
   tback.api.setView('account');
   tback.api.renderWhoAmI();
-  assert('a teacher goes back to her panel, not to the student view',
-    whoAmI().indexOf("setView('teacher')") > -1, whoAmI().slice(0,220));
+  // Same for a teacher: the wordmark is the exit, and there is only one.
+  assert('and none for a teacher either', (whoAmI() || '').indexOf('<button') === -1,
+    whoAmI().slice(0,220));
 
   //===================================================================
   // IT IS NOT A THIRD MODE
@@ -248,8 +251,10 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
     html.indexOf("const hideAll = v === 'welcome';") > -1);
   assert('and the notices are hidden on the account screen too, where they compete with the one question it asks',
     html.indexOf("const hideNotices = hideAll || v === 'account';") > -1);
-  assert('the current screen is announced to assistive tech',
-    html.indexOf('aria-current="${on ? \'page\' : \'false\'}"') > -1);
+  // A logo is not self-describing to somebody who cannot see it, so the way
+  // home says where it goes.
+  assert('the way home is labelled for a screen reader',
+    html.indexOf('back to the start') > -1);
 
   console.log(results.join('\n'));
   const fails = results.filter(r => r.indexOf('FAIL') > -1);
