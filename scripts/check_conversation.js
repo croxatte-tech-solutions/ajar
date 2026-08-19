@@ -150,8 +150,16 @@ ${combined}
   window._cvState = { itemId:'cv1', q:0, listens:0, results:[], chosen:null };
   renderConversationStep(currentItem());
 
+  /* Pressing listen is NOT what opens the question — the audio ending is.
+     On the real Listening section the questions never appear while the clip
+     is running, and this used to assert the opposite: that pressing play
+     revealed them, which is true from the clip's first millisecond. */
   playConversation();
-  assert('listening reveals the question', shown(g.questions[0].q));
+  assert('the question stays hidden while the audio is still playing', !shown(g.questions[0].q));
+  assert('and the screen says why, rather than looking stuck',
+    document.getElementById('practice-wrap').innerHTML.indexOf('appear when the audio finishes') > -1);
+  window._currentAudio.onended();
+  assert('the audio finishing is what reveals the question', shown(g.questions[0].q));
   assert('the transcript is STILL hidden while answering', !shown(firstLine) && !shown(lastLine));
 
   const wrong = g.questions[0].answer === 0 ? 1 : 0;

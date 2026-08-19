@@ -77,6 +77,36 @@ const testScript = `
   if(practiceDead.length) results.push('    dead: ' + practiceDead.join(', '));
   assert('and all twelve were walked', TASK_TYPES.length === 12);
 
+  /* Listen and Choose a Response, checked here because it has no file of its
+     own — 84 items, the largest bank in the app, and no test has ever driven
+     its play flow. That gap is older than this change and is worth its own
+     file one day; this covers the one rule that would otherwise go unchecked
+     in the type a class meets most often.
+
+     Its exchanges are short — one spoken line — which makes it the type where
+     showing the options early costs the most: there is no long clip to keep
+     a student listening once the answers are on screen. */
+  {
+    const item = { id: 'cr1', type: 'choose-response', tag: 'Listen and Choose a Response',
+                   theme: 'campus', status: 'approved', data: generateOne('choose-response', 'campus').data };
+    localStorage.setItem('ajar_individual', JSON.stringify({ ana: [item] }));
+    setStudentName('Ana');
+    reset();
+    selectedId = 'cr1';
+    renderPractice();
+    startExercise('cr1');
+    const first = item.data.set[0];
+    const html2 = () => document.getElementById('practice-wrap').innerHTML;
+    assert('choose-response hides its replies before the line is played',
+      html2().indexOf(escapeHtml(first.options[0])) === -1);
+    playChoosePrompt();
+    assert('AND keeps them hidden while it is still playing',
+      html2().indexOf(escapeHtml(first.options[0])) === -1);
+    window._currentAudio.onended();
+    assert('the line ending is what puts the replies on screen',
+      html2().indexOf(escapeHtml(first.options[0])) > -1);
+  }
+
   //=================================================================
   // THE FOUR SECTIONS — every question, not just the first
   //=================================================================

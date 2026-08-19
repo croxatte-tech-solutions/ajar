@@ -306,6 +306,41 @@ assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CAT
     anonymous.length === 0, anonymous.slice(0, 3));
 }
 
+//===================================================================
+// NO LISTENING EXERCISE OPENS ITS QUESTIONS BEFORE THE AUDIO ENDS
+//===================================================================
+/* The rule comes from the exam, not from taste: on the real Listening
+   section the questions arrive when the clip does not. The live round always
+   had it; practicing alone did not, because the gate was st.listens — true
+   from the first millisecond of playback.
+
+   Asserted structurally as well as behaviourally. The four per-type checks
+   drive the real thing and watch the screen; this one stops a FIFTH listening
+   type from being written with the old gate, which is the way this would come
+   back. */
+{
+  const PLAYERS = ['playAnnouncement', 'playTalk', 'playConversation', 'playChoosePrompt'];
+  const missing = PLAYERS.filter(fn => {
+    const at = html.indexOf('function ' + fn + '(');
+    if(at === -1) return true;
+    const body = html.slice(at, html.indexOf('\n}', at));
+    return body.indexOf('revealAfterAudio(') === -1;
+  });
+  assert('every listening exercise waits for the audio before opening its questions',
+    missing.length === 0, missing);
+  // The old gate, by name. It let the options through on play, not on end.
+  assert('AND none of them still opens on "has play been pressed"',
+    html.indexOf('${st.listens ? `\n        <div class="ex-body"') === -1);
+  /* Three ways to open, because one of them is not reliable.
+     speechSynthesis.onend is dropped by Chrome and Safari on long text and on
+     a backgrounded tab, and the browser voice is exactly what a student gets
+     when a clip is missing. Without a floor, that student sits with no
+     question and no way forward — a worse failure than the one being fixed. */
+  assert('and the reveal cannot hang, because the clip length and the word count back it up',
+    html.indexOf("a.addEventListener('loadedmetadata'") > -1
+    && html.indexOf('LISTEN_REVEAL_WPM') > -1);
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)

@@ -7139,6 +7139,61 @@ function speakWithTTS(text, onEnd){
   if(onEnd) u.onend = onEnd;
   window.speechSynthesis.speak(u);
 }
+/* THE QUESTION WAITS FOR THE AUDIO TO FINISH.
+   ==========================================
+   On the real Listening section you do not see the questions while you
+   listen; they arrive when the audio does not. The live round has always
+   worked that way — its 'listening' phase carries no options at all — and
+   practicing alone did not: the gate was "have you pressed play", which is
+   true from the first millisecond of the clip. So a student reading four
+   options while the talk was still running was reading, not listening, and
+   the exam does not allow that.
+
+   THREE WAYS TO OPEN, NOT ONE, and that is the whole design.
+
+   speechSynthesis.onend is famously unreliable — Chrome and Safari both drop
+   it on long text and on a backgrounded tab — and the browser voice is
+   exactly what a student gets when a clip is missing. Gating on that event
+   alone would mean a student with no question and no way forward, in the
+   middle of a lesson. That is a worse failure than the one being fixed, and
+   it would be mine.
+
+   So: the real end of the audio, or the clip's own duration once the browser
+   reports it, or the text read at the same rate the live round uses. First
+   one wins, and every one of them arrives. */
+const LISTEN_REVEAL_WPM = 120;
+function revealAfterAudio(text, onReveal){
+  let opened = false, timer = null;
+  const open = () => { if(opened) return; opened = true; if(timer) clearTimeout(timer); onReveal(); };
+  const arm = ms => { if(timer) clearTimeout(timer); timer = setTimeout(open, ms); };
+
+  speak(text, open);
+
+  // Floor: how long this many words takes to say. Deliberately generous, so
+  // it only ever fires when the two better answers did not.
+  const words = String(text || '').trim().split(' ').filter(Boolean).length;
+  arm(Math.max(3000, (words / LISTEN_REVEAL_WPM) * 60000) + 2500);
+
+  // Better: the file's real length, as soon as the browser knows it. Replaces
+  // the estimate rather than racing it.
+  const a = window._currentAudio;
+  if(a && a.addEventListener){
+    a.addEventListener('loadedmetadata', () => {
+      if(isFinite(a.duration) && a.duration > 0) arm(a.duration * 1000 + 2000);
+    }, { once: true });
+  }
+}
+
+// What the screen says between pressing listen and the questions arriving.
+// It names the rule rather than just spinning, because a student who does not
+// know the questions are coming assumes the app is broken.
+function listeningNowNote(){
+  return `<div class="ex-body" style="margin-top:.9rem;text-align:center">
+    <div style="font-size:2rem" aria-hidden="true">👂</div>
+    <p class="small-note" style="max-width:34ch;margin:.3rem auto 0">Listening. The question and
+    the answers appear when the audio finishes &mdash; just like the real test.</p></div>`;
+}
+
 function supportsSTT(){ return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
 function listenOnce(onResult, onError){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -11806,10 +11861,10 @@ function renderAnnouncementStep(item){
           ? `<button class="btn sound" onclick="playAnnouncement()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
           : listensSpentNote('answer')}
       </div>
-      ${st.listens ? `
+      ${st.revealed ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
         <div class="mc-options" role="group">${options}</div>`
-        : listensAheadNote()}
+        : st.listens ? listeningNowNote() : listensAheadNote()}
       <div id="an-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceAnnouncement()">${doneQ < totalQ-1 ? 'Next question →' : 'Finish →'}</button>
@@ -11825,7 +11880,15 @@ function playAnnouncement(){
   if(!st || !item) return;
   st.listens++;
   renderAnnouncementStep(item);
-  speak(item.data.set[st.ann].text);
+  /* The announcement and question are captured now and compared on the way
+     back. A reveal that lands after the student has moved on would open the
+     answers to a question they are no longer looking at. */
+  const ann = st.ann;
+  revealAfterAudio(item.data.set[st.ann].text, () => {
+    if(window._anState !== st || st.ann !== ann) return;
+    st.revealed = true;
+    renderAnnouncementStep(currentItem() || item);
+  });
 }
 function answerAnnouncement(i){
   const st = window._anState, item = currentItem();
@@ -11855,7 +11918,8 @@ function advanceAnnouncement(){
     return;
   }
   if(st.ann < item.data.set.length - 1){
-    st.ann++; st.q = 0; st.listens = 0;
+    // New announcement, new audio: the questions go back behind it.
+    st.ann++; st.q = 0; st.listens = 0; st.revealed = false;
     renderAnnouncementStep(item);
     return;
   }
@@ -12035,9 +12099,10 @@ function renderTalkStep(item){
           ? `<button class="btn sound" onclick="playTalk()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
           : listensSpentNote('answer')}
       </div>
-      ${st.listens ? `
+      ${st.revealed ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
         <div class="mc-options" role="group">${options}</div>`
+        : st.listens ? listeningNowNote()
         : listensAheadNote(' It runs about a minute.') + '<p class="small-note">All four questions come from this one talk.</p>'}
       <div id="tk-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
@@ -12054,7 +12119,11 @@ function playTalk(){
   if(!st || !item) return;
   st.listens++;
   renderTalkStep(item);
-  speak(item.data.text);
+  revealAfterAudio(item.data.text, () => {
+    if(window._tkState !== st) return;
+    st.revealed = true;
+    renderTalkStep(currentItem() || item);
+  });
 }
 function answerTalk(i){
   const st = window._tkState, item = currentItem();
@@ -12122,10 +12191,10 @@ function renderConversationStep(item){
           ? `<button class="btn sound" onclick="playConversation()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
           : listensSpentNote('answer')}
       </div>
-      ${st.listens ? `
+      ${st.revealed ? `
         <div class="ex-body" style="margin-top:.9rem">${escapeHtml(q.q)}</div>
         <div class="mc-options" role="group">${options}</div>`
-        : listensAheadNote()}
+        : st.listens ? listeningNowNote() : listensAheadNote()}
       <div id="cv-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
         <button class="btn" onclick="advanceConversation()">${st.q < d.questions.length-1 ? 'Next question →' : 'Finish →'}</button>
@@ -12141,7 +12210,11 @@ function playConversation(){
   if(!st || !item) return;
   st.listens++;
   renderConversationStep(item);
-  speak(conversationText(item.data.turns));
+  revealAfterAudio(conversationText(item.data.turns), () => {
+    if(window._cvState !== st) return;
+    st.revealed = true;
+    renderConversationStep(currentItem() || item);
+  });
 }
 function conversationTranscriptHtml(turns){
   return turns.map(t => `<b>${t[0]==='M'?'Man':'Woman'}:</b> ${escapeHtml(t[1])}`).join('<br>');
@@ -12214,7 +12287,8 @@ function renderChooseResponseStep(item){
           ? `<button class="btn sound" onclick="playChoosePrompt()">🔊 ${st.listens ? 'Listen again (last time)' : 'Listen'}</button>`
           : (!answered ? listensSpentNote('choose') : '')}
       </div>
-      ${st.listens ? `<div class="mc-options" role="group">${options}</div>`
+      ${st.revealed ? `<div class="mc-options" role="group">${options}</div>`
+        : st.listens ? listeningNowNote()
         : '<p class="small-note" style="margin-top:.8rem">Press listen to begin.</p>'}
       <div id="cr-result" role="status" aria-live="polite"></div>
       ${answered ? `<div class="ex-actions" style="margin-top:.7rem">
@@ -12231,7 +12305,12 @@ function playChoosePrompt(){
   if(!st || !item) return;
   st.listens++;
   renderChooseResponseStep(item);
-  speak(item.data.set[st.step].prompt);
+  const step = st.step;
+  revealAfterAudio(item.data.set[st.step].prompt, () => {
+    if(window._crState !== st || st.step !== step) return;
+    st.revealed = true;
+    renderChooseResponseStep(currentItem() || item);
+  });
 }
 function answerChooseResponse(i){
   const st = window._crState, item = currentItem();
@@ -12254,7 +12333,8 @@ function advanceChooseResponse(){
   const st = window._crState, item = currentItem();
   if(!st || !item) return;
   if(st.step < item.data.set.length - 1){
-    st.step++; st.listens = 0; st.chosen = null;
+    // New exchange, new line to hear. Same rule.
+    st.step++; st.listens = 0; st.chosen = null; st.revealed = false;
     renderChooseResponseStep(item);
     return;
   }

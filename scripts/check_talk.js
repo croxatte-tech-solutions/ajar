@@ -127,8 +127,19 @@ ${combined}
   assert('the question is hidden until the student listens', !shown(g.questions[0].q));
   assert('the listening context IS shown', shown(g.context));
 
+  /* Pressing listen is NOT what opens the question — the audio ending is.
+     On the real Listening section you never see the questions while the clip
+     is running, and this used to assert the opposite: that pressing play
+     revealed them, which is true from the clip's first millisecond. A student
+     reading four options over a talk still in progress is reading, not
+     listening. */
   playTalk();
-  assert('listening reveals the question', shown(g.questions[0].q));
+  assert('the question stays hidden while the talk is still playing', !shown(g.questions[0].q));
+  assert('and the screen says why, rather than looking stuck',
+    document.getElementById('practice-wrap').innerHTML.indexOf('appear when the audio finishes') > -1);
+  // The end of the clip, fired the way the browser fires it.
+  window._currentAudio.onended();
+  assert('the audio finishing is what reveals the question', shown(g.questions[0].q));
   assert('the talk is STILL hidden while answering', !shown(opening) && !shown(ending));
 
   const wrong = g.questions[0].answer === 0 ? 1 : 0;
