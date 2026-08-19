@@ -13517,14 +13517,93 @@ async function resendVerification(){
   }
 }
 
+/* Changing the name a room calls you by.
+
+   It had no way in at all: the field existed only on the signup form, so
+   everybody who already had an account was stuck with whatever was there —
+   including the owner, who asked for "Rony" and could not set it. A field
+   somebody can fill once and never correct is a field that will be wrong. */
+let CALLME_EDIT = false;
+function editCallMe(on){ CALLME_EDIT = !!on; ACCOUNT_MSG = null; renderAccount(); }
+
+async function saveCallMe(){
+  if(ACCOUNT_BUSY) return;
+  const wanted = ((document.getElementById('acct-callme') || {}).value || '').trim();
+  if(!wanted){ accountMsg('Type the name you would like to be called.', false); return; }
+  const p = ACCOUNT_PROFILE || {};
+  if(wanted === p.displayName){ editCallMe(false); return; }
+
+  // Same refusal as at signup, for the same reason: two people called Ana in
+  // one list is a teacher who cannot tell whose work is whose.
+  try{
+    const taken = await classNamesOtherThanMine();
+    if(taken && taken.some(n => n.toLowerCase() === wanted.toLowerCase())){
+      const ideas = nameSuggestions(wanted, p.fullName || p.displayName || '', taken);
+      const box = document.getElementById('acct-callme-msg');
+      if(box) box.innerHTML =
+        '<p class="small-note" style="color:var(--accent);font-weight:600;margin:.1rem 0 .4rem">'
+        + 'Somebody in this class is already called ' + escapeHtml(wanted) + '.'
+        + (ideas.length ? ' Try one of these:' : ' Please choose another one.') + '</p>'
+        + ideas.map(n => '<button type="button" class="guide-btn" style="margin:0 .3rem .3rem 0"'
+            + ' onclick="useSuggestedName(this.textContent)">' + escapeHtml(n) + '</button>').join('');
+      return;
+    }
+  }catch(e){
+    console.error('Ajar: could not check whether that name is already in the class —', e);
+  }
+
+  accountBusy(true);
+  try{
+    await window.CloudSync.saveProfile({
+      displayName: wanted,
+      fullName: p.fullName || p.displayName || wanted,
+      country: p.country, birthDate: p.birthDate, role: p.role,
+      research: p.research, schoolId: p.schoolId || currentSchool() || '',
+      createdAt: p.createdAt,
+    });
+  }catch(e){
+    console.error('Ajar: the new name did not save —', e);
+    accountMsg('That did not save. Nothing was changed.', false);
+    accountBusy(false);
+    return;
+  }
+  /* Its own sentence, because it is its own failure. The profile is changed
+     either way; this is whether the class can see that yet. */
+  try{ await window.CloudSync.renameInClass(wanted); }
+  catch(e){
+    console.error('Ajar: the class list still has your old name —', e);
+    accountMsg('Your name is changed, but your class list has not caught up yet. It will next time you practice.', false);
+  }
+  setStudentName(wanted);
+  CALLME_EDIT = false;
+  accountBusy(false);
+  await refreshAccountProfile();
+  renderWhoAmI();
+}
+
 function accountSignedInHtml(u){
   const p = ACCOUNT_PROFILE || {};
   const pending = p.role === 'teacher' && !u.isTeacher;
   return `
     <div class="panel">
       <h2 style="margin-top:0">Your account</h2>
-      <p style="margin:.2rem 0"><b>${escapeHtml(p.displayName || u.name || '')}</b></p>
+      ${CALLME_EDIT ? `
+      <div class="field" style="margin:.4rem 0 .3rem">
+        <label for="acct-callme">What should we call you?</label>
+        <input type="text" id="acct-callme" maxlength="40"
+               value="${escapeHtml(p.displayName || '')}">
+      </div>
+      <p class="small-note" style="margin:0 0 .5rem">Your class and your teacher
+        see this. Your full name is not shown to them.</p>
+      <div id="acct-callme-msg"></div>
+      <button class="btn sm" onclick="saveCallMe()">Save</button>
+      <button class="btn ghost sm" style="margin-left:.4rem" onclick="editCallMe(false)">Cancel</button>
+      ` : `
+      <p style="margin:.2rem 0"><b>${escapeHtml(p.displayName || u.name || '')}</b>
+        <a href="#" class="small-note" style="margin-left:.5rem"
+           onclick="editCallMe(true);return false">Change</a></p>
       <p class="small-note" style="margin:0">${escapeHtml(u.email || '')} · ${escapeHtml(p.country || '')}</p>
+      `}
       ${verifyNoticeHtml(u)}
       ${pending ? `<div class="panel" style="border-color:var(--amber);margin-top:.8rem">
         <b style="color:var(--amber)">⏳ Your teacher account is waiting to be approved.</b>
@@ -15857,6 +15936,26 @@ loadSharedClassroomContent().then(()=>{
     // caller must not read it as a failure: practicing alone is a supported
     // way to use this, not a broken one.
     const NO_SCHOOL = 'no-school';
+    /* ANONYMOUS SIGN-IN WAITS TO BE ASKED FOR.
+
+       It used to run unconditionally, one line below this listener, on every
+       single page load. signInAnonymously() does not return whoever is
+       already signed in — with a Google session in place it MINTS A NEW
+       ANONYMOUS USER AND REPLACES IT. Restoring a saved session is
+       asynchronous, so the two raced: sometimes the restore landed first and
+       everything was fine, sometimes the anonymous call did and a signed-in
+       person was quietly demoted to a stranger.
+
+       That is why it asked him to sign in again at random, and why it then
+       failed to take him to his own screen — routeHome() requires an
+       account, an anonymous session is not one, so it gave up without a
+       word. One cause, two symptoms, neither of which named it.
+
+       The first callback is the answer: Firebase fires it once persistence
+       has been read, with the restored user or with null. Null means nobody
+       is here and an anonymous session is right. A user means leave it
+       alone. */
+    let authBootstrapped = false;
     onAuthStateChanged(auth, user => {
       currentUser = user || null;
       teacherRecord = null;
@@ -15870,8 +15969,19 @@ loadSharedClassroomContent().then(()=>{
       // Let the UI redraw whenever sign-in state changes, including the
       // redirect back from Google.
       window.__onAuthChanged?.(window.CloudSync ? window.CloudSync.currentUser() : null);
+      if(!authBootstrapped){
+        authBootstrapped = true;
+        if(!user) signInAnonymously(auth).catch(e => {
+          console.error('CloudSync: anonymous sign-in failed —', e);
+          /* Resolved even on failure, or every method that awaits authReady
+             waits for something that is never coming — and a promise that
+             never settles is the quietest failure there is: no error, no
+             screen, nothing to report. Letting them run and fail out loud is
+             the lesser of the two. */
+          authReadyResolve();
+        });
+      }
     });
-    signInAnonymously(auth).catch(e => console.warn('CloudSync: anonymous sign-in failed', e));
 
     window.CloudSync = {
       // These two were the only paths under schools/ with no noSchool() guard,
@@ -15950,6 +16060,22 @@ loadSharedClassroomContent().then(()=>{
         if(noSchool() || !hasAccount()) return NO_SCHOOL;
         await setDoc(doc(db, 'schools', school(), 'students', auth.currentUser.uid),
           { displayName: name, lastSeen: serverTimestamp(), summary }, { merge: true });
+      },
+      /* The class record carries the name too, and it does not follow the
+         profile on its own.
+
+         Without this, changing your name updated users/{uid} and the teacher
+         went on seeing the old one until you next finished an exercise —
+         because pushSummary is what writes it, and that only runs when
+         somebody practises. A rename that half-lands is exactly the shape of
+         failure this app keeps having: correct where the person is looking,
+         stale everywhere else. */
+      async renameInClass(name) {
+        await authReady;
+        if(noSchool() || !hasAccount()) return NO_SCHOOL;
+        await setDoc(doc(db, 'schools', school(), 'students', auth.currentUser.uid),
+          { displayName: name }, { merge: true });
+        return true;
       },
       // pullClassSummaries was here. It fetched students/{typed name}, which
       // nothing has written since the record became the account, so it could
@@ -16159,7 +16285,9 @@ loadSharedClassroomContent().then(()=>{
           role: profile.role,
           schoolId: profile.schoolId || '',
           research: !!profile.research,
-          createdAt: Date.now(),
+          // Carried, not restamped. This is a full overwrite, so editing a
+          // name used to move the day the account was created to today.
+          createdAt: profile.createdAt || Date.now(),
         });
         return true;
       },

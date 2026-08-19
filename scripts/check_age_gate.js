@@ -547,6 +547,66 @@ function boot(opts){
   assert('a restored session fills the corner from the profile',
     html.indexOf('if(ACCOUNT_PROFILE && ACCOUNT_PROFILE.displayName) setStudentName(ACCOUNT_PROFILE.displayName);') > -1);
 
+  //===================================================================
+  // SIGNING IN ANONYMOUSLY DOES NOT EVICT SOMEBODY WHO IS SIGNED IN
+  //===================================================================
+  /* The bug he reported as "it keeps asking me to log in again", which was
+     also the bug he reported as "it does not take me to my screen" — one
+     cause wearing two costumes, and neither of them named it.
+
+     signInAnonymously() ran unconditionally on every page load. It does not
+     hand back whoever is already signed in: with a Google session in place
+     it mints a NEW anonymous user and replaces it. Restoring a saved session
+     is asynchronous, so the two raced. When the anonymous call won, a
+     signed-in person became a stranger — the account screen asked them to
+     sign in, and routeHome() gave up silently because an anonymous session
+     is not an account.
+
+     Nothing here could see it: every assertion in this suite runs against a
+     stubbed CloudSync, so the real listener was never exercised. What CAN be
+     asserted is the shape — that the call is inside the listener and behind
+     a test for nobody being there. */
+  assert('nothing signs in anonymously without first asking whether somebody is here',
+    html.indexOf('if(!user) signInAnonymously(auth)') > -1);
+  assert('AND the unconditional call at module level is gone',
+    html.indexOf('\n    signInAnonymously(auth).catch') === -1);
+  assert('it only decides once, so a later sign-out does not mint a stranger',
+    html.indexOf('if(!authBootstrapped){') > -1);
+  /* Every CloudSync method awaits authReady. A promise that never settles is
+     the quietest failure there is — no error, no screen, nothing to report. */
+  /* Inside the catch, not merely somewhere after it. The first version of
+     this compared indexOf against indexOf and matched the OTHER
+     authReadyResolve, three hundred lines earlier — it would have passed
+     with the fix removed. */
+  assert('and a failed anonymous sign-in still releases everything waiting on it',
+    html.slice(html.indexOf('anonymous sign-in failed'),
+               html.indexOf('anonymous sign-in failed') + 700)
+        .indexOf('authReadyResolve();') > -1);
+
+  //===================================================================
+  // THE NAME CAN BE CHANGED AFTER THE DAY IT WAS CHOSEN
+  //===================================================================
+  /* There was no way in at all. The field existed only on the signup form,
+     so everybody who already had an account was stuck — including the owner,
+     who asked for "Rony" and had nowhere to type it. */
+  assert('a signed-in person can change what they are called',
+    html.indexOf('onclick="editCallMe(true);return false"') > -1
+    && html.indexOf('async function saveCallMe()') > -1);
+  /* A rename that half-lands is this app's oldest failure shape: right where
+     the person is looking, stale everywhere else. The teacher reads the class
+     record, which pushSummary only writes when somebody practises. */
+  assert('AND the class record is renamed too, not left until they next practise',
+    html.indexOf('async renameInClass(name)') > -1
+    && html.indexOf('await window.CloudSync.renameInClass(wanted);') > -1);
+  assert('with its own sentence, because it fails separately from the profile',
+    html.indexOf('your class list has not caught up yet') > -1);
+  assert('the same name is refused on a change as on a signup',
+    (html.match(/Somebody in this class is already called /g) || []).length === 2);
+  /* saveProfile overwrites the whole document, so editing a name used to move
+     the day the account was created to today. */
+  assert('and editing a name does not restamp when the account was created',
+    html.indexOf('createdAt: profile.createdAt || Date.now(),') > -1);
+
   console.log(results.join('\n'));
   const fails = results.filter(r => r.indexOf('FAIL') > -1);
   console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
