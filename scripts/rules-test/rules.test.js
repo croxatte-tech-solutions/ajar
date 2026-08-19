@@ -48,6 +48,19 @@ await env.withSecurityRulesDisabled(async (c) => {
     country: 'Chile', birthDate: '2005-01-01', role: 'student', schoolId: OTHER, createdAt: 1 });
   await setDoc(doc(db, 'users', 'anon_student'), { displayName: 'Ana', email: 'ana@x.test',
     country: 'Brazil', birthDate: '2007-04-11', role: 'student', schoolId: SCHOOL, createdAt: 1 });
+  /* A SECOND STUDENT OF THE SAME SCHOOL, so the adversary in the section at
+     the foot of this file is a CLASSMATE rather than a stranger or a teacher.
+     That is the attacker this app actually has: thirteen people in one room,
+     each with an account, each holding the school id because it is in the link
+     they were given. Nothing before this fixture could play that part. */
+  await setDoc(doc(db, 'users', 'classmate'), { displayName: 'Bo', email: 'bo@x.test',
+    country: 'Brazil', birthDate: '2005-06-02', role: 'student', schoolId: SCHOOL, createdAt: 1 });
+  await setDoc(doc(db, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'Ana', summary: { attemptsTotal: 9, weakType: 'passage', weakAvg: 41 } });
+  await setDoc(doc(db, 'schools', SCHOOL, 'classroom', 'item_live'),
+    { id: 'live', status: 'approved', tag: 'Read in Daily Life' });
+  await setDoc(doc(db, 'schools', SCHOOL, 'classroom', 'item_refused'),
+    { id: 'refused', status: 'discarded', tag: 'Write an Email' });
 });
 
 // firebase.sign_in_provider is what the rules read, and it defaults to
@@ -64,6 +77,7 @@ const signedInStudent    = env.authenticatedContext('signed_in_student').firesto
 const otherSchoolStudent = env.authenticatedContext('other_school_student').firestore();
 const applicant = env.authenticatedContext('applicant').firestore();
 const outsider  = env.authenticatedContext('outsider').firestore();
+const classmate = env.authenticatedContext('classmate').firestore();
 // The person this app is built by AND used by: an account holder who is a
 // student here, and the administrator, and not a teacher of anything.
 const owner     = env.authenticatedContext('the_admin').firestore();
@@ -450,6 +464,142 @@ await check('and a student cannot write a note about somebody else', () =>
     { text: 'anything' })));
 
 //===================================================================
+// PADRAO C, ATTACKED RATHER THAN DESCRIBED
+//===================================================================
+// Everything above asks whether the rules do what they were written to do.
+// This section asks the other question: what would somebody try, and does it
+// work. If a student can turn pending into approved by any route at all, the
+// whole product is a suggestion box with a lock painted on it.
+//
+// The adversary is a CLASSMATE — an account holder, a member of this school,
+// holding the school id because it was in the link they were given. Not a
+// stranger, not a teacher of somewhere else. That is who is actually in the
+// room.
+await check('a student cannot create an exercise that is born approved', () =>
+  assertFails(setDoc(doc(classmate, 'schools', SCHOOL, 'classroom', 'item_forged'),
+    { id: 'forged', status: 'approved', tag: 'Write an Email' })));
+await check('nor flip an exercise the teacher is still reading', () =>
+  assertFails(setDoc(doc(classmate, 'schools', SCHOOL, 'classroom', 'item_refused'),
+    { status: 'approved' }, { merge: true })));
+await check('nor delete the record of one she refused', () =>
+  assertFails(deleteDoc(doc(classmate, 'schools', SCHOOL, 'classroom', 'item_refused'))));
+await check('nor take a live one away from the class', () =>
+  assertFails(deleteDoc(doc(classmate, 'schools', SCHOOL, 'classroom', 'item_live'))));
+await check('nor rewrite the whole-class batch under it', () =>
+  assertFails(setDoc(doc(classmate, 'schools', SCHOOL, 'classroom', 'current'),
+    { items: [{ id: 'x', status: 'approved' }] })));
+// The published item's document is never deleted when she takes an exercise
+// back — the route filters on status instead — so the status field IS the
+// permission, and it has to be as unreachable as one.
+await check('and a teacher of another school cannot approve here either', () =>
+  assertFails(setDoc(doc(beta, 'schools', SCHOOL, 'classroom', 'item_refused'),
+    { status: 'approved' }, { merge: true })));
+await check('nor delete anything here', () =>
+  assertFails(deleteDoc(doc(beta, 'schools', SCHOOL, 'classroom', 'item_live'))));
+
+//===================================================================
+// THE SHAPE OF A SCHOOL ID, WHICH IS THE ONLY THING SEPARATING TWO CLASSES
+//===================================================================
+// WRITING is bound to the school named in the writer's own profile, so a
+// forged id has to buy nothing at all. READING is a different promise and the
+// file says so: classroom/{docId} is open to anyone with an account, because
+// that is how a scanned code works, and the id itself is the secret. Both
+// halves are asserted, because assuming the read half is closed is how
+// somebody later "tidies up" the write half into the same shape.
+const FORGED = [
+  'school-guessed-0002',
+  SCHOOL.toUpperCase(),
+  SCHOOL + ' ',
+  SCHOOL.replace('-', '_'),
+  SCHOOL + '​',
+  'x'.repeat(300),
+];
+for(const sid of FORGED){
+  await check('a forged school id writes nothing: ' + JSON.stringify(sid.slice(0, 22)), () =>
+    assertFails(setDoc(doc(classmate, 'schools', sid, 'students', 'anyone'),
+      { displayName: 'Anyone' })));
+  await check('and publishes nothing: ' + JSON.stringify(sid.slice(0, 22)), () =>
+    assertFails(setDoc(doc(classmate, 'schools', sid, 'classroom', 'current'), { items: [] })));
+}
+// A school id carrying a path separator never reaches the rules at all: it
+// changes how many segments the reference has, and the SDK refuses to build
+// it. Asserted because "what about an id with a slash in it" is a real
+// question with a real answer, and the answer is not "the rules catch it".
+await check('a school id with a slash in it never becomes a reference', () => {
+  let threw = null;
+  try{ doc(classmate, 'schools', SCHOOL + '/nested', 'students', 'anyone'); }
+  catch(err){ threw = err; }
+  if(!threw) throw new Error('the SDK built a reference out of a two-segment school id');
+});
+// A capital letter is not a near miss, it is a different school, and nothing
+// in these rules lowercases anything. Said out loud because the APP lowercases
+// plenty of other things and the habit could travel.
+await check('the school id is compared exactly — a capitalised one is not this school', () =>
+  assertFails(setDoc(doc(alpha, 'schools', SCHOOL.toUpperCase(), 'classroom', 'current'),
+    { items: [] })));
+// And the read half, stated rather than assumed. This is the model the file
+// describes — the id is a password that happens to live in a URL — and the
+// consequence is that an account holder can ask whether a guessed id names a
+// real class. It is safe only for as long as the id stays long and random,
+// which is a property of how schools are created, not of these rules.
+await check('an account holder holding another school\'s id can read its classroom', () =>
+  assertSucceeds(getDoc(doc(classmate, 'schools', OTHER, 'classroom', 'current'))));
+await check('but reading it is all — they still cannot write there', () =>
+  assertFails(setDoc(doc(classmate, 'schools', OTHER, 'classroom', 'current'), { items: [] })));
+await check('nor read a student record in it, which needs membership', () =>
+  assertFails(getDoc(doc(classmate, 'schools', OTHER, 'students', 'anyone'))));
+
+//===================================================================
+// SIGNED OUT, AGAINST EVERY COLLECTION THAT EXISTS TODAY
+//===================================================================
+// The stranger was asserted against the classroom already. Three collections
+// have been added since — profiles, the teacher queue, the live round — and a
+// collection nobody thought to point this at is how the pattern gets in.
+await check('a stranger cannot read a profile', () =>
+  assertFails(getDoc(doc(nobody, 'users', 'signed_in_student'))));
+await check('nor write one', () =>
+  assertFails(setDoc(doc(nobody, 'users', 'nobody'), { displayName: 'X' })));
+await check('nor file a teacher request', () =>
+  assertFails(setDoc(doc(nobody, 'teacherRequests', 'nobody'),
+    { name: 'X', email: 'x@x.test', schoolNameTyped: 'Somewhere', requestedAt: 1 })));
+await check('nor read the queue of them', () =>
+  assertFails(getDoc(doc(nobody, 'teacherRequests', 'applicant'))));
+await check('nor find out whether an administrator exists', () =>
+  assertFails(getDoc(doc(nobody, 'admins', 'the_admin'))));
+await check('nor join the live round', () =>
+  assertFails(setDoc(doc(nobody, 'schools', SCHOOL, 'live', 'nobody'),
+    { index: 0, choice: 1, correct: true, at: 1 })));
+await check('nor read a student record', () =>
+  assertFails(getDoc(doc(nobody, 'schools', SCHOOL, 'students', 'signed_in_student'))));
+await check('nor a private note', () =>
+  assertFails(getDoc(doc(nobody, 'schools', SCHOOL, 'students', 'signed_in_student', 'private', 'note'))));
+await check('nor an attempt history', () =>
+  assertFails(getDoc(doc(nobody, 'schools', SCHOOL, 'students', 'ana', 'attempts', 'a1'))));
+
+//===================================================================
+// WHAT A STUDENT RECORD IS ALLOWED TO CONTAIN, WHICH IS ALMOST ANYTHING
+//===================================================================
+// validStudent() names four fields and checks two of them. `summary` is let
+// through unexamined — it has to be, because it is five numbers whose shape
+// the app changes — and the teacher's panel renders four of those numbers
+// into HTML by concatenation. So this is not a rules hole so much as the
+// reason the escaping on the other side is load-bearing, and it is asserted
+// here so that the two facts sit next to each other.
+// See S-02 in ~/ajar-noite/SEGURANCA.md and scripts/check_xss_sinks.js.
+await check('a summary can hold markup, because no rule looks inside it', () =>
+  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'Ana', summary: { weakType: 'passage', weakAvg: '<img src=x onerror=1>' } })));
+await check('and a display name can, within the 60 characters it is capped at', () =>
+  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'a" autofocus onfocus="alert(1)//' })));
+await check('but an essay pasted into a display name is still refused', () =>
+  assertFails(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'x'.repeat(61) })));
+await check('and a record with no name at all is refused', () =>
+  assertFails(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { summary: { attemptsTotal: 1 } })));
+
+//===================================================================
 // AND THE PART THESE RULES DO NOT CLOSE, ASSERTED SO IT IS ON PURPOSE
 //===================================================================
 // A student holding the school id can read a classmate's private note and a
@@ -466,6 +616,40 @@ await check('KNOWN GAP: a classmate can read another student\'s summary', () =>
   assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'ana'))));
 await check('but a teacher of another school still cannot', () =>
   assertFails(getDoc(doc(beta, 'teachers', 'teacher_alpha'))));
+
+/* A THIRD ONE, FOUND BY ATTACKING RATHER THAN READING — and it is a WRITE.
+   The two above are reads, and reads between classmates are close to what a
+   class list is for. This is not that.
+
+   students/{studentId} allows create and update to any member of the school,
+   and never compares request.auth.uid to studentId. Delete does; create and
+   update do not. So one student can rewrite another student's class record —
+   the display name their teacher calls them by, and the summary her panel
+   grades them from — and can add attempts to somebody else's history, and can
+   file records under student ids that belong to nobody at all.
+
+   Written up as S-04 in ~/ajar-noite/SEGURANCA.md with the one-line change
+   that closes it. Not made here: a rule edit is published to a console by a
+   person, and a wrong one refuses every student mid-lesson.
+
+   Pinned as it BEHAVES, like the two above. The day it is fixed these four
+   flip to assertFails and the report entry is struck. */
+await check('KNOWN HOLE: a classmate can overwrite another student\'s class record', () =>
+  assertSucceeds(setDoc(doc(classmate, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'Ana', summary: { attemptsTotal: 0, weakType: 'passage', weakAvg: 3 } })));
+await check('KNOWN HOLE: and add attempts to a history that is not theirs', () =>
+  assertSucceeds(addDoc(collection(classmate, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts'),
+    { type: 'passage', theme: 'campus', outcome: 0, ts: 1 })));
+await check('KNOWN HOLE: and file a record under a student id that is nobody', () =>
+  assertSucceeds(setDoc(doc(classmate, 'schools', SCHOOL, 'students', 'nobody-at-all-0001'),
+    { displayName: 'Phantom' })));
+// What still holds, and is the reason this is HIGH and not CRITICAL: nothing
+// here reaches the one collection that decides what a class sees.
+await check('but none of it lets them approve anything', () =>
+  assertFails(setDoc(doc(classmate, 'schools', SCHOOL, 'classroom', 'item_refused'),
+    { status: 'approved' }, { merge: true })));
+await check('and they still cannot delete somebody else\'s record', () =>
+  assertFails(deleteDoc(doc(classmate, 'schools', SCHOOL, 'students', 'signed_in_student'))));
 
 await env.cleanup();
 console.log(results.join('\n'));
