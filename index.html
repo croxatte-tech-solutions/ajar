@@ -12741,12 +12741,28 @@ function setView(v){
   currentView = v;
   if(v==='teacher') clearPracticeTimer();
   document.getElementById('view-welcome').classList.toggle('active', v==='welcome');
-  // The header switcher and the masthead belong to the app, not to the
-  // front door — showing them there offers a way past the choice the page
-  // exists to ask.
-  const chromeHidden = v === 'welcome' ? 'none' : '';
-  ['.masthead', '.padrao-c', '.tech-note'].forEach(sel => {
-    document.querySelectorAll(sel).forEach(el => { el.style.display = chromeHidden; });
+  /* Two screens exist to ask one question, and everything else on them is
+     competing with it.
+
+     The front door asks which of the two you are, so the masthead switcher is
+     hidden there — showing it offers a way past the choice the page exists to
+     make.
+
+     The account screen asks how you want to sign in, and the same reasoning
+     reaches the two notices below it. "Nothing reaches a student until the
+     teacher approves" is the promise this whole app rests on and it belongs
+     on the screens where somebody is practicing or approving; above a pair of
+     sign-in buttons it is a paragraph in the way of a decision. Same for the
+     explainer about how exercises are made — true, worth reading once, and
+     not while somebody is trying to get in.
+
+     The switcher stays on the account screen, unlike the front door: here it
+     is the way back out, not a way past. */
+  const hideAll = v === 'welcome';
+  const hideNotices = hideAll || v === 'account';
+  document.querySelectorAll('.masthead').forEach(el => { el.style.display = hideAll ? 'none' : ''; });
+  ['.padrao-c', '.tech-note'].forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
   });
   document.getElementById('view-teacher').classList.toggle('active', v==='teacher');
   document.getElementById('view-student').classList.toggle('active', v==='student');

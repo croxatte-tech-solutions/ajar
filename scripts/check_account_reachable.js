@@ -218,8 +218,18 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
   //===================================================================
   assert('opening it draws the account panel', html.indexOf('renderAccount(); refreshAdmin()') > -1);
   assert('and the view element exists to draw into', html.indexOf('id="account-box"') > -1);
-  assert('the masthead is hidden only on the front door, so the door stays visible',
-    html.indexOf("const chromeHidden = v === 'welcome' ? 'none' : '';") > -1);
+  /* The claim, not the line that used to carry it.
+
+     This matched one exact statement, so it broke the moment the rule it
+     described grew a second case — the account screen now hides the two
+     notices as well, while keeping the masthead, because there the switcher
+     is the way back out rather than a way past. Asserting the two conditions
+     separately says what must be true instead of what the code looked like on
+     the day it was written. */
+  assert('the masthead is hidden on the front door and nowhere else',
+    html.indexOf("const hideAll = v === 'welcome';") > -1);
+  assert('and the notices are hidden on the account screen too, where they compete with the one question it asks',
+    html.indexOf("const hideNotices = hideAll || v === 'account';") > -1);
   assert('the current screen is announced to assistive tech',
     html.indexOf('aria-current="${on ? \'page\' : \'false\'}"') > -1);
 
