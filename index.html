@@ -8833,8 +8833,64 @@ function isRosteredStudent(){
     return (loadRoster().students || []).some(x => String(x).trim().toLowerCase() === name);
   }catch(e){ return false; }
 }
+/* THE CITY AND THE TEMPERATURE, BESIDE THE DATE.
+   =============================================
+   Fetched from our own domain, never from a weather service directly — see
+   functions/api/weather.js for why. The student's browser talks to hiajar.com
+   and to nothing else, so no third party ever learns their address.
+
+   Everything below is written so that FAILING CHANGES NOTHING. If the request
+   is slow, refused, malformed, or returns a temperature that is not a
+   temperature, the date line stays exactly as it has always been. There is no
+   spinner and no "weather unavailable": a broken strip in front of a class is
+   worse than a plain one, and this is decoration on a line that already does
+   its job. */
+const WEATHER_KEY = 'ajar_weather';
+const WEATHER_MAX_AGE_MS = 30 * 60 * 1000;   // as often as the edge caches it
+let WEATHER = null;                          // { city, tempF } once it lands
+
+function readCachedWeather(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(WEATHER_KEY) || 'null');
+    if(!raw || typeof raw.at !== 'number') return null;
+    if(Date.now() - raw.at > WEATHER_MAX_AGE_MS) return null;
+    return usableWeather(raw.v) ? raw.v : null;
+  }catch(e){ return null; }
+}
+
+// Somebody else's JSON, on its way to a screen. Bounded here so that the only
+// thing that can be drawn is a number that could be a temperature.
+function usableWeather(v){
+  return !!v && typeof v.tempF === 'number' && isFinite(v.tempF)
+      && v.tempF > -80 && v.tempF < 140;
+}
+
+async function loadWeather(){
+  const cached = readCachedWeather();
+  if(cached){ WEATHER = cached; renderSchoolClock(); return; }
+  try{
+    const res = await fetch('/api/weather', { signal: AbortSignal.timeout(4000) });
+    if(!res.ok) return;
+    const v = await res.json();
+    if(!usableWeather(v)) return;          // an empty answer is the quiet case
+    WEATHER = v;
+    try{ localStorage.setItem(WEATHER_KEY, JSON.stringify({ at: Date.now(), v })); }catch(e){}
+    renderSchoolClock();
+  }catch(e){
+    // Deliberately silent, and the one place in this file where that is right:
+    // nothing is lost, nothing is stale, and there is no action to offer.
+  }
+}
+
+function weatherSuffix(){
+  if(!usableWeather(WEATHER)) return '';
+  const city = typeof WEATHER.city === 'string' && WEATHER.city ? WEATHER.city : '';
+  return ' &middot; ' + (city ? escapeHtml(city) + ' ' : '') + escapeHtml(String(WEATHER.tempF)) + '&deg;F';
+}
+
 function renderSchoolClock(){
-  const when = `<b>${escapeHtml(localDateLabel())}</b> &middot; ${escapeHtml(localTimeLabel())}`;
+  const when = `<b>${escapeHtml(localDateLabel())}</b> &middot; ${escapeHtml(localTimeLabel())}`
+             + weatherSuffix();
 
   // The cover shows the date and stops. Nobody has said who they are yet, so
   // there is no class whose week it could be.
@@ -8867,6 +8923,9 @@ function weekFocusLabel(week){
 function startSchoolClock(){
   renderSchoolClock();
   renderDailyBand();
+  /* Not awaited by anything, on purpose. The date is on screen before this
+     is asked for, and if it never answers the line stays as it was. */
+  loadWeather();
   clearInterval(window._schoolClock);
   // The band rides the clock's tick rather than having one of its own. That
   // is what makes it roll over at midnight with the page still open — a
@@ -16330,6 +16389,15 @@ function privacyText(){
     <p>Counts that name nobody — "students from Vietnam find -ed endings harder
       than students from Brazil" — are not about you, and we work those out
       whatever you tick.</p>
+
+    <h3>The temperature on the screen</h3>
+    <p>The date at the top of the app shows the city and the temperature where
+      the class is. Your device asks <b>us</b> for that, and we ask the weather
+      service ourselves &mdash; so <b>your device never talks to them at all</b>,
+      and no company outside Ajar learns anything about you from it.</p>
+    <p>What leaves our side is a pair of map coordinates for the nearest point
+      on our network. Not you, not your name, not your account, not your exact
+      location. We never ask your browser where you are.</p>
 
     <h3>What we never do</h3>
     <ul>

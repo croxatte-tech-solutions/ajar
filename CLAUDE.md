@@ -15,6 +15,17 @@ Firebase (Auth + Firestore) for accounts and sync — `firestore.rules`. Hosted
 on Cloudflare Pages, not GitHub Pages, because `_headers` carries the cache
 policy: the audio is immutable, the page must never be stale.
 
+**One exception to the single file, and it earns itself:** `functions/api/`
+holds Cloudflare Pages Functions. There is exactly one, and it exists for a
+privacy reason rather than a technical one — calling a weather service from
+the browser would hand every student's IP address to a company they have
+never heard of, so the call is made at the edge and the student's device
+talks only to hiajar.com. Add a second only for the same kind of reason.
+
+`check_conformance` names every network request the app makes. Adding one
+means going there and saying so, in the file whose whole subject is what
+leaves the app.
+
 ## Padrão C — the rule that outranks everything
 
 The teacher has the final word. Nothing generated reaches a student, and

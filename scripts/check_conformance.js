@@ -214,8 +214,22 @@ const OWN_ORIGIN_ARG = /^(?:dailyMonthUrl\(|'[^':]*'$|"[^":]*"$)/;
 const offOrigin = fetchArgs.filter(a => !OWN_ORIGIN_ARG.test(a));
 stat('every fetch the app makes stays on this origin', offOrigin.length === 0,
   offOrigin.join(' | '));
-stat('and the only fetch there is is the day\'s own month file',
-  fetchArgs.length === 1 && fetchArgs[0].indexOf('dailyMonthUrl(') === 0,
+/* TWO REQUESTS, BOTH NAMED HERE, AND A THIRD IS A FAILURE.
+
+   It was one. The second is '/api/weather', which is why it is written out
+   rather than the count being relaxed: the point of this assertion is that
+   somebody adding a network call has to come here and say so, in a file whose
+   whole subject is what leaves the app.
+
+   /api/weather is same-origin on purpose. The obvious way to put a
+   temperature on a page is to call a weather service from the browser, and
+   that hands every student's IP address to a company they have never heard
+   of. The call is made at the edge instead — see functions/api/weather.js —
+   so a student's device talks to hiajar.com and to nothing else. */
+const ALLOWED_FETCH = ["dailyMonthUrl(", "'/api/weather'"];
+const naoPrevistos = fetchArgs.filter(a => !ALLOWED_FETCH.some(ok => a.indexOf(ok) === 0));
+stat('the app makes exactly the two requests this file names, and no others',
+  fetchArgs.length === ALLOWED_FETCH.length && naoPrevistos.length === 0,
   fetchArgs.join(' | '));
 stat('which is built from a relative directory, not from a host',
   /const DAILY_DIR = 'daily\/';/.test(html) && !/DAILY_DIR\s*=\s*['"]?https?:/.test(html));
@@ -265,6 +279,45 @@ const invented = [...html.matchAll(inventedLevel)].map(m => m[0]);
 stat('no proficiency level is invented in code', invented.length === 0, invented.join(' | '));
 stat('the app claims no CEFR or GSE band for a student',
   !/\b(?:CEFR|GSE)\b/.test(html.replace(/<!--[\s\S]*?-->/g, '')));
+
+//===================================================================
+// THE WEATHER LEAVES NOTHING BEHIND, AND FAILS INTO SILENCE
+//===================================================================
+/* The whole point of doing this at the edge is that a student's device never
+   speaks to a weather company. That is a property of two files together, so
+   it is asserted across both. */
+{
+  const fs2 = require('fs');
+  const fn = fs2.existsSync('functions/api/weather.js')
+    ? fs2.readFileSync('functions/api/weather.js', 'utf8') : '';
+  stat('the edge function that fetches the weather exists', fn.length > 0);
+  stat('AND the page itself never calls the weather host directly',
+    html.indexOf('api.open-meteo.com') === -1);
+  stat('the function sends coordinates upstream and no city name',
+    fn.indexOf('latitude=') > -1 && fn.indexOf('&longitude=') > -1
+    && fn.slice(fn.indexOf('const url'), fn.indexOf('let data')).indexOf('city') === -1);
+  /* Never a permission dialog in the middle of a lesson, and never precise
+     location this app has no business holding. */
+  stat('nothing asks the browser for the student location',
+    html.indexOf('navigator.geolocation') === -1 && fn.indexOf('geolocation') === -1);
+  /* Bounded on both sides of the wire, because either side can be wrong. */
+  stat('a temperature is bounded before it can reach a screen',
+    html.indexOf('v.tempF > -80 && v.tempF < 140') > -1
+    && fn.indexOf('t < MIN_F || t > MAX_F') > -1);
+  /* Failing changes nothing: no spinner, no error text, no half-drawn line. */
+  stat('a failed weather request draws nothing at all',
+    html.indexOf('if(!usableWeather(v)) return;') > -1
+    && html.indexOf('function weatherSuffix()') > -1);
+  stat('and one device asks at most twice an hour',
+    html.indexOf('WEATHER_MAX_AGE_MS = 30 * 60 * 1000') > -1);
+  stat('neither side can hang waiting',
+    html.indexOf('AbortSignal.timeout(4000)') > -1 && fn.indexOf('AbortSignal.timeout(4000)') > -1);
+  /* Same rule as the administrator's read: a policy that does not match the
+     behaviour is worse than no policy, in BOTH directions. */
+  const diz = html.indexOf('your device never talks to them at all') > -1;
+  stat('the privacy notice and the code agree about the weather call',
+    diz === (fn.length > 0));
+}
 
 setTimeout(() => {
   console.log(statics.join('\n'));
