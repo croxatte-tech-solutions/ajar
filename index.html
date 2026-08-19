@@ -15030,13 +15030,14 @@ function guideContent(role){
 function privacyText(){
   return `
     <h2 style="margin-top:0">What Ajar keeps about you</h2>
-    <p class="small-note">Last updated 17 August 2026.</p>
+    <p class="small-note">Last updated 18 August 2026.</p>
 
     <h3>What we ask for, and why</h3>
     <ul>
       <li><b>Your name</b> — so your teacher knows whose work she is looking at.</li>
       <li><b>Your email</b> — so you can sign in, and get back in if you forget your password.</li>
-      <li><b>Your country</b> — so the school can see where its class comes from.</li>
+      <li><b>Your country</b> — so we can see where a class comes from, and write
+        practice that fits it.</li>
       <li><b>Your date of birth</b> — used once, to check you are ${MIN_AGE} or older.
         We are not allowed to hold accounts for people younger than that, and
         since an account is now the only way in, that is also the age this app
@@ -15045,10 +15046,15 @@ function privacyText(){
     </ul>
 
     <h3>Who can see it</h3>
-    <p>Your email, your country and your date of birth are readable by
-      <b>you and nobody else</b>. Not your classmates. Not your teacher. Not the
-      person who runs the app. That is enforced by the database itself, not by
-      a screen that hides a button.</p>
+    <p>Your email, your country and your date of birth are readable by <b>you</b>,
+      and by <b>the person who runs Ajar</b>. Nobody else — not your classmates,
+      not your teacher. That is enforced by the database itself, not by a screen
+      that hides a button.</p>
+    <p>He can see it because he answers for this service: for the ages being
+      right, for handing you a copy of your data if you ask, and for erasing it
+      if you ask. None of that can be done against records nobody is allowed to
+      read. <b>He cannot change or delete your profile</b> — that is yours alone,
+      and the database refuses him too.</p>
     <p>What your class can see is your <b>name</b>, how much you have practiced
       and how you did — and, only if you tick the box, <b>the day and month of
       your birthday</b>. Never the year, so nobody can work out your age from it.</p>

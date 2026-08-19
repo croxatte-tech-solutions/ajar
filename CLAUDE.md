@@ -108,8 +108,17 @@ nothing else. A teacher signup writes to `teacherRequests` and **grants
 nothing** — the school name it carries is evidence for a person to read, never
 authority.
 
-`users/{uid}` holds email, country and date of birth, readable by its owner
-alone — not classmates, not the administrator, not their teacher.
+`users/{uid}` holds email, country and date of birth. **Read** is the owner or
+an administrator; **write and delete** are the owner alone. Never the teacher,
+never a classmate. The administrator's read was opened on 18 August 2026 by the
+owner's decision, because he answers for the service — ages, data requests,
+erasure — and none of that works against records nobody may read.
+
+That change also rewrote the privacy notice, which had promised the opposite
+by name. `check_age_gate` now reads `firestore.rules` and fails if the two
+disagree in either direction. Before it existed, the rule and the promise
+drifted apart with the suite fully green: every assertion checked that the
+promise was PRESENT, none that it was TRUE.
 
 `isSignedIn()` is **not** an access check. Every visitor is signed in, because
 students sign in anonymously. Three separate holes in this file came from

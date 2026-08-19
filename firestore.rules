@@ -217,7 +217,24 @@ service cloud.firestore {
          Found by the emulator, on the change that made an account the thing
          which puts you in a class. The hole existed the moment isMemberOf
          was written; nothing reached it until membership started to matter. */
-      allow read, delete: if hasAccount() && request.auth.uid == uid;
+      /* READ is the owner OR an administrator. WRITE and DELETE are the
+         owner alone.
+
+         The split is the whole of the decision. He runs the service, so he
+         answers for the ages being right, for a request to hand somebody
+         their data back, and for a request to erase it — none of which can
+         be done against records nobody may read. That is a reason to look,
+         and it is not a reason to edit: a profile that an administrator can
+         rewrite is a profile whose owner cannot rely on what it says.
+
+         This inverts what this file said until today, and the privacy policy
+         said it out loud — "not the person who runs the app", in those
+         words. The policy changed in the same commit. A rule that quietly
+         outgrows the promise printed beside it is the failure this project
+         has already had once, when five assertions checked that a promise
+         was PRESENT and none checked that it was TRUE. */
+      allow read: if hasAccount() && (request.auth.uid == uid || isAdmin());
+      allow delete: if hasAccount() && request.auth.uid == uid;
       allow create, update: if hasAccount() && request.auth.uid == uid
         && validProfile();
     }

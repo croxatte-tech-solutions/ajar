@@ -318,6 +318,41 @@ function boot(opts){
     pv.indexOf('It did not used to be') > -1);
   assert('and ties the age to the wall, which is why the age moved',
     pv.indexOf('the only way in') > -1);
+
+  /* THE NOTICE IS CHECKED AGAINST THE RULES, NOT AGAINST ITSELF.
+
+     Every assertion above reads the notice and asks whether it SAYS the right
+     thing. None of them can tell whether what it says is TRUE, because the
+     truth lives in another file. That gap is not hypothetical here: the
+     notice promised "not the person who runs the app" in those words, the
+     owner decided the administrator should read those records, and the rule
+     changed — with this suite staying green through the whole thing.
+
+     So this reads firestore.rules and requires the two to agree, in BOTH
+     directions. Opening the rule without rewording the notice fails. Wording
+     the notice as though the rule were open when it is not fails as well. */
+  {
+    const rules = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'firestore.rules'), 'utf8');
+    const from = rules.indexOf('match /users/{uid}');
+    const block = rules.slice(from, rules.indexOf('match /teachers/', from));
+    const readLine = block.slice(block.indexOf('allow read:'),
+                                block.indexOf(';', block.indexOf('allow read:')));
+    const adminMayRead = readLine.indexOf('isAdmin()') > -1;
+
+    assert('the notice and the rules agree on whether the operator can read a profile',
+      adminMayRead === (pv.indexOf('the person who runs Ajar') > -1),
+      { adminMayRead, noticeSaysSo: pv.indexOf('the person who runs Ajar') > -1 });
+    assert('AND the sentence that said he could not is gone rather than contradicted',
+      !(adminMayRead && pv.indexOf('Not the person who runs the app') > -1));
+    // Reading is what running a service needs. Rewriting somebody's profile is
+    // not, and the notice promises that limit by name.
+    const delLine = block.slice(block.indexOf('allow delete:'),
+                                block.indexOf(';', block.indexOf('allow delete:')));
+    assert('deleting a profile is still the owner alone, as the notice promises',
+      delLine.indexOf('isAdmin()') === -1
+      && pv.indexOf('cannot change or delete your profile') > -1);
+  }
   // The claim that is gone: nothing anywhere still offers practice without one.
   assert('no screen still promises the app works signed out',
     html.indexOf('everything still works and stays on') === -1);

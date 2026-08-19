@@ -195,8 +195,19 @@ await check('a classmate cannot read it', () =>
   assertFails(getDoc(doc(otherSchoolStudent, 'users', 'signed_in_student'))));
 await check('THEIR OWN TEACHER CANNOT READ IT EITHER', () =>
   assertFails(getDoc(doc(alpha, 'users', 'signed_in_student'))));
-await check('nor can the administrator', () =>
-  assertFails(getDoc(doc(admin, 'users', 'signed_in_student'))));
+// Changed deliberately on 18 August 2026, by the owner's decision, with the
+// privacy policy reworded in the same commit. The administrator runs the
+// service and answers for it, so he may READ.
+await check('the administrator may read it, because he answers for the service', () =>
+  assertSucceeds(getDoc(doc(admin, 'users', 'signed_in_student'))));
+// And that is where it stops. Reading is what running a service needs;
+// rewriting somebody's profile is not, and a profile an administrator can
+// edit is one its owner cannot rely on.
+await check('AND STILL CANNOT WRITE IT', () =>
+  assertFails(setDoc(doc(admin, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student' })));
+await check('nor delete it', () =>
+  assertFails(deleteDoc(doc(admin, 'users', 'signed_in_student'))));
 await check('a profile with an invented field is refused', () =>
   assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
     { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student', isAdmin: true })));
