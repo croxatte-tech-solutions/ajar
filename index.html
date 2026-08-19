@@ -9797,7 +9797,7 @@ function renderRoster(){
           &middot; <a href="#" onclick="exportClassJson();return false">save a copy</a></p>
         <div class="mc-options" role="group">${members.map(m => {
           const n = String(m.displayName || '(no name)');
-          const esc = n.replace(/'/g, "\\'");
+          const esc = escapeAttrArg(n);
           return `<div class="mc-option" style="cursor:default">
             <label style="display:flex;align-items:center;gap:.55rem;flex:1;cursor:pointer;margin:0">
               <input type="checkbox" style="width:auto;margin:0" ${present.includes(n)?'checked':''} onchange="rosterTogglePresent('${esc}')">
@@ -9936,17 +9936,31 @@ function renderClassProgress(){
   const rows = roster.map(name => {
     const d = (_classProgress && _classProgress[name]) || {};
     const sum = d.summary || null;
-    const esc = name.replace(/'/g, "\\'");
-    const today = sum ? sum.attemptsToday : 0;
-    const weak = sum && sum.weakType
-      ? tagFor(sum.weakType) + ' &middot; ' + sum.weakAvg + '% <span class="small-note">(best of day, over ' + sum.weakTries + ' attempt' + (sum.weakTries>1?'s':'') + ')</span>'
+    const esc = escapeAttrArg(name);
+    // The summary is the ONE thing on this screen the student writes about
+    // themselves, and firestore.rules deliberately does not look inside it --
+    // its shape changes when the app changes. So the shape is enforced here,
+    // where it is read, and these four are counts: a count that is not a
+    // number is a zero, never markup. Escaping would also be safe, but it
+    // would draw an attacker's tag as visible text in her panel; a number
+    // renders as a number.
+    const num = v => { const n = Number(v); return Number.isFinite(n) ? Math.trunc(n) : 0; };
+    const today = sum ? num(sum.attemptsToday) : 0;
+    const tries = sum ? num(sum.weakTries) : 0;
+    // tagFor throws on a type it does not know -- .find(...).tag on undefined --
+    // and weakType comes off that same student-written record. An unknown type
+    // took the whole panel down, which is a quieter way to lose the class than
+    // any payload.
+    const known = sum && sum.weakType && TASK_TYPES.some(t => t.id === sum.weakType);
+    const weak = known
+      ? tagFor(sum.weakType) + ' &middot; ' + num(sum.weakAvg) + '% <span class="small-note">(best of day, over ' + tries + ' attempt' + (tries>1?'s':'') + ')</span>'
       : '<span class="small-note">not enough attempts yet</span>';
     const trend = sum && sum.trend === 'up' ? '📈' : sum && sum.trend === 'down' ? '📉' : '';
     return `
       <div class="ex-card" style="margin:0 0 .7rem">
         <div class="ex-card-head">
           <span class="ex-tag">${escapeHtml(name)}</span>
-          <span class="small-note">${today ? today + ' today' : 'nothing today'}${sum ? ' &middot; ' + sum.attemptsTotal + ' in total' : ''} ${trend}</span>
+          <span class="small-note">${today ? today + ' today' : 'nothing today'}${sum ? ' &middot; ' + num(sum.attemptsTotal) + ' in total' : ''} ${trend}</span>
         </div>
         <div class="small-note" style="margin:.2rem 0 .5rem">Weakest so far: <b>${weak}</b></div>
         <div class="field">
@@ -10025,7 +10039,7 @@ function renderNamePrompt(){
     <div class="compose">
       <div class="ex-body"><b>Welcome!</b> Tap your name.</div>
       <div class="mc-options" role="group" style="margin-top:.6rem">${roster.map(n => `
-        <button class="mc-option" onclick="pickName('${n.replace(/'/g,"\\'")}')">
+        <button class="mc-option" onclick="pickName('${escapeAttrArg(n)}')">
           <span>${escapeHtml(n)}</span></button>`).join('')}</div>
       <div class="ex-actions" style="margin-top:.7rem">
         <button class="btn ghost sm" onclick="showTypeNameInstead()">My name isn't here</button>
@@ -11260,7 +11274,7 @@ function submitReview(section){
       <p class="small-note" style="color:var(--accent)"><b>Thank you — that is genuinely the useful part.</b></p>
       <textarea rows="7" aria-label="Section review, ready to copy" readonly onclick="this.select()" style="width:100%">${escapeHtml(body)}</textarea>
       <div class="ex-actions" style="margin-top:.5rem">
-        <button class="btn sm" onclick="mailReview(${JSON.stringify(JSON.stringify(body))})">Open an email with this</button>
+        <button class="btn sm" onclick="mailReview('${escapeAttrArg(body)}')">Open an email with this</button>
         <button class="btn ghost sm" onclick="leaveExam()">Done</button>
       </div>`;
   }
@@ -12785,7 +12799,7 @@ function renderListenRepeatStep(item){
   // on every device and 13 phones firing at once was a mess. Now that
   // every device plays the same pre-rendered clip, that whole special
   // case is unnecessary: whoever wants to play it, presses play.
-  const esc = s.text.replace(/'/g,"\\'");
+  const esc = escapeAttrArg(s.text);
   const listenControls = !myTurn ? '' : `
     <button class="btn sound" id="lr-play" onclick="lrPlay('${esc}')">🔊 Play${st.played ? ' again' : ''}</button>
     ${st.played ? `<button class="btn ghost sm" onclick="lrRecord('${esc}', ${s.seconds})" ${canPracticeAloud()?'':'disabled'}>🎙️ Restart recording</button>` : ''}`;
@@ -16263,6 +16277,20 @@ document.addEventListener('keydown', e => {
 });
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// A value that lands inside a JS string that is itself inside an HTML
+// attribute -- an onclick whose argument is quoted. TWO layers, and the old
+// spelling
+// (name.replace(/'/g, "\\'")) only did one: it escaped the apostrophe and
+// left the double quote free to END THE ATTRIBUTE and open a new one. That
+// was fine while the roster was typed by the teacher; it stopped being fine
+// when the name became something the student writes about themselves.
+// Order matters and is not interchangeable: escape for the JS string first,
+// then for HTML, because the browser HTML-decodes the attribute BEFORE the
+// JS parser ever sees it. Newlines go too -- a raw one ends a JS string.
+function escapeAttrArg(s){
+  return escapeHtml(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/[\r\n\u2028\u2029]/g, ' '));
 }
 
 /* =========================================================

@@ -232,13 +232,43 @@ const panel = el('class-progress').innerHTML;
 assert('her panel does draw the class once she opens it',
   panel.indexOf('Weakest so far') > -1, panel.slice(0, 160));
 assert('the student name on the card is escaped', panel.indexOf('>Ana<') > -1);
-// KNOWN HOLE — S-02 in ~/ajar-noite/SEGURANCA.md. Pinned as it is TODAY, not
-// as it should be. The day these are escaped, both assertions must flip to the
-// opposite and the report entry must be struck.
-assert('KNOWN HOLE: a practice summary reaches her panel as live markup (weakAvg)',
-  panel.indexOf(IMG) > -1);
-assert('KNOWN HOLE: and so does the attempt total beside it',
-  panel.indexOf(SVG) > -1);
+// S-02, CLOSED. This was pinned as a KNOWN HOLE the night it was found and is
+// now the opposite assertion: the summary is the one thing on this screen the
+// student writes about themselves, and it no longer reaches her panel as
+// markup. The four counts are coerced with Number/trunc where they are read,
+// so a hostile value renders as 0 rather than as an escaped tag -- safe AND
+// legible, where escaping alone would have drawn the attacker's tag as text.
+assert('a hostile practice summary is not markup in her panel (weakAvg)',
+  panel.indexOf(IMG) === -1, panel.slice(0, 200));
+assert('nor is the attempt total beside it',
+  panel.indexOf(SVG) === -1);
+// And it draws as a NUMBER, not as an escaped tag. This is the half that
+// escaping alone would not have given: escapeHtml would make the payload safe
+// and still print &lt;img src=x&gt; across her class list, which reads as the
+// app being broken. Number() makes it a 0.
+// Scoped to the region built FROM THE SUMMARY -- the card head and the
+// "Weakest so far" line -- and deliberately not to the whole card. The
+// teacher's own note sits below in a textarea, and a note SHE typed showing up
+// escaped and visible is the correct outcome, not a finding. Asserting over
+// the whole panel would have confused her words with the student's record,
+// which is exactly the distinction this whole fix is about.
+const summaryRegion = panel.slice(0, panel.indexOf('<div class="field">'));
+assert('the counts region carries no markup and no escaped markup either (img)',
+  summaryRegion.indexOf('&lt;img') === -1 && summaryRegion.indexOf('<img') === -1,
+  summaryRegion.slice(-200));
+assert('nor from the other field (svg)',
+  summaryRegion.indexOf('&lt;svg') === -1 && summaryRegion.indexOf('<svg') === -1,
+  summaryRegion.slice(-200));
+assert('the weakest percentage draws as a number',
+  /&middot; \d+%/.test(panel), panel.slice(panel.indexOf('Weakest'), panel.indexOf('Weakest') + 120));
+// The panel also has to SURVIVE. tagFor does .find(...).tag, which throws on a
+// type it does not know, and weakType comes off that same student-written
+// record -- an unknown type took the whole class screen down. Quieter than a
+// payload, and just as effective at losing the lesson.
+vm.runInContext('_classProgress.Ana.summary.weakType = "not-a-real-type";', sandbox);
+let survived = true;
+try { api.renderClassProgress(); } catch(e) { survived = false; }
+assert('an unknown weakType does not take her panel down', survived);
 // What makes this the worst one rather than a curiosity: the fields are read
 // straight off the record, so the attacker never has to touch her device.
 assert('the fields come off the Firestore record, not from anything typed on her laptop',
@@ -256,29 +286,42 @@ const list = el('roster-box').innerHTML;
 assert('the visible half of the row escapes the name',
   list.indexOf('<span>' + ATTR + '</span>') === -1 && list.indexOf('&quot;') > -1,
   list.slice(0, 240));
-// KNOWN HOLE — S-03. name.replace(/'/g, backslash-quote) escapes the
-// apostrophe and leaves the double quote, and the attribute it lands in is
-// delimited by double quotes. check_names.js recorded that limit while the
-// name was typed by the teacher; it is now typed by the person it names.
-assert('KNOWN HOLE: the same name ends the onchange attribute early',
-  list.indexOf('onchange="rosterTogglePresent(' + "'" + ATTR + "'" + ')"') > -1,
-  list.slice(Math.max(0, list.indexOf('onchange')), list.indexOf('onchange') + 100));
+// S-03, CLOSED. The old spelling escaped the apostrophe and left the double
+// quote free to end an attribute delimited by double quotes. check_names.js
+// recorded that limit while the name was typed by the teacher; it is now typed
+// by the person it names, which is what turned a limit into a hole.
+assert('the name can no longer end the onchange attribute early',
+  list.indexOf('onchange="rosterTogglePresent(' + "'" + ATTR + "'" + ')"') === -1,
+  list.slice(Math.max(0, list.indexOf('onchange')), list.indexOf('onchange') + 120));
+assert('the quote that used to end it arrives as an entity instead',
+  list.indexOf('onchange="rosterTogglePresent(') > -1 && list.indexOf('&quot;') > -1);
 assert('and the payload that does it fits the 60 characters the rules allow',
   ATTR.length <= 60, ATTR.length);
-// The same escape, four more times, on text nobody hostile writes today.
-// Named so that a future edit which points one of them at a person's words
-// has to walk past this line.
+// Every handler that carries an argument through an attribute now goes through
+// the same escaper. Named one by one so that adding a sixth without it has to
+// walk past this line, and so that nobody re-spells the escape by hand.
 ['pickName', 'onTeacherNoteChange', 'showInsights', 'lrPlay', 'lrRecord'].forEach(fn => {
-  assert(fn + ' still carries its argument through an attribute, single-quote-escaped only',
+  assert(fn + ' carries its argument through the shared attribute escaper',
     html.indexOf(fn + "('${") > -1);
 });
-// S-05, the same class of mistake pointed the other way: double-stringifying
-// puts a bare double quote INTO the attribute, so it ends at 'mailReview(' and
-// the handler never compiles. The button is dead for everybody, always.
-const mail = 'onclick="mailReview(' + JSON.stringify(JSON.stringify('Ajar review\nFrom: Ana')) + ')"';
-assert('KNOWN HOLE: the review mail button builds an attribute with a bare quote in it',
-  mail.indexOf('mailReview("') > -1, mail.slice(0, 60));
-assert('and the app still builds it that way', html.indexOf('mailReview(${JSON.stringify(JSON.stringify(body))})') > -1);
+// The invariant is not "how many times the old spelling appears" -- it appears
+// inside escapeAttrArg itself, and in the comment explaining why it was wrong.
+// It is that it appears NOWHERE ELSE. Cut the helper out and look at the rest.
+const helperAt = html.indexOf('function escapeAttrArg(');
+const outside = html.slice(0, html.lastIndexOf('// A value that lands inside a JS string'))
+  + html.slice(html.indexOf('}', html.indexOf('return escapeHtml', helperAt)));
+assert('the apostrophe-only escape exists nowhere except inside the shared helper',
+  outside.indexOf("replace(/'/g") === -1,
+  outside.slice(Math.max(0, outside.indexOf("replace(/'/g") - 60), outside.indexOf("replace(/'/g") + 40));
+// S-05, CLOSED. The same class of mistake pointed the other way: double
+// stringifying put a bare double quote INTO the attribute, so it ended at
+// 'mailReview(' and the handler never compiled. The button was dead for
+// everybody, always -- nobody reported it because a button that does nothing
+// reads as a button you pressed wrong.
+assert('the review mail button no longer double-stringifies its body',
+  html.indexOf('mailReview(${JSON.stringify(JSON.stringify(body))})') === -1);
+assert('it goes through the same escaper as every other handler argument',
+  html.indexOf("mailReview('${escapeAttrArg(body)}')") > -1);
 
 //===========================================================================
 // 5. THE AUDIO PATH CANNOT BE STEERED OUT OF ITS DIRECTORY
