@@ -204,8 +204,14 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
     whoAmI().indexOf('Back') > -1, whoAmI().slice(0,160));
   assert('and it does not offer to open the screen you are already on',
     whoAmI().indexOf("setView('account')") === -1, whoAmI().slice(0,160));
-  assert('a student goes back to practice',
-    whoAmI().indexOf("setView('student')") > -1, whoAmI().slice(0,160));
+  /* Back goes to the FRONT PAGE when there is no account, not to practice.
+
+     It pointed at the student view, which behind the wall bounces straight
+     back here — the button looked live and did nothing, which reads as a
+     frozen app. Without an account there is nothing behind this screen except
+     the two doors, so that is where back goes. */
+  assert('with no account, back goes to the front page — the only thing behind this screen',
+    whoAmI().indexOf("setView('welcome')") > -1, whoAmI().slice(0,200));
 
   const tback = boot({ search:'?school=scan-school', teacher:true });
   tback.api.setView('account');

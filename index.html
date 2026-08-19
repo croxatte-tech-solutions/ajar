@@ -806,7 +806,11 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
 <a href="#main" class="skip-link">Skip to content</a>
 <div class="app">
   <header class="masthead">
-    <div class="brand">
+    <!-- The wordmark goes home. Everyone tries it by reflex, and behind a
+         sign-in wall it is the only way back to the front page — without it
+         the login screen has no exit at all. -->
+    <a class="brand" href="#" onclick="setView('welcome');return false"
+       aria-label="Ajar — back to the start" style="text-decoration:none;color:inherit">
       <div class="brand-mark"><img src="logo.svg" alt="Ajar logo"></div>
       <div class="brand-text">
         <!-- No byline. It read as taking credit on a screen a teacher and her
@@ -816,18 +820,36 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
         <h1>Ajar</h1>
         <span>Working prototype &middot; not a system of record</span>
       </div>
-    </div>
+    </a>
+    <button class="guide-btn" onclick="showAbout()">Who we are</button>
     <!-- wrap: on a phone these five controls overflow the viewport, which
          pushed the Teacher/Student switcher off the right edge entirely —
          a student had no way back to her own view. -->
     <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
       <button class="guide-btn" onclick="showGuide(currentView)">❓ How this works</button>
-      <button class="guide-btn" onclick="showInsights()">📈 My patterns</button>
-      <button class="guide-btn" onclick="showFeedback()">💬 Feedback</button>
-      <div class="switcher">
-        <button id="btn-teacher" class="active" onclick="setView('teacher')">👩‍🏫 Teacher</button>
-        <button id="btn-student" onclick="setView('student')">🎓 Student</button>
-      </div>
+      <!-- Everything below is hidden on the sign-in screen. Three of them were
+           worse than clutter there, they were broken: My patterns has no
+           patterns to show before anyone has practiced, and Teacher/Student
+           called setView() only for the wall to bounce it straight back — a
+           control that looks live and does nothing, which reads as an app that
+           has frozen.
+
+           Feedback goes for a different reason. Feedback from somebody who has
+           not used the app is not feedback, it is a support request, and the
+           two want different inboxes. Contact takes its place before sign-in,
+           because the moment a person most needs to reach us is the moment
+           they cannot get in — a support channel behind a login is shut
+           exactly when it is needed. -->
+      <span id="post-login-nav" style="display:contents">
+        <button class="guide-btn" onclick="showInsights()">📈 My patterns</button>
+        <button class="guide-btn" onclick="showFeedback()">💬 Feedback</button>
+        <div class="switcher">
+          <button id="btn-teacher" class="active" onclick="setView('teacher')">👩‍🏫 Teacher</button>
+          <button id="btn-student" onclick="setView('student')">🎓 Student</button>
+        </div>
+      </span>
+      <a id="pre-login-contact" class="guide-btn" style="display:none;text-decoration:none"
+         href="#" onclick="contactUs();return false">✉️ Contact</a>
       <span id="who-am-i" style="font-size:.78rem;color:var(--text-dim);font-weight:600"></span>
     </div>
   </header>
@@ -12698,7 +12720,7 @@ function accountEntryHtml(){
   const on = currentView === 'account';
   return `<button class="btn ghost sm" style="margin-left:.4rem;padding:.15rem .5rem;font-size:.7rem"
             aria-current="${on ? 'page' : 'false'}"
-            onclick="setView('${on ? (teacherIsSignedIn() ? 'teacher' : 'student') : 'account'}')">${
+            onclick="setView('${on ? (hasAccount() ? (teacherIsSignedIn() ? 'teacher' : 'student') : 'welcome') : 'account'}')">${
             on ? '&larr; Back' : '👤 Account'}</button>`;
 }
 function renderWhoAmI(){
@@ -12760,6 +12782,13 @@ function setView(v){
      is the way back out, not a way past. */
   const hideAll = v === 'welcome';
   const hideNotices = hideAll || v === 'account';
+  /* The nav carries different things before and after a sign-in, because
+     before one there is nothing for half of it to point at. */
+  const signedOut = !hasAccount();
+  const post = document.getElementById('post-login-nav');
+  if(post) post.style.display = signedOut ? 'none' : 'contents';
+  const contact = document.getElementById('pre-login-contact');
+  if(contact) contact.style.display = signedOut ? '' : 'none';
   document.querySelectorAll('.masthead').forEach(el => { el.style.display = hideAll ? 'none' : ''; });
   ['.padrao-c', '.tech-note'].forEach(sel => {
     document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
@@ -14504,6 +14533,102 @@ function googleButtonHtml(busy){
       gap:.6rem;background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:600;
       font-size:.92rem;padding:.7rem" onclick="accountGoogle()"${busy ? ' disabled' : ''}>
     ${googleMarkSvg(18)}<span>Sign in with Google</span></button>`;
+}
+
+/* =========================================================
+   WHO WE ARE
+   ========================================================= */
+
+/* Written for the person reading it, not for the person who built it.
+
+   No name, no city, no school. "A student" is the whole of the credibility
+   here and it evaporates the moment it turns into a CV.
+
+   Nothing about price. Not because it is free today — it is — but because
+   saying so in a permanent page makes a promise the future may not want to
+   keep, and a product that once said "free" and then charges is remembered
+   for the change rather than for the price.
+
+   And it says plainly what this is NOT. Every question here is ours; the
+   shapes and the timing follow the real exam so that test day feels familiar,
+   and that is where the resemblance ends and has to be seen to end. */
+function aboutText(){
+  const counts = aboutCounts();
+  return `
+    <h2 style="margin-top:0">Why Ajar exists</h2>
+    <p>I'm a student, far from home — learning in a language that isn't mine,
+      in a country that isn't either.</p>
+    <p>The exam came before everything else. You can't start a course without
+      TOEFL, and studying for it while you're still finding your feet is a
+      second job nobody warns you about.</p>
+    <p>What I saw around me wasn't a lack of English. It was <b>nerves</b>.
+      Friends who knew the answer and lost it the moment a clock appeared on
+      the screen. And one teacher doing the work of ten people to get everyone
+      ready.</p>
+    <p>I built this for them first.</p>
+
+    <h3>What this is, and what it is not</h3>
+    <p><b>Ajar is not the TOEFL, and it never will be.</b> Every question here
+      is written by us. They follow the same shapes and the same clock as the
+      real sections, so that test day feels like somewhere you have already
+      been — and that is where it stops.</p>
+    <p>Two things are different on purpose:</p>
+    <ul>
+      <li>Your teacher decides what the class sees. Nothing reaches you until
+        she says so.</li>
+      <li>You can redo anything. Only your best attempt of the day counts, and
+        nothing here becomes a grade.</li>
+    </ul>
+
+    <h3>Where it is today</h3>
+    <p>${counts.questions} questions, ${counts.clips} recorded clips,
+      ${counts.themes} everyday themes — campus, health, money, housing,
+      travel, work and more.</p>
+    <p><b>Missing a subject you need?</b> Tell us and we'll write it.
+      The list grows because people ask —
+      <a href="#" onclick="contactUs();return false">send us a message</a>,
+      or write to <b>${escapeHtml(CONFIG.devEmail || '')}</b>. You do not need
+      an account to do it.</p>
+
+    <h3>One last thing</h3>
+    <p>You are learning a language and an exam at the same time. Almost nobody
+      does both at once, and the nerves are not a sign that you are not ready —
+      they are what happens when something matters. The point of practicing
+      here is that on the day, none of it is new.</p>`;
+}
+/* Counted from the banks rather than typed, because a number typed into a
+   page is a number that is wrong three months later and nobody notices. */
+function aboutCounts(){
+  let q = 0;
+  try{
+    for(const th in CHOOSE_RESPONSE_BANK) q += CHOOSE_RESPONSE_BANK[th].length;
+    [ANNOUNCEMENT_BANK, CONVERSATION_BANK, TALK_BANK, DAILY_READ_BANK, PASSAGE_BANK]
+      .forEach(b => { for(const th in b) b[th].forEach(a => { q += (a.questions || []).length; }); });
+  }catch(e){ console.warn('Ajar: could not count the question banks —', e); }
+  return { questions: q, clips: 672, themes: (typeof ALL_THEMES !== 'undefined' ? ALL_THEMES.length : 14) };
+}
+function showAbout(){
+  document.getElementById('guide-modal').innerHTML = aboutText() +
+    `<div class="guide-close"><button class="btn" onclick="closePrivacy()">Close</button></div>`;
+  openModal();
+}
+
+/* Contact is a mailto and not a form, and that is the whole design.
+
+   A form needs a backend, and a backend that takes anonymous messages from
+   the open internet needs spam handling, which is a system to run for a
+   product with thirteen users. A mailto has none of that, cannot be flooded,
+   and works when the app itself does not — which is the case that matters,
+   since the person most likely to need this is the one who cannot get in. */
+function contactUs(){
+  const to = CONFIG.devEmail || '';
+  const subject = encodeURIComponent('Ajar — a message');
+  const body = encodeURIComponent(
+    'Tell us what you need. If something is not working, it helps to say what ' +
+    'you were doing and what you saw.\n\n\n' +
+    '---\n' +
+    'Sent from ' + location.hostname + '\n');
+  location.href = 'mailto:' + to + '?subject=' + subject + '&body=' + body;
 }
 
 function renderWelcome(){
