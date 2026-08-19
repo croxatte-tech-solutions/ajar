@@ -7576,6 +7576,14 @@ window.__onAuthChanged = () => {
         + asks.join(' and ') + '.</p>';
     }
   }catch(e){}
+  /* A session that was restored rather than just created has nobody to load
+     its profile: the sign-in handlers do that, and none of them ran. Without
+     this, closing the browser and coming back put a signed-in student on the
+     front door every time — the one screen they had already answered. */
+  try{
+    if(hasAccount() && !ACCOUNT_PROFILE) refreshAccountProfile();
+    else routeHome();
+  }catch(e){ console.error('Ajar: could not open your own screen —', e); }
 };
 
 /* A CODE IS NOT SHOWN UNTIL THE THING IT POINTS AT EXISTS.
@@ -13094,6 +13102,39 @@ let ACCOUNT_MSG = null;          // { text, ok }
 let ACCOUNT_BUSY = false;
 let ACCOUNT_PROFILE = null;      // the loaded users/{uid} record, or null
 
+/* WHERE A SIGNED-IN PERSON BELONGS, AND WHY IT IS NOT THE ACCOUNT SCREEN.
+
+   Signing in used to leave people exactly where they signed in: on the
+   account screen, looking at "Sign out" and "Delete my account". Every
+   possible next step was somewhere else, and the way back was the app's own
+   name in the corner — which is not a thing anybody is told, so it had to be
+   guessed. It was found by guessing.
+
+   An account screen is a place you visit to change something, not a place
+   you land. So once the profile is known, the person is sent to their own
+   screen: the exercises, or the class panel.
+
+   Three conditions, each of which has a way of going wrong without it:
+
+   - Only from the front door or the account screen. Somebody reading the
+     "Who we are" page when their session restores should keep reading it.
+   - Only once per page load, so clicking the app's name to go back to the
+     front door actually goes there instead of bouncing straight off it.
+   - A teacher still waiting for approval is NOT sent to the class panel,
+     which would be a locked door, nor to the exercises, which are not what
+     she came for. She stays where her status is written down. */
+let ROUTED_HOME = false;
+function routeHome(){
+  if(ROUTED_HOME) return;
+  if(!hasAccount() || !ACCOUNT_PROFILE) return;
+  if(currentView !== 'welcome' && currentView !== 'account') return;
+  const u = window.CloudSync && window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
+  const wantsTeacher = ACCOUNT_PROFILE.role === 'teacher';
+  if(wantsTeacher && !(u && u.isTeacher)) return;
+  ROUTED_HOME = true;
+  setView(wantsTeacher ? 'teacher' : 'student');
+}
+
 function accountMsg(text, ok){ ACCOUNT_MSG = text ? { text, ok:!!ok } : null; renderAccount(); }
 function accountMode(m){ ACCOUNT_MODE = m; ACCOUNT_MSG = null; renderAccount(); }
 function accountBusy(v){ ACCOUNT_BUSY = v; renderAccount(); }
@@ -13623,6 +13664,7 @@ async function refreshAccountProfile(){
   if(ACCOUNT_PROFILE) await syncSchoolMembership();
   renderAccount();
   renderWhoAmI();
+  routeHome();
 }
 
 /* Two confirmations and a typed word, which is the shape every product that
@@ -13658,7 +13700,8 @@ async function deleteMyAccount(){
 function accountSignOut(){
   if(!window.CloudSync) return;
   window.CloudSync.signOutTeacher()
-    .then(() => { ACCOUNT_PROFILE = null; ACCOUNT_MODE = 'choose'; renderAccount(); renderWhoAmI(); })
+    .then(() => { ACCOUNT_PROFILE = null; ACCOUNT_MODE = 'choose'; ROUTED_HOME = false;
+                  renderAccount(); renderWhoAmI(); })
     .catch(e => { console.error('Ajar: sign-out failed —', e);
                   accountMsg('Could not sign out. Check the connection.', false); });
 }

@@ -129,7 +129,8 @@ function boot(opts){
     ';globalThis.__api={loadSharedClassroomContent,renderStudent,getStudentBatch,setStudentName,' +
     'setRosterArrival,generateOne,tagFor,saveBatch,loadBatch,setPublishState,publishState,tvItems,' +
     'itemShareLink,dismissScanError,currentSchool,teacherIsSignedIn,applyTeacherGate,'+
-    'renderTeacherSignIn,hydrateAllNotesForTeacher,renderTeacher,setView};', sandbox);
+    'renderTeacherSignIn,hydrateAllNotesForTeacher,renderTeacher,setView,routeHome,' +
+    'view:()=>currentView,seat:p=>{ACCOUNT_PROFILE=p;ROUTED_HOME=false;}};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, store };
 }
 
@@ -213,6 +214,70 @@ function signinBox(){ return el('teacher-signin').innerHTML || ''; }
     html.indexOf('isTeacherAccount = u =>') === -1);
   assert('it is the teacher record that decides',
     html.indexOf('const isTeacherAccount = () => !!teacherRecord;') > -1);
+
+  //===================================================================
+  // A SIGNED-IN PERSON LANDS ON THEIR OWN SCREEN
+  //===================================================================
+  /* He signed in, and stayed on the account screen looking at "Sign out" and
+     "Delete my account". Nothing there was the thing he came to do, and the
+     way onward was the app's own name in the corner — undocumented, so it
+     had to be guessed. He guessed right; that is not a design.
+
+     These fix the destination, and the three ways a destination goes wrong:
+     sending the wrong person, sending them to a door that is locked, and
+     sending them again after they deliberately walked back. */
+  {
+    const st = boot({ search:'?school=scan-school', googleStudent:true });
+    st.api.setView('welcome');
+    st.api.seat({ role:'student' });
+    st.api.routeHome();
+    assert('a signed-in student is taken to the exercises, not left on the account screen',
+      st.api.view() === 'student', st.api.view());
+
+    // And having gone there, going back to the front door must STAY there.
+    // A router that fires on every render is a page nobody can leave.
+    st.api.setView('welcome');
+    st.api.routeHome();
+    assert('AND walking back to the front door on purpose is not undone',
+      st.api.view() === 'welcome', st.api.view());
+  }
+  {
+    const t = boot({ search:'?school=scan-school', teacher:true });
+    t.api.setView('welcome');
+    t.api.seat({ role:'teacher' });
+    t.api.routeHome();
+    assert('an approved teacher is taken to her class panel',
+      t.api.view() === 'teacher', t.api.view());
+  }
+  {
+    // The request is filed, the record does not exist yet. The class panel
+    // would be a locked door and the exercises are not what she came for,
+    // so she stays where her status is written down.
+    const p = boot({ search:'?school=scan-school', googleStudent:true });
+    p.api.setView('account');
+    p.api.seat({ role:'teacher' });
+    p.api.routeHome();
+    assert('a teacher still waiting for approval is not sent to a panel she cannot open',
+      p.api.view() === 'account', p.api.view());
+  }
+  {
+    const anon = boot({ search:'?school=scan-school' });
+    anon.api.setView('welcome');
+    anon.api.seat({ role:'student' });
+    anon.api.routeHome();
+    assert('an anonymous visitor is still asked who they are',
+      anon.api.view() === 'welcome', anon.api.view());
+  }
+  {
+    // Signed in, profile not written yet. Routing here would skip the form
+    // that collects the country and date of birth.
+    const half = boot({ search:'?school=scan-school', googleStudent:true });
+    half.api.setView('account');
+    half.api.seat(null);
+    half.api.routeHome();
+    assert('somebody mid-signup is not carried past the rest of the form',
+      half.api.view() === 'account', half.api.view());
+  }
 
   console.log(results.join('\n'));
   const fails = results.filter(r => r.indexOf('FAIL') > -1);
