@@ -341,6 +341,59 @@ assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CAT
     && html.indexOf('LISTEN_REVEAL_WPM') > -1);
 }
 
+//===================================================================
+// THE README STATES NUMBERS, SO THE NUMBERS ARE CHECKED
+//===================================================================
+/* A README is documentation and documentation rots. This project has already
+   been bitten three times by a sentence that outlived the thing it described
+   — the teacher panel saying students never sign in, the privacy notice
+   promising nobody reads a profile, the cache header claiming a 304 that
+   never happens. Every one of them was found by a person, not by the suite.
+
+   So the counts in README.md are asserted rather than trusted. Two of them
+   can be measured from here, and they are the two that move:
+
+   - the number of check files, exactly
+   - the emulator's assertion count, exactly
+
+   The suite total is a floor ("3,800+") rather than an exact figure, because
+   no single check can know the sum of all the others — and a floor that only
+   fails when the suite SHRINKS is the honest shape for that one. */
+{
+  const fs2 = require('fs'), path2 = require('path');
+  const readme = fs2.existsSync('README.md') ? fs2.readFileSync('README.md', 'utf8') : '';
+  assert('the README exists to be checked', readme.length > 0);
+
+  const arquivos = fs2.readdirSync('scripts').filter(f => /^check_.*\.js$/.test(f)).length;
+  const mFiles = readme.match(/assertions across (\d+) files/);
+  assert('the README names the real number of check files',
+    !!mFiles && Number(mFiles[1]) === arquivos,
+    'README says ' + (mFiles ? mFiles[1] : 'nothing') + ', there are ' + arquivos);
+
+  /* The emulator's total cannot be counted from here and the first version of
+     this tried anyway: it counted the literal `await check(` calls, got 153,
+     and called the README's 163 wrong. The README was right — one loop runs
+     two assertions per forged school id.
+
+     A literal count is a guaranteed LOWER BOUND, though, because a call inside
+     a loop runs at least once. So the README states a floor and the floor is
+     asserted against that bound: provable from a machine with only node, and
+     wrong only if somebody claims more than can be shown. */
+  const regras = fs2.existsSync('scripts/rules-test/rules.test.js')
+    ? fs2.readFileSync('scripts/rules-test/rules.test.js', 'utf8') : '';
+  const minimo = (regras.match(/await check\(/g) || []).length;
+  const mEmu = readme.match(/(\d+)\+ assertions against the real Firestore emulator/);
+  assert('the emulator floor in the README is one this file can prove',
+    !!mEmu && Number(mEmu[1]) <= minimo,
+    'README claims ' + (mEmu ? mEmu[1] + '+' : 'no floor') + ', provable bound is ' + minimo);
+
+  /* The floor. Written as "N+" on purpose: it may only ever be wrong in the
+     direction of the suite having grown. */
+  const mFloor = readme.match(/\*\*([\d,]+)\+ assertions/);
+  assert('the suite total is written as a floor, not as a figure that will rot',
+    !!mFloor, readme.match(/\*\*[^*]*assertions[^*]*\*\*/));
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)

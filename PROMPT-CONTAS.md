@@ -1,7 +1,35 @@
 # Contas de verdade no Ajar — prompt de execução
 
-Documento de trabalho. Escrito antes de codar, para que as decisões fiquem
-argumentadas e não descobertas no meio. Executado nas fases abaixo.
+Documento de trabalho. **Escrito em 17 de agosto de 2026, antes de codar**,
+para que as decisões fiquem argumentadas e não descobertas no meio. Executado
+nas fases abaixo.
+
+> ## O que mudou depois que isto foi escrito
+>
+> Este é um documento de decisão, não uma descrição do app. O raciocínio abaixo
+> fica como está — inclusive onde a conclusão foi revertida, porque o motivo de
+> uma decisão continua valendo mesmo quando ela muda. O que está desatualizado
+> em relação ao código de hoje:
+>
+> - **A idade mínima é 13, não 16.** A decisão 3 argumenta 16 como menor
+>   denominador comum entre COPPA e GDPR, e isso continua correto como leitura
+>   da lei. O que mudou foi o produto: quando a conta virou a **única** forma de
+>   entrar, 16 deixou de ser "a idade sobre a qual guardamos dados" e passou a
+>   ser "a idade em que este app começa" — e uma turma de escola de idiomas tem
+>   gente de 14 e 15 anos. `MIN_AGE = 13` no código, e a política de privacidade
+>   explica exatamente essa troca ao aluno.
+> - **Todas as seis fases estão concluídas.** Autenticação, cadastro e painel do
+>   administrador não estavam marcados aqui e estão prontos.
+> - **A decisão 4 (popup, nunca redirect) continua certa e custou caro.** O
+>   popup carrega um iframe escondido contra o domínio de autenticação, e esse
+>   iframe é preenchido por um script vindo de `apis.google.com` — que não estava
+>   no `script-src`. Ver `PROGRESS.md`, sessão de 18–19/08.
+> - **O administrador lê `users/{uid}`.** A decisão 2 e o modelo de dados abaixo
+>   dizem que ninguém além do dono lê aquele documento. Mudou em 18/08 por
+>   decisão do dono do app, com a política de privacidade reescrita no mesmo
+>   commit e um check que compara as duas em ambos os sentidos.
+>
+> Para o estado de hoje, ler `README.md` e `CLAUDE.md`, não este arquivo.
 
 ---
 
@@ -159,8 +187,10 @@ O professor não entra em turma nenhuma ao se cadastrar. Ele entra na fila.
 2. **Regras e modelo de dados** — `admins`, `users`, `teacherRequests`, e as
    regras que os separam. Asseveradas no emulador antes de existir UI.
 3. **Autenticação** — Google por popup, email e senha, promoção do anônimo.
+   *(feito)*
 4. **Cadastro** — o formulário, o portão de idade, a política de privacidade.
-5. **Painel do administrador** — a fila, aprovar, recusar.
+   *(feito — e o portão ficou em 13, ver a nota no topo)*
+5. **Painel do administrador** — a fila, aprovar, recusar. *(feito)*
 6. **Identidade do aluno** — `students/{uid}` no lugar de `students/{nome}`, as
    notas privadas movidas, e as duas falhas conhecidas fechadas. *(feito)*
 

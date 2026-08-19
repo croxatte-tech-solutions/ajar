@@ -3,6 +3,11 @@
 **Baseline:** commit `3edac23` · `index.html` 861.544 bytes, 12.367 linhas · suite 2.911 verde
 **Final:** commit `da7ad00` · suite **3.018 verde**, 31 arquivos · 4 verificadores novos
 
+> **Instantâneo de 17 de agosto de 2026.** Fica como registro do que foi
+> encontrado naquele dia, e não descreve o app de hoje — muita coisa aqui já
+> foi fechada desde então. Para o estado atual, ver `README.md` e
+> `PROGRESS.md`.
+
 ---
 
 ## Em 30 segundos

@@ -2,6 +2,10 @@
 
 **Data:** 17 de agosto de 2026 · **Commit auditado:** `eb226a0` · **Escopo:** todo o projeto como está hoje
 
+> **Instantâneo de 17 de agosto de 2026**, contra o commit citado acima. O
+> "como está hoje" da linha anterior é aquele dia, não este. Para o estado
+> atual, ver `README.md` e `PROGRESS.md`.
+
 ---
 
 ## Antes do resumo: quatro premissas do pedido que não valem para este projeto
