@@ -120,6 +120,26 @@ disagree in either direction. Before it existed, the rule and the promise
 drifted apart with the suite fully green: every assertion checked that the
 promise was PRESENT, none that it was TRUE.
 
+A person has **two names**. `fullName` is theirs, in their own language and
+alphabet, and never leaves `users/{uid}`. `displayName` is what a room calls
+them, and it is the only one copied into `schools/{id}/students/{uid}` where
+the class and the teacher read it. Renaming has to write both: the class
+record is otherwise only written when somebody practises, so the teacher goes
+on seeing the old name — right where the person is looking, stale everywhere
+else, which is this app's oldest failure shape.
+
+**`signInAnonymously()` does not return whoever is already signed in.** With a
+real session in place it mints a new anonymous user and REPLACES it. Restoring
+a saved session is asynchronous, so calling it at module load races the
+restore, and when it wins a signed-in person silently becomes a stranger. It
+cost a day, reported as two unrelated bugs — "it keeps asking me to log in"
+and "it does not take me to my screen". Call it only from the first
+`onAuthStateChanged` callback, and only when that callback has no user.
+
+Nothing in the suite can catch that class of bug: every check runs against a
+stubbed CloudSync, so the real listener is never exercised. What the checks
+assert is the shape.
+
 `isSignedIn()` is **not** an access check. Every visitor is signed in, because
 students sign in anonymously. Three separate holes in this file came from
 using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or
@@ -131,7 +151,7 @@ using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or
 sh scripts/qa.sh
 ```
 
-Must be green — 3,300+ checks across 40 `scripts/check_*.js`. The pre-commit
+Must be green — 3,400+ checks across 41 `scripts/check_*.js`. The pre-commit
 hook enforces it and GitHub Actions re-runs it (`.github/workflows/qa.yml`).
 New behaviour gets a check in the same style: named assertions that say what
 would be wrong, not what the code does.
@@ -140,7 +160,7 @@ would be wrong, not what the code does.
 AJAR_RULES=1 sh scripts/qa.sh
 ```
 
-runs `firestore.rules` against the real Firestore emulator — 113 assertions,
+runs `firestore.rules` against the real Firestore emulator — 118 assertions,
 needs Java. Run it before publishing rules to the console. It has found live
 holes on its first run more than once.
 

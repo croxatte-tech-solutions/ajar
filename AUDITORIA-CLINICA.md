@@ -99,6 +99,11 @@ o painel dela lê — só logava. Aluno via "salvo", tela dela ficava em branco.
 corrigido em `54360cd`. O único caso em que havia algo a salvar e não deu para
 ler era respondido jogando fora.
 
+**M5 — RESOLVIDO em 19/08/2026.** Um arquivo de check que **falha** não soma
+nada ao total. A diferença de 18 não era um arquivo travando: era um falhando e
+sumindo da conta. Reproduzido de propósito ao editar uma frase e ver
+`check_age_gate` (78 asserções) sair do total inteiro. Texto original abaixo.
+
 **M5 — Uma execução vermelha não reproduzida.** Uma corrida com `AJAR_RULES=1`
 deu **3277 asserções, RED**, contra 3295 verde. Diferença de **18**, consistente
 com um arquivo de check não terminando. Não reproduziu em três execuções
@@ -147,6 +152,31 @@ generalizado.
 | Web Components | **REJEITAR** | Trocaria CSS global genuinamente DRY por 12 ilhas de shadow DOM. Modernidade performática. |
 | Speculation Rules | **REJEITAR** | App de uma página. Nada para pré-carregar. |
 | WebAuthn / passkeys | **ADIAR** | Bom em si, mas o Google já cobre; adicionar antes do primeiro login real acontecer é resolver o problema errado. |
+
+---
+
+## Estado em 19 de agosto de 2026
+
+As três primeiras estão feitas, e a primeira delas mudou o veredito acima.
+
+**1. Regras publicadas e conta de verdade criada.** O dono publicou o
+`firestore.rules` no console e criou a primeira conta real do app. Contas,
+roteamento e histórico deixaram de existir só como asserção.
+
+**2. O ratchet de escrita silenciosa** não foi construído como planejado, e o
+tema reapareceu numa forma que aquele plano não cobria: **três frases da
+interface sobreviveram ao comportamento mudar embaixo delas**, todas verdes na
+suíte, porque as asserções liam se a frase existia e não se ela era verdadeira.
+`check_age_gate` agora compara a política de privacidade contra o
+`firestore.rules` e falha se discordarem — nos dois sentidos.
+
+**3. A rodada ao vivo continua com zero salas.**
+
+Achado maior da sessão seguinte, e que nenhuma auditoria pegaria por leitura:
+`signInAnonymously()` rodava sem condição em todo carregamento e **expulsava
+quem já estava logado**, de forma intermitente porque corria contra a
+restauração da sessão. Foi relatado como dois bugs sem relação. Nenhum check da
+suíte poderia tê-lo visto: todos rodam contra um `CloudSync` de mentira.
 
 ---
 

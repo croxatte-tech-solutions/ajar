@@ -247,3 +247,87 @@ appended and no hand-written list can know every suffix on every device.
   Removing it removes a feature rather than a credit, so it was left.
 - The teacher panel signed IN is still unverified by eye — it needs her password.
 
+
+---
+
+## 18–19 de agosto de 2026 — o primeiro login de verdade
+
+Nove commits, de `6f8cfad` a `9e0e38e`. **3401 asserções em 41 arquivos**, mais
+**118 no emulador**. Regras publicadas no console pelo dono.
+
+O marco: **a primeira conta real do Ajar foi criada**, e é a dele. Até esta
+sessão, contas, roteamento e histórico existiam só como asserções.
+
+### O que aconteceu
+
+| Commit | O quê |
+|---|---|
+| `d9535f9` | Login do Google — faltava `apis.google.com` no `script-src` |
+| `252d94d` | Quem tem conta vai direto para a própria tela |
+| `bc01eea` | Cabeçalho parou de esmagar "Who we are" na marca |
+| `95634bd` | Switcher Teacher/Student removido |
+| `f11c5bd` | "Free" fora da entrada e do meta |
+| `e065175` | Administrador lê perfis; política reescrita; trinco entre as duas |
+| `8492928` | Nome preferido separado do nome de registro |
+| `114be97` | `signInAnonymously` deixou de expulsar quem estava logado |
+| `9e0e38e` | Dois nomes com propósitos distintos, campo de data, confirmação de senha |
+
+### Quatro hipóteses erradas antes da certa
+
+O login do Google falhou com `auth/internal-error` e eu culpei, em ordem: a
+lista de domínios autorizados, a configuração do provedor, e o `frame-src`. As
+três estavam corretas — as duas primeiras eu verifiquei contra a API e estavam
+certas o tempo todo. A quarta, a que era, saiu do **console do navegador dele**,
+que eu só pedi depois de errar três vezes.
+
+Lição registrada no código: a mensagem de `auth/internal-error` parou de
+afirmar uma causa, e o check que exigia aquela afirmação foi invertido. Um
+palpite dentro de uma asserção vira fato que ninguém reconfere.
+
+### O padrão que se repetiu, agora em texto
+
+Três frases sobreviveram ao mundo mudar embaixo delas:
+
+- "Students never sign in — they tap their name from a link you share"
+- "Not the person who runs the app" na política de privacidade
+- "Nobody else can see it" sob a data de nascimento
+
+Nenhum check reclamou, porque todos leem se a frase **existe**, não se ela é
+**verdadeira**. `check_age_gate` agora lê o `firestore.rules` e falha se os dois
+discordarem — testado desfazendo a regra numa cópia.
+
+### Bugs que só apareceram porque outra coisa foi mexida
+
+- `joinSchool` reescreve o perfil inteiro, e a exigência nova de `fullName`
+  teria recusado toda conta anterior — entrando em turma nenhuma, calado.
+- A regra capava o nome em 40, o que recusaria toda conta existente.
+- O emulador não tinha **nenhuma** asserção de perfil aceito: onze checavam
+  recusas. Dava para apertar as regras até recusarem tudo e ficar verde.
+- `input[type=date]` nunca esteve na lista de campos estilizados, ao lado de um
+  comentário avisando que isso acontece com tipos adicionados depois.
+
+### O vermelho não reproduzido, explicado
+
+Um arquivo de check que **falha** não soma nada ao total. A corrida de 3277
+contra 3295 não era um arquivo travando: era um falhando e sumindo da conta.
+Fecha o M5 da auditoria clínica.
+
+### Estado do banco, medido nas capturas dele
+
+- `schools/cse-den-8f3a91` — a escola real, com `classroom` e `students`
+- `schools/hja-2f7c91b4e6d3` — vazia, sobra de teste. **É a armadilha:** aprovar
+  a professora com esse id a coloca numa turma vazia sem erro nenhum
+- `admins/vXgqMKE8GvT5hwx3AHgy1qmWA8l2` — o acesso dele, de pé
+- `students/` na raiz — cinco documentos do modelo antigo, agora inalcançáveis
+  pelas regras (`allow read, write: if false`). Entulho, não risco
+
+### Aberto no fim
+
+- A Michelle ainda não se cadastrou; a fila está vazia até ela entrar
+- Ao aprovar, o id é **`cse-den-8f3a91`** e nenhum outro
+- Ninguém recebeu ainda um email de verificação. O provedor está habilitado
+  (sondado via `accounts:signUp`), o envio é disparado sem esperar resposta, e
+  uma falha de entrega hoje apareceria só num console que ninguém lê
+- App Check registrado e não enforced
+- Acessibilidade e desempenho nunca auditados
+- Sobreposição lexical do conteúdo: 47–58% contra 25% de acaso
