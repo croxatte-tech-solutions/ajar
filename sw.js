@@ -3,13 +3,31 @@
 // break CDN version pinning, and they already fail gracefully offline.
 // KNOWN CEILING: app-shell-only cache, no runtime asset versioning strategy —
 // bump CACHE_NAME by hand when index.html changes meaningfully.
-const CACHE_NAME = 'ajar-shell-v3';
+//
+// That bump used to be a step a human had to remember, with nothing watching
+// for the day it was forgotten. It is now watched: the stamp below records
+// which index.html this CACHE_NAME was cut for, and
+// scripts/check_cache_freshness.js fails when the page has drifted past a
+// measured budget without this name moving. The stamp lives HERE, three lines
+// from the name it belongs to, so the two things that must change together
+// are one hunk and a merge conflict lands where somebody has to read it.
+//
+// Bumping the version means replacing both lines. The check prints the exact
+// replacement when it fails — do not work the hash out by hand.
+const CACHE_NAME = 'ajar-shell-v4';
+// @shell-stamp cache=ajar-shell-v4 bytes=1128131 sha256=b32b53e8a66bf72c31cf137793191f1b6372b3ff5f724d629960c300b4b0b20e
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have
 // just because index.html was fixed.
 const AUDIO_CACHE = 'ajar-audio-v1';
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
+  // A marca. Estava faltando: o logo aparece na tela de boas-vindas e no
+  // cabeçalho, e offline vinha como imagem quebrada — a mesma perda de
+  // identidade que o comentário das fontes abaixo descreve, pelo mesmo
+  // motivo, no mesmo dia. Encontrado por check_cache_freshness.js, que
+  // compara esta lista com tudo que o index.html pede da própria origem.
+  './logo.svg',
   // As duas webfonts self-hosted. Precisam estar AQUI: sem elas no shell,
   // o app abre offline com a fonte de fallback e a identidade some
   // exatamente na aula em que o wi-fi da escola caiu.

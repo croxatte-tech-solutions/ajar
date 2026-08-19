@@ -73,6 +73,50 @@ licence and the promise that every student hears the identical voice.
 duration — by parsing MPEG-4 atoms in plain Node, because the suite promises to
 run on a machine that has only node.
 
+## The shell cache, and the one number you must move by hand
+
+`sw.js` serves the app shell **network-first with `cache: 'no-store'`** and
+the audio **cache-first in a separate cache that `activate` must never
+delete**. Both directions are load-bearing and both fail silently if
+inverted: cache-first on the shell freezes every student on whatever version
+shipped that day, and a swept `AUDIO_CACHE` is 26.2 MiB re-downloaded on
+school wi-fi by a whole class at once.
+
+`CACHE_NAME` is bumped **by hand**. That step used to have nothing watching
+it. It does now: `sw.js` carries a `@shell-stamp` line recording which
+`index.html` that cache name was cut for, and `scripts/check_cache_freshness.js`
+fails when the page has drifted more than 8 KB — a measured budget, about two
+average commits — without the name moving. **Bumping the version means
+replacing both lines.** The check prints the exact replacement when it fails;
+do not work the sha256 out by hand.
+
+The stamp lives inside `sw.js` rather than in a file of its own so that the
+two things which must change together are one hunk, and a merge conflict lands
+where a person has to read it.
+
+`SHELL_FILES` is checked against every same-origin file `index.html` actually
+links to. That found `logo.svg` missing on its first run — the brand mark came
+back as a broken image offline, the same loss the webfont comment two lines
+below it was written to prevent. And `cache.addAll` is **atomic**: one 404 in
+that list and the install rejects, so nobody gets an offline app at all.
+
+**`index.html` has a byte ceiling**, asserted in the same check, because that
+is the only place in the suite that reasons about what the student downloads.
+The arithmetic is in the check's header and raising the number means rewriting
+it. If the honest answer is that the file needs to be bigger, the move is a
+second file fetched on demand, not a bigger ceiling.
+
+Four things the check deliberately does not fix, written up with the reasoning
+in `~/ajar-noite/DECIDIR-04.md`: the open tab that keeps running old code until
+it reloads, the missing fetch timeout that hangs the screen on a school network
+that stalls rather than fails, the unhandled rejection when a full phone
+refuses a `cache.put`, and whether orphaned clips are ever worth sweeping.
+Each is a change to the caching strategy, which is not a change to make without
+Rony seeing it.
+
+Nothing here can prove Cloudflare sent what `_headers` asked for. The steps
+that can are at the foot of `scripts/check_deploy.js` under `AJAR_SMOKE`.
+
 ## The microphone: two of them, one device
 
 `listenOnce()` is SpeechRecognition and returns a **string**. `startVoiceClip()`
@@ -231,7 +275,7 @@ using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or
 sh scripts/qa.sh
 ```
 
-Must be green — 3,400+ checks across 41 `scripts/check_*.js`. The pre-commit
+Must be green — 3,600+ checks across 44 `scripts/check_*.js`. The pre-commit
 hook enforces it and GitHub Actions re-runs it (`.github/workflows/qa.yml`).
 New behaviour gets a check in the same style: named assertions that say what
 would be wrong, not what the code does.

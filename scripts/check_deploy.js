@@ -279,4 +279,53 @@ if(process.env.AJAR_SMOKE){
     'curl -s -o /dev/null -w "%{http_code}\\n" https://hiajar.com/nao-existe-nada  # expect 404, not 200',
   ].forEach(c => 
 console.log('    ' + c));
+
+  /* THE CACHE POLICY, AGAINST THE REAL RESPONSE.
+     Everything about freshness in this repo is checked against FILES —
+     _headers says no-cache, sw.js says network-first, and
+     scripts/check_cache_freshness.js proves the worker behaves. None of that
+     proves Cloudflare sent what _headers asked for. The whole reason this app
+     is not on GitHub Pages is a host that ignored the intended policy, so
+     "the header arrived" is exactly the assumption worth spending four curls
+     on after a deploy. */
+  console.log('\n  Cache freshness on the live domain — run by hand after deploy:');
+  [ 'curl -sI https://hiajar.com/ | grep -i cache-control            # expect: no-cache',
+    'curl -sI https://hiajar.com/index.html | grep -i cache-control  # expect: no-cache',
+    'curl -sI https://hiajar.com/sw.js | grep -i cache-control       # expect: no-cache',
+    '#   sw.js MUST be no-cache. Cached, a bad worker stays in charge and',
+    '#   cannot be replaced — the one failure with no way back in.',
+    'curl -sI https://hiajar.com/audio/1002865038.m4a | grep -i cache-control',
+    '#   expect: public, max-age=31536000, immutable',
+    '',
+    '# The version actually serving, against the version in the repo.',
+    'curl -s https://hiajar.com/sw.js | grep -o "ajar-shell-v[0-9]*" | head -1',
+    'grep -o "ajar-shell-v[0-9]*" sw.js | head -1                    # the two must match',
+    '',
+    '# The page serving, against the one the stamp was cut for. Equal hashes',
+    '# mean the deploy landed; different means the CDN is still serving the',
+    '# previous build and every student is on it.',
+    'curl -s https://hiajar.com/ | shasum -a 256',
+    'grep -o "sha256=[0-9a-f]*" sw.js                                # same digest',
+    '',
+    '# no-cache means REVALIDATE, not "do not store". A second request quoting',
+    '# the ETag must come back 304 — if it comes back 200 the policy is costing',
+    '# every student a full download on every visit.',
+    'ETAG=$(curl -sI https://hiajar.com/ | grep -i "^etag:" | tr -d "\\r" | cut -d" " -f2)',
+    'curl -s -o /dev/null -w "%{http_code}\\n" -H "If-None-Match: $ETAG" https://hiajar.com/  # expect 304',
+    '',
+    '# Compression, which is what makes the page weight budget survivable.',
+    '# index.html is ~1.1 MB raw and ~275 KiB brotli. If Content-Encoding is',
+    '# absent, students are downloading the raw megabyte on school wi-fi and',
+    '# the budget in check_cache_freshness.js is reasoning about the wrong number.',
+    'curl -sI -H "Accept-Encoding: br,gzip" https://hiajar.com/ | grep -i content-encoding  # expect br',
+    'curl -s -H "Accept-Encoding: br,gzip" -o /dev/null -w "%{size_download}\\n" https://hiajar.com/',
+    '#   expect roughly 280000, not 1128131',
+    '',
+    '# Every file in the offline shell, because cache.addAll is atomic: one 404',
+    '# and the install rejects and NOBODY gets an offline app.',
+    'for f in / index.html manifest.json icon-192.png icon-512.png logo.svg \\',
+    '         fonts/baloo2-latin.woff2 fonts/nunitosans-latin.woff2; do \\',
+    '  printf "%s %s\\n" "$(curl -s -o /dev/null -w "%{http_code}" https://hiajar.com/$f)" "$f"; \\',
+    'done                                                            # expect 200 on every line',
+  ].forEach(c => console.log('    ' + c));
 }
