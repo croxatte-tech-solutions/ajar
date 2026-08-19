@@ -183,6 +183,43 @@ Nothing in the suite can catch that class of bug: every check runs against a
 stubbed CloudSync, so the real listener is never exercised. What the checks
 assert is the shape.
 
+## The routes into an exercise, and the order the questions come in
+
+Three parameters reach an exercise: `?ex=<id>` (one exercise), `?s=1` (the
+whole class), and the legacy `#batch=<payload>` that carries everything in the
+URL. `?school=<id>` rides along with all of them.
+
+`loadSharedClassroomContent()` asks three questions and **the order is
+load-bearing**, the same way the microphone's is:
+
+1. **Is there a connection?** Firebase comes from a CDN, so a school network
+   that blocks gstatic leaves `window.CloudSync` undefined — and `hasAccount()`
+   reads CloudSync, so it answers false for a signed-in student too. Asked
+   after the account gate, that gate answered for everybody: a student on that
+   wifi scanning the code on the wall was told to sign in, sent to a screen
+   that needs the connection they do not have. `SCAN_ERRORS.offline` was
+   written for exactly that person and was unreachable.
+2. **Is there an account?** Then, and only for a link that names a class.
+3. **What does the id resolve to?**
+
+Two more things that are easy to undo:
+
+- `params.get('ex')` is `null` when absent and `''` when the link says `?ex=`
+  and stops. Test `!== null`, not truthiness — `''` used to skip the branch
+  that never falls back and resolve like a plain visit, which is the QR
+  incident by another door.
+- A published item's document is never deleted, so its code keeps resolving
+  after the teacher takes the exercise back. The route filters on
+  `status === 'approved'` and reports `gone` otherwise. Padrão C is not a
+  screen further down; a route may not be the exception to it.
+
+`scripts/check_links.js` runs every route against a fake CloudSync that can be
+absent, denied or empty, and also walks every anchor in the file: no `<a>`
+without an href, no `javascript:` URL, `noopener noreferrer` on the one
+`target="_blank"`, and no two links on one screen saying the same words and
+going to different places. The complete list of external destinations is a
+comment at the foot of that file — read it before adding a new one.
+
 `isSignedIn()` is **not** an access check. Every visitor is signed in, because
 students sign in anonymously. Three separate holes in this file came from
 using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or

@@ -946,7 +946,7 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
         <button class="btn welcome-door" onclick="enterAs('teacher')" id="door-teacher" aria-label="I am a teacher"></button>
         <button class="btn ghost welcome-door" onclick="enterAs('student')" id="door-student" aria-label="I am a student"></button>
       </div>
-      <a class="welcome-more" id="welcome-more" href="https://github.com/croxatte-tech-solutions/ajar#readme" target="_blank" rel="noopener"></a>
+      <a class="welcome-more" id="welcome-more" href="https://github.com/croxatte-tech-solutions/ajar#readme" target="_blank" rel="noopener noreferrer"></a>
     </div>
   </div>
 
@@ -7554,8 +7554,33 @@ function hasAccount(){
 
 async function loadSharedClassroomContent(){
   const params = new URLSearchParams(location.search);
+  // null when the parameter is absent, '' when it is there with nothing after
+  // it. Those are different questions and used to get the same answer: '' is
+  // falsy, so "?ex=" skipped the branch below entirely and resolved like a
+  // plain visit — the whole-class batch. A scan that read half the code, or a
+  // copy-paste that dropped the id, is the QR incident again by another route.
   const exId = params.get('ex');
-  const isSharedLink = params.get('s') === '1' || !!exId;
+  const isSharedLink = params.get('s') === '1' || exId !== null;
+
+  /* THE CONNECTION IS ASKED ABOUT BEFORE THE ACCOUNT, AND THE ORDER IS THE
+     WHOLE POINT.
+     ------------------------------------------------------------------
+     Firebase loads from a CDN, so a school network that blocks gstatic leaves
+     window.CloudSync undefined — and hasAccount() reads CloudSync, so with it
+     missing the answer is false for a signed-in student too. Asked in the
+     other order the account gate answered for everyone, and a student on that
+     wifi scanning the code on the wall was told to sign in: sent to a screen
+     that needs the very connection they do not have. SCAN_ERRORS.offline was
+     written for exactly this person and could never be shown to them.
+
+     The first call on every page load runs before the module has loaded, so
+     this fires once for everybody. That is fine and always was:
+     __onCloudSyncReady retries the moment CloudSync exists, and the retry is
+     what sets the real answer. */
+  if(isSharedLink && !window.CloudSync){
+    window.__exError = 'offline';
+    return true;
+  }
 
   /* A class needs an account now, and the check is here rather than left to
      the database.
@@ -7585,18 +7610,28 @@ async function loadSharedClassroomContent(){
      what was reported: "o qr code nao conectava ao exercicio certo".
      A code that names one exercise resolves to that exercise or to a message
      saying why not. Never to a different exercise. */
-  if(exId){
+  if(exId !== null){
     if(!ID_PATTERN.test(exId)){ window.__exError = 'invalid'; return true; }
-    if(!window.CloudSync){ window.__exError = 'offline'; return true; }
     try{
       const payload = await window.CloudSync.pullClassroomItem(exId);
-      if(payload && payload.items && payload.items.length){
-        applySharedPayload(payload);
+      /* APPROVED, not merely present. Nothing deletes a published document,
+         so a code goes on resolving after the teacher has taken the exercise
+         back — and the test used to be "are there any items", which a
+         withdrawn one passes. Padrão C is not a screen the student reaches
+         later: what she has not approved must not arrive, and a route is not
+         allowed to be the exception to that. Filtered rather than rejected
+         wholesale, so a document holding one approved item and one withdrawn
+         still opens the one that stands. */
+      const approved = (payload && Array.isArray(payload.items) ? payload.items : [])
+        .filter(i => i && i.status === 'approved');
+      if(approved.length){
+        applySharedPayload({ ...payload, items: approved });
         window.__exError = null;
         return true;
       }
-      // The document is reachable and simply is not there: withdrawn,
-      // superseded, or from another school whose id this link does not carry.
+      // The document is reachable and holds nothing the student may have:
+      // withdrawn, superseded, or from another school whose id this link
+      // does not carry.
       window.__exError = 'gone';
       return true;
     }catch(e){
@@ -16059,7 +16094,7 @@ function renderWelcomeBack(){
   el.innerHTML = `
     <div class="panel" style="background:var(--accent-soft);border:none;margin-bottom:1rem">
       <b>👋 Welcome back, ${escapeHtml(name)}!</b>
-      <div class="small-note" style="margin-top:.2rem">${s.total} exercise${s.total>1?'s':''} logged so far${bits.length ? ' — ' + bits.join(', ') : ''}. <a href="javascript:void(0)" onclick="showInsights()">See your full patterns →</a></div>
+      <div class="small-note" style="margin-top:.2rem">${s.total} exercise${s.total>1?'s':''} logged so far${bits.length ? ' — ' + bits.join(', ') : ''}. <a href="#" onclick="showInsights();return false">See your full patterns →</a></div>
     </div>`;
 }
 
