@@ -31,6 +31,17 @@
 /sw.js
   Cache-Control: no-cache
 
+# The sentence and the words of the day, one file per month of the year.
+# Deliberately NOT the immutable rule the audio gets: a clip is named after a
+# hash of its own contents and can never change, while 09.json keeps its name
+# when a quote inside it is corrected. no-cache means "ask first", so a
+# correction reaches a student on the next visit and an unchanged month still
+# comes back as a cheap 304. The service worker holds its own copy for
+# offline (DAILY_CACHE in sw.js), so this is not what makes it work on a
+# school network with no signal.
+/daily/*
+  Cache-Control: no-cache
+
 # ============================================================================
 # SECURITY HEADERS
 # ============================================================================

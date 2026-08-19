@@ -117,6 +117,59 @@ Rony seeing it.
 Nothing here can prove Cloudflare sent what `_headers` asked for. The steps
 that can are at the foot of `scripts/check_deploy.js` under `AJAR_SMOKE`.
 
+## The sentence of the day, and the three words
+
+The band at the top of both working screens — date, one sentence, three
+words, and only then the batch-review promise. The explainer moved to the
+foot of the page in the same change, and its claim that "audio uses your
+browser's own Text-to-Speech" was rewritten: that stopped being true when the
+clips were pre-rendered and nothing was watching the sentence.
+
+**The index is the date and nothing else.** No shuffle, no per-student state,
+no localStorage. That is what lets a teacher say "the sentence today is about
+this" with thirteen people looking at the same words. The moment it varies per
+visit it is noise nobody can refer to.
+
+**Addressed by month and day-of-month, not by day-of-year.** Day-of-year is
+the obvious index and is wrong: in a leap year day 60 is 29 February and every
+day after it shifts by one, so the class gets a different sentence on the same
+date depending on the year. `daily/MM.json`, keyed by day of the month, gives
+29 February its own entry and leaves 1 March on 1 March.
+
+**The clock moved.** `#student-clock` is gone; the band's `#daily-clock` is
+the one line, drawn by the same `renderSchoolClock`. `#welcome-clock` stayed
+on the cover because the cover has a different rule — no week on it, for
+anybody — and the band is hidden there and on the account screen for exactly
+that reason.
+
+**The corpus is not in `index.html`.** The shell is served network-first with
+`no-store`, so a year of quotes in that file would be re-downloaded in full on
+every visit. One file per month, ~15 KB, fetched on demand.
+
+**`DAILY_CACHE` is cache-first but NOT immutable.** The audio can be served
+cache-first forever because a clip is named after a hash of its own contents.
+`09.json` keeps its name when a quote inside it is corrected, so the worker
+serves the cached copy and revalidates behind the student's back — otherwise
+a correction never reaches anybody who already has the file. `activate` spares
+this cache, same as the audio.
+
+**A missing month must cost the band and nothing else.** First visit of a new
+month with no network, a corrupt file, a day the corpus has not reached: the
+band disappears, the page under it is untouched. It is the first thing on
+every working screen, so a header that half-draws goes wrong everywhere at
+once.
+
+Rules the corpus has to keep, all enforced by `scripts/check_daily_quote.js`:
+120 characters, no emoji, author and work and a stated public-domain reason
+(and a translator when translated), definitions of at most 12 common words,
+exactly 3 words a day, and no word repeating inside 270 days — the rotation
+arithmetic is in that check's header. The seed is 20 days; the corpus grows in
+reviewed batches and the assertions run against whatever days are present.
+
+No translation, deliberately: the interface is English because immersion is
+the point and the exam is monolingual. Never call `detectStudentLanguage()`
+from here.
+
 ## The microphone: two of them, one device
 
 `listenOnce()` is SpeechRecognition and returns a **string**. `startVoiceClip()`
@@ -275,7 +328,7 @@ using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or
 sh scripts/qa.sh
 ```
 
-Must be green — 3,600+ checks across 44 `scripts/check_*.js`. The pre-commit
+Must be green — 3,700+ checks across 45 `scripts/check_*.js`. The pre-commit
 hook enforces it and GitHub Actions re-runs it (`.github/workflows/qa.yml`).
 New behaviour gets a check in the same style: named assertions that say what
 would be wrong, not what the code does.

@@ -1,0 +1,62 @@
+{
+  "month": 9,
+  "note": "One file per month of the year, not per calendar year: the day is addressed by month and day-of-month, so 29 February has its own entry and no year shifts the calendar by one.",
+  "days": {
+    "1": {
+      "quote": {
+        "text": "It is never too late to give up our prejudices.",
+        "author": "Henry David Thoreau",
+        "work": "Walden, Economy",
+        "translated": false,
+        "publicDomain": "Henry David Thoreau published Walden in 1854; the book is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "prejudice", "pos": "noun", "def": "an unfair opinion formed before you know the facts", "syn": ["bias", "preconception"], "src": "quote" },
+        { "word": "subsequent", "pos": "adjective", "def": "coming after something else in time", "syn": ["later", "following"], "src": "awl" },
+        { "word": "sufficient", "pos": "adjective", "def": "as much as is needed", "syn": ["enough", "ample"], "src": "awl" }
+      ]
+    },
+    "2": {
+      "quote": {
+        "text": "The soul should always stand ajar.",
+        "author": "Emily Dickinson",
+        "work": "Poems by Emily Dickinson",
+        "translated": false,
+        "publicDomain": "These lines were first published in Poems by Emily Dickinson in 1890, four years after her death, and are in the public domain in the United States."
+      },
+      "words": [
+        { "word": "ajar", "pos": "adjective", "def": "open by a small amount, not shut", "syn": ["half-open"], "src": "quote" },
+        { "word": "tentative", "pos": "adjective", "def": "not final, and open to change", "syn": ["provisional", "uncertain"], "src": "awl" },
+        { "word": "undertake", "pos": "verb", "def": "to begin a task and take responsibility for it", "syn": ["begin", "tackle"], "src": "awl" }
+      ]
+    },
+    "3": {
+      "quote": {
+        "text": "Hope is the thing with feathers — that perches in the soul.",
+        "author": "Emily Dickinson",
+        "work": "Poems by Emily Dickinson",
+        "translated": false,
+        "publicDomain": "These lines were first published in Poems by Emily Dickinson in 1890, four years after her death, and are in the public domain in the United States."
+      },
+      "words": [
+        { "word": "perch", "pos": "verb", "def": "to sit or rest on a high narrow place", "syn": ["rest", "roost"], "src": "quote" },
+        { "word": "feather", "pos": "noun", "def": "one of the light soft parts that cover a bird", "syn": ["plume"], "src": "quote" },
+        { "word": "valid", "pos": "adjective", "def": "based on good reasons and therefore acceptable", "syn": ["sound", "solid"], "src": "awl" }
+      ]
+    },
+    "4": {
+      "quote": {
+        "text": "Power concedes nothing without a demand. It never did and it never will.",
+        "author": "Frederick Douglass",
+        "work": "Speech on West India Emancipation, Canandaigua, New York",
+        "translated": false,
+        "publicDomain": "Frederick Douglass delivered this speech in 1857; the text is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "concede", "pos": "verb", "def": "to give up something, often after refusing at first", "syn": ["yield", "surrender"], "src": "quote" },
+        { "word": "demand", "pos": "noun", "def": "a firm request that is hard to refuse", "syn": ["claim", "request"], "src": "quote" },
+        { "word": "sustain", "pos": "verb", "def": "to keep something going over a long time", "syn": ["maintain", "support"], "src": "awl" }
+      ]
+    }
+  }
+}

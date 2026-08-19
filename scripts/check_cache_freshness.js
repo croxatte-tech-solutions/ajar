@@ -199,6 +199,7 @@ function bootSW(opts){
 //=====================================================================
 const CACHE_NAME  = ((sw.match(/const CACHE_NAME\s*=\s*'([^']+)'/) || [])[1]) || '';
 const AUDIO_CACHE = ((sw.match(/const AUDIO_CACHE\s*=\s*'([^']+)'/) || [])[1]) || '';
+const DAILY_CACHE = ((sw.match(/const DAILY_CACHE\s*=\s*'([^']+)'/) || [])[1]) || '';
 const SHELL_SRC   = ((sw.match(/const SHELL_FILES\s*=\s*\[([\s\S]*?)\]/) || [])[1]) || '';
 const SHELL_FILES = Array.from(SHELL_SRC.matchAll(/'([^']+)'/g)).map(m => m[1]);
 
@@ -507,6 +508,70 @@ behave('and a downloaded clip lands in the audio cache, not in the shell cache',
   const w = bootSW({ network: { [ORIGIN + '/audio/1002865038.m4a']: 'the clip' } });
   await w.settle(w.dispatch('fetch', w.req('/audio/1002865038.m4a')));
   return w.bodyIn(CACHE_NAME, '/audio/1002865038.m4a') === undefined;
+});
+
+// --- the month's sentence and words ------------------------------------
+/* Same two failures as the audio, reached from a new door. Cache-first is
+   what makes the top of the page draw without waiting on a school network
+   and what makes it draw at all with no network; if it ever inverts, the
+   band becomes the one part of the app that needs a connection to appear.
+   And the file is NOT content-addressed -- 09.json keeps its name when a
+   quote inside it is corrected -- so unlike the audio it has to be
+   revalidated behind the student's back, or a corrected quote never lands. */
+behave('a month already on the device is drawn without waiting for the network', async () => {
+  const w = bootSW({ seed: { [DAILY_CACHE]: { '/daily/09.json': 'the month' } },
+                     network: { [ORIGIN + '/daily/09.json']: 'a corrected month' } });
+  const out = await w.settle(w.dispatch('fetch', w.req('/daily/09.json')));
+  return out.responded && out.body && out.body.body === 'the month';
+}, () => 'the day band would need a connection to draw');
+
+behave('and a correction to that month still lands, on the next visit', async () => {
+  const w = bootSW({ seed: { [DAILY_CACHE]: { '/daily/09.json': 'the month' } },
+                     network: { [ORIGIN + '/daily/09.json']: 'a corrected month' } });
+  await w.settle(w.dispatch('fetch', w.req('/daily/09.json')));
+  return w.bodyIn(DAILY_CACHE, '/daily/09.json') === 'a corrected month';
+}, () => 'a corrected quote would never reach a student who already had the file');
+
+behave('a month not yet on the device is fetched once and kept', async () => {
+  const w = bootSW({ network: { [ORIGIN + '/daily/09.json']: 'the month' } });
+  const out = await w.settle(w.dispatch('fetch', w.req('/daily/09.json')));
+  return out.responded && out.body && out.body.body === 'the month'
+    && w.bodyIn(DAILY_CACHE, '/daily/09.json') === 'the month';
+});
+
+behave('offline, the month the student already has still opens the band', async () => {
+  const w = bootSW({ offline: true, seed: { [DAILY_CACHE]: { '/daily/09.json': 'the month' } } });
+  const out = await w.settle(w.dispatch('fetch', w.req('/daily/09.json')));
+  return out.responded && out.threw === null && out.body && out.body.body === 'the month';
+}, () => 'a failed revalidation took the cached month with it');
+
+behave('a month lands in its own cache, not in the shell', async () => {
+  const w = bootSW({ network: { [ORIGIN + '/daily/09.json']: 'the month' } });
+  await w.settle(w.dispatch('fetch', w.req('/daily/09.json')));
+  return w.bodyIn(CACHE_NAME, '/daily/09.json') === undefined;
+});
+
+behave('activating never throws away a month the student already downloaded', async () => {
+  const w = bootSW({ seed: {
+    'ajar-shell-v1': { './index.html': 'ancient shell' },
+    [CACHE_NAME]: { './index.html': 'current shell' },
+    [DAILY_CACHE]: { './daily/09.json': 'the month' } } });
+  await w.settle(w.dispatch('activate'));
+  return w.cacheNames().indexOf(DAILY_CACHE) > -1
+    && w.bodyIn(DAILY_CACHE, './daily/09.json') !== undefined;
+}, () => 'the daily cache was deleted by activate');
+
+/* The same widening disaster the audio matcher is guarded against. Each of
+   these is the app with the characters "/daily/" somewhere in it. */
+['/?next=/daily/09.json', '/index.html?month=/daily/09.json', '/daily-plan.html'].forEach(route => {
+  behave('the month handler does not capture ' + route, async () => {
+    const w = bootSW({
+      seed: { [CACHE_NAME]: { [route]: 'STALE' }, [DAILY_CACHE]: { [route]: 'STALE' } },
+      network: { [new URL(route, ORIGIN + '/').href]: 'FRESH' }
+    });
+    const out = await w.settle(w.dispatch('fetch', w.req(route)));
+    return out.responded && out.body && out.body.body === 'FRESH';
+  });
 });
 
 // --- everything cross-origin goes past untouched ------------------------

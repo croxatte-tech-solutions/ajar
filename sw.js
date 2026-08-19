@@ -14,13 +14,19 @@
 //
 // Bumping the version means replacing both lines. The check prints the exact
 // replacement when it fails — do not work the hash out by hand.
-const CACHE_NAME = 'ajar-shell-v4';
-// @shell-stamp cache=ajar-shell-v4 bytes=1128131 sha256=b32b53e8a66bf72c31cf137793191f1b6372b3ff5f724d629960c300b4b0b20e
+const CACHE_NAME = 'ajar-shell-v5';
+// @shell-stamp cache=ajar-shell-v5 bytes=1140583 sha256=1a020c5cb5e54187489771e2544e699e6323395e3adf398b6cd664ca6187e109
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have
 // just because index.html was fixed.
 const AUDIO_CACHE = 'ajar-audio-v1';
+// The sentence and the words of the day: one small file per month of the
+// year, fetched the first time that month is shown. Its own cache, spared by
+// activate for the same reason the audio is -- a month already downloaded
+// should not be lost because index.html was fixed, and the first visit of a
+// new month is exactly the visit most likely to happen on a bad connection.
+const DAILY_CACHE = 'ajar-daily-v1';
 const SHELL_FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png',
   // A marca. Estava faltando: o logo aparece na tela de boas-vindas e no
   // cabeçalho, e offline vinha como imagem quebrada — a mesma perda de
@@ -57,7 +63,9 @@ self.addEventListener('activate', event => {
     // app update, or every student would silently re-download all their
     // clips the first time they opened the app after any code change.
     caches.keys().then(names =>
-      Promise.all(names.filter(n => n !== CACHE_NAME && n !== AUDIO_CACHE).map(n => caches.delete(n)))
+      Promise.all(names
+        .filter(n => n !== CACHE_NAME && n !== AUDIO_CACHE && n !== DAILY_CACHE)
+        .map(n => caches.delete(n)))
     )
   );
   self.clients.claim();
@@ -84,6 +92,40 @@ self.addEventListener('fetch', event => {
           caches.open(AUDIO_CACHE).then(cache => cache.put(event.request, copy));
         }
         return response;
+      }))
+    );
+    return;
+  }
+
+  // The month's sentences and words are CACHE-FIRST, then revalidated behind
+  // the student's back. Cache-first because the second visit must not wait on
+  // a school network to draw the top of the page, and because the file has to
+  // be there when there is no network at all.
+  //
+  // The revalidation is the difference from the audio, and it matters: clips
+  // are named after a hash of their own contents, so a clip can never change
+  // and is never re-fetched. 09.json keeps its name when a quote inside it is
+  // corrected. Cache-first alone would mean a corrected quote never reaching
+  // a student who already had the file -- stale forever, silently, which is
+  // the failure the whole shell policy exists to prevent. So the cached copy
+  // is served now and a fresh copy is fetched to replace it for tomorrow.
+  if (url.pathname.includes('/daily/')) {
+    event.respondWith(
+      caches.open(DAILY_CACHE).then(cache => cache.match(event.request).then(cached => {
+        const fresh = fetch(event.request, { cache: 'no-store' }).then(response => {
+          if (response.ok) {
+            // A phone with no room left loses the offline copy and nothing
+            // else: the response was already handed back above.
+            cache.put(event.request, response.clone()).catch(() => {});
+          }
+          return response;
+        });
+        // Offline with a copy already here: serve it, and swallow the failed
+        // revalidation rather than leaving a rejected promise nobody handles.
+        if (cached) { fresh.catch(() => {}); return cached; }
+        // Nothing cached and nothing reachable: let the failure through. The
+        // page hides the band and the rest of the screen is untouched.
+        return fresh;
       }))
     );
     return;

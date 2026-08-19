@@ -116,6 +116,35 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 .tech-note{ background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:.75rem .9rem; font-size:.76rem; color:var(--text-dim); margin-bottom:1.25rem; line-height:1.5; }
 .tech-note b{ color:var(--text); }
 
+/* THE DAY'S BAND — the date, one sentence, three words, in that order.
+   It is the first thing on both working screens and it is the SAME thing on
+   every device in the room on a given day, which is the whole point: a
+   teacher can say "the sentence today is about this" and thirteen people are
+   looking at it. A per-visit shuffle would make that sentence a lie.
+
+   Every colour here is a palette token, so the two themes and the contrast
+   floor come for free rather than needing a new pair measured. And every box
+   that holds somebody else's words wraps rather than pushes: at 320px the
+   longest quote in the corpus and three of the longest words have to fit
+   without a horizontal scrollbar appearing under the whole app. */
+.daily{ margin-bottom:1.1rem; }
+.daily-clock{ font-size:.82rem; color:var(--text-dim); margin:0 0 .7rem; text-align:center; font-variant-numeric:tabular-nums; }
+.daily-clock b{ color:var(--text); font-weight:700; }
+.daily-today{ display:grid; gap:.7rem; }
+.daily-eyebrow{ font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); margin:0 0 .3rem; }
+.daily-quote{ margin:0; background:var(--surface-alt); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--r-sm); padding:.7rem .9rem; }
+.daily-quote blockquote{ margin:0; font-size:.95rem; line-height:1.5; color:var(--text); overflow-wrap:anywhere; }
+.daily-quote figcaption{ margin:.4rem 0 0; font-size:.72rem; color:var(--text-dim); overflow-wrap:anywhere; }
+/* auto-fit with a 160px floor: three across where there is room, one under
+   the other on a narrow phone, and never a fixed three-column grid that
+   squeezes "misunderstood" into a column two characters wide. */
+.daily-word-list{ list-style:none; margin:0; padding:0; display:grid; gap:.5rem; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+.daily-word{ min-width:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); padding:.5rem .65rem; }
+.daily-word dfn{ font-style:normal; font-weight:700; color:var(--accent); overflow-wrap:anywhere; }
+.daily-word .pos{ margin-left:.3rem; font-size:.68rem; font-style:italic; color:var(--text-dim); }
+.daily-word .def{ display:block; margin-top:.15rem; font-size:.78rem; line-height:1.4; color:var(--text); overflow-wrap:anywhere; }
+.daily-word .syn{ display:block; margin-top:.2rem; font-size:.72rem; color:var(--text-dim); overflow-wrap:anywhere; }
+
 .view{ display:none; }
 .view.active{ display:block; animation:fade .25s ease; }
 @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
@@ -922,13 +951,42 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
 
   <main id="main" tabindex="-1">
 
+  <!-- THE DAY'S BAND — date, sentence, words, and only then the notices.
+
+       The order is the argument. The date says which day this is; the
+       sentence and the three words are the same for everybody on that day,
+       so they can be spoken about from the front of a room; and the batch
+       review promise, which is about the app rather than about today, sits
+       under them instead of above them.
+
+       The clock moved here out of the student page. There is one line, not
+       one per screen: two dates four lines apart is noise, and a second
+       renderer is a second thing to drift. The cover keeps its own line
+       (#welcome-clock) because the cover is a different screen with a
+       different rule — no week on it, for anybody.
+
+       Everything under #daily-today is drawn from a file fetched on demand
+       and is hidden until there is a whole day to show. -->
+  <div class="daily" id="daily-band">
+    <p class="daily-clock" id="daily-clock"></p>
+    <div class="daily-today" id="daily-today" style="display:none">
+      <!-- Two labelled sections rather than four loose paragraphs: a screen
+           reader announces "Words of the day, list, 3 items" and the box is
+           one thing with a meaning, which is what it looks like on screen. -->
+      <section aria-labelledby="daily-quote-h">
+        <h2 class="daily-eyebrow" id="daily-quote-h">Sentence of the day</h2>
+        <figure class="daily-quote" id="daily-quote"></figure>
+      </section>
+      <section aria-labelledby="daily-words-h">
+        <h2 class="daily-eyebrow" id="daily-words-h">Words of the day</h2>
+        <ul class="daily-word-list" id="daily-words"></ul>
+      </section>
+    </div>
+  </div>
+
   <div class="padrao-c">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Batch review: nothing reaches a student until the teacher approves that week's set.</span>
-  </div>
-
-  <div class="tech-note">
-    <details class="brief"><summary>How this app makes the exercises</summary><p>Text comes from a local template engine — no external service, so it works offline and without waiting on anybody's server. Audio uses your browser's own Text-to-Speech and Speech-to-Text. Images are hand-authored SVG scenes. Each module sits behind a swappable interface, so moving to a locally-hosted model later changes the engine, not the app around it.</p></details>
   </div>
 
   <!-- TEACHER VIEW -->
@@ -1064,9 +1122,9 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
   </div>
 
   <div id="view-student" class="view">
-    <!-- The same line as the cover, and for the same reason: their date,
-         their time, their zone, no week. -->
-    <p class="welcome-clock" id="student-clock" style="text-align:center"></p>
+    <!-- The clock that used to open this page is now #daily-clock, at the top
+         of the day's band above. One line, drawn once, on both working
+         screens. -->
     <div id="announcement-banner"></div>
     <div id="student-note"></div>
     <div id="welcome-back"></div>
@@ -1094,6 +1152,17 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     <div id="install-offer"></div>
     <div id="sync-warning"></div>
     <div id="practice-wrap" tabindex="-1"></div>
+  </div>
+
+  <!-- HOW THE EXERCISES ARE MADE — at the foot of the page, where an
+       explainer belongs. Still a closed <details>: worth reading once, read
+       by the person who wants it, and in nobody's way on the day they do not.
+
+       The text was wrong for months. It said the audio was the browser's own
+       Text-to-Speech, which stopped being true when the clips were
+       pre-rendered, and nothing was watching the sentence. -->
+  <div class="tech-note">
+    <details class="brief"><summary>How this app makes the exercises</summary><p>Text comes from a local template engine — no external service, so it works offline and without waiting on anybody's server. The audio is pre-rendered: every spoken line is a small file named after the sentence itself, so every student hears the identical voice, and your browser's own Text-to-Speech steps in only when a line has no file yet. Speaking tasks use your browser's Speech-to-Text to read your words back — in Chrome that audio goes to Google to be transcribed — while the recording you play back stays on this device and is never uploaded. The sentence and words of the day come from one small file per month, downloaded once and then read offline. Images are hand-authored SVG scenes. Each module sits behind a swappable interface, so moving to a locally-hosted model later changes the engine, not the app around it.</p></details>
   </div>
   </main>
 </div>
@@ -8654,11 +8723,15 @@ function renderSchoolClock(){
   const cover = document.getElementById('welcome-clock');
   if(cover) cover.innerHTML = when;
 
-  // The student page adds the week once the device belongs to the class —
-  // same anchor their teacher published, same arithmetic her panel does, so
-  // the two cannot drift. A visitor practicing on their own sees the date
-  // only, which is the honest answer: they are not in a week.
-  const student = document.getElementById('student-clock');
+  // The band adds the week once the device belongs to the class — same anchor
+  // their teacher published, same arithmetic her panel does, so the two cannot
+  // drift. A visitor practicing on their own sees the date only, which is the
+  // honest answer: they are not in a week.
+  //
+  // The band is hidden on the cover and on the account screen (setView), which
+  // is what keeps the rule above intact: the week never reaches a screen that
+  // is the same for everybody in the world.
+  const student = document.getElementById('daily-clock');
   if(!student) return;
   const plan = isRosteredStudent() ? schoolPlanToday() : null;
   student.innerHTML = plan
@@ -8675,8 +8748,148 @@ function weekFocusLabel(week){
 }
 function startSchoolClock(){
   renderSchoolClock();
+  renderDailyBand();
   clearInterval(window._schoolClock);
-  window._schoolClock = setInterval(renderSchoolClock, SCHOOL_CLOCK_TICK_MS);
+  // The band rides the clock's tick rather than having one of its own. That
+  // is what makes it roll over at midnight with the page still open — a
+  // classroom laptop is left open for days — and it costs nothing, because
+  // renderDailyBand returns immediately unless the day has actually changed.
+  window._schoolClock = setInterval(() => {
+    renderSchoolClock();
+    renderDailyBand();
+  }, SCHOOL_CLOCK_TICK_MS);
+}
+
+/* THE SENTENCE OF THE DAY, AND THREE WORDS
+   ========================================
+   One sentence and exactly three words, the same for every person in the
+   class on a given day. That is the feature: a teacher can say "the sentence
+   today is about this" and the whole room is looking at the same thing. A
+   shuffle per visit, or per student, would turn it into noise nobody can
+   refer to — so nothing here is random and nothing here is per-student.
+
+   ADDRESSED BY MONTH AND DAY, NOT BY DAY-OF-YEAR. Day-of-year looks like the
+   obvious index and is wrong: in a leap year, day 60 is 29 February, and
+   every day after it shifts by one. The class would get a different sentence
+   on the same date depending on the year, and 29 February would either
+   collide with 1 March or have nothing at all. Month-and-day gives 29
+   February its own entry, keeps 1 March on 1 March, and needs 366 slots.
+
+   THE SCHOOL'S DAY, not the device's. schoolToday() reads the date through
+   Intl in the school's timezone, so a phone left on another zone, and the
+   hours either side of midnight, do not hand two students different days.
+
+   ONE FILE PER MONTH, FETCHED ON DEMAND. index.html is served network-first
+   with no-store — it is downloaded in full on every online visit — so a year
+   of quotes pasted into it would be re-downloaded, all twelve months of it,
+   every time anybody opened the app. A month is about 15 KB, arrives once,
+   and the service worker keeps it (see DAILY_CACHE in sw.js).
+
+   AND IT MAY SIMPLY NOT BE THERE. First visit of a new month with no network,
+   a file that is not valid JSON, a day the corpus has not reached yet: the
+   band disappears and the page under it is untouched. Same answer the audio
+   gives when a clip is missing, for the same reason — a header that
+   half-draws is worse than a header that is not there. */
+const DAILY_DIR = 'daily/';
+const DAILY_WORDS_PER_DAY = 3;
+// A month that failed to load is remembered as absent, so a school network
+// that blocks the request is not asked again every twenty seconds — but only
+// for ten minutes, so wifi that comes back is not ignored until a reload.
+const DAILY_RETRY_MS = 600000;
+const _dailyMonths = {};     // month number -> { data: parsed|null, at: ms }
+let _dailyDrawnKey = '';     // 'M-D' of what is currently on screen
+
+// Which day the SCHOOL is on, as the pair that addresses the corpus.
+function dailyDayKey(now){
+  const t = schoolToday(now);
+  return { m: t.m, d: t.d, key: t.m + '-' + t.d };
+}
+function dailyMonthUrl(m){ return DAILY_DIR + (m < 10 ? '0' : '') + m + '.json'; }
+
+async function loadDailyMonth(m, now){
+  const at = (now || new Date()).getTime();
+  const held = _dailyMonths[m];
+  if(held && (held.data || at - held.at < DAILY_RETRY_MS)) return held.data;
+  let data = null;
+  try{
+    const res = await fetch(dailyMonthUrl(m), { credentials: 'omit' });
+    if(res.ok){
+      const parsed = await res.json();
+      if(parsed && parsed.days && typeof parsed.days === 'object') data = parsed;
+    }
+  }catch(e){
+    // Offline, blocked, or not JSON. Left as null, which the caller reads as
+    // "no band today". Deliberately not reported anywhere: this is a READ,
+    // and a read that fails leaves the screen as the person already sees it.
+    data = null;
+  }
+  _dailyMonths[m] = { data: data, at: at };
+  return data;
+}
+
+// What counts as a day worth drawing. A file with two words on a day is a
+// corrupt file, not a smaller box — the promise is exactly three.
+function dailyEntryIn(month, day){
+  const e = month && month.days ? month.days[String(day)] : null;
+  if(!e || !e.quote || typeof e.quote.text !== 'string' || !e.quote.text.trim()) return null;
+  if(!Array.isArray(e.words) || e.words.length !== DAILY_WORDS_PER_DAY) return null;
+  const usable = w => w && typeof w.word === 'string' && w.word.trim()
+                        && typeof w.def === 'string' && w.def.trim();
+  if(!e.words.every(usable)) return null;
+  return e;
+}
+
+/* Everything below is somebody else's text arriving from a file and landing
+   in innerHTML, which makes this an OUTPUT POINT and it is treated as one:
+   nothing reaches the page except through escapeHtml. A sentence with an
+   apostrophe, a dash or a quotation mark in it is the normal case in a corpus
+   of nineteenth-century translations, not the edge case. */
+function dailyQuoteHtml(q){
+  const cite = [q.author, q.work].filter(Boolean).map(escapeHtml).join(', ');
+  const tr = q.translator ? ' &middot; translated by ' + escapeHtml(q.translator) : '';
+  return '<blockquote>' + escapeHtml(q.text) + '</blockquote>' +
+         '<figcaption>' + cite + tr + '</figcaption>';
+}
+function dailyWordHtml(w){
+  const syn = (Array.isArray(w.syn) ? w.syn : []).filter(Boolean);
+  return '<li class="daily-word"><dfn>' + escapeHtml(w.word) + '</dfn>'
+    + (w.pos ? '<span class="pos">' + escapeHtml(w.pos) + '</span>' : '')
+    + '<span class="def">' + escapeHtml(w.def) + '</span>'
+    + (syn.length ? '<span class="syn">Similar: ' + syn.map(escapeHtml).join(', ') + '</span>' : '')
+    + '</li>';
+}
+
+function hideDailyBand(){
+  const box = document.getElementById('daily-today');
+  const quoteBox = document.getElementById('daily-quote');
+  const wordBox = document.getElementById('daily-words');
+  if(box) box.style.display = 'none';
+  if(quoteBox) quoteBox.innerHTML = '';
+  if(wordBox) wordBox.innerHTML = '';
+  // Left empty rather than remembered, so the next tick tries again instead
+  // of leaving a student on a blank band until they reload.
+  _dailyDrawnKey = '';
+}
+
+async function renderDailyBand(now){
+  try{
+    const box = document.getElementById('daily-today');
+    const quoteBox = document.getElementById('daily-quote');
+    const wordBox = document.getElementById('daily-words');
+    if(!box || !quoteBox || !wordBox) return;
+    const today = dailyDayKey(now);
+    if(_dailyDrawnKey === today.key) return;
+    const entry = dailyEntryIn(await loadDailyMonth(today.m, now), today.d);
+    if(!entry){ hideDailyBand(); return; }
+    quoteBox.innerHTML = dailyQuoteHtml(entry.quote);
+    wordBox.innerHTML = entry.words.map(dailyWordHtml).join('');
+    box.style.display = '';
+    _dailyDrawnKey = today.key;
+  }catch(e){
+    // Anything unexpected in here costs the band and nothing else. The header
+    // must never be the thing that takes a screen down under it.
+    hideDailyBand();
+  }
 }
 // Move the plan pointer to whatever today actually is.
 //
@@ -13505,7 +13718,12 @@ function setView(v){
   const contact = document.getElementById('pre-login-contact');
   if(contact) contact.style.display = signedOut ? '' : 'none';
   document.querySelectorAll('.masthead').forEach(el => { el.style.display = hideAll ? 'none' : ''; });
-  ['.padrao-c', '.tech-note'].forEach(sel => {
+  /* The day's band goes with them, and for the account screen it is the same
+     sentence again: a quotation and three vocabulary cards above a pair of
+     sign-in buttons are three things in the way of one decision. On the cover
+     it would also put the week in front of somebody who has not said who they
+     are, which is the rule #welcome-clock exists to keep. */
+  ['.padrao-c', '.tech-note', '#daily-band'].forEach(sel => {
     document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
   });
   /* And it holds on every route in, not only on the two doors.

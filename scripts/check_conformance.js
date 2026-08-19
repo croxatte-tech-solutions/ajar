@@ -191,10 +191,34 @@ function stat(n, c, detail){
 const code = html.split('\n')
   .filter(l => !/^\s*(?:\/\/|\*|<!--)/.test(l))
   .join('\n');
-const REMOTE = /\b(?:fetch|XMLHttpRequest|navigator\.sendBeacon|WebSocket|EventSource)\s*\(/g;
+const REMOTE = /\b(?:XMLHttpRequest|navigator\.sendBeacon|WebSocket|EventSource)\s*\(/g;
 const remoteCalls = [...code.matchAll(REMOTE)].map(m => m[0]);
-stat('the app makes no ad-hoc network calls of its own', remoteCalls.length === 0,
+stat('the app opens no ad-hoc channel of its own', remoteCalls.length === 0,
   remoteCalls.join(', '));
+
+/* fetch() is read rather than banned, since 19 August 2026.
+   
+   The rule this section is making is "nothing a student does can leave this
+   origin". Counting the token `fetch` was a cheap way of making it while the
+   app had no same-origin request of its own to make, and it stopped being the
+   same rule the moment the sentence and the words of the day started arriving
+   from daily/MM.json — a file on this origin, carrying nothing outward.
+   
+   Banning the token would have pushed that request into XMLHttpRequest or an
+   injected <script>, which is the same channel wearing another name. So the
+   destination is what is checked: a relative path, or a helper that builds
+   one. An absolute URL, a protocol-relative one, or an expression this file
+   cannot read fails — those are the shapes a real exfiltration would take. */
+const fetchArgs = [...code.matchAll(/\bfetch\s*\(\s*([^,)]+)/g)].map(m => m[1].trim());
+const OWN_ORIGIN_ARG = /^(?:dailyMonthUrl\(|'[^':]*'$|"[^":]*"$)/;
+const offOrigin = fetchArgs.filter(a => !OWN_ORIGIN_ARG.test(a));
+stat('every fetch the app makes stays on this origin', offOrigin.length === 0,
+  offOrigin.join(' | '));
+stat('and the only fetch there is is the day\'s own month file',
+  fetchArgs.length === 1 && fetchArgs[0].indexOf('dailyMonthUrl(') === 0,
+  fetchArgs.join(' | '));
+stat('which is built from a relative directory, not from a host',
+  /const DAILY_DIR = 'daily\/';/.test(html) && !/DAILY_DIR\s*=\s*['"]?https?:/.test(html));
 
 // Hosts are checked only where the browser would actually GO — a script src,
 // a stylesheet href, a module import. A URL in a comment loads nothing.
