@@ -44,6 +44,13 @@
 <style>
 :root{
   --bg: #f6f9f8; --surface: #ffffff; --surface-alt: #edf4f2; --border: #d7e0dc;
+  /* A borda de um CAMPO não é decoração: é a única coisa que diz onde ele
+     começa. WCAG 2.2 pede 3:1 para isso, e --border dava 1.35:1 contra o
+     cartão — com o interior do campo a 1.06:1 da superfície, ou seja, nada
+     marcava o limite. Token próprio para não escurecer as linhas
+     decorativas do resto do app junto. 3.37 / 3.18 / 3.02:1 contra as três
+     superfícies em que um campo pode ser desenhado. */
+  --field-line: #858e8a;
   --btn-ink: #ffffff;   /* 6.20:1 on this theme's deep green */
   --text: #16211e; --text-dim: #5c6863; --accent: #0f6e56; --accent-soft: #e1f5ee;
   --amber: #8a5408; --amber-soft: #f6ecd8; --red: #9c3b2e; --red-soft: #f5e6e1;
@@ -53,6 +60,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0f1614; --surface:#16211e; --surface-alt:#1c2925; --border:#2c3a35;
+    --field-line:#65736e;   /* 3.33 / 3.69 / 3.04:1 — ver o tema claro */
     --btn-ink:#0f1614;   /* 9.13:1 on this theme's light mint */
     --text:#e3ede9; --text-dim:#93a39c; --accent:#5dcaa5; --accent-soft:#123128;
     --amber:#d9a44e; --amber-soft:#3a2f18; --red:#d98d7d; --red-soft:#3a2420;
@@ -62,6 +70,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0f1614; --surface:#16211e; --surface-alt:#1c2925; --border:#2c3a35;
+  --field-line:#65736e;   /* 3.33 / 3.69 / 3.04:1 — ver o tema claro */
   --btn-ink:#0f1614;   /* 9.13:1 on this theme's light mint */
   --text:#e3ede9; --text-dim:#93a39c; --accent:#5dcaa5; --accent-soft:#123128;
   --amber:#d9a44e; --amber-soft:#3a2f18; --red:#d98d7d; --red-soft:#3a2420;
@@ -139,7 +148,7 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
    added later, styled by nobody, discovered by whoever it is shown to. */
 select,textarea,input[type=text],input[type=email],input[type=password],
 input[type=number],input[type=search],input[type=tel],input[type=url],
-input[type=date]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); }
+input[type=date]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--field-line); background:var(--bg); color:var(--text); }
 /* And date needs three lines the others do not, because the browser draws
    its insides itself: the value is centred in its own box, the box
    shrink-wraps instead of filling the field, and the picker icon arrives at
@@ -923,7 +932,7 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
   <main id="main" tabindex="-1">
 
   <div class="padrao-c">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Batch review: nothing reaches a student until the teacher approves that week's set.</span>
   </div>
 
@@ -15591,7 +15600,7 @@ function insightsHeaderHtml(s){
   const ring = pct === null ? '' :
     '<div class="ring" style="--pct:' + pct + '; --circ:245" role="progressbar" aria-valuenow="' + pct +
     '" aria-valuemin="0" aria-valuemax="100" aria-label="Overall best-of-day average">' +
-      '<svg viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"></circle>' +
+      '<svg aria-hidden="true" focusable="false" viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"></circle>' +
       '<circle class="ring-fill" cx="43" cy="43" r="39"></circle></svg>' +
       '<span class="ring-label">' + pct + '%</span></div>';
   const streakLine = s.streak >= 2
@@ -16677,7 +16686,7 @@ loadSharedClassroomContent().then(()=>{
       <h2>3 · Sucesso</h2>
       <div style="display:flex; align-items:center; gap:.9rem">
         <span class="ok-burst">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <svg aria-hidden="true" focusable="false" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <path d="M4 12.5 9.5 18 20 7"/>
           </svg>
         </span>
@@ -16694,12 +16703,12 @@ loadSharedClassroomContent().then(()=>{
       <div style="display:flex; align-items:center; gap:1.6rem; flex-wrap:wrap">
         <div class="ring" style="--pct:68; --circ:245" role="progressbar"
              aria-valuenow="68" aria-valuemin="0" aria-valuemax="100" aria-label="Progresso do exercício">
-          <svg viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"/><circle class="ring-fill" cx="43" cy="43" r="39"/></svg>
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"/><circle class="ring-fill" cx="43" cy="43" r="39"/></svg>
           <span class="ring-label">68%</span>
         </div>
         <div class="ring" style="--pct:100; --circ:245; --ring-size:62px; --ring-w:7" role="progressbar"
              aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" aria-label="Seção concluída">
-          <svg viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"/><circle class="ring-fill" cx="43" cy="43" r="39"/></svg>
+          <svg aria-hidden="true" focusable="false" viewBox="0 0 86 86"><circle class="ring-track" cx="43" cy="43" r="39"/><circle class="ring-fill" cx="43" cy="43" r="39"/></svg>
           <span class="ring-label" style="font-size:.8rem">100%</span>
         </div>
         <div style="flex:1; min-width:230px">

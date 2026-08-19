@@ -96,6 +96,39 @@ const baked = [...css.matchAll(/([^{}]+)\{([^}]*color\s*:\s*#(?:fff|ffffff|000|0
 assert('no rule pairs a hardcoded ink with a themed background', baked.length === 0);
 if(baked.length) results.push('    ' + baked.join(' | '));
 
+//===================================================================
+// A FIELD'S EDGE IS NOT DECORATION
+//===================================================================
+/* WCAG 2.2 1.4.11 asks for 3:1 on whatever identifies a UI component. For a
+   text field that is its border, and --border gave 1.35:1 against the card it
+   sits on — with the field's own fill at 1.06:1 from that card, so nothing at
+   all marked where the input began. Fine for anybody with good eyes and a
+   wall between them and a lit window; not fine for a student on a phone in a
+   classroom, which is the whole audience.
+
+   --field-line is separate from --border on purpose: the decorative hairlines
+   around panels and between rows are allowed to stay quiet, and darkening one
+   token would have changed every one of them.
+
+   Checked against all three surfaces a field can be drawn on, because a field
+   inside a card and a field on the bare page are different backgrounds and
+   only one of them was ever looked at. */
+{
+  // tokensIn strips the leading dashes — keys are 'surface', not '--surface'.
+  const surfaces = ['surface', 'bg', 'surface-alt'];
+  for(const [name, pal] of [['light', light], ['dark', darkStamped]]){
+    const line = pal['field-line'];
+    assert(name + ': a form field defines its own edge colour', !!line);
+    if(!line) continue;
+    for(const sfc of surfaces){
+      const r = ratio(line, pal[sfc]);
+      assert(name + ': the field edge reaches 3:1 on ' + sfc + ' (' + r.toFixed(2) + ':1)', r >= 3);
+    }
+  }
+  assert('and every form control uses it, not the decorative border',
+    html.indexOf('input[type=date]{ width:100%; font-family:inherit; font-size:.88rem; padding:.6rem .7rem; border-radius:9px; border:1px solid var(--field-line);') > -1);
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)

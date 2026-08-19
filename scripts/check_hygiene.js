@@ -284,6 +284,28 @@ assert('no new silent catch block has appeared (' + silent + ' of ' + SILENT_CAT
     brit.length === 0, brit.slice(0, 6).join(', '));
 }
 
+//===================================================================
+// EVERY INLINE SVG IS EITHER NAMED OR HIDDEN
+//===================================================================
+/* A screen reader reaching an <svg> with no accessible name announces it as
+   an unlabelled graphic and stops there. Four of them did: the shield beside
+   the batch-review line, the tick in the success burst, and two progress
+   rings. All four repeat something the text next to them already says, so the
+   right answer is aria-hidden rather than a label — a name that duplicates
+   the sentence under it is noise read twice.
+
+   Found by walking the rendered page, not by reading this file, which is why
+   it survived: none of these appear near anything a check was looking at. */
+{
+  const svgs = html.match(/<svg[^>]*>/g) || [];
+  const anonymous = svgs.filter(tag =>
+    tag.indexOf('aria-hidden') === -1 &&
+    tag.indexOf('aria-label') === -1 &&
+    tag.indexOf('role="img"') === -1);
+  assert('no inline svg is left both unnamed and unhidden',
+    anonymous.length === 0, anonymous.slice(0, 3));
+}
+
 console.log(results.join('\n'));
 const fails = results.filter(r => r.includes('FAIL'));
 console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
