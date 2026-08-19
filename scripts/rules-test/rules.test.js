@@ -208,6 +208,26 @@ await check('AND STILL CANNOT WRITE IT', () =>
     { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student' })));
 await check('nor delete it', () =>
   assertFails(deleteDoc(doc(admin, 'users', 'signed_in_student'))));
+/* There was no assertion here that a GOOD profile is accepted — every one of
+   them checked a refusal. So the rules could have been tightened into
+   refusing everything and this file would have stayed green, which is what
+   nearly happened: the first version of the fullName rule capped displayName
+   at 40 and would have locked out every account created before today. */
+// schoolId is carried, and that is not tidiness: this write REPLACES the
+// document, so leaving it out drops the student out of their own class and
+// every membership assertion after this line fails instead of the one under
+// test. It did, on the first run.
+await check('A VALID PROFILE IS ACCEPTED, which nothing here checked before', () =>
+  assertSucceeds(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'Ana', fullName: 'Ana Beatriz Souza', country: 'Brazil',
+      birthDate: '2005-01-01', role: 'student', schoolId: SCHOOL })));
+await check('a profile with no fullName is refused', () =>
+  assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student' })));
+await check('and the name a class is shown is capped, so nobody pastes an essay into it', () =>
+  assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
+    { displayName: 'A'.repeat(81), fullName: 'Ana Beatriz Souza', country: 'Brazil',
+      birthDate: '2005-01-01', role: 'student' })));
 await check('a profile with an invented field is refused', () =>
   assertFails(setDoc(doc(signedInStudent, 'users', 'signed_in_student'),
     { displayName: 'Ana', country: 'Brazil', birthDate: '2005-01-01', role: 'student', isAdmin: true })));

@@ -916,7 +916,7 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
   </div>
 
   <div class="tech-note">
-    <details class="brief"><summary>How this app makes the exercises</summary><p>Text comes from a local template engine — no external service, so it works offline, free and instantly. Audio uses your browser's own Text-to-Speech and Speech-to-Text. Images are hand-authored SVG scenes. Each module sits behind a swappable interface, so moving to a locally-hosted model later changes the engine, not the app around it.</p></details>
+    <details class="brief"><summary>How this app makes the exercises</summary><p>Text comes from a local template engine — no external service, so it works offline and without waiting on anybody's server. Audio uses your browser's own Text-to-Speech and Speech-to-Text. Images are hand-authored SVG scenes. Each module sits behind a swappable interface, so moving to a locally-hosted model later changes the engine, not the app around it.</p></details>
   </div>
 
   <!-- TEACHER VIEW -->
@@ -13363,7 +13363,7 @@ function countryOptions(selected){
 // Google returns a name and an email and never a country or a date of birth,
 // so asking for those on a second screen is the ordinary shape of this flow
 // rather than a workaround.
-function profileFieldsHtml(prefillName){
+function profileFieldsHtml(prefillName, prefillCallMe){
   const today = new Date().toISOString().slice(0,10);
   return `
       <div class="field" style="margin-bottom:.7rem">
@@ -13371,6 +13371,21 @@ function profileFieldsHtml(prefillName){
         <input type="text" id="acct-name" autocomplete="name" maxlength="80"
                value="${escapeHtml(prefillName || '')}" placeholder="As your teacher would write it">
       </div>
+      <!-- Two names, because they do two jobs. The full one is the record;
+           this one is what a person is called in a room, and a class list
+           reading "Rony Croxatte Martins" is a list nobody talks like. It is
+           also less about you: the class sees this and not the name on your
+           passport. -->
+      <div class="field" style="margin-bottom:.3rem">
+        <label for="acct-callme">What should we call you?</label>
+        <input type="text" id="acct-callme" maxlength="40"
+               value="${escapeHtml(prefillCallMe || '')}"
+               placeholder="${escapeHtml(firstNameOf(prefillName) || 'Ana')}">
+      </div>
+      <p class="small-note" style="margin:0 0 .3rem">
+        This is what your class and your teacher see. Leave it blank and we use
+        your first name.</p>
+      <div id="acct-callme-msg"></div>
       <div class="field-row" style="margin-bottom:.4rem">
         <div class="field">
           <label for="acct-country">Country of origin</label>
@@ -13383,7 +13398,7 @@ function profileFieldsHtml(prefillName){
       </div>
       <p class="small-note" style="margin:0 0 .7rem">
         Your date of birth is used once, to check you are ${MIN_AGE} or older.
-        Nobody else can see it — not your classmates, not your teacher.</p>
+        Your classmates and your teacher never see it.</p>
       <label style="display:block;margin-bottom:.7rem">
         <input type="checkbox" id="acct-share-bday" checked>
         <span class="small-note">Let my class see the day and month, so they know
@@ -13536,10 +13551,76 @@ function accountSignedInHtml(u){
 // Google user completing their profile has not been through step one, so it
 // defaults to student — the choice that grants nothing and asks nobody.
 function pickedRole(){ return ACCOUNT_ROLE === 'teacher' ? 'teacher' : 'student'; }
+/* The name somebody is called by, out of the name they typed.
+
+   split(' ') and not a pattern: this file has lost a backslash inside a
+   template literal a dozen times, and a first name does not need a regex. */
+function firstNameOf(full){
+  const parts = String(full || '').trim().split(' ').filter(Boolean);
+  return parts.length ? parts[0] : '';
+}
+
+/* WHEN THE NAME IS ALREADY IN THE ROOM.
+
+   Two students called Ana is not a database problem — both records are keyed
+   by uid and neither overwrites the other. It is a teacher problem: she reads
+   a list of names and cannot tell which Ana handed in which piece of work.
+   So the collision is refused where it is cheap to fix, at the moment one
+   person is choosing, rather than in the room later.
+
+   Only within one school. Names in another class are not in this room. */
+async function classNamesOtherThanMine(){
+  if(!currentSchool()) return null;
+  if(!window.CloudSync || !window.CloudSync.pullClassMembers) return null;
+  let mine = '';
+  try{
+    const u = window.CloudSync.currentUser ? window.CloudSync.currentUser() : null;
+    mine = (u && u.uid) || '';
+  }catch(e){}
+  const members = await window.CloudSync.pullClassMembers();
+  return (members || []).filter(m => m.uid !== mine)
+                        .map(m => String(m.displayName || '').trim())
+                        .filter(Boolean);
+}
+
+/* Three names they could have instead, and never one that is also taken.
+
+   Built from the surname they already typed before falling back to numbers,
+   because "Ana S." is a name somebody answers to and "Ana 2" is a queue
+   ticket. The numbers are there so an answer always exists. */
+function nameSuggestions(wanted, fullName, taken){
+  const used = {};
+  (taken || []).forEach(t => { used[String(t).trim().toLowerCase()] = true; });
+  const parts = String(fullName || '').trim().split(' ').filter(Boolean);
+  const surname = parts.length > 1 ? parts[parts.length - 1] : '';
+  const out = [];
+  const offer = c => {
+    const v = String(c || '').trim();
+    if(!v || v.length > 40) return;
+    if(used[v.toLowerCase()]) return;
+    if(out.indexOf(v) > -1) return;
+    out.push(v);
+  };
+  if(surname){
+    offer(wanted + ' ' + surname.charAt(0).toUpperCase() + '.');
+    offer(wanted + ' ' + surname);
+  }
+  for(let i = 2; i <= 9 && out.length < 3; i++) offer(wanted + ' ' + i);
+  return out.slice(0, 3);
+}
+
+function useSuggestedName(name){
+  const input = document.getElementById('acct-callme');
+  if(input) input.value = String(name || '').trim();
+  const box = document.getElementById('acct-callme-msg');
+  if(box) box.innerHTML = '';
+}
+
 function readProfileForm(){
   const val = id => ((document.getElementById(id) || {}).value || '').trim();
   const on  = id => !!((document.getElementById(id) || {}).checked);
-  return { name: val('acct-name'), country: val('acct-country'), dob: val('acct-dob'),
+  return { name: val('acct-name'), callMe: val('acct-callme'),
+           country: val('acct-country'), dob: val('acct-dob'),
            shareBirthday: on('acct-share-bday'), research: on('acct-research'), role: pickedRole(),
            school: val('acct-school'), consent: on('acct-consent'),
            email: val('acct-email'), pass: val('acct-pass') };
@@ -13644,9 +13725,43 @@ async function finishProfile(f){
      two halves mean different things to somebody who has just typed their
      date of birth into a form: the account exists either way, but one of them
      means their details are gone and the other means a request was not filed. */
+  /* The name they will be called by, decided here rather than in the form,
+     so both routes in — Google and email — get the same answer. */
+  const callMe = (f.callMe || '').trim() || firstNameOf(f.name);
+
+  /* Refused before anything is written, and only when there is a class to
+     collide with.
+
+     A read that cannot run does NOT block the signup. Reads are exempt in
+     this codebase because a failed read leaves the screen as it was, and the
+     worst case here is two people called Ana in one list — a thing a teacher
+     can see and fix, not a thing that loses anybody's work. Blocking an
+     account on a dropped second would be the larger failure. */
+  try{
+    const taken = await classNamesOtherThanMine();
+    if(taken && taken.some(n => n.toLowerCase() === callMe.toLowerCase())){
+      const ideas = nameSuggestions(callMe, f.name, taken);
+      const box = document.getElementById('acct-callme-msg');
+      if(box) box.innerHTML =
+        '<p class="small-note" style="color:var(--accent);font-weight:600;margin:.1rem 0 .4rem">'
+        + 'Somebody in this class is already called ' + escapeHtml(callMe) + '.'
+        + (ideas.length ? ' Try one of these:' : ' Please choose another one.')
+        + '</p>'
+        + ideas.map(n => '<button type="button" class="guide-btn" style="margin:0 .3rem .3rem 0"'
+            + ' onclick="useSuggestedName(this.textContent)">' + escapeHtml(n) + '</button>').join('');
+      const input = document.getElementById('acct-callme');
+      if(input) input.focus();
+      accountMsg('That name is taken in this class. Pick another and press Finish again.', false);
+      return;
+    }
+  }catch(e){
+    console.error('Ajar: could not check whether that name is already in the class —', e);
+  }
+
   try{
     await window.CloudSync.saveProfile({
-      displayName: f.name, country: f.country, birthDate: f.dob,
+      displayName: callMe, fullName: f.name,
+      country: f.country, birthDate: f.dob,
       role: f.role, research: f.research, schoolId: currentSchool() || '',
     });
   }catch(e){
@@ -13655,7 +13770,7 @@ async function finishProfile(f){
     return;
   }
 
-  setStudentName(f.name);
+  setStudentName(callMe);
   if(f.role === 'teacher'){
     // Separate from the profile write above on purpose: the account exists
     // either way, and "we could not file your teacher request" is a different
@@ -13672,7 +13787,7 @@ async function finishProfile(f){
   // convenience, and failing to share a birthday must not undo an account
   // that already exists.
   if(f.shareBirthday && window.CloudSync.pushSummary){
-    try{ await window.CloudSync.shareBirthday(f.name, birthdayFrom(f.dob)); }
+    try{ await window.CloudSync.shareBirthday(callMe, birthdayFrom(f.dob)); }
     catch(e){ console.warn('Ajar: the birthday was not shared —', e); }
   }
   await refreshAccountProfile();
@@ -13715,6 +13830,10 @@ async function refreshAccountProfile(){
   try{ ACCOUNT_PROFILE = await window.CloudSync.loadProfile(); }
   catch(e){ console.error('Ajar: could not read your profile —', e); ACCOUNT_PROFILE = null; }
   if(ACCOUNT_PROFILE) await syncSchoolMembership();
+  /* The corner reads a localStorage key that only signup writes. On a second
+     device that key is empty, so somebody with an account of six months saw
+     no name at all up there — signed in, and greeted by nobody. */
+  if(ACCOUNT_PROFILE && ACCOUNT_PROFILE.displayName) setStudentName(ACCOUNT_PROFILE.displayName);
   renderAccount();
   renderWhoAmI();
   routeHome();
@@ -16030,7 +16149,10 @@ loadSharedClassroomContent().then(()=>{
         const u = auth.currentUser;
         if(!u) throw new Error('not signed in');
         await setDoc(doc(db, 'users', u.uid), {
+          // displayName is what a room calls them; fullName is the record.
+          // Only the first ever leaves this document.
           displayName: profile.displayName,
+          fullName: profile.fullName || profile.displayName,
           email: u.email || '',
           country: profile.country,
           birthDate: profile.birthDate,
@@ -16107,7 +16229,15 @@ loadSharedClassroomContent().then(()=>{
         if(!snap.exists()) return false;
         const p = snap.data();
         if(p.schoolId === schoolId) return false;   // already a member
-        await setDoc(ref, { ...p, schoolId });
+        /* fullName is filled in here, and it is not decoration.
+
+           This writes the WHOLE profile back, and the rules now require a
+           fullName on every write. A profile created before that field
+           existed does not have one, so scanning a class code would have
+           been refused — silently joining nothing, on the one path that puts
+           a student in a class. Their displayName was the full name back
+           then, which makes it the honest value to carry across. */
+        await setDoc(ref, { ...p, fullName: p.fullName || p.displayName, schoolId });
         return true;
       },
       /* THE LIVE ROUND.

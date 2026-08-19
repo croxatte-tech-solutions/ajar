@@ -195,11 +195,28 @@ service cloud.firestore {
         // for working out how to teach better. It lives on the profile so it
         // travels with the person and can be withdrawn by them, and it is a
         // bool so there is no version of it that means "sort of".
+        /* TWO NAMES, AND ONLY ONE OF THEM TRAVELS.
+
+           displayName is what a class calls them and is copied into
+           schools/{id}/students/{uid}, where classmates and the teacher read
+           it. fullName is the name on the record and never leaves this
+           document — owner and administrator, nobody else.
+
+           Both capped at 80, though the form caps the input at 40. The rule
+           was written at 40 first and that would have refused every account
+           created before today: their displayName IS the full name, because
+           there was nothing else to put there, and a rule tighter than the
+           data it already governs locks people out of their own profile on
+           the next write. The form is where a shorter name is encouraged;
+           the rule is not the place to enforce a nicety retroactively. */
         return request.resource.data.keys().hasOnly(
-                 ['displayName', 'email', 'country', 'birthDate', 'role', 'schoolId', 'research', 'createdAt'])
+                 ['displayName', 'fullName', 'email', 'country', 'birthDate', 'role', 'schoolId', 'research', 'createdAt'])
           && request.resource.data.displayName is string
           && request.resource.data.displayName.size() > 0
           && request.resource.data.displayName.size() <= 80
+          && request.resource.data.fullName is string
+          && request.resource.data.fullName.size() > 0
+          && request.resource.data.fullName.size() <= 80
           && request.resource.data.country is string
           && request.resource.data.country.size() > 0
           && request.resource.data.country.size() <= 60

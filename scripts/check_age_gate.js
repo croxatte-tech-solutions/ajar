@@ -131,7 +131,8 @@ function boot(opts){
     'itemShareLink,dismissScanError,currentSchool,teacherIsSignedIn,applyTeacherGate,'+
     'renderTeacherSignIn,renderAccount,ageGate,ageOn,birthdayFrom,MIN_AGE,COUNTRIES,'+
     'validateProfileForm,privacyText,authErrorText,roleChoiceHtml,chooseRole,pickedRole,renderAccount,'+
-    'verifyNoticeHtml,renderInstallOffer,exportClassJson,setClassMembers,dismissInstall};', sandbox);
+    'verifyNoticeHtml,renderInstallOffer,exportClassJson,setClassMembers,dismissInstall,'+
+    'firstNameOf,nameSuggestions,profileFieldsHtml};', sandbox);
   return { api: sandbox.__api, sandbox, asked, pushed, store };
 }
 
@@ -481,6 +482,70 @@ function boot(opts){
     html.indexOf('function exportClassJson()') > -1 && html.indexOf('a.download') > -1);
   assert('and it carries names and results but no email or date of birth',
     html.indexOf('no email, no date of birth') > -1);
+
+  //===================================================================
+  // THE NAME A ROOM CALLS YOU BY
+  //===================================================================
+  /* Two names, because they do two jobs. A class list reading "Rony Croxatte
+     Martins" is a list nobody talks like, and it hands the whole class a name
+     only the record needed. */
+  assert('a blank preferred name falls back to the first name they typed',
+    a.firstNameOf('Ana Beatriz Souza') === 'Ana', a.firstNameOf('Ana Beatriz Souza'));
+  assert('AND a single-word name is its own first name',
+    a.firstNameOf('Ana') === 'Ana');
+  assert('and nothing at all does not throw',
+    a.firstNameOf('') === '' && a.firstNameOf(null) === '');
+  assert('double spaces do not produce an empty first name',
+    a.firstNameOf('  Ana   Souza ') === 'Ana', a.firstNameOf('  Ana   Souza '));
+
+  {
+    const taken = ['Ana', 'Ana S.'];
+    const ideas = a.nameSuggestions('Ana', 'Ana Souza', taken);
+    /* The whole point of a suggestion is that it is available. Offering a
+       name that is also taken sends the person round the same wall twice,
+       and it is the easy mistake here: the surname form is generated from
+       their own typing without ever looking at the list. */
+    assert('no suggestion is a name that is already taken',
+      ideas.every(n => taken.indexOf(n) === -1), ideas);
+    assert('AND there is always at least one, because numbers cannot run out',
+      ideas.length > 0, ideas);
+    assert('a name is preferred to a queue ticket where one exists',
+      ideas.indexOf('Ana Souza') > -1, ideas);
+  }
+  {
+    // Nobody typed a surname, so only the numbered forms are possible.
+    const ideas = a.nameSuggestions('Ana', 'Ana', ['Ana']);
+    assert('somebody with one name still gets an answer',
+      ideas.length > 0 && ideas.every(n => n !== 'Ana'), ideas);
+  }
+  {
+    const html2 = a.profileFieldsHtml('Rony Croxatte Martins', '');
+    assert('the form asks what to call them, next to the full name',
+      html2.indexOf('id="acct-callme"') > -1);
+    assert('AND suggests their first name rather than leaving it blank',
+      html2.indexOf('placeholder="Rony"') > -1, html2.slice(0, 400));
+    assert('and says which of the two names the class will see',
+      html2.indexOf('your class and your teacher see') > -1);
+  }
+  /* The record and the room, kept apart at the one place they are written. */
+  assert('the profile stores the room name as displayName and the record as fullName',
+    html.indexOf('displayName: callMe, fullName: f.name,') > -1);
+  assert('AND the class record is written with the room name, not the full one',
+    html.indexOf('setStudentName(callMe);') > -1);
+  assert('a name already in the class is refused before anything is written',
+    html.indexOf('Somebody in this class is already called ') > -1
+    && html.indexOf('const taken = await classNamesOtherThanMine();') <
+       html.indexOf('await window.CloudSync.saveProfile({'));
+  /* A read that cannot run must not block an account. Reads are exempt in
+     this codebase, and the worst case here is two people called Ana in one
+     list — visible to the teacher, and nobody's work is lost. */
+  assert('and a failed check lets them through instead of blocking the signup',
+    html.indexOf('could not check whether that name is already in the class') > -1);
+  /* The corner reads a localStorage key that only signup writes, so on a
+     second device somebody with an account of six months was greeted by
+     nobody. */
+  assert('a restored session fills the corner from the profile',
+    html.indexOf('if(ACCOUNT_PROFILE && ACCOUNT_PROFILE.displayName) setStudentName(ACCOUNT_PROFILE.displayName);') > -1);
 
   console.log(results.join('\n'));
   const fails = results.filter(r => r.indexOf('FAIL') > -1);
