@@ -121,11 +121,19 @@ await check('but writes nothing there until their profile names the school', () 
 // all anonymous, so "anonymous, or this school's teacher" covered everyone.
 // A student signed in with Google is neither, and their practice would have
 // been refused on every exercise they finished.
+/* These write under the ACTOR'S OWN uid, and used not to.
+
+   They wrote to students/'ana' while authenticated as somebody else, and
+   passed — because the write rule compared nothing. Six assertions that read
+   like tests of ordinary behaviour were in fact resting on S-04, and they
+   turned red the moment it was closed. That is the shape worth remembering:
+   a fixture written for the old name-keyed model kept working after the
+   rekey, so nothing forced anyone to look at it again. */
 await check('a signed-in student of this school records an attempt', () =>
-  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'ana'),
+  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'),
     { displayName: 'Ana', summary: { done: 1 } })));
 await check('and their attempt history', () =>
-  assertSucceeds(addDoc(collection(signedInStudent, 'schools', SCHOOL, 'students', 'ana', 'attempts'),
+  assertSucceeds(addDoc(collection(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts'),
     { type: 'passage', theme: 'campus', outcome: 0.9, ts: Date.now() })));
 await check('and can read the class list, which is how they pick their name', () =>
   assertSucceeds(getDoc(doc(signedInStudent, 'schools', SCHOOL, 'classroom', 'roster'))));
@@ -138,8 +146,10 @@ await check('an account with no profile at all writes nothing', () =>
   assertFails(setDoc(doc(outsider, 'schools', SCHOOL, 'students', 'ana'), { displayName: 'Ana' })));
 await check('being the administrator does not by itself grant a school', () =>
   assertFails(setDoc(doc(admin, 'schools', OTHER, 'students', 'x'), { displayName: 'X' })));
+// Under his OWN uid, like everybody else. Running the service does not put
+// his practice in somebody else's line.
 await check('but the owner practising as a student of this school can', () =>
-  assertSucceeds(setDoc(doc(owner, 'schools', SCHOOL, 'students', 'rony'),
+  assertSucceeds(setDoc(doc(owner, 'schools', SCHOOL, 'students', 'the_admin'),
     { displayName: 'Rony', summary: { done: 2 } })));
 await check('and is still not a teacher of it', () =>
   assertFails(setDoc(doc(owner, 'schools', SCHOOL, 'classroom', 'current'), { items: [] })));
@@ -317,19 +327,19 @@ await check('and a teacher cannot delete herself out of the roster', () =>
 // the rules refuse anything that carries a year — which is the difference
 // between a nice feature and publishing every student's age.
 await check('a student may share the day and month of their birthday', () =>
-  assertSucceeds(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+  assertSucceeds(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'),
     { displayName: 'Ana', birthday: '04-11' })));
 await check('A FULL DATE IN THE CLASS-VISIBLE FIELD IS REFUSED', () =>
-  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'),
     { displayName: 'Ana', birthday: '2007-04-11' })));
 await check('and so is a year smuggled in beside it', () =>
-  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'),
     { displayName: 'Ana', birthday: '04-11', birthYear: 2007 })));
 await check('and so is anything that is not a date at all', () =>
-  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'),
     { displayName: 'Ana', birthday: 'April 11th' })));
 await check('sharing it stays optional — a record without one is fine', () =>
-  assertSucceeds(setDoc(doc(student, 'schools', SCHOOL, 'students', 'ana'),
+  assertSucceeds(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'),
     { displayName: 'Ana' })));
 await check('the full date is still readable only by the person it belongs to', () =>
   assertFails(getDoc(doc(student2, 'users', 'anon_student'))));
@@ -376,19 +386,19 @@ await check('and not a student\'s', () =>
 // HISTORY IS A RECORD OF WHAT HAPPENED
 //===================================================================
 await check('a student may log their own attempt', () =>
-  assertSucceeds(addDoc(collection(student, 'schools', SCHOOL, 'students', 'ana', 'attempts'),
+  assertSucceeds(addDoc(collection(student, 'schools', SCHOOL, 'students', 'anon_student', 'attempts'),
     { type: 'passage', theme: 'campus', outcome: 0.8, ts: Date.now() })));
 await check('an attempt with an invented field is refused', () =>
-  assertFails(addDoc(collection(student, 'schools', SCHOOL, 'students', 'ana', 'attempts'),
+  assertFails(addDoc(collection(student, 'schools', SCHOOL, 'students', 'anon_student', 'attempts'),
     { type: 'passage', theme: 'campus', outcome: 0.8, ts: Date.now(), grade: 'A' })));
 await check('an outcome outside 0..1 is refused', () =>
-  assertFails(addDoc(collection(student, 'schools', SCHOOL, 'students', 'ana', 'attempts'),
+  assertFails(addDoc(collection(student, 'schools', SCHOOL, 'students', 'anon_student', 'attempts'),
     { type: 'passage', theme: 'campus', outcome: 7, ts: Date.now() })));
 await check('a student record with an invented field is refused', () =>
-  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'zed'),
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'),
     { displayName: 'Zed', band: 30 })));
 await check('a student record with an empty name is refused', () =>
-  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'zed'), { displayName: '' })));
+  assertFails(setDoc(doc(student, 'schools', SCHOOL, 'students', 'anon_student'), { displayName: '' })));
 // Erasure of your own data is a right, not a favour, and the privacy notice
 // promises it. What stays shut is deleting somebody ELSE's record — which is
 // what the old blanket rule was really protecting.
@@ -634,15 +644,30 @@ await check('but a teacher of another school still cannot', () =>
 
    Pinned as it BEHAVES, like the two above. The day it is fixed these four
    flip to assertFails and the report entry is struck. */
-await check('KNOWN HOLE: a classmate can overwrite another student\'s class record', () =>
-  assertSucceeds(setDoc(doc(classmate, 'schools', SCHOOL, 'students', 'signed_in_student'),
+/* S-04 CLOSED 19/08/2026. These three asserted the hole and passed while it
+   was open; they assert the refusal now. A classmate is still a member of
+   this school and still reads the class list — what changed is that being in
+   the room no longer lets them write somebody else's line in it. */
+await check('S-04: a classmate CANNOT overwrite another student\'s class record', () =>
+  assertFails(setDoc(doc(classmate, 'schools', SCHOOL, 'students', 'signed_in_student'),
     { displayName: 'Ana', summary: { attemptsTotal: 0, weakType: 'passage', weakAvg: 3 } })));
-await check('KNOWN HOLE: and add attempts to a history that is not theirs', () =>
-  assertSucceeds(addDoc(collection(classmate, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts'),
+await check('S-04: nor add attempts to a history that is not theirs', () =>
+  assertFails(addDoc(collection(classmate, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts'),
     { type: 'passage', theme: 'campus', outcome: 0, ts: 1 })));
-await check('KNOWN HOLE: and file a record under a student id that is nobody', () =>
-  assertSucceeds(setDoc(doc(classmate, 'schools', SCHOOL, 'students', 'nobody-at-all-0001'),
+await check('S-04: nor file a record under a student id that is nobody', () =>
+  assertFails(setDoc(doc(classmate, 'schools', SCHOOL, 'students', 'nobody-at-all-0001'),
     { displayName: 'Phantom' })));
+/* And the half that has to keep working, or the fix is a different outage:
+   the student's own record, and their own history. */
+await check('S-04: while a student still writes their OWN record', () =>
+  assertSucceeds(setDoc(doc(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'Ana', summary: { attemptsTotal: 3, weakType: 'passage', weakAvg: 40 } })));
+await check('S-04: and adds to their OWN history', () =>
+  assertSucceeds(addDoc(collection(signedInStudent, 'schools', SCHOOL, 'students', 'signed_in_student', 'attempts'),
+    { type: 'passage', theme: 'campus', outcome: 1, ts: 2 })));
+await check('S-04: and the teacher of this school can still correct a record', () =>
+  assertSucceeds(setDoc(doc(alpha, 'schools', SCHOOL, 'students', 'signed_in_student'),
+    { displayName: 'Ana', summary: { attemptsTotal: 3, weakType: 'passage', weakAvg: 40 } })));
 // What still holds, and is the reason this is HIGH and not CRITICAL: nothing
 // here reaches the one collection that decides what a class sees.
 await check('but none of it lets them approve anything', () =>

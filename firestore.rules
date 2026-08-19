@@ -431,7 +431,29 @@ service cloud.firestore {
         // which is a smaller claim on them than the old rule made and the
         // honest meaning of "nothing is saved about you".
         allow read: if isMemberOf(schoolId) || isTeacherOf(schoolId);
-        allow create, update: if (isMemberOf(schoolId) || isTeacherOf(schoolId))
+        /* S-04, closed. A MEMBER MAY WRITE ONLY THEIR OWN RECORD.
+
+           This said "any member of this school, or its teacher", and the
+           comment two screens up already explained that records were rekeyed
+           by uid precisely so a rule could say "only Ana". The rule that
+           would say it was written on the delete path and never on the write
+           path.
+
+           What that allowed, verified in the emulator rather than reasoned
+           about: any student with an account here could overwrite any
+           classmate's summary — the five numbers the teacher's panel presents
+           to her as what that person did. Forging "practised nothing" or
+           "practised perfectly" under somebody else's name is the worst thing
+           this app could carry, because the screen tells her it is evidence.
+           It also let them rename a classmate in front of the class, and file
+           records under ids belonging to nobody.
+
+           The teacher keeps the write. She is the authority in the room, and
+           nothing in the app uses it today — every client write goes to
+           auth.currentUser.uid — but a rule that forbids the person who is
+           allowed to correct things is a rule that will be worked around. */
+        allow create, update: if ((isMemberOf(schoolId) && request.auth.uid == studentId)
+                                  || isTeacherOf(schoolId))
           && studentId.size() <= 60
           && validStudent();
         /* Their own, and nobody else's — including their teacher's.
@@ -496,7 +518,11 @@ service cloud.firestore {
           }
 
           allow read: if isMemberOf(schoolId) || isTeacherOf(schoolId);
-          allow create: if (isMemberOf(schoolId) || isTeacherOf(schoolId)) && validAttempt();
+          // Same hole, same close: a history is only yours to add to. Without
+          // the uid comparison a classmate could pad — or poison — the record
+          // the teacher reads as what somebody actually practised.
+          allow create: if ((isMemberOf(schoolId) && request.auth.uid == studentId)
+                            || isTeacherOf(schoolId)) && validAttempt();
           // Editing one would let a student rewrite the history their
           // teacher reads, so that stays shut. Deleting their own is the
           // erasure right again: a profile removed while its attempts stayed
