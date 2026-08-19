@@ -133,6 +133,45 @@ const testScript = `
     assert(name + ' offers at least two items per theme', thin.length === 0);
   });
 
+
+//===================================================================
+// EVERY SPOKEN LINE HAS A CLIP, IN EVERY BANK THAT SPEAKS
+//===================================================================
+/* Two banks were checked for this and three were not. A missing clip is not
+   an error anybody sees: audioUrlFor() hashes the sentence, the file 404s,
+   and the student silently drops to their own device's voice — which is the
+   exact inconsistency the pre-rendering exists to remove. One student hears
+   Piper, the one beside them hears their phone, and they are being compared.
+
+   choose-response is the worst place for it to happen and was the one not
+   covered: 84 items, one short line each, and the type a class meets most.
+
+   Substring work only, no patterns — this whole file is a template literal. */
+if(typeof AUDIO_FILES !== 'undefined' && AUDIO_FILES.size){
+  const falta = (rotulo, textos) => {
+    const perdidos = [];
+    textos.forEach(t => {
+      if(!t) return;
+      const f = audioUrlFor(t).split('/').pop();
+      if(!AUDIO_FILES.has(f)) perdidos.push(f);
+    });
+    assert(rotulo + ': every spoken line has its clip on disk', perdidos.length === 0,
+      perdidos.slice(0, 3).join(' '));
+  };
+  const todos = b => { const out = []; for(const th of ALL_THEMES) (b[th] || []).forEach(x => out.push(x)); return out; };
+  falta('Listen and Choose a Response', todos(CHOOSE_RESPONSE_BANK).map(x => x.prompt));
+  falta('Listen to an Announcement', todos(ANNOUNCEMENT_BANK).map(x => x.text));
+  /* .items, and it took a wrong guess to find that out. The first version
+     read .lines and .sentences, found neither, and asserted nothing at all —
+     silently, and passing. So the count is asserted before the contents:
+     an empty list here means the shape moved, not that everything is fine. */
+  const frases = [];
+  todos(LISTEN_SETS).forEach(setItem => (setItem.items || []).forEach(l =>
+    frases.push(typeof l === 'string' ? l : (l && l.text))));
+  assert('Listen and Repeat: the sentences were actually found', frases.length > 0, frases.length);
+  falta('Listen and Repeat', frases);
+}
+
   console.log(results.join('\\n'));
   const fails = results.filter(r => r.includes('FAIL'));
   console.log(fails.length ? ('FAILURES: ' + fails.length + ' / ' + results.length)
@@ -142,6 +181,10 @@ const testScript = `
 `;
 
 const sandbox = {
+  // The clips on disk, so the assertions below can ask whether the file the
+  // app will request actually exists. Same shape the four per-type files use.
+  AUDIO_FILES: new Set(require('fs').existsSync(process.argv[3] || 'audio')
+    ? require('fs').readdirSync(process.argv[3] || 'audio') : []),
   btoa: s => Buffer.from(s, 'binary').toString('base64'),
   atob: s => Buffer.from(s, 'base64').toString('binary'),
   document: { getElementById:()=>el(), createElement:()=>el(), querySelector:()=>el(),

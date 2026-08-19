@@ -19,8 +19,30 @@
 
 # The app itself must never be stale. A student scanning a QR code has to
 # get the exercise the teacher approved seconds ago, not a cached copy.
-# no-cache does not mean "do not store" — it means "always revalidate",
-# so an unchanged page still comes back as a cheap 304.
+#
+# This used to add: "no-cache does not mean 'do not store' — it means 'always
+# revalidate', so an unchanged page still comes back as a cheap 304."
+#
+# MEASURED 19/08/2026, AND IT IS NOT TRUE HERE. Revalidation needs a
+# validator, and Cloudflare Pages sends none for the HTML: no ETag, no
+# Last-Modified, cf-cache-status DYNAMIC. Every other file gets one —
+# /sw.js carries no-cache AND an ETag — so it is not this policy suppressing
+# it. The HTML is answered by the router that also serves index.html for any
+# unknown path, and that path emits no validator.
+#
+# So every navigation re-downloads the whole page: 348 KB compressed. In a
+# class of thirteen opening it four times each, roughly 18 MB of school wifi
+# spent on a file that did not change. The service worker cannot rescue it
+# either — it fetches the shell with cache:'no-store', which forbids the HTTP
+# cache in both directions.
+#
+# Not changed here, because the two ways out are both decisions rather than
+# fixes: a Pages Function that adds an ETag, or letting the service worker
+# serve the shell from its own cache while it revalidates. The second is
+# safer than it sounds — index.html carries the APP, and the exercises come
+# from Firestore at runtime, so a one-load-old shell is not a one-day-old
+# exercise — but it does mean a code fix pushed mid-lesson reaches a student
+# on their second load rather than their first. That is the owner's call.
 /
   Cache-Control: no-cache
 /index.html
