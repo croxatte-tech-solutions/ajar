@@ -8,3 +8,7 @@
 .claude/settings.local.json
 .claude/worktrees/
 .claude/
+
+# saída do emulador — ruído por execução, nunca conteúdo
+firestore-debug.log
+firebase-debug.log
