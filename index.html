@@ -94,7 +94,10 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
    the buttons and always last in the row. */
 .whoami{ font-size:.78rem; color:var(--text-dim); font-weight:600;
          display:inline-flex; align-items:center; gap:.4rem; white-space:nowrap; }
-.brand{ display:flex; align-items:center; gap:.6rem; }
+/* flex-shrink:0 so the nav takes width from its own gaps rather than from
+   the wordmark. See also the phone rule further down, which used to hide
+   that wordmark outright. */
+.brand{ display:flex; align-items:center; gap:.6rem; flex-shrink:0; }
 /* 34px -> 44px: 30% up. Went to 15% first and it was still small on an
    iPad in landscape, which is how this class actually uses it. Measured
    from the original 34, not compounded on the 39. */
@@ -599,8 +602,22 @@ body{ font-family:var(--font-body); }
 }
 .brand{ min-width:0; }
 .brand-text h1{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-/* Telefone estreito: a marca sozinha basta. Some o texto, não a barra. */
-@media (max-width:420px){ .brand-text{ display:none; } }
+/* Telefone estreito: o texto da marca FICA.
+   
+   Esta regra escondia "Ajar" abaixo de 420px, e fazia sentido quando a barra
+   carregava também o switcher Teacher/Student: espaço era o que faltava. O
+   switcher saiu, o espaço sobrou, e o que sobrou foi um ícone sem rótulo —
+   que agora é a única saída de volta para a porta da frente.
+   
+   Um logo mudo como link de home é convenção, e mesmo assim o dono deste app
+   precisou deduzir que ele era clicável. Uma convenção que a pessoa que
+   escreveu o produto não enxerga não está sendo lida por ninguém. */
+/* Pílulas menores no telefone. Cada uma ocupava ~180px de uma faixa de 250,
+   então caía uma por linha e o cabeçalho virava uma coluna. Isto não esconde
+   nada — a decisão sobre o que merece estar aqui continua aberta. */
+@media (max-width:420px){
+  .guide-btn{ padding:.35rem .6rem; font-size:.72rem; gap:.25rem; }
+}
 .brand-mark{ width:34px; height:34px; }          /* 44 -> 34: barra é chrome, não conteúdo */
 .brand-text h1{ font-size:1rem; }
 .brand-text span{ display:none; }                 /* "Working prototype" some da barra */
@@ -862,13 +879,19 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
            because the moment a person most needs to reach us is the moment
            they cannot get in — a support channel behind a login is shut
            exactly when it is needed. -->
+      <!-- The Teacher/Student switcher used to live here and does not any
+           more. The front door already asks that question with two large
+           buttons, and it asks it of somebody who knows the answer: a student
+           knows she is a student. Carrying the question into every screen
+           afterwards spent two controls on a decision nobody was revisiting,
+           and put a "Teacher" tab in front of thirteen students who have no
+           business behind it — it opened a panel that then told them so.
+
+           The way across still exists for the one person who needs it: the
+           wordmark goes back to the front door, and both doors are there. -->
       <span id="post-login-nav" style="display:contents">
         <button class="guide-btn" onclick="showInsights()">📈 My patterns</button>
         <button class="guide-btn" onclick="showFeedback()">💬 Feedback</button>
-        <div class="switcher">
-          <button id="btn-teacher" class="active" onclick="setView('teacher')">👩‍🏫 Teacher</button>
-          <button id="btn-student" onclick="setView('student')">🎓 Student</button>
-        </div>
       </span>
       <a id="pre-login-contact" class="guide-btn" style="display:none;text-decoration:none"
          href="#" onclick="contactUs();return false">✉️ Contact</a>
@@ -998,7 +1021,13 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
 
     <div id="teacher-locked-note" class="panel" style="display:none">
       <h2>Sign in to open your class</h2>
-      <p class="small-note" style="margin-top:0">This panel holds your class list and each student's practice history, so it opens once you sign in. Students never sign in &mdash; they tap their name from a link you share.</p>
+      <!-- "Students never sign in — they tap their name from a link you share"
+           was true for most of this app's life and stopped being true the day
+           the wall went up. It survived because nothing checks a sentence
+           against the behaviour it describes, and because the person it
+           misinforms — a teacher setting up on her own — is not the person
+           who reads this file. -->
+      <p class="small-note" style="margin-top:0">This panel holds your class list and each student's practice history, so it opens once you sign in. Your students sign in too, with their own accounts &mdash; that is what lets their work reach this page with their name on it.</p>
     </div>
     <div id="sec-account"><div id="teacher-signin"></div></div>
     <div id="sec-share"><div id="share-box"></div></div>
@@ -12845,8 +12874,10 @@ function setView(v){
   document.getElementById('view-teacher').classList.toggle('active', v==='teacher');
   document.getElementById('view-student').classList.toggle('active', v==='student');
   document.getElementById('view-account').classList.toggle('active', v==='account');
-  document.getElementById('btn-teacher').classList.toggle('active', v==='teacher');
-  document.getElementById('btn-student').classList.toggle('active', v==='student');
+  /* The two lines that lit the Teacher/Student switcher are gone with it.
+     Kept as null-safe lookups first, which was worse than either option: an
+     id that is looked up and never exists is a promise the markup no longer
+     keeps, and check_hygiene is right to call it. */
   if(v==='welcome'){ renderWelcome(); return; }
   if(v==='student'){ renderStudent(); renderInstallOffer(); }
   if(v==='account'){ renderAccount(); refreshAdmin(); renderWhoAmI(); return; }

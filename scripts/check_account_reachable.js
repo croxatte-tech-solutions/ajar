@@ -223,16 +223,28 @@ function whoAmI(){ return el('who-am-i').innerHTML || ''; }
     whoAmI().slice(0,220));
 
   //===================================================================
-  // IT IS NOT A THIRD MODE
+  // THERE IS NO MODE SWITCHER, AND THE WAY ACROSS SURVIVED IT
   //===================================================================
-  // Teacher and Student are modes — the same person moves between them. An
-  // Account button sitting in that switcher would read as a third mode
-  // rather than as identity, which is why it lives in the masthead instead.
-  const sw = html.slice(html.indexOf('<div class="switcher">'),
-                        html.indexOf('</div>', html.indexOf('<div class="switcher">')));
-  assert('the mode switcher still holds exactly the two modes',
-    (sw.match(/<button/g) || []).length === 2, sw);
-  assert('and the account entry is not one of them', sw.indexOf('account') === -1);
+  /* This used to assert that the switcher held exactly two buttons and no
+     third. It held that shape right up until the switcher was removed, which
+     is the way this kind of assertion fails: it guards the details of a thing
+     and says nothing about whether the thing should be there.
+
+     It should not. The front door asks "teacher or student" with two large
+     buttons, and it asks somebody who knows the answer. Repeating the
+     question in the header of every screen afterwards put a Teacher tab in
+     front of thirteen students, which opened a panel whose only content was
+     a notice telling them they could not use it.
+
+     What has to survive is the crossing itself, for the one person who needs
+     it — a teacher checking what her class sees. It survives as the wordmark
+     going home, where both doors are. That is asserted just above, and this
+     is what stops the switcher coming back by habit. */
+  assert('the header no longer asks a question the front door already asked',
+    html.indexOf('<div class="switcher">') === -1);
+  assert('AND the crossing still exists, through the doors that asked it first',
+    html.indexOf("onclick=\"enterAs('teacher')\"") > -1
+    && html.indexOf("onclick=\"enterAs('student')\"") > -1);
 
   //===================================================================
   // THE VIEW IS WIRED, NOT JUST REACHABLE
