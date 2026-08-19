@@ -14,8 +14,8 @@
 //
 // Bumping the version means replacing both lines. The check prints the exact
 // replacement when it fails — do not work the hash out by hand.
-const CACHE_NAME = 'ajar-shell-v5';
-// @shell-stamp cache=ajar-shell-v5 bytes=1140583 sha256=1a020c5cb5e54187489771e2544e699e6323395e3adf398b6cd664ca6187e109
+const CACHE_NAME = 'ajar-shell-v6';
+// @shell-stamp cache=ajar-shell-v6 bytes=1150462 sha256=a9bd36af7e032be75a97a4c26675b0df5a366926c9284815df02b862e041976f
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have

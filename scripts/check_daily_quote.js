@@ -80,7 +80,9 @@ function assert(n, c, detail){
 //=====================================================================
 const MAX_QUOTE_CHARS = 120;
 const MAX_DEF_WORDS = 12;
-const WORDS_PER_DAY = 3;
+// Six, in two rows of three. Three was a thin day for somebody who opens
+// this once and closes it.
+const WORDS_PER_DAY = 6;
 const ROTATION_WINDOW_DAYS = 270;
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   // February leap-length: 29 Feb has a slot
 // Anything in these ranges is a pictograph. The em dash (U+2014) and the
@@ -248,6 +250,29 @@ for(let i = 0; i < corpus.length; i++){
       repeats.push(w + ' on ' + corpus[i].key + ' and again ' + gap + ' days later on ' + corpus[j].key));
   }
 }
+/* THE SIX CHANGE EVERY DAY, AND THAT IS ASSERTED RATHER THAN ASSUMED.
+
+   The band is keyed by day of month out of daily/MM.json, so rotation is
+   structural — but "structural" is what people say right before a file gets
+   a duplicated day pasted into it. A student who opens this every morning
+   and meets the same six words has been given a decoration, not a lesson.
+
+   Consecutive days, not just the 270-day window above: that one would let
+   two neighbours share five of six and still pass. */
+{
+  const seguidos = [];
+  for(let i = 1; i < corpus.length; i++){
+    const ontem = new Set((corpus[i-1].entry.words || []).map(w => String(w.word).toLowerCase()));
+    const hoje  = (corpus[i].entry.words || []).map(w => String(w.word).toLowerCase());
+    const iguais = hoje.filter(w => ontem.has(w));
+    if(iguais.length) seguidos.push(corpus[i].key + ' repeats ' + iguais.join(', '));
+  }
+  assert('the six words are different from yesterday\'s six, every single day',
+    seguidos.length === 0, seguidos.slice(0, 3));
+  assert('and every day in the corpus really carries six of them',
+    corpus.every(c => (c.entry.words || []).length === WORDS_PER_DAY), corpus.length + ' days');
+}
+
 assert('no word comes round again inside the ' + ROTATION_WINDOW_DAYS
   + ' days a student is here', repeats.length === 0, repeats.slice(0, 6).join(' | '));
 assert('and the corpus really was walked, so this is not passing on an empty list',
@@ -262,7 +287,9 @@ assert('the date is the first line of the band',
 assert('the sentence comes before the words',
   at('id="daily-quote"') > -1 && at('id="daily-quote"') < at('id="daily-words"'));
 assert('and the batch review promise sits under them, not over them',
-  at('id="daily-band"') > -1 && at('id="daily-band"') < at('class="padrao-c"'));
+  // The teacher view is what follows the band now: the batch-review notice
+  // moved inside the review panel, where somebody can act on it.
+  at('id="daily-band"') > -1 && at('id="daily-band"') < at('<!-- TEACHER VIEW -->'));
 assert('the explainer has moved to the foot of the page',
   at('class="tech-note"') > at('id="view-student"'));
 assert('and it is still a closed box somebody chooses to open',
@@ -286,7 +313,7 @@ assert('the explainer no longer calls the audio the browser\'s own Text-to-Speec
 // The band is hidden on the two screens that ask a single question, the same
 // way the other two notices are.
 {
-  const m = html.match(/\['\.padrao-c', '\.tech-note', '#daily-band'\]/);
+  const m = html.match(/\['\.tech-note', '#daily-band'\]/);
   assert('the band is hidden on the cover and on the sign-in screen', !!m);
 }
 
@@ -317,7 +344,7 @@ assert('the sentence is a labelled section too',
 
 // No emoji anywhere in the band's own markup.
 {
-  const band = html.slice(at('<div class="daily" id="daily-band">'), at('<div class="padrao-c">'));
+  const band = html.slice(at('<div class="daily" id="daily-band">'), at('<!-- TEACHER VIEW -->'));
   assert('the band\'s markup carries no emoji', !EMOJI.test(band));
 }
 
@@ -373,7 +400,9 @@ const word = (w, n) => ({ word: w + n, pos: 'noun', def: 'a made up word for a c
 const day = (label) => ({
   quote: { text: 'CALENDAR ' + label, author: 'A', work: 'B', translated: false,
            publicDomain: 'published in 1800' },
-  words: [word(label, 1), word(label, 2), word(label, 3)]
+  // Six, because dailyEntryIn refuses a short day — a fixture that is one
+  // word behind the app is a fixture that tests nothing.
+  words: [word(label,1), word(label,2), word(label,3), word(label,4), word(label,5), word(label,6)]
 });
 net.files['daily/02.json'] = fabricated(2, { '28': day('FEB28'), '29': day('FEB29') });
 net.files['daily/03.json'] = fabricated(3, { '1': day('MAR01') });
@@ -416,14 +445,14 @@ const testScript = `
     quoteBox.innerHTML.indexOf('Seneca') > -1 && quoteBox.innerHTML.indexOf('Letter II') > -1);
   assert('and the translator named, because the English is somebody\\'s work too',
     quoteBox.innerHTML.indexOf('Gummere') > -1);
-  assert('the box holds exactly three words',
-    (wordBox.innerHTML.match(/<li class="daily-word">/g) || []).length === 3, wordBox.innerHTML);
+  assert('the box holds exactly six words',
+    (wordBox.innerHTML.match(/<li class="daily-word">/g) || []).length === DAILY_WORDS_PER_DAY, wordBox.innerHTML);
   assert('each with its part of speech',
-    (wordBox.innerHTML.match(/class="pos"/g) || []).length === 3);
+    (wordBox.innerHTML.match(/class="pos"/g) || []).length === DAILY_WORDS_PER_DAY);
   assert('a definition',
-    (wordBox.innerHTML.match(/class="def"/g) || []).length === 3);
+    (wordBox.innerHTML.match(/class="def"/g) || []).length === DAILY_WORDS_PER_DAY);
   assert('and something to compare it to',
-    (wordBox.innerHTML.match(/class="syn"/g) || []).length === 3);
+    (wordBox.innerHTML.match(/class="syn"/g) || []).length === DAILY_WORDS_PER_DAY);
   assert('and no translation into anybody\\'s first language',
     wordBox.innerHTML.indexOf('Similar:') > -1);
 
@@ -514,7 +543,10 @@ const testScript = `
     words: [
       { word: '<img src=x>', pos: 'noun & verb', def: "it's a \\"definition\\"", syn: ['<b>'], src: 'awl' },
       { word: 'two', pos: 'noun', def: 'a number', syn: ['pair'], src: 'awl' },
-      { word: 'three', pos: 'noun', def: 'another number', syn: ['trio'], src: 'awl' }
+      { word: 'three', pos: 'noun', def: 'another number', syn: ['trio'], src: 'awl' },
+      { word: 'four', pos: 'noun', def: 'a number', syn: ['quartet'], src: 'awl' },
+      { word: 'five', pos: 'noun', def: 'a number', syn: ['quintet'], src: 'awl' },
+      { word: 'six', pos: 'noun', def: 'a number', syn: ['sextet'], src: 'awl' }
     ] } } });
   await renderDailyBand(at('2026-07-04T18:00:00Z'));
   assert('a sentence with a tag in it never opens a tag on the page',
@@ -567,7 +599,7 @@ const testScript = `
     quote: { text: 'A short month', author: 'A', work: 'W', translated: false, publicDomain: '1800' },
     words: [{ word: 'one', pos: 'noun', def: 'a number', syn: ['single'], src: 'awl' }] } } });
   await renderDailyBand(at('2026-06-01T18:00:00Z'));
-  assert('a day with fewer than three words is refused, not shown short',
+  assert('a day with fewer than six words is refused, not shown short',
     box.style.display === 'none' && wordBox.innerHTML === '', wordBox.innerHTML);
   await renderDailyBand(at('2026-06-20T18:00:00Z'));
   assert('and a month file that stops before the day asked for shows nothing',
@@ -611,7 +643,10 @@ const testScript = `
     words: [
       { word: 'alpha', pos: 'noun', def: 'a letter', syn: ['first'], src: 'awl' },
       { word: 'beta', pos: 'noun', def: 'another letter', syn: ['second'], src: 'awl' },
-      { word: 'gamma', pos: 'noun', def: 'a third letter', syn: ['third'], src: 'awl' }
+      { word: 'gamma', pos: 'noun', def: 'a third letter', syn: ['third'], src: 'awl' },
+      { word: 'delta', pos: 'noun', def: 'a fourth letter', syn: ['fourth'], src: 'awl' },
+      { word: 'epsilon', pos: 'noun', def: 'a fifth letter', syn: ['fifth'], src: 'awl' },
+      { word: 'zeta', pos: 'noun', def: 'a sixth letter', syn: ['sixth'], src: 'awl' }
     ] } } });
   await renderDailyBand(at('2026-11-05T18:20:00Z'));
   assert('once the ten-minute window is up it tries again, so returning wifi is not ignored',

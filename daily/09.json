@@ -11,9 +11,66 @@
         "publicDomain": "Henry David Thoreau published Walden in 1854; the book is in the public domain in the United States."
       },
       "words": [
-        { "word": "prejudice", "pos": "noun", "def": "an unfair opinion formed before you know the facts", "syn": ["bias", "preconception"], "src": "quote" },
-        { "word": "subsequent", "pos": "adjective", "def": "coming after something else in time", "syn": ["later", "following"], "src": "awl" },
-        { "word": "sufficient", "pos": "adjective", "def": "as much as is needed", "syn": ["enough", "ample"], "src": "awl" }
+        {
+          "word": "prejudice",
+          "pos": "noun",
+          "def": "an unfair opinion formed before you know the facts",
+          "syn": [
+            "bias",
+            "preconception"
+          ],
+          "src": "quote"
+        },
+        {
+          "word": "subsequent",
+          "pos": "adjective",
+          "def": "coming after something else in time",
+          "syn": [
+            "later",
+            "following"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "sufficient",
+          "pos": "adjective",
+          "def": "as much as is needed",
+          "syn": [
+            "enough",
+            "ample"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "manipulate",
+          "pos": "verb",
+          "def": "to control or change something skillfully or unfairly",
+          "syn": [
+            "control",
+            "handle"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "mediate",
+          "pos": "verb",
+          "def": "to help two sides reach an agreement",
+          "syn": [
+            "arbitrate",
+            "reconcile"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "notion",
+          "pos": "noun",
+          "def": "an idea or belief about something",
+          "syn": [
+            "idea",
+            "belief"
+          ],
+          "src": "awl"
+        }
       ]
     },
     "2": {
@@ -25,9 +82,65 @@
         "publicDomain": "These lines were first published in Poems by Emily Dickinson in 1890, four years after her death, and are in the public domain in the United States."
       },
       "words": [
-        { "word": "ajar", "pos": "adjective", "def": "open by a small amount, not shut", "syn": ["half-open"], "src": "quote" },
-        { "word": "tentative", "pos": "adjective", "def": "not final, and open to change", "syn": ["provisional", "uncertain"], "src": "awl" },
-        { "word": "undertake", "pos": "verb", "def": "to begin a task and take responsibility for it", "syn": ["begin", "tackle"], "src": "awl" }
+        {
+          "word": "ajar",
+          "pos": "adjective",
+          "def": "open by a small amount, not shut",
+          "syn": [
+            "half-open"
+          ],
+          "src": "quote"
+        },
+        {
+          "word": "tentative",
+          "pos": "adjective",
+          "def": "not final, and open to change",
+          "syn": [
+            "provisional",
+            "uncertain"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "undertake",
+          "pos": "verb",
+          "def": "to begin a task and take responsibility for it",
+          "syn": [
+            "begin",
+            "tackle"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "obtain",
+          "pos": "verb",
+          "def": "to get something, often with some effort",
+          "syn": [
+            "acquire",
+            "secure"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "offset",
+          "pos": "verb",
+          "def": "to balance one effect against an opposite one",
+          "syn": [
+            "counteract",
+            "cancel"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "ongoing",
+          "pos": "adjective",
+          "def": "still happening and not yet finished",
+          "syn": [
+            "continuing",
+            "current"
+          ],
+          "src": "awl"
+        }
       ]
     },
     "3": {
@@ -39,9 +152,65 @@
         "publicDomain": "These lines were first published in Poems by Emily Dickinson in 1890, four years after her death, and are in the public domain in the United States."
       },
       "words": [
-        { "word": "perch", "pos": "verb", "def": "to sit or rest on a high narrow place", "syn": ["rest", "roost"], "src": "quote" },
-        { "word": "feather", "pos": "noun", "def": "one of the light soft parts that cover a bird", "syn": ["plume"], "src": "quote" },
-        { "word": "valid", "pos": "adjective", "def": "based on good reasons and therefore acceptable", "syn": ["sound", "solid"], "src": "awl" }
+        {
+          "word": "perch",
+          "pos": "verb",
+          "def": "to sit or rest on a high narrow place",
+          "syn": [
+            "rest",
+            "roost"
+          ],
+          "src": "quote"
+        },
+        {
+          "word": "feather",
+          "pos": "noun",
+          "def": "one of the light soft parts that cover a bird",
+          "syn": [
+            "plume"
+          ],
+          "src": "quote"
+        },
+        {
+          "word": "valid",
+          "pos": "adjective",
+          "def": "based on good reasons and therefore acceptable",
+          "syn": [
+            "sound",
+            "solid"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "paradigm",
+          "pos": "noun",
+          "def": "a typical pattern or model of something",
+          "syn": [
+            "model",
+            "pattern"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "phenomenon",
+          "pos": "noun",
+          "def": "something that happens and can be observed",
+          "syn": [
+            "occurrence",
+            "event"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "precede",
+          "pos": "verb",
+          "def": "to come before something else in time",
+          "syn": [
+            "predate",
+            "head"
+          ],
+          "src": "awl"
+        }
       ]
     },
     "4": {
@@ -53,9 +222,66 @@
         "publicDomain": "Frederick Douglass delivered this speech in 1857; the text is in the public domain in the United States."
       },
       "words": [
-        { "word": "concede", "pos": "verb", "def": "to give up something, often after refusing at first", "syn": ["yield", "surrender"], "src": "quote" },
-        { "word": "demand", "pos": "noun", "def": "a firm request that is hard to refuse", "syn": ["claim", "request"], "src": "quote" },
-        { "word": "sustain", "pos": "verb", "def": "to keep something going over a long time", "syn": ["maintain", "support"], "src": "awl" }
+        {
+          "word": "concede",
+          "pos": "verb",
+          "def": "to give up something, often after refusing at first",
+          "syn": [
+            "yield",
+            "surrender"
+          ],
+          "src": "quote"
+        },
+        {
+          "word": "demand",
+          "pos": "noun",
+          "def": "a firm request that is hard to refuse",
+          "syn": [
+            "claim",
+            "request"
+          ],
+          "src": "quote"
+        },
+        {
+          "word": "sustain",
+          "pos": "verb",
+          "def": "to keep something going over a long time",
+          "syn": [
+            "maintain",
+            "support"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "predominant",
+          "pos": "adjective",
+          "def": "the most common or the most powerful",
+          "syn": [
+            "main",
+            "chief"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "presume",
+          "pos": "verb",
+          "def": "to believe something is true without proof",
+          "syn": [
+            "assume",
+            "suppose"
+          ],
+          "src": "awl"
+        },
+        {
+          "word": "retain",
+          "pos": "verb",
+          "def": "to keep something rather than lose it",
+          "syn": [
+            "hold",
+            "preserve"
+          ],
+          "src": "awl"
+        }
       ]
     }
   }

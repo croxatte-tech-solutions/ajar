@@ -147,7 +147,16 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 /* auto-fit with a 160px floor: three across where there is room, one under
    the other on a narrow phone, and never a fixed three-column grid that
    squeezes "misunderstood" into a column two characters wide. */
+/* auto-fit stays, and it is what makes the box collapse to one column on a
+   320px phone instead of drawing narrow columns that push the page sideways.
+   Pinning it to three outright was tried and check_daily_quote refused it,
+   correctly.
+
+   The cap below only applies once three columns genuinely fit, so six reads
+   as two rows of the same shape rather than as four-and-two, which looks
+   like a mistake rather than a layout. */
 .daily-word-list{ list-style:none; margin:0; padding:0; display:grid; gap:.5rem; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+@media (min-width:540px){ .daily-word-list{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
 .daily-word{ min-width:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); padding:.5rem .65rem; }
 .daily-word dfn{ font-style:normal; font-weight:700; color:var(--accent); overflow-wrap:anywhere; }
 .daily-word .pos{ margin-left:.3rem; font-size:.68rem; font-style:italic; color:var(--text-dim); }
@@ -980,7 +989,7 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     <p class="daily-clock" id="daily-clock"></p>
     <div class="daily-today" id="daily-today" style="display:none">
       <!-- Two labelled sections rather than four loose paragraphs: a screen
-           reader announces "Words of the day, list, 3 items" and the box is
+           reader announces "Words of the day, list, 6 items" and the box is
            one thing with a meaning, which is what it looks like on screen. -->
       <section aria-labelledby="daily-quote-h">
         <h2 class="daily-eyebrow" id="daily-quote-h">Sentence of the day</h2>
@@ -993,10 +1002,21 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     </div>
   </div>
 
-  <div class="padrao-c">
-    <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span>Batch review: nothing reaches a student until the teacher approves that week's set.</span>
-  </div>
+  <!-- The batch-review notice used to sit here, above everything, on every
+       screen but the front door. It has been in this file since the first
+       commit, which is the best argument against it: nothing chose it.
+
+       It describes how the app works internally, to an audience that cannot
+       act on it. A student has nothing to do with the approval model; the
+       teacher lives inside it. It also said "that week's set" while the
+       batch has been per-session for a long time. And being the first
+       coloured thing on the page, it took the weight that belongs to the
+       day's sentence.
+
+       The rule it names is Padrão C and it outranks everything — but what
+       enforces it is the data model and the database, never a banner. So the
+       sentence moved to the one place somebody can act on it: directly above
+       the panel where she approves. -->
 
   <!-- TEACHER VIEW -->
   <div id="view-welcome" class="view">
@@ -1110,7 +1130,13 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     </div>
     <div id="sec-account"><div id="teacher-signin"></div></div>
     <div id="sec-share"><div id="share-box"></div></div>
-    <div id="sec-review"><div id="batch" class="batch-grid"></div></div>
+    <div id="sec-review">
+      <div class="padrao-c">
+        <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Nothing below reaches a student until you approve it.</span>
+      </div>
+      <div id="batch" class="batch-grid"></div>
+    </div>
     <div id="sec-trial"><div id="review-panel"></div></div>
     <div id="teacher-empty" class="empty state state-empty">
       <svg class="state-mascot" viewBox="0 0 96 96" aria-hidden="true" style="color:var(--accent)">
@@ -1155,12 +1181,17 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
       <button class="btn" onclick="renderSelfPractice()">Practice on your own</button>
     </div>
     <div id="scenario-list" class="scenario-list"></div>
-    <!-- Sits above the exercise, not inside it: every renderer overwrites
-         practice-wrap, and a warning that vanishes on the next question is
-         worse than none. -->
-    <div id="install-offer"></div>
+    <!-- The sync warning sits above the exercise, not inside it: every
+         renderer overwrites practice-wrap, and a warning that vanishes on the
+         next question is worse than none. -->
     <div id="sync-warning"></div>
     <div id="practice-wrap" tabindex="-1"></div>
+    <!-- The install offer used to sit up here beside that warning, and it is
+         not the same kind of thing. A warning is about the work in front of
+         you; this is housekeeping about the device, and it was the first
+         thing a student read on the screen they came to practice on. It is
+         last now, where somebody who has finished can find it. -->
+    <div id="install-offer"></div>
   </div>
 
   <!-- HOW THE EXERCISES ARE MADE — at the foot of the page, where an
@@ -8878,7 +8909,11 @@ function startSchoolClock(){
    gives when a clip is missing, for the same reason — a header that
    half-draws is worse than a header that is not there. */
 const DAILY_DIR = 'daily/';
-const DAILY_WORDS_PER_DAY = 3;
+/* Six, in two rows of three. It was three, and three is a nice box and a
+   thin day: a student who opens this once a day gets six chances to meet a
+   word instead of three, at no cost to anybody's attention — the second row
+   is the same shape as the first. */
+const DAILY_WORDS_PER_DAY = 6;
 // A month that failed to load is remembered as absent, so a school network
 // that blocks the request is not asked again every twenty seconds — but only
 // for ten minutes, so wifi that comes back is not ignored until a reload.
@@ -8914,8 +8949,8 @@ async function loadDailyMonth(m, now){
   return data;
 }
 
-// What counts as a day worth drawing. A file with two words on a day is a
-// corrupt file, not a smaller box — the promise is exactly three.
+// What counts as a day worth drawing. A file with five words on a day is a
+// corrupt file, not a smaller box — the promise is exactly six.
 function dailyEntryIn(month, day){
   const e = month && month.days ? month.days[String(day)] : null;
   if(!e || !e.quote || typeof e.quote.text !== 'string' || !e.quote.text.trim()) return null;
@@ -13849,7 +13884,7 @@ function setView(v){
      sign-in buttons are three things in the way of one decision. On the cover
      it would also put the week in front of somebody who has not said who they
      are, which is the rule #welcome-clock exists to keep. */
-  ['.padrao-c', '.tech-note', '#daily-band'].forEach(sel => {
+  ['.tech-note', '#daily-band'].forEach(sel => {
     document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
   });
   /* And it holds on every route in, not only on the two doors.
