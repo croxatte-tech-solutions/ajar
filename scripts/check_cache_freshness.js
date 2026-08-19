@@ -94,6 +94,10 @@ function bootSW(opts){
     const opt = init || (req && req.init) || {};
     fetched.push({ url: url, cache: opt.cache });
     if(opts.offline) return Promise.reject(new TypeError('Failed to fetch'));
+    // The school wifi with thirty phones on it, or a captive portal: the
+    // connection is accepted and the answer never comes. It does NOT reject,
+    // which is the whole reason .catch() was not enough.
+    if(opts.hangs) return new Promise(() => {});
     const canned = (opts.network || {})[url];
     return Promise.resolve(mkResponse(canned !== undefined ? canned : 'network:' + url));
   }
@@ -150,9 +154,18 @@ function bootSW(opts){
     registration: {}
   };
 
+  // setTimeout is not a luxury here: a real ServiceWorkerGlobalScope has it,
+  // and the shell handler now uses it to put a clock on a network that
+  // accepts the connection and never answers. Leaving it out of the fake
+  // scope made sw.js throw inside the vm, which read as "the network lost"
+  // -- a fake environment poorer than the real one, reporting a failure the
+  // real one does not have.
+  const timers = [];
   const sandbox = {
     self: self_, caches: cachesApi, fetch: netFetch, Request: FakeRequest,
-    URL: URL, Promise: Promise, console: console, TypeError: TypeError
+    URL: URL, Promise: Promise, console: console, TypeError: TypeError,
+    setTimeout: (fn, ms) => { const id = setTimeout(fn, opts.realTimers ? ms : 0); timers.push(id); return id; },
+    clearTimeout: id => clearTimeout(id)
   };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
@@ -436,6 +449,40 @@ const SHELL_ROUTES = ['/', '/index.html', '/manifest.json', '/icon-192.png',
                       '/index.html?s=1&school=abc', '/?ex=k7'];
 
 SHELL_ROUTES.forEach(route => {
+  behave('a network that accepts and never answers does not hold the screen: ' + route, async () => {
+    // THE FAILURE THIS EXISTS FOR. .catch() only runs when a fetch REJECTS.
+    // A captive portal, or thirty phones on one classroom access point,
+    // accepts the connection and then goes quiet -- so the old handler waited
+    // on the browser's own timeout, tens of seconds, while the offline copy
+    // sat in the cache untouched. Having the answer and not handing it over
+    // is the worst shape this can take.
+    const w = bootSW({
+      hangs: true,
+      seed: { [CACHE_NAME]: { [route]: 'the copy that was already here' } }
+    });
+    const ev = w.dispatch('fetch', w.req(route));
+    // Raced, and the race is the point. Without the clock in sw.js this
+    // handler never answers at all, and `settle` would wait on it forever --
+    // the check would HANG instead of going red, which in CI burns the job
+    // timeout and reports nothing. A test that hangs is worse than a test
+    // that fails: one tells you what broke, the other tells you nothing and
+    // costs ten minutes.
+    const out = await Promise.race([
+      w.settle(ev),
+      new Promise(r => setTimeout(() => r({ body: '(never answered)' }), 2000))
+    ]);
+    // Plain boolean: behave() takes (name, fn, detailFn) and reads the return
+    // as the condition. Returning [cond, detail] -- as the assert() helper
+    // further down this file accepts -- makes an ARRAY, which is always
+    // truthy, and the check can then never go red. Caught by removing the
+    // clock from sw.js and watching this still pass.
+    // settle() returns { responded, body, threw } where `body` is the
+    // Response object -- so the text is one level further in. Getting this
+    // wrong reads as a failure and sends you hunting a bug in sw.js that is
+    // not there.
+    return !!(out && out.body && out.body.body === 'the copy that was already here');
+  }, () => 'o handler nao respondeu dentro de 2s, ou respondeu outra coisa');
+
   behave('the network wins over the cached copy for ' + route, async () => {
     const w = bootSW({
       seed: { [CACHE_NAME]: { [route]: 'STALE -- three weeks old' } },

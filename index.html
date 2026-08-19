@@ -7711,6 +7711,18 @@ function applySharedPayload(payload){
   // decodeBatchFromShare. It may not CLEAR them either: a student who already
   // has an address from Firestore keeps it, so the hash can neither redirect
   // the feedback nor quietly send it to the fallback instead.
+  // Where this batch came from, kept beside it. The hash route is the
+  // offline fallback and cannot be retired -- sw.js and the sharing code
+  // both exist so that sharing DEGRADES to a denser QR when Firestore is
+  // unreachable, never breaks outright. But nothing authenticates a payload
+  // that arrived in a URL, and nothing can: a static app has no key to check
+  // a signature against. So the second half of S-01 is not to block it, it
+  // is to stop it PASSING FOR the teacher's published class. Padrao C is
+  // about a student not mistaking unapproved work for approved work; a
+  // forged exercise that announces where it came from cannot do that.
+  if(payload.fromHash) localStorage.setItem('ajar_batch_from_link', '1');
+  else localStorage.removeItem('ajar_batch_from_link');
+
   if(!payload.fromHash){
     if(payload.teacherEmail) localStorage.setItem('ajar_teacher_email', payload.teacherEmail);
     else localStorage.removeItem('ajar_teacher_email');
@@ -10574,6 +10586,18 @@ function renderStudent(){
   list.innerHTML='';
   if(batch.length===0){ empty.style.display='block'; document.getElementById('practice-wrap').innerHTML=''; return; }
   empty.style.display='none';
+  // Said plainly, and only when it is true. A link-carried batch is the
+  // offline fallback working as designed most of the time -- so this is not
+  // a warning, and it does not accuse anyone. It states the provenance, which
+  // is all that is needed: content that says it came from a link cannot be
+  // mistaken for content the teacher published.
+  if(localStorage.getItem('ajar_batch_from_link') === '1'){
+    const note = document.createElement('p');
+    note.className = 'small-note';
+    note.id = 'batch-provenance';
+    note.textContent = 'These came from a link, not from your class list. If you did not get the link from your teacher, check with her before doing them.';
+    list.appendChild(note);
+  }
   // With exactly one whole-class exercise approved (the common one-a-day
   // case), skip the extra "pick from a list of 1" tap and land the student
   // straight on the practice page — that's what scanning a QR should feel

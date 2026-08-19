@@ -14,8 +14,8 @@
 //
 // Bumping the version means replacing both lines. The check prints the exact
 // replacement when it fails — do not work the hash out by hand.
-const CACHE_NAME = 'ajar-shell-v7';
-// @shell-stamp cache=ajar-shell-v7 bytes=1153680 sha256=d02052035d45da6b9fdd2d7da75a53147a225e086122ad7fac326d0dcab4faca
+const CACHE_NAME = 'ajar-shell-v8';
+// @shell-stamp cache=ajar-shell-v8 bytes=1155196 sha256=1d6789381629757ef498b0cb6c9da0305b53d2a7637a33fc81edc1c6bf67cecb
 // Audio lives in its own cache that is NOT wiped when the shell version
 // changes. Clips are content-addressed, so a shipped app update never
 // invalidates them -- a student should not lose audio they already have
@@ -141,12 +141,40 @@ self.addEventListener('fetch', event => {
     // .catch() below still falls back to this service worker's OWN cache
     // (a separate mechanism from the HTTP cache), so a real network
     // outage still serves the last-cached shell.
-    fetch(event.request, { cache: 'no-store' })
-      .then(response => {
+    (async () => {
+      const network = fetch(event.request, { cache: 'no-store' }).then(response => {
         const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy).catch(() => {}));
         return response;
-      })
-      .catch(() => caches.match(event.request).then(cached => cached || caches.match('./index.html')))
+      });
+
+      // WHY THERE IS A CLOCK HERE AT ALL.
+      // .catch() only runs when the fetch REJECTS. A network that accepts the
+      // connection and then never answers -- a captive portal, or thirty
+      // phones on one classroom access point -- does not reject. It hangs,
+      // and the browser's own timeout is tens of seconds to minutes. All that
+      // time the offline copy is sitting in the cache, untouched. That is the
+      // worst shape this failure can take: we have the answer and do not hand
+      // it over.
+      const cached = await caches.match(event.request);
+
+      // First visit, nothing cached: there is nothing to fall back TO, so
+      // waiting beats answering with nothing. No clock on this path.
+      if (!cached) {
+        return network.catch(() => caches.match('./index.html'));
+      }
+
+      // Three seconds, measured rather than picked: index.html is ~275 KiB
+      // compressed, which at 100 KB/s is about 2.8s. Three seconds says "this
+      // network is answering badly", not "this network is slow".
+      const late = new Promise(resolve => setTimeout(() => resolve(null), 3000));
+      const first = await Promise.race([network.catch(() => null), late]);
+
+      // Either way the fetch keeps running and updates the cache behind us,
+      // so serving the cached copy costs at most one visit of staleness --
+      // and the shell stamp means the cached copy is not three weeks old.
+      network.catch(() => {});
+      return first || cached;
+    })()
   );
 });
