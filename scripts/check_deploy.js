@@ -224,16 +224,19 @@ if(m){
 //===================================================================
 // THE CSP KNOWS EVERY DOMAIN THE APP ACTUALLY USES
 //===================================================================
-/* Twice now a forgotten directive has broken Firebase in production, and both
-   times the symptom pointed somewhere else.
+/* Three times now a forgotten directive has broken Firebase in production,
+   and every time the symptom pointed somewhere else.
 
    App Check died because recaptcha was in script-src and frame-src and not in
    connect-src. Google sign-in died with auth/internal-error because the auth
    domain was in connect-src and not in frame-src — signInWithPopup does not
    only open a window, it creates a hidden iframe to the auth domain to carry
-   the result back, and frame-src governs that.
+   the result back, and frame-src governs that. Then it died with the same
+   auth/internal-error a second time, with frame-src already fixed, because
+   that iframe is filled by a script fetched from apis.google.com and only
+   www.gstatic.com was listed.
 
-   Neither failure named the header. Both cost an afternoon of checking things
+   No failure named the header. Both cost an afternoon of checking things
    that were already correct: the authorised-domains list, the provider
    config, the popup blocker. So the rule is per-directive and explicit —
    a domain the app depends on must appear in EVERY directive that governs how
@@ -250,6 +253,7 @@ if(m){
     ['connect-src', 'https://*.googleapis.com', 'every Firebase API call'],
     ['connect-src', 'https://www.google.com/recaptcha/', 'App Check verifies through it'],
     ['script-src',  'https://www.gstatic.com', 'the Firebase SDK is loaded from it'],
+    ['script-src',  'https://apis.google.com', 'signInWithPopup loads gapi from it to drive its iframe'],
     ['frame-src',   'https://real-life-english.firebaseapp.com', 'signInWithPopup reports back through a hidden iframe there'],
     ['frame-src',   'https://www.google.com/recaptcha/', 'reCAPTCHA renders in a frame'],
   ];

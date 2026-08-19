@@ -13142,14 +13142,18 @@ function authErrorText(e){
   /* Say the code when there is nothing better to say.
 
      "Something went wrong" is what he was looking at while I was looking at
-     nothing — the real answer was auth/internal-error, which Firebase returns
-     when the site's domain is not on the authorised list, where I had
-     expected auth/unauthorized-domain and handled only that. An unknown error
-     that hides its own name costs two people an afternoon each. */
+     nothing, so the code is named. But naming a cause is a different thing:
+     this message used to assert that the domain was missing from the
+     authorised list, and that guess was wrong twice in a row — both times it
+     was a Content-Security-Policy directive, and both times the confident
+     wrong sentence sent someone to check a setting that was already correct.
+
+     auth/internal-error is a bucket, not a diagnosis. The console has always
+     held the actual answer, so point there and claim nothing else. */
   if(c === 'auth/internal-error')
-    return 'Sign-in is not set up for this address yet (auth/internal-error). ' +
-           'It usually means ' + (location.hostname || 'this domain') +
-           ' is missing from Firebase → Authentication → Settings → Authorized domains.';
+    return 'Sign-in could not start (auth/internal-error). Try again, and if it ' +
+           'keeps happening tell your teacher — the browser console names the ' +
+           'real cause.';
   return 'Something went wrong signing in' + (c ? ' (' + c + ')' : '') + '. Try again.';
 }
 

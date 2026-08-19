@@ -367,9 +367,21 @@ function boot(opts){
   assert('AND NAMES ITSELF, so it can be searched for', unknown.indexOf('auth/whatever') > -1, unknown);
   assert('while a known code is still explained rather than quoted',
     a.authErrorText({ code:'auth/invalid-credential' }).indexOf('auth/') === -1);
-  // The one that actually happened, given its own sentence and the fix in it.
-  assert('auth/internal-error points at the authorised-domains list, where it comes from',
-    a.authErrorText({ code:'auth/internal-error' }).indexOf('Authorized domains') > -1);
+  /* The one that actually happened — and the assertion that was wrong here.
+
+     This used to require the message to blame the authorised-domains list.
+     That cause was a guess, and it was wrong twice: both real failures were a
+     Content-Security-Policy directive, with the domain list already correct.
+     A check that pins a guess turns it into a fact nobody rechecks.
+
+     So it now requires the opposite: name the code, and name no cause. */
+  {
+    const t = a.authErrorText({ code:'auth/internal-error' });
+    assert('auth/internal-error names itself so it can be searched for',
+      t.indexOf('auth/internal-error') > -1, t);
+    assert('AND blames no single setting, because the cause is not knowable here',
+      t.indexOf('Authorized domains') === -1 && t.indexOf('authorised domains') === -1, t);
+  }
 
   //===================================================================
   // EMAIL VERIFICATION IS SAID, NOT ENFORCED, AND THE ROOM IS WHY
