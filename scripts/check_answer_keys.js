@@ -222,6 +222,17 @@ for(const [type, key] of [['announcement','ANNOUNCEMENT_BANK'],['conversation','
   for(const th in bank) bank[th].forEach(a => (a.questions || []).forEach(q =>
     withSource.push({ type, src: String(SOURCE_OF[type](a) || ''), q })));
 }
+/* choose-response is shaped differently and so is collected differently: a
+   bank item IS the question — one spoken line, four replies — and the line it
+   answers is its own source. The generator groups them into sets later; the
+   bank is flat, which is what line 59 above already reads. Written against
+   the generator's shape first, and it silently collected nothing. */
+for(const th in CHOOSE_RESPONSE_BANK){
+  CHOOSE_RESPONSE_BANK[th].forEach(x => {
+    if(Array.isArray(x.options) && x.prompt)
+      withSource.push({ type: 'choose-response', src: String(x.prompt), q: x });
+  });
+}
 // Every question of a bank that has a source text must HAVE one, or the
 // measurement below is quietly reading nothing. daily-read reported 0%
 // overlap for exactly this reason: the extractor looked for a field that
@@ -231,7 +242,27 @@ withSource.forEach(x => { if(!x.src) noSource[x.type] = (noSource[x.type] || 0) 
 assert('every question with a source text actually has one',
   Object.keys(noSource).length === 0, JSON.stringify(noSource));
 
-const OVERLAP_MAX = { announcement: 0.60, conversation: 0.59, talk: 0.54, 'daily-read': 0.60, passage: 0.49 };
+/* CHOOSE-RESPONSE JOINS THE MEASUREMENT, AND IT IS THE REASON THE OTHERS
+   HAVE A TARGET.
+
+   It was never in this list because its source text is not a passage — it is
+   the single spoken line the student answers, so it lives on the item and not
+   beside the questions. Measured for the first time today: 27% against 25%
+   chance, which is to say the tell does not exist there at all.
+
+   That matters more than one more number. The other five sit at 48 to 63,
+   and the obvious objection to those figures is that some overlap is simply
+   what a correct answer looks like — a right answer to a question about a
+   passage will naturally share words with it. choose-response says otherwise:
+   in this app's own content, written by the same hand, an option set exists
+   where repeating the source predicts nothing. The ceiling is not theoretical
+   and 25% is not unreachable.
+
+   Locked at 0.35 rather than at today's 0.27, because a handful of new items
+   should not turn this red — but it can never drift up into the range the
+   other five are in. */
+const OVERLAP_MAX = { announcement: 0.60, conversation: 0.59, talk: 0.54, 'daily-read': 0.60,
+                      passage: 0.49, 'choose-response': 0.35 };
 const byType2 = {};
 withSource.forEach(x => { (byType2[x.type] = byType2[x.type] || []).push(x); });
 for(const type in byType2){
