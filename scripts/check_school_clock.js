@@ -170,11 +170,14 @@ const testScript = `
   // ON SCREEN — AND WHAT IS DELIBERATELY NOT ON IT
   //=================================================================
   const clock = document.getElementById('welcome-clock');
-  const studentClock = document.getElementById('student-clock');
+  const studentClock = document.getElementById('daily-clock');
   renderSchoolClock();
   assert('the cover carries the date', clock.innerHTML.indexOf(',') > -1);
   assert('and the time with its zone', /(AM|PM)/.test(clock.innerHTML));
-  assert('the student page carries the same line',
+  // The line that used to open the student page is now the first line of the
+  // day's band, drawn once for both working screens. Same renderer, same
+  // content, one element — so the cover and the band cannot drift.
+  assert('the day band carries the same line',
     studentClock.innerHTML === clock.innerHTML && studentClock.innerHTML.length > 0);
 
   // The cover is open to anyone in the world. Nobody has said who they are
@@ -194,7 +197,7 @@ const testScript = `
 
   setStudentName('');
   renderSchoolClock();
-  assert('with nobody signed in, the student page shows the date only',
+  assert('with nobody signed in, the band shows the date only',
     studentClock.innerHTML.indexOf('Week') === -1);
   assert('and still shows the date', studentClock.innerHTML.indexOf(',') > -1);
 

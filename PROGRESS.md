@@ -331,3 +331,46 @@ Fecha o M5 da auditoria clínica.
 - App Check registrado e não enforced
 - Acessibilidade e desempenho nunca auditados
 - Sobreposição lexical do conteúdo: 47–58% contra 25% de acaso
+
+## 19 de agosto de 2026 — os links e as rotas de exercício
+
+Levantamento de toda âncora, href e rota do app, e `scripts/check_links.js`
+(62 asserções) para impedir a volta de cada defeito. A suíte vai a 3.607.
+
+### O que o levantamento achou, e nenhum check via
+
+- **A mensagem de offline não podia ser mostrada.** `SCAN_ERRORS.offline` foi
+  escrita para o aluno no wi-fi da escola que bloqueia o gstatic. Sem o módulo
+  do Firebase não há `CloudSync`, e `hasAccount()` lê `CloudSync` — então o
+  portão de conta respondia por todo mundo e mandava esse aluno *entrar na
+  conta*, numa tela que precisa da conexão que ele não tem. A pergunta da
+  conexão passou a vir antes.
+- **`?ex=` sem nada depois caía no lote da turma inteira.** String vazia é
+  falsy, então o ramo que nunca faz fallback era pulado e o link resolvia como
+  visita comum. Uma leitura parcial do QR ou um copiar-e-colar truncado é o
+  incidente do QR outra vez, por outra porta. Agora é `!== null`.
+- **Exercício retirado continuava abrindo.** Nada apaga o documento publicado, e
+  o teste era "tem itens?", que um item retirado passa. Filtra por
+  `status === 'approved'` e responde `gone`. É Padrão C numa rota.
+- **`rel="noopener"` sem `noreferrer`** no único `target="_blank"`.
+- **`href="javascript:void(0)"`** num link — o único fora do padrão da casa, e o
+  primeiro a parar no dia em que o `'unsafe-inline'` sair do `script-src`.
+
+### O que já estava certo e agora está fixado por escrito
+
+Nenhum `<a>` sem href; os doze links de `href="#"` cancelam o próprio salto; a
+âncora de pular para o conteúdo cai num `id` que existe; as abas da professora
+apontam para ids inexistentes de propósito e por isso `showSection` chama
+`preventDefault`; nenhuma tela de conta mostra dois links com as mesmas
+palavras indo a lugares diferentes; o botão que leva o aluno adiante nunca sai
+desabilitado (o `check_no_dead_ends` prova que ele existe, não que está vivo).
+
+As dez mutações escritas para conferir se as asserções mordem foram todas
+pegas, incluindo a colisão de "Back" na tela de senha.
+
+### Anotado e não consertado
+
+`~/ajar-noite/SEGURANCA.md` — a rota legada `#batch=` aplica conteúdo que
+ninguém aprovou, sem conta e sem escola, e sequestra o endereço de feedback do
+aluno de forma persistente. Caminho de exploração escrito lá; a decisão é do
+Rony. O check fixa o comportamento de hoje para a mudança aparecer como falha.

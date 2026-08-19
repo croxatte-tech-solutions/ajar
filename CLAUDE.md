@@ -73,6 +73,146 @@ licence and the promise that every student hears the identical voice.
 duration — by parsing MPEG-4 atoms in plain Node, because the suite promises to
 run on a machine that has only node.
 
+## The shell cache, and the one number you must move by hand
+
+`sw.js` serves the app shell **network-first with `cache: 'no-store'`** and
+the audio **cache-first in a separate cache that `activate` must never
+delete**. Both directions are load-bearing and both fail silently if
+inverted: cache-first on the shell freezes every student on whatever version
+shipped that day, and a swept `AUDIO_CACHE` is 26.2 MiB re-downloaded on
+school wi-fi by a whole class at once.
+
+`CACHE_NAME` is bumped **by hand**. That step used to have nothing watching
+it. It does now: `sw.js` carries a `@shell-stamp` line recording which
+`index.html` that cache name was cut for, and `scripts/check_cache_freshness.js`
+fails when the page has drifted more than 8 KB — a measured budget, about two
+average commits — without the name moving. **Bumping the version means
+replacing both lines.** The check prints the exact replacement when it fails;
+do not work the sha256 out by hand.
+
+The stamp lives inside `sw.js` rather than in a file of its own so that the
+two things which must change together are one hunk, and a merge conflict lands
+where a person has to read it.
+
+`SHELL_FILES` is checked against every same-origin file `index.html` actually
+links to. That found `logo.svg` missing on its first run — the brand mark came
+back as a broken image offline, the same loss the webfont comment two lines
+below it was written to prevent. And `cache.addAll` is **atomic**: one 404 in
+that list and the install rejects, so nobody gets an offline app at all.
+
+**`index.html` has a byte ceiling**, asserted in the same check, because that
+is the only place in the suite that reasons about what the student downloads.
+The arithmetic is in the check's header and raising the number means rewriting
+it. If the honest answer is that the file needs to be bigger, the move is a
+second file fetched on demand, not a bigger ceiling.
+
+Four things the check deliberately does not fix, written up with the reasoning
+in `~/ajar-noite/DECIDIR-04.md`: the open tab that keeps running old code until
+it reloads, the missing fetch timeout that hangs the screen on a school network
+that stalls rather than fails, the unhandled rejection when a full phone
+refuses a `cache.put`, and whether orphaned clips are ever worth sweeping.
+Each is a change to the caching strategy, which is not a change to make without
+Rony seeing it.
+
+Nothing here can prove Cloudflare sent what `_headers` asked for. The steps
+that can are at the foot of `scripts/check_deploy.js` under `AJAR_SMOKE`.
+
+## The sentence of the day, and the three words
+
+The band at the top of both working screens — date, one sentence, three
+words, and only then the batch-review promise. The explainer moved to the
+foot of the page in the same change, and its claim that "audio uses your
+browser's own Text-to-Speech" was rewritten: that stopped being true when the
+clips were pre-rendered and nothing was watching the sentence.
+
+**The index is the date and nothing else.** No shuffle, no per-student state,
+no localStorage. That is what lets a teacher say "the sentence today is about
+this" with thirteen people looking at the same words. The moment it varies per
+visit it is noise nobody can refer to.
+
+**Addressed by month and day-of-month, not by day-of-year.** Day-of-year is
+the obvious index and is wrong: in a leap year day 60 is 29 February and every
+day after it shifts by one, so the class gets a different sentence on the same
+date depending on the year. `daily/MM.json`, keyed by day of the month, gives
+29 February its own entry and leaves 1 March on 1 March.
+
+**The clock moved.** `#student-clock` is gone; the band's `#daily-clock` is
+the one line, drawn by the same `renderSchoolClock`. `#welcome-clock` stayed
+on the cover because the cover has a different rule — no week on it, for
+anybody — and the band is hidden there and on the account screen for exactly
+that reason.
+
+**The corpus is not in `index.html`.** The shell is served network-first with
+`no-store`, so a year of quotes in that file would be re-downloaded in full on
+every visit. One file per month, ~15 KB, fetched on demand.
+
+**`DAILY_CACHE` is cache-first but NOT immutable.** The audio can be served
+cache-first forever because a clip is named after a hash of its own contents.
+`09.json` keeps its name when a quote inside it is corrected, so the worker
+serves the cached copy and revalidates behind the student's back — otherwise
+a correction never reaches anybody who already has the file. `activate` spares
+this cache, same as the audio.
+
+**A missing month must cost the band and nothing else.** First visit of a new
+month with no network, a corrupt file, a day the corpus has not reached: the
+band disappears, the page under it is untouched. It is the first thing on
+every working screen, so a header that half-draws goes wrong everywhere at
+once.
+
+Rules the corpus has to keep, all enforced by `scripts/check_daily_quote.js`:
+120 characters, no emoji, author and work and a stated public-domain reason
+(and a translator when translated), definitions of at most 12 common words,
+exactly 3 words a day, and no word repeating inside 270 days — the rotation
+arithmetic is in that check's header. The seed is 20 days; the corpus grows in
+reviewed batches and the assertions run against whatever days are present.
+
+No translation, deliberately: the interface is English because immersion is
+the point and the exam is monolingual. Never call `detectStudentLanguage()`
+from here.
+
+## The microphone: two of them, one device
+
+`listenOnce()` is SpeechRecognition and returns a **string**. `startVoiceClip()`
+is MediaRecorder and returns **audio**. They run at the same time, on the same
+microphone, and that is the normal case here rather than an edge one.
+
+**Order is load-bearing.** `getUserMedia` is awaited FIRST, then recognition
+starts on top. It is the half that rejects with a name — `NotAllowedError`,
+`NotFoundError`, `NotReadableError` — so asking first is the only way to tell
+"you refused it" from "there is no microphone" from "Zoom is holding it".
+Started second, its prompt lands behind a running recognition session and its
+refusal arrives too late to say anything useful.
+
+**The failure to expect** is that one of the two silently gets nothing: the
+transcript arrives, the student sees their words, and the recording is empty —
+so a play button would play silence. `voiceClipIsUsable()` is the guard, and
+the empty case says which half lost the device instead of pretending.
+
+**Never hardcode a mimeType.** Safari records `audio/mp4`, Chrome records
+`audio/webm`, and `isTypeSupported` can say yes to a type the constructor then
+refuses. Ask, then fall through to the browser's default.
+
+**The recording never leaves the device.** Not Firestore, not localStorage, not
+any network. It lives in `window._voiceClip` and is released on every way off a
+practice screen, because a stream whose tracks are not stopped is a microphone
+light still on after the exercise — which the student can see, and is right to
+mind. Note, separately and already true before this: the Chrome
+SpeechRecognition this app uses streams the student's audio to Google.
+
+**Fluency is read out of the waveform, not off the clock.** The old proxy was
+the wall time between opening the microphone and the transcript coming back —
+mostly the round trip to Google's recogniser, so a slow connection made a
+student read as hesitant. It is deleted, not demoted to a fallback. What
+replaces it is pace over VOICED seconds (words from the transcript, never from
+the typed box) and the pauses between the first and last word. Every degenerate
+recording — silence, one word, a clip shorter than one analysis window, a room
+with a fan in it — returns no number rather than a wrong one.
+
+`scripts/check_speech_capture.js` runs this against a fake microphone that can
+be denied, revoked mid-take or held by another app, and against waveforms built
+by hand. What it cannot prove is that real browsers behave like the fake; the
+manual list at the foot of that file is the part a person still has to do.
+
 ## Which English — three different answers, and one was got wrong
 
 The TOEFL Listening section carries North American, British, Australian and New
@@ -140,6 +280,43 @@ Nothing in the suite can catch that class of bug: every check runs against a
 stubbed CloudSync, so the real listener is never exercised. What the checks
 assert is the shape.
 
+## The routes into an exercise, and the order the questions come in
+
+Three parameters reach an exercise: `?ex=<id>` (one exercise), `?s=1` (the
+whole class), and the legacy `#batch=<payload>` that carries everything in the
+URL. `?school=<id>` rides along with all of them.
+
+`loadSharedClassroomContent()` asks three questions and **the order is
+load-bearing**, the same way the microphone's is:
+
+1. **Is there a connection?** Firebase comes from a CDN, so a school network
+   that blocks gstatic leaves `window.CloudSync` undefined — and `hasAccount()`
+   reads CloudSync, so it answers false for a signed-in student too. Asked
+   after the account gate, that gate answered for everybody: a student on that
+   wifi scanning the code on the wall was told to sign in, sent to a screen
+   that needs the connection they do not have. `SCAN_ERRORS.offline` was
+   written for exactly that person and was unreachable.
+2. **Is there an account?** Then, and only for a link that names a class.
+3. **What does the id resolve to?**
+
+Two more things that are easy to undo:
+
+- `params.get('ex')` is `null` when absent and `''` when the link says `?ex=`
+  and stops. Test `!== null`, not truthiness — `''` used to skip the branch
+  that never falls back and resolve like a plain visit, which is the QR
+  incident by another door.
+- A published item's document is never deleted, so its code keeps resolving
+  after the teacher takes the exercise back. The route filters on
+  `status === 'approved'` and reports `gone` otherwise. Padrão C is not a
+  screen further down; a route may not be the exception to it.
+
+`scripts/check_links.js` runs every route against a fake CloudSync that can be
+absent, denied or empty, and also walks every anchor in the file: no `<a>`
+without an href, no `javascript:` URL, `noopener noreferrer` on the one
+`target="_blank"`, and no two links on one screen saying the same words and
+going to different places. The complete list of external destinations is a
+comment at the foot of that file — read it before adding a new one.
+
 `isSignedIn()` is **not** an access check. Every visitor is signed in, because
 students sign in anonymously. Three separate holes in this file came from
 using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or
@@ -151,7 +328,7 @@ using it as one. Use `hasAccount()`, `isMemberOf()`, `isTeacherOf()` or
 sh scripts/qa.sh
 ```
 
-Must be green — 3,400+ checks across 41 `scripts/check_*.js`. The pre-commit
+Must be green — 3,700+ checks across 45 `scripts/check_*.js`. The pre-commit
 hook enforces it and GitHub Actions re-runs it (`.github/workflows/qa.yml`).
 New behaviour gets a check in the same style: named assertions that say what
 would be wrong, not what the code does.

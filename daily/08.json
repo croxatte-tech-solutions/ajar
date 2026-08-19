@@ -1,0 +1,242 @@
+{
+  "month": 8,
+  "note": "One file per month of the year, not per calendar year: the day is addressed by month and day-of-month, so 29 February has its own entry and no year shifts the calendar by one.",
+  "days": {
+    "14": {
+      "quote": {
+        "text": "Nowhere can man find a quieter or more untroubled retreat than in his own soul.",
+        "author": "Marcus Aurelius",
+        "work": "Meditations, Book IV",
+        "translated": true,
+        "translator": "George Long, 1862",
+        "publicDomain": "Marcus Aurelius died in 180 CE. George Long's English translation was published in 1862 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "untroubled", "pos": "adjective", "def": "calm, with nothing making you worried or upset", "syn": ["calm", "peaceful"], "src": "quote" },
+        { "word": "retreat", "pos": "noun", "def": "a quiet place you go to rest and be alone", "syn": ["refuge", "shelter"], "src": "quote" },
+        { "word": "acknowledge", "pos": "verb", "def": "to admit that something is true or real", "syn": ["admit", "accept"], "src": "awl" }
+      ]
+    },
+    "15": {
+      "quote": {
+        "text": "The best way of avenging thyself is not to become like the wrong doer.",
+        "author": "Marcus Aurelius",
+        "work": "Meditations, Book VI",
+        "translated": true,
+        "translator": "George Long, 1862",
+        "publicDomain": "Marcus Aurelius died in 180 CE. George Long's English translation was published in 1862 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "avenge", "pos": "verb", "def": "to punish someone in return for the harm they caused", "syn": ["repay", "retaliate"], "src": "quote" },
+        { "word": "adequate", "pos": "adjective", "def": "enough for what is needed", "syn": ["sufficient", "ample"], "src": "awl" },
+        { "word": "analyze", "pos": "verb", "def": "to study something closely to understand its parts", "syn": ["study", "examine"], "src": "awl" }
+      ]
+    },
+    "16": {
+      "quote": {
+        "text": "If thou art pained by any external thing, it is not this thing that disturbs thee, but thy own judgement about it.",
+        "author": "Marcus Aurelius",
+        "work": "Meditations, Book VIII",
+        "translated": true,
+        "translator": "George Long, 1862",
+        "publicDomain": "Marcus Aurelius died in 180 CE. George Long's English translation was published in 1862 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "external", "pos": "adjective", "def": "coming from outside, not from within", "syn": ["outer", "outside"], "src": "quote" },
+        { "word": "disturb", "pos": "verb", "def": "to break someone's calm or interrupt what they are doing", "syn": ["unsettle", "bother"], "src": "quote" },
+        { "word": "judgement", "pos": "noun", "def": "an opinion you form after thinking something over", "syn": ["opinion", "view"], "src": "quote" }
+      ]
+    },
+    "17": {
+      "quote": {
+        "text": "Take away thy opinion, and then there is taken away the complaint.",
+        "author": "Marcus Aurelius",
+        "work": "Meditations, Book IV",
+        "translated": true,
+        "translator": "George Long, 1862",
+        "publicDomain": "Marcus Aurelius died in 180 CE. George Long's English translation was published in 1862 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "complaint", "pos": "noun", "def": "a statement that something is wrong or not good enough", "syn": ["grievance", "objection"], "src": "quote" },
+        { "word": "approximate", "pos": "adjective", "def": "close to a number or amount, but not exact", "syn": ["rough", "near"], "src": "awl" },
+        { "word": "arbitrary", "pos": "adjective", "def": "chosen without a clear reason or rule", "syn": ["random", "chance"], "src": "awl" }
+      ]
+    },
+    "18": {
+      "quote": {
+        "text": "Nothing is ours, except time.",
+        "author": "Seneca",
+        "work": "Moral Letters to Lucilius, Letter I",
+        "translated": true,
+        "translator": "Richard M. Gummere, Loeb Classical Library, 1917",
+        "publicDomain": "Seneca died in 65 CE. Richard M. Gummere's Loeb translation of this volume appeared in 1917 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "coherent", "pos": "adjective", "def": "clear and holding together so that it makes sense", "syn": ["logical", "consistent"], "src": "awl" },
+        { "word": "comprise", "pos": "verb", "def": "to be made up of certain parts", "syn": ["include", "contain"], "src": "awl" },
+        { "word": "constrain", "pos": "verb", "def": "to keep something inside limits", "syn": ["restrict", "limit"], "src": "awl" }
+      ]
+    },
+    "19": {
+      "quote": {
+        "text": "To be everywhere is to be nowhere.",
+        "author": "Seneca",
+        "work": "Moral Letters to Lucilius, Letter II",
+        "translated": true,
+        "translator": "Richard M. Gummere, Loeb Classical Library, 1917",
+        "publicDomain": "Seneca died in 65 CE. Richard M. Gummere's Loeb translation of this volume appeared in 1917 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "contemporary", "pos": "adjective", "def": "belonging to the present time", "syn": ["modern", "current"], "src": "awl" },
+        { "word": "deduce", "pos": "verb", "def": "to work something out from the facts you have", "syn": ["infer", "conclude"], "src": "awl" },
+        { "word": "deviate", "pos": "verb", "def": "to move away from the usual course or rule", "syn": ["stray", "diverge"], "src": "awl" }
+      ]
+    },
+    "20": {
+      "quote": {
+        "text": "It is not the man who has too little, but the man who craves more, that is poor.",
+        "author": "Seneca",
+        "work": "Moral Letters to Lucilius, Letter II",
+        "translated": true,
+        "translator": "Richard M. Gummere, Loeb Classical Library, 1917",
+        "publicDomain": "Seneca died in 65 CE. Richard M. Gummere's Loeb translation of this volume appeared in 1917 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "crave", "pos": "verb", "def": "to want something very strongly", "syn": ["desire", "yearn"], "src": "quote" },
+        { "word": "diminish", "pos": "verb", "def": "to become smaller or less important", "syn": ["shrink", "decrease"], "src": "awl" },
+        { "word": "discrete", "pos": "adjective", "def": "separate and clearly apart from the others", "syn": ["distinct", "separate"], "src": "awl" }
+      ]
+    },
+    "21": {
+      "quote": {
+        "text": "We suffer more often in imagination than in reality.",
+        "author": "Seneca",
+        "work": "Moral Letters to Lucilius, Letter XIII",
+        "translated": true,
+        "translator": "Richard M. Gummere, Loeb Classical Library, 1917",
+        "publicDomain": "Seneca died in 65 CE. Richard M. Gummere's Loeb translation of this volume appeared in 1917 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "imagination", "pos": "noun", "def": "the part of the mind that forms pictures and ideas", "syn": ["fancy", "creativity"], "src": "quote" },
+        { "word": "reality", "pos": "noun", "def": "the way things truly are, not how they seem", "syn": ["fact", "truth"], "src": "quote" },
+        { "word": "eliminate", "pos": "verb", "def": "to remove something completely", "syn": ["remove", "erase"], "src": "awl" }
+      ]
+    },
+    "22": {
+      "quote": {
+        "text": "As long as you live, keep learning how to live.",
+        "author": "Seneca",
+        "work": "Moral Letters to Lucilius, Letter LXXVI",
+        "translated": true,
+        "translator": "Richard M. Gummere, Loeb Classical Library, 1920",
+        "publicDomain": "Seneca died in 65 CE. Richard M. Gummere's Loeb translation of this volume appeared in 1920 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "emphasis", "pos": "noun", "def": "extra weight given to one thing to show it matters", "syn": ["stress", "importance"], "src": "awl" },
+        { "word": "explicit", "pos": "adjective", "def": "said clearly and fully, leaving no doubt", "syn": ["clear", "direct"], "src": "awl" },
+        { "word": "hierarchy", "pos": "noun", "def": "a system in which people or things are ranked", "syn": ["ranking", "order"], "src": "awl" }
+      ]
+    },
+    "23": {
+      "quote": {
+        "text": "Learning without thought is labour lost; thought without learning is perilous.",
+        "author": "Confucius",
+        "work": "The Analects, Book II",
+        "translated": true,
+        "translator": "James Legge, 1861",
+        "publicDomain": "Confucius died in 479 BCE. James Legge's English translation was published in 1861 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "perilous", "pos": "adjective", "def": "very dangerous and likely to cause harm", "syn": ["risky", "hazardous"], "src": "quote" },
+        { "word": "labour", "pos": "noun", "def": "hard work that takes effort", "syn": ["toil", "work"], "src": "quote" },
+        { "word": "hypothesis", "pos": "noun", "def": "an idea offered as an answer, still to be tested", "syn": ["theory", "guess"], "src": "awl" }
+      ]
+    },
+    "24": {
+      "quote": {
+        "text": "What you do not want done to yourself, do not do to others.",
+        "author": "Confucius",
+        "work": "The Analects, Book XV",
+        "translated": true,
+        "translator": "James Legge, 1861",
+        "publicDomain": "Confucius died in 479 BCE. James Legge's English translation was published in 1861 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "implicit", "pos": "adjective", "def": "meant but not said in plain words", "syn": ["implied", "unspoken"], "src": "awl" },
+        { "word": "incentive", "pos": "noun", "def": "something that makes a person want to act", "syn": ["motive", "reward"], "src": "awl" },
+        { "word": "inevitable", "pos": "adjective", "def": "certain to happen and impossible to avoid", "syn": ["unavoidable", "certain"], "src": "awl" }
+      ]
+    },
+    "25": {
+      "quote": {
+        "text": "When we see men of a contrary character, we should turn inwards and examine ourselves.",
+        "author": "Confucius",
+        "work": "The Analects, Book IV",
+        "translated": true,
+        "translator": "James Legge, 1861",
+        "publicDomain": "Confucius died in 479 BCE. James Legge's English translation was published in 1861 and is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "contrary", "pos": "adjective", "def": "completely different, going the other way", "syn": ["opposite", "opposed"], "src": "quote" },
+        { "word": "examine", "pos": "verb", "def": "to look at something closely in order to learn about it", "syn": ["inspect", "study"], "src": "quote" },
+        { "word": "inwards", "pos": "adverb", "def": "toward the inside of a person or thing", "syn": ["inside", "within"], "src": "quote" }
+      ]
+    },
+    "26": {
+      "quote": {
+        "text": "Trust thyself: every heart vibrates to that iron string.",
+        "author": "Ralph Waldo Emerson",
+        "work": "Self-Reliance, in Essays: First Series",
+        "translated": false,
+        "publicDomain": "Ralph Waldo Emerson published Essays: First Series in 1841; the book is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "vibrate", "pos": "verb", "def": "to shake quickly with small fast movements", "syn": ["quiver", "tremble"], "src": "quote" },
+        { "word": "integrate", "pos": "verb", "def": "to join parts together into one whole", "syn": ["combine", "merge"], "src": "awl" },
+        { "word": "intervene", "pos": "verb", "def": "to step into a situation to change what happens", "syn": ["interfere", "mediate"], "src": "awl" }
+      ]
+    },
+    "27": {
+      "quote": {
+        "text": "To be great is to be misunderstood.",
+        "author": "Ralph Waldo Emerson",
+        "work": "Self-Reliance, in Essays: First Series",
+        "translated": false,
+        "publicDomain": "Ralph Waldo Emerson published Essays: First Series in 1841; the book is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "misunderstood", "pos": "verb", "def": "taken to mean something other than what was meant", "syn": ["misread"], "src": "quote" },
+        { "word": "justify", "pos": "verb", "def": "to give a good reason for something", "syn": ["defend", "explain"], "src": "awl" },
+        { "word": "persist", "pos": "verb", "def": "to keep going even when it is hard", "syn": ["continue", "endure"], "src": "awl" }
+      ]
+    },
+    "28": {
+      "quote": {
+        "text": "Nothing can bring you peace but yourself.",
+        "author": "Ralph Waldo Emerson",
+        "work": "Self-Reliance, in Essays: First Series",
+        "translated": false,
+        "publicDomain": "Ralph Waldo Emerson published Essays: First Series in 1841; the book is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "plausible", "pos": "adjective", "def": "seeming true or reasonable, though not proven", "syn": ["believable", "likely"], "src": "awl" },
+        { "word": "prior", "pos": "adjective", "def": "coming earlier in time than something else", "syn": ["earlier", "previous"], "src": "awl" },
+        { "word": "reluctant", "pos": "adjective", "def": "not willing to do something", "syn": ["unwilling", "hesitant"], "src": "awl" }
+      ]
+    },
+    "29": {
+      "quote": {
+        "text": "If one advances confidently in the direction of his dreams, he will meet with a success unexpected in common hours.",
+        "author": "Henry David Thoreau",
+        "work": "Walden, Conclusion",
+        "translated": false,
+        "publicDomain": "Henry David Thoreau published Walden in 1854; the book is in the public domain in the United States."
+      },
+      "words": [
+        { "word": "advance", "pos": "verb", "def": "to move forward toward something", "syn": ["proceed", "progress"], "src": "quote" },
+        { "word": "confidently", "pos": "adverb", "def": "in a way that shows you are sure of yourself", "syn": ["surely", "boldly"], "src": "quote" },
+        { "word": "unexpected", "pos": "adjective", "def": "not thought of before it happened", "syn": ["surprising", "sudden"], "src": "quote" }
+      ]
+    }
+  }
+}

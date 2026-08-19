@@ -125,6 +125,35 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-syst
 .tech-note{ background:var(--surface-alt); border:1px solid var(--border); border-radius:10px; padding:.75rem .9rem; font-size:.76rem; color:var(--text-dim); margin-bottom:1.25rem; line-height:1.5; }
 .tech-note b{ color:var(--text); }
 
+/* THE DAY'S BAND — the date, one sentence, three words, in that order.
+   It is the first thing on both working screens and it is the SAME thing on
+   every device in the room on a given day, which is the whole point: a
+   teacher can say "the sentence today is about this" and thirteen people are
+   looking at it. A per-visit shuffle would make that sentence a lie.
+
+   Every colour here is a palette token, so the two themes and the contrast
+   floor come for free rather than needing a new pair measured. And every box
+   that holds somebody else's words wraps rather than pushes: at 320px the
+   longest quote in the corpus and three of the longest words have to fit
+   without a horizontal scrollbar appearing under the whole app. */
+.daily{ margin-bottom:1.1rem; }
+.daily-clock{ font-size:.82rem; color:var(--text-dim); margin:0 0 .7rem; text-align:center; font-variant-numeric:tabular-nums; }
+.daily-clock b{ color:var(--text); font-weight:700; }
+.daily-today{ display:grid; gap:.7rem; }
+.daily-eyebrow{ font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-dim); margin:0 0 .3rem; }
+.daily-quote{ margin:0; background:var(--surface-alt); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:var(--r-sm); padding:.7rem .9rem; }
+.daily-quote blockquote{ margin:0; font-size:.95rem; line-height:1.5; color:var(--text); overflow-wrap:anywhere; }
+.daily-quote figcaption{ margin:.4rem 0 0; font-size:.72rem; color:var(--text-dim); overflow-wrap:anywhere; }
+/* auto-fit with a 160px floor: three across where there is room, one under
+   the other on a narrow phone, and never a fixed three-column grid that
+   squeezes "misunderstood" into a column two characters wide. */
+.daily-word-list{ list-style:none; margin:0; padding:0; display:grid; gap:.5rem; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); }
+.daily-word{ min-width:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-sm); padding:.5rem .65rem; }
+.daily-word dfn{ font-style:normal; font-weight:700; color:var(--accent); overflow-wrap:anywhere; }
+.daily-word .pos{ margin-left:.3rem; font-size:.68rem; font-style:italic; color:var(--text-dim); }
+.daily-word .def{ display:block; margin-top:.15rem; font-size:.78rem; line-height:1.4; color:var(--text); overflow-wrap:anywhere; }
+.daily-word .syn{ display:block; margin-top:.2rem; font-size:.72rem; color:var(--text-dim); overflow-wrap:anywhere; }
+
 .view{ display:none; }
 .view.active{ display:block; animation:fade .25s ease; }
 @keyframes fade{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
@@ -931,13 +960,42 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
 
   <main id="main" tabindex="-1">
 
+  <!-- THE DAY'S BAND — date, sentence, words, and only then the notices.
+
+       The order is the argument. The date says which day this is; the
+       sentence and the three words are the same for everybody on that day,
+       so they can be spoken about from the front of a room; and the batch
+       review promise, which is about the app rather than about today, sits
+       under them instead of above them.
+
+       The clock moved here out of the student page. There is one line, not
+       one per screen: two dates four lines apart is noise, and a second
+       renderer is a second thing to drift. The cover keeps its own line
+       (#welcome-clock) because the cover is a different screen with a
+       different rule — no week on it, for anybody.
+
+       Everything under #daily-today is drawn from a file fetched on demand
+       and is hidden until there is a whole day to show. -->
+  <div class="daily" id="daily-band">
+    <p class="daily-clock" id="daily-clock"></p>
+    <div class="daily-today" id="daily-today" style="display:none">
+      <!-- Two labelled sections rather than four loose paragraphs: a screen
+           reader announces "Words of the day, list, 3 items" and the box is
+           one thing with a meaning, which is what it looks like on screen. -->
+      <section aria-labelledby="daily-quote-h">
+        <h2 class="daily-eyebrow" id="daily-quote-h">Sentence of the day</h2>
+        <figure class="daily-quote" id="daily-quote"></figure>
+      </section>
+      <section aria-labelledby="daily-words-h">
+        <h2 class="daily-eyebrow" id="daily-words-h">Words of the day</h2>
+        <ul class="daily-word-list" id="daily-words"></ul>
+      </section>
+    </div>
+  </div>
+
   <div class="padrao-c">
     <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <span>Batch review: nothing reaches a student until the teacher approves that week's set.</span>
-  </div>
-
-  <div class="tech-note">
-    <details class="brief"><summary>How this app makes the exercises</summary><p>Text comes from a local template engine — no external service, so it works offline and without waiting on anybody's server. Audio uses your browser's own Text-to-Speech and Speech-to-Text. Images are hand-authored SVG scenes. Each module sits behind a swappable interface, so moving to a locally-hosted model later changes the engine, not the app around it.</p></details>
   </div>
 
   <!-- TEACHER VIEW -->
@@ -955,7 +1013,7 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
         <button class="btn welcome-door" onclick="enterAs('teacher')" id="door-teacher" aria-label="I am a teacher"></button>
         <button class="btn ghost welcome-door" onclick="enterAs('student')" id="door-student" aria-label="I am a student"></button>
       </div>
-      <a class="welcome-more" id="welcome-more" href="https://github.com/croxatte-tech-solutions/ajar#readme" target="_blank" rel="noopener"></a>
+      <a class="welcome-more" id="welcome-more" href="https://github.com/croxatte-tech-solutions/ajar#readme" target="_blank" rel="noopener noreferrer"></a>
     </div>
   </div>
 
@@ -1073,9 +1131,9 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
   </div>
 
   <div id="view-student" class="view">
-    <!-- The same line as the cover, and for the same reason: their date,
-         their time, their zone, no week. -->
-    <p class="welcome-clock" id="student-clock" style="text-align:center"></p>
+    <!-- The clock that used to open this page is now #daily-clock, at the top
+         of the day's band above. One line, drawn once, on both working
+         screens. -->
     <div id="announcement-banner"></div>
     <div id="student-note"></div>
     <div id="welcome-back"></div>
@@ -1103,6 +1161,17 @@ svg[stroke-width="1.5"], svg [stroke-width="1.5"]{ stroke-width:1.9; }
     <div id="install-offer"></div>
     <div id="sync-warning"></div>
     <div id="practice-wrap" tabindex="-1"></div>
+  </div>
+
+  <!-- HOW THE EXERCISES ARE MADE — at the foot of the page, where an
+       explainer belongs. Still a closed <details>: worth reading once, read
+       by the person who wants it, and in nobody's way on the day they do not.
+
+       The text was wrong for months. It said the audio was the browser's own
+       Text-to-Speech, which stopped being true when the clips were
+       pre-rendered, and nothing was watching the sentence. -->
+  <div class="tech-note">
+    <details class="brief"><summary>How this app makes the exercises</summary><p>Text comes from a local template engine — no external service, so it works offline and without waiting on anybody's server. The audio is pre-rendered: every spoken line is a small file named after the sentence itself, so every student hears the identical voice, and your browser's own Text-to-Speech steps in only when a line has no file yet. Speaking tasks use your browser's Speech-to-Text to read your words back — in Chrome that audio goes to Google to be transcribed — while the recording you play back stays on this device and is never uploaded. The sentence and words of the day come from one small file per month, downloaded once and then read offline. Images are hand-authored SVG scenes. Each module sits behind a swappable interface, so moving to a locally-hosted model later changes the engine, not the app around it.</p></details>
   </div>
   </main>
 </div>
@@ -7110,6 +7179,392 @@ function listenOnce(onResult, onError){
 }
 
 /* =========================================================
+   THE STUDENT'S OWN VOICE — recording, replay, and fluency
+   =========================================================
+
+   Until this, the app never held the student's voice. listenOnce() hands
+   back a STRING and nothing else: the recognition service hears the
+   student, the app hears a transcript. Two things followed from that, and
+   both were costing real practice.
+
+   One — in a browser without SpeechRecognition (Firefox anywhere, Safari
+   without Dictation switched on) the microphone buttons were simply
+   `disabled` and the student was told to type. A part of every class was
+   practicing no speaking at all, on a screen whose whole purpose is
+   speaking.
+
+   Two — the only fluency signal available was the wall clock between
+   opening the microphone and the transcript coming back. That interval
+   contains the round trip to Google's recogniser, and on a school
+   connection it contains more of that than of the student: somebody who
+   spoke well through a slow minute read as hesitant. It is deleted by this
+   change rather than kept as a fallback, because a pace measured from the
+   network is not a rougher version of fluency, it is a different quantity
+   wearing its name.
+
+   What replaces it is a plain recording. The student hears their own voice
+   against the Piper clip of the same sentence — which teaches more in a
+   lesson than any number from 0 to 5 — and the pauses are measured in the
+   waveform itself. No model, no download, no server, no API key.
+
+   PRIVACY, as a requirement and not a detail: the recorded audio never
+   reaches Firestore, localStorage, or any network. It lives in
+   window._voiceClip, its object URL is revoked on every way off the
+   screen, and scripts/check_speech_capture.js fails if any of those three
+   destinations ever appears beside it.
+
+   And the thing the next person deserves to be told plainly: the
+   SpeechRecognition this app already uses is NOT local. Chrome streams the
+   student's audio to Google's servers to transcribe it, and has since the
+   feature existed. That predates this change and is not made worse by it —
+   it is precisely why the recording added here is the half that stays on
+   the device.
+   ========================================================= */
+
+// Which container the browser can actually produce. Safari records
+// audio/mp4, Chrome and Firefox record audio/webm, and handing any of them
+// the other one throws in the constructor or yields a file that will not
+// decode later. Hardcoding one mimeType breaks half a classroom, so we ask
+// in order and fall through to the browser's own default — which is also
+// where an absent isTypeSupported has to land.
+const VOICE_CLIP_TYPES = [
+  'audio/webm;codecs=opus',
+  'audio/webm',
+  'audio/mp4',
+  'audio/ogg;codecs=opus',
+];
+function voiceClipMimeType(){
+  const MR = window.MediaRecorder;
+  if(!MR || typeof MR.isTypeSupported !== 'function') return '';
+  for(const t of VOICE_CLIP_TYPES){
+    try{ if(MR.isTypeSupported(t)) return t; }catch(err){ /* a browser that throws on the question has not got the type */ }
+  }
+  return '';
+}
+function supportsVoiceCapture(){
+  return !!(window.MediaRecorder && navigator.mediaDevices &&
+            typeof navigator.mediaDevices.getUserMedia === 'function');
+}
+// A student can practice aloud if EITHER half is available: the transcript
+// gives a score, the recording gives their own voice back. The mic buttons
+// were gated on the transcript alone, which is how a Firefox student ended
+// up with neither.
+function canPracticeAloud(){ return supportsSTT() || supportsVoiceCapture(); }
+
+// Nothing may hold the microphone open longer than this. A recording
+// normally ends when recognition ends or the student presses stop; this is
+// the backstop for the case where neither happens, because a stream left
+// running is a microphone light still on after the exercise is over — a
+// privacy failure the student can see, and is right to mind.
+const VOICE_CLIP_MAX_SECONDS = 75;
+// How long a recorder is given to deliver its last chunk before we stop
+// waiting and use what we have. Long enough for a real onstop, short
+// enough that a student is not left looking at "Listening…".
+const VOICE_CLIP_STOP_GRACE_MS = 1500;
+// Under this the container holds headers and nothing else. Used to tell a
+// real recording apart from a recorder that was handed no audio at all.
+const VOICE_CLIP_MIN_BYTES = 1200;
+
+// One recording at a time. On window so that leaving the screen — from any
+// of the six places that can leave it — can reach it and give it back.
+window._voiceClip = null;
+
+// Starts a recording ALONGSIDE, never instead of, recognition.
+//
+// ORDER, which is the question this whole feature turns on: getUserMedia
+// runs FIRST and is awaited, and only then does the caller start
+// SpeechRecognition. They are the same physical device and, on some
+// browsers, two separate permissions. Two reasons for that order:
+//
+//   - getUserMedia is the half that fails with a NAME. It rejects with
+//     NotAllowedError, NotFoundError or NotReadableError, which is the
+//     only way to tell "you refused the microphone" from "there is no
+//     microphone" from "Zoom is holding it". Started second, its prompt
+//     appears behind a recognition session that is already running and its
+//     refusal arrives too late to say anything useful.
+//   - On the first ever recording the permission prompt is a dialog
+//     somebody has to answer. Waiting for it BEFORE the countdown starts
+//     means the dialog does not eat the student's recording window.
+//
+// It never rejects. A microphone this cannot open is not a reason to
+// refuse the student the transcript path that worked before, so it
+// resolves with a reason and the caller carries on regardless.
+async function startVoiceClip(){
+  releaseVoiceClip();               // the impatient double-tap: the old one goes first
+  if(!supportsVoiceCapture()) return { ok:false, reason:'unsupported' };
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  }catch(err){
+    return { ok:false, reason: voiceClipDenialReason(err) };
+  }
+  const mimeType = voiceClipMimeType();
+  let rec;
+  try{
+    rec = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+  }catch(err){
+    // A type isTypeSupported accepted can still be refused by the
+    // constructor. Falling back to the browser's default is the entire
+    // reason none is hardcoded.
+    try{ rec = new MediaRecorder(stream); }
+    catch(err2){ stopStreamTracks(stream); return { ok:false, reason:'unsupported' }; }
+  }
+  const clip = { rec, stream, chunks: [], startedAt: Date.now(), stopped:false,
+                 url:null, blob:null, seconds:0, cap:null };
+  rec.ondataavailable = e => { if(e.data && e.data.size) clip.chunks.push(e.data); };
+  // Permission revoked in the browser's settings with the page still open
+  // ends the track under us. Without this the recorder would sit waiting
+  // for audio that is never coming and the screen would wait with it.
+  stream.getTracks().forEach(t => { t.onended = () => { stopVoiceClip(); }; });
+  try{ rec.start(); }
+  catch(err){ stopStreamTracks(stream); return { ok:false, reason:'unsupported' }; }
+  clip.cap = setTimeout(() => { stopVoiceClip(); }, VOICE_CLIP_MAX_SECONDS * 1000);
+  window._voiceClip = clip;
+  return { ok:true, reason:'' };
+}
+
+// The refusals a classroom actually produces, kept apart because each one
+// needs a different sentence from the student's side — "allow it", "there
+// isn't one", "close Zoom" are three different actions.
+function voiceClipDenialReason(err){
+  const name = (err && err.name) || '';
+  if(name === 'NotAllowedError' || name === 'SecurityError') return 'denied';
+  if(name === 'NotFoundError' || name === 'OverconstrainedError') return 'no-mic';
+  if(name === 'NotReadableError' || name === 'AbortError') return 'busy';
+  return 'failed';
+}
+function voiceClipReasonNote(reason){
+  if(reason === 'denied') return 'Hearing yourself back is off because the microphone was refused for this site — allow it from the browser address bar, then record again.';
+  if(reason === 'no-mic') return 'No microphone was found on this device, so there is nothing to record with.';
+  if(reason === 'busy') return 'Another app is holding the microphone — Zoom and Meet keep it even while muted. Close it, then record again.';
+  if(reason === 'lost') return 'The recording came back empty, so it is not offered: this browser gives the microphone to speech recognition or to the recorder, not to both at once. Nothing else on this screen is affected.';
+  if(reason === 'failed') return 'The microphone could not be opened just now, so there is no recording to play back.';
+  return '';   // 'unsupported' says nothing: this browser simply never had the feature
+}
+
+// A MediaStream whose tracks are not stopped leaves the microphone light
+// on after the exercise has ended. The student sees it, and they are right
+// to: the microphone IS still open. Every exit path goes through here.
+function stopStreamTracks(stream){
+  if(!stream || typeof stream.getTracks !== 'function') return;
+  stream.getTracks().forEach(t => { try{ t.stop(); }catch(err){ /* already ended */ } });
+}
+
+// Ends the recording and hands back the clip, microphone given up first.
+// Always resolves — a recorder that never fires onstop would otherwise
+// leave the student's screen waiting on a promise forever, and the real
+// cause of that is not exotic: the OS ended the track when the permission
+// was revoked mid-recording.
+function stopVoiceClip(){
+  const clip = window._voiceClip;
+  if(!clip || clip.stopped) return Promise.resolve(null);
+  clip.stopped = true;
+  if(clip.cap){ clearTimeout(clip.cap); clip.cap = null; }
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = () => {
+      if(settled) return;
+      settled = true;
+      stopStreamTracks(clip.stream);
+      clip.seconds = Math.max(0, (Date.now() - clip.startedAt) / 1000);
+      const type = (clip.chunks[0] && clip.chunks[0].type) || clip.rec.mimeType || 'audio/webm';
+      clip.blob = clip.chunks.length ? new Blob(clip.chunks, { type }) : null;
+      // The previous URL goes before the next one is made. Seven sentences
+      // on an old phone is seven blobs held alive by seven live URLs, and
+      // the tab dies somewhere around the fifth.
+      if(clip.url){ try{ URL.revokeObjectURL(clip.url); }catch(err){ /* nothing else to do with a bad URL */ } }
+      clip.url = clip.blob ? URL.createObjectURL(clip.blob) : null;
+      resolve(clip);
+    };
+    clip.rec.onstop = finish;
+    clip.rec.onerror = finish;
+    try{
+      if(clip.rec.state === 'inactive') finish(); else clip.rec.stop();
+    }catch(err){ finish(); }
+    setTimeout(finish, VOICE_CLIP_STOP_GRACE_MS);
+  });
+}
+// Everything the recording owns, given back: the microphone first, then
+// the object URL. Called on every way OFF a practice screen, because the
+// two things that outlive a screen are exactly the two the student can
+// notice — a lit microphone, and a tab that runs out of memory.
+function releaseVoiceClip(){
+  const clip = window._voiceClip;
+  if(!clip) return;
+  window._voiceClip = null;
+  if(clip.cap){ clearTimeout(clip.cap); clip.cap = null; }
+  if(!clip.stopped){
+    clip.stopped = true;
+    try{ if(clip.rec.state !== 'inactive') clip.rec.stop(); }catch(err){ /* the stream is stopped below regardless */ }
+  }
+  stopStreamTracks(clip.stream);
+  if(clip.url){ try{ URL.revokeObjectURL(clip.url); }catch(err){ /* nothing else to do with a bad URL */ } }
+  clip.url = null;
+  clip.blob = null;
+  clip.chunks.length = 0;
+}
+// A reload with a recording in flight. The browser tears the page down and
+// releases the device on its own, but not before the student has watched
+// the microphone light sit there through the reload.
+window.addEventListener('pagehide', releaseVoiceClip);
+
+// THE FAILURE THIS FEATURE IS MOST LIKELY TO PRODUCE, and the hardest to
+// see: recognition and the recorder are asked for the same microphone at
+// the same instant, one of them silently gets nothing, and the student is
+// shown a transcript beside a play button that plays silence. So playback
+// is offered only when there is demonstrably something in the container,
+// and the empty case says so instead of pretending.
+function voiceClipIsUsable(clip){
+  return !!(clip && clip.blob && clip.blob.size >= VOICE_CLIP_MIN_BYTES && clip.url);
+}
+
+// Playback of the student's own clip, through the same window._currentAudio
+// slot speak() uses — so pressing "hear the model" stops "hear me" and the
+// two never play over each other.
+function playMyVoice(){
+  const clip = window._voiceClip;
+  if(!clip || !clip.url) return;
+  if(window._currentAudio){ try{ window._currentAudio.pause(); }catch(err){ /* pausing a dead element */ } window._currentAudio = null; }
+  if(window.speechSynthesis) window.speechSynthesis.cancel();
+  const a = new Audio(clip.url);
+  window._currentAudio = a;
+  a.onended = () => { window._currentAudio = null; };
+  a.onerror = () => { window._currentAudio = null; };
+  a.play().catch(() => { window._currentAudio = null; });
+}
+
+/* --- FLUENCY, MEASURED IN THE RECORDING ITSELF ----------------------
+   Two signals the waveform can honestly give: how much of the window was
+   voiced, and where the pauses fell. Words come from the TRANSCRIPT, not
+   from the answer box, so pace is words over VOICED seconds — a number
+   that cannot contain network latency, and cannot be inflated by an answer
+   the student typed rather than said.
+
+   Everything here returns null rather than a number whenever the recording
+   cannot support one. A pace invented from silence, from one word, or from
+   a clip too short to hold a single analysis window would be a number in a
+   classroom that means nothing, and this app's rule is that an inflated
+   score is the worst thing it can produce.
+   ------------------------------------------------------------------- */
+const FLUENCY_FRAME_MS = 20;              // one analysis window
+const FLUENCY_PAUSE_MS = 350;             // shorter than this is a breath, not a pause
+const FLUENCY_NOISE_MULTIPLIER = 3;       // speech is above the ROOM, not above zero
+const FLUENCY_ABSOLUTE_FLOOR = 0.006;     // ...and above the noise of a silent room too
+const FLUENCY_SPEECH_FLOOR = 0.02;        // ...and, when nothing varies at all, loud enough to be a voice
+const FLUENCY_MIN_SPEECH_SEC = 0.6;
+const FLUENCY_MIN_WORDS_FOR_PACE = 4;
+
+async function analyseFluency(blob, transcript){
+  if(!blob || !blob.size) return null;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if(!Ctx) return null;
+  let ctx = null, buf = null;
+  try{
+    ctx = new Ctx();
+    // iOS hands back a context that is suspended until a user gesture.
+    // Decoding does not strictly need a running one, but Safari has
+    // refused the decode outright often enough that resuming first is
+    // worth the two lines.
+    if(ctx.state === 'suspended' && ctx.resume){ try{ await ctx.resume(); }catch(err){ /* decode may still work suspended */ } }
+    const data = await blob.arrayBuffer();
+    buf = await new Promise((resolve, reject) => {
+      const maybe = ctx.decodeAudioData(data, resolve, reject);
+      if(maybe && maybe.then) maybe.then(resolve, reject);
+    });
+  }catch(err){
+    // An undecodable container is a real outcome — a codec this browser
+    // records but cannot read back. It gets "not measured", never a guess.
+    if(ctx && ctx.close){ try{ ctx.close(); }catch(err2){ /* already closed */ } }
+    return null;
+  }
+  if(ctx && ctx.close){ try{ ctx.close(); }catch(err){ /* already closed */ } }
+  return fluencyFromSamples(buf.getChannelData(0), buf.sampleRate, transcript);
+}
+
+// Split out from the decode so it can be measured directly on known
+// waveforms — silence, one word, unbroken speech, a room with a fan in it.
+function fluencyFromSamples(pcm, sampleRate, transcript){
+  const frame = Math.max(1, Math.round(sampleRate * FLUENCY_FRAME_MS / 1000));
+  // A clip shorter than two analysis windows has nothing to measure, and
+  // dividing by what it does have produces Infinity rather than an answer.
+  if(!sampleRate || !pcm || pcm.length < frame * 2) return null;
+
+  const rms = [];
+  for(let i = 0; i + frame <= pcm.length; i += frame){
+    let sum = 0;
+    for(let j = i; j < i + frame; j++) sum += pcm[j] * pcm[j];
+    rms.push(Math.sqrt(sum / frame));
+  }
+  // TWO QUESTIONS, IN THIS ORDER, because either one on its own is wrong.
+  //
+  // First: does anything here rise above the ROOM? A classroom with a
+  // projector fan has a constant floor, and a threshold measured against
+  // zero reads that floor as continuous speech — scoring a student who
+  // said nothing as perfectly fluent. So the threshold sits above the
+  // quietest tenth of the recording, not above silence.
+  //
+  // Second, and this is the case the relative test alone gets backwards:
+  // when NOTHING varies, a fan and an unbroken sentence look identical to
+  // it — both are flat, so both are called "no speech", and a student who
+  // spoke without pausing scores as silent. Only the level tells those two
+  // apart, so a flat recording falls back to an absolute floor: loud
+  // enough to be a voice, or it is the room.
+  //
+  // The known limit, written down rather than hidden: a very loud constant
+  // noise passes the second test. It cannot produce a pace — that needs
+  // words from the transcript — but it would report speaking time. The
+  // manual list at the end of check_speech_capture.js calls for this to be
+  // calibrated against a real room.
+  const sorted = rms.slice().sort((a, b) => a - b);
+  const at = q => sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor(q * sorted.length)))];
+  const floor = at(0.10), loud = at(0.90);
+  const varies = loud > floor * FLUENCY_NOISE_MULTIPLIER;
+  const threshold = varies
+    ? Math.max(floor * FLUENCY_NOISE_MULTIPLIER, FLUENCY_ABSOLUTE_FLOOR)
+    : FLUENCY_SPEECH_FLOOR;
+  const voiced = rms.map(v => v > threshold);
+
+  const frameSec = frame / sampleRate;
+  const first = voiced.indexOf(true);
+  const last = voiced.lastIndexOf(true);
+  const voicedFrames = voiced.reduce((n, v) => n + (v ? 1 : 0), 0);
+  const speechSec = voicedFrames * frameSec;
+
+  // Pauses are counted BETWEEN the first and last word only. The silence
+  // before a student starts, and the tail of a fixed recording window
+  // after they finish, are not hesitation — counting them would punish
+  // every student who answered in less than the time allowed.
+  const pauses = [];
+  if(first > -1){
+    let run = 0;
+    for(let i = first; i <= last; i++){
+      if(!voiced[i]){ run++; continue; }
+      if(run * frameSec * 1000 >= FLUENCY_PAUSE_MS) pauses.push(run * frameSec);
+      run = 0;
+    }
+  }
+
+  const words = String(transcript || '').split(/\s+/).filter(Boolean).length;
+  // No pace from silence, and none from one word. Both would divide into a
+  // number the app would then print beside the word "fluency".
+  let wpm = null;
+  if(words >= FLUENCY_MIN_WORDS_FOR_PACE && speechSec >= FLUENCY_MIN_SPEECH_SEC){
+    wpm = Math.round(words / (speechSec / 60));
+  }
+  if(!Number.isFinite(wpm)) wpm = null;
+
+  return {
+    durationSec: pcm.length / sampleRate,
+    speechSec,
+    pauses: pauses.length,
+    longestPauseSec: pauses.length ? pauses.reduce((a, b) => Math.max(a, b), 0) : 0,
+    words,
+    wpm,
+    silent: voicedFrames === 0,
+  };
+}
+
+/* =========================================================
    STORAGE + GENERATION
    ========================================================= */
 function loadBatch(){ return JSON.parse(localStorage.getItem('ajar_batch') || '[]'); }
@@ -7177,8 +7632,33 @@ function hasAccount(){
 
 async function loadSharedClassroomContent(){
   const params = new URLSearchParams(location.search);
+  // null when the parameter is absent, '' when it is there with nothing after
+  // it. Those are different questions and used to get the same answer: '' is
+  // falsy, so "?ex=" skipped the branch below entirely and resolved like a
+  // plain visit — the whole-class batch. A scan that read half the code, or a
+  // copy-paste that dropped the id, is the QR incident again by another route.
   const exId = params.get('ex');
-  const isSharedLink = params.get('s') === '1' || !!exId;
+  const isSharedLink = params.get('s') === '1' || exId !== null;
+
+  /* THE CONNECTION IS ASKED ABOUT BEFORE THE ACCOUNT, AND THE ORDER IS THE
+     WHOLE POINT.
+     ------------------------------------------------------------------
+     Firebase loads from a CDN, so a school network that blocks gstatic leaves
+     window.CloudSync undefined — and hasAccount() reads CloudSync, so with it
+     missing the answer is false for a signed-in student too. Asked in the
+     other order the account gate answered for everyone, and a student on that
+     wifi scanning the code on the wall was told to sign in: sent to a screen
+     that needs the very connection they do not have. SCAN_ERRORS.offline was
+     written for exactly this person and could never be shown to them.
+
+     The first call on every page load runs before the module has loaded, so
+     this fires once for everybody. That is fine and always was:
+     __onCloudSyncReady retries the moment CloudSync exists, and the retry is
+     what sets the real answer. */
+  if(isSharedLink && !window.CloudSync){
+    window.__exError = 'offline';
+    return true;
+  }
 
   /* A class needs an account now, and the check is here rather than left to
      the database.
@@ -7208,18 +7688,28 @@ async function loadSharedClassroomContent(){
      what was reported: "o qr code nao conectava ao exercicio certo".
      A code that names one exercise resolves to that exercise or to a message
      saying why not. Never to a different exercise. */
-  if(exId){
+  if(exId !== null){
     if(!ID_PATTERN.test(exId)){ window.__exError = 'invalid'; return true; }
-    if(!window.CloudSync){ window.__exError = 'offline'; return true; }
     try{
       const payload = await window.CloudSync.pullClassroomItem(exId);
-      if(payload && payload.items && payload.items.length){
-        applySharedPayload(payload);
+      /* APPROVED, not merely present. Nothing deletes a published document,
+         so a code goes on resolving after the teacher has taken the exercise
+         back — and the test used to be "are there any items", which a
+         withdrawn one passes. Padrão C is not a screen the student reaches
+         later: what she has not approved must not arrive, and a route is not
+         allowed to be the exception to that. Filtered rather than rejected
+         wholesale, so a document holding one approved item and one withdrawn
+         still opens the one that stands. */
+      const approved = (payload && Array.isArray(payload.items) ? payload.items : [])
+        .filter(i => i && i.status === 'approved');
+      if(approved.length){
+        applySharedPayload({ ...payload, items: approved });
         window.__exError = null;
         return true;
       }
-      // The document is reachable and simply is not there: withdrawn,
-      // superseded, or from another school whose id this link does not carry.
+      // The document is reachable and holds nothing the student may have:
+      // withdrawn, superseded, or from another school whose id this link
+      // does not carry.
       window.__exError = 'gone';
       return true;
     }catch(e){
@@ -8242,11 +8732,15 @@ function renderSchoolClock(){
   const cover = document.getElementById('welcome-clock');
   if(cover) cover.innerHTML = when;
 
-  // The student page adds the week once the device belongs to the class —
-  // same anchor their teacher published, same arithmetic her panel does, so
-  // the two cannot drift. A visitor practicing on their own sees the date
-  // only, which is the honest answer: they are not in a week.
-  const student = document.getElementById('student-clock');
+  // The band adds the week once the device belongs to the class — same anchor
+  // their teacher published, same arithmetic her panel does, so the two cannot
+  // drift. A visitor practicing on their own sees the date only, which is the
+  // honest answer: they are not in a week.
+  //
+  // The band is hidden on the cover and on the account screen (setView), which
+  // is what keeps the rule above intact: the week never reaches a screen that
+  // is the same for everybody in the world.
+  const student = document.getElementById('daily-clock');
   if(!student) return;
   const plan = isRosteredStudent() ? schoolPlanToday() : null;
   student.innerHTML = plan
@@ -8263,8 +8757,148 @@ function weekFocusLabel(week){
 }
 function startSchoolClock(){
   renderSchoolClock();
+  renderDailyBand();
   clearInterval(window._schoolClock);
-  window._schoolClock = setInterval(renderSchoolClock, SCHOOL_CLOCK_TICK_MS);
+  // The band rides the clock's tick rather than having one of its own. That
+  // is what makes it roll over at midnight with the page still open — a
+  // classroom laptop is left open for days — and it costs nothing, because
+  // renderDailyBand returns immediately unless the day has actually changed.
+  window._schoolClock = setInterval(() => {
+    renderSchoolClock();
+    renderDailyBand();
+  }, SCHOOL_CLOCK_TICK_MS);
+}
+
+/* THE SENTENCE OF THE DAY, AND THREE WORDS
+   ========================================
+   One sentence and exactly three words, the same for every person in the
+   class on a given day. That is the feature: a teacher can say "the sentence
+   today is about this" and the whole room is looking at the same thing. A
+   shuffle per visit, or per student, would turn it into noise nobody can
+   refer to — so nothing here is random and nothing here is per-student.
+
+   ADDRESSED BY MONTH AND DAY, NOT BY DAY-OF-YEAR. Day-of-year looks like the
+   obvious index and is wrong: in a leap year, day 60 is 29 February, and
+   every day after it shifts by one. The class would get a different sentence
+   on the same date depending on the year, and 29 February would either
+   collide with 1 March or have nothing at all. Month-and-day gives 29
+   February its own entry, keeps 1 March on 1 March, and needs 366 slots.
+
+   THE SCHOOL'S DAY, not the device's. schoolToday() reads the date through
+   Intl in the school's timezone, so a phone left on another zone, and the
+   hours either side of midnight, do not hand two students different days.
+
+   ONE FILE PER MONTH, FETCHED ON DEMAND. index.html is served network-first
+   with no-store — it is downloaded in full on every online visit — so a year
+   of quotes pasted into it would be re-downloaded, all twelve months of it,
+   every time anybody opened the app. A month is about 15 KB, arrives once,
+   and the service worker keeps it (see DAILY_CACHE in sw.js).
+
+   AND IT MAY SIMPLY NOT BE THERE. First visit of a new month with no network,
+   a file that is not valid JSON, a day the corpus has not reached yet: the
+   band disappears and the page under it is untouched. Same answer the audio
+   gives when a clip is missing, for the same reason — a header that
+   half-draws is worse than a header that is not there. */
+const DAILY_DIR = 'daily/';
+const DAILY_WORDS_PER_DAY = 3;
+// A month that failed to load is remembered as absent, so a school network
+// that blocks the request is not asked again every twenty seconds — but only
+// for ten minutes, so wifi that comes back is not ignored until a reload.
+const DAILY_RETRY_MS = 600000;
+const _dailyMonths = {};     // month number -> { data: parsed|null, at: ms }
+let _dailyDrawnKey = '';     // 'M-D' of what is currently on screen
+
+// Which day the SCHOOL is on, as the pair that addresses the corpus.
+function dailyDayKey(now){
+  const t = schoolToday(now);
+  return { m: t.m, d: t.d, key: t.m + '-' + t.d };
+}
+function dailyMonthUrl(m){ return DAILY_DIR + (m < 10 ? '0' : '') + m + '.json'; }
+
+async function loadDailyMonth(m, now){
+  const at = (now || new Date()).getTime();
+  const held = _dailyMonths[m];
+  if(held && (held.data || at - held.at < DAILY_RETRY_MS)) return held.data;
+  let data = null;
+  try{
+    const res = await fetch(dailyMonthUrl(m), { credentials: 'omit' });
+    if(res.ok){
+      const parsed = await res.json();
+      if(parsed && parsed.days && typeof parsed.days === 'object') data = parsed;
+    }
+  }catch(e){
+    // Offline, blocked, or not JSON. Left as null, which the caller reads as
+    // "no band today". Deliberately not reported anywhere: this is a READ,
+    // and a read that fails leaves the screen as the person already sees it.
+    data = null;
+  }
+  _dailyMonths[m] = { data: data, at: at };
+  return data;
+}
+
+// What counts as a day worth drawing. A file with two words on a day is a
+// corrupt file, not a smaller box — the promise is exactly three.
+function dailyEntryIn(month, day){
+  const e = month && month.days ? month.days[String(day)] : null;
+  if(!e || !e.quote || typeof e.quote.text !== 'string' || !e.quote.text.trim()) return null;
+  if(!Array.isArray(e.words) || e.words.length !== DAILY_WORDS_PER_DAY) return null;
+  const usable = w => w && typeof w.word === 'string' && w.word.trim()
+                        && typeof w.def === 'string' && w.def.trim();
+  if(!e.words.every(usable)) return null;
+  return e;
+}
+
+/* Everything below is somebody else's text arriving from a file and landing
+   in innerHTML, which makes this an OUTPUT POINT and it is treated as one:
+   nothing reaches the page except through escapeHtml. A sentence with an
+   apostrophe, a dash or a quotation mark in it is the normal case in a corpus
+   of nineteenth-century translations, not the edge case. */
+function dailyQuoteHtml(q){
+  const cite = [q.author, q.work].filter(Boolean).map(escapeHtml).join(', ');
+  const tr = q.translator ? ' &middot; translated by ' + escapeHtml(q.translator) : '';
+  return '<blockquote>' + escapeHtml(q.text) + '</blockquote>' +
+         '<figcaption>' + cite + tr + '</figcaption>';
+}
+function dailyWordHtml(w){
+  const syn = (Array.isArray(w.syn) ? w.syn : []).filter(Boolean);
+  return '<li class="daily-word"><dfn>' + escapeHtml(w.word) + '</dfn>'
+    + (w.pos ? '<span class="pos">' + escapeHtml(w.pos) + '</span>' : '')
+    + '<span class="def">' + escapeHtml(w.def) + '</span>'
+    + (syn.length ? '<span class="syn">Similar: ' + syn.map(escapeHtml).join(', ') + '</span>' : '')
+    + '</li>';
+}
+
+function hideDailyBand(){
+  const box = document.getElementById('daily-today');
+  const quoteBox = document.getElementById('daily-quote');
+  const wordBox = document.getElementById('daily-words');
+  if(box) box.style.display = 'none';
+  if(quoteBox) quoteBox.innerHTML = '';
+  if(wordBox) wordBox.innerHTML = '';
+  // Left empty rather than remembered, so the next tick tries again instead
+  // of leaving a student on a blank band until they reload.
+  _dailyDrawnKey = '';
+}
+
+async function renderDailyBand(now){
+  try{
+    const box = document.getElementById('daily-today');
+    const quoteBox = document.getElementById('daily-quote');
+    const wordBox = document.getElementById('daily-words');
+    if(!box || !quoteBox || !wordBox) return;
+    const today = dailyDayKey(now);
+    if(_dailyDrawnKey === today.key) return;
+    const entry = dailyEntryIn(await loadDailyMonth(today.m, now), today.d);
+    if(!entry){ hideDailyBand(); return; }
+    quoteBox.innerHTML = dailyQuoteHtml(entry.quote);
+    wordBox.innerHTML = entry.words.map(dailyWordHtml).join('');
+    box.style.display = '';
+    _dailyDrawnKey = today.key;
+  }catch(e){
+    // Anything unexpected in here costs the band and nothing else. The header
+    // must never be the thing that takes a screen down under it.
+    hideDailyBand();
+  }
 }
 // Move the plan pointer to whatever today actually is.
 //
@@ -9172,7 +9806,7 @@ function renderRoster(){
           &middot; <a href="#" onclick="exportClassJson();return false">save a copy</a></p>
         <div class="mc-options" role="group">${members.map(m => {
           const n = String(m.displayName || '(no name)');
-          const esc = n.replace(/'/g, "\\'");
+          const esc = escapeAttrArg(n);
           return `<div class="mc-option" style="cursor:default">
             <label style="display:flex;align-items:center;gap:.55rem;flex:1;cursor:pointer;margin:0">
               <input type="checkbox" style="width:auto;margin:0" ${present.includes(n)?'checked':''} onchange="rosterTogglePresent('${esc}')">
@@ -9311,17 +9945,31 @@ function renderClassProgress(){
   const rows = roster.map(name => {
     const d = (_classProgress && _classProgress[name]) || {};
     const sum = d.summary || null;
-    const esc = name.replace(/'/g, "\\'");
-    const today = sum ? sum.attemptsToday : 0;
-    const weak = sum && sum.weakType
-      ? tagFor(sum.weakType) + ' &middot; ' + sum.weakAvg + '% <span class="small-note">(best of day, over ' + sum.weakTries + ' attempt' + (sum.weakTries>1?'s':'') + ')</span>'
+    const esc = escapeAttrArg(name);
+    // The summary is the ONE thing on this screen the student writes about
+    // themselves, and firestore.rules deliberately does not look inside it --
+    // its shape changes when the app changes. So the shape is enforced here,
+    // where it is read, and these four are counts: a count that is not a
+    // number is a zero, never markup. Escaping would also be safe, but it
+    // would draw an attacker's tag as visible text in her panel; a number
+    // renders as a number.
+    const num = v => { const n = Number(v); return Number.isFinite(n) ? Math.trunc(n) : 0; };
+    const today = sum ? num(sum.attemptsToday) : 0;
+    const tries = sum ? num(sum.weakTries) : 0;
+    // tagFor throws on a type it does not know -- .find(...).tag on undefined --
+    // and weakType comes off that same student-written record. An unknown type
+    // took the whole panel down, which is a quieter way to lose the class than
+    // any payload.
+    const known = sum && sum.weakType && TASK_TYPES.some(t => t.id === sum.weakType);
+    const weak = known
+      ? tagFor(sum.weakType) + ' &middot; ' + num(sum.weakAvg) + '% <span class="small-note">(best of day, over ' + tries + ' attempt' + (tries>1?'s':'') + ')</span>'
       : '<span class="small-note">not enough attempts yet</span>';
     const trend = sum && sum.trend === 'up' ? '📈' : sum && sum.trend === 'down' ? '📉' : '';
     return `
       <div class="ex-card" style="margin:0 0 .7rem">
         <div class="ex-card-head">
           <span class="ex-tag">${escapeHtml(name)}</span>
-          <span class="small-note">${today ? today + ' today' : 'nothing today'}${sum ? ' &middot; ' + sum.attemptsTotal + ' in total' : ''} ${trend}</span>
+          <span class="small-note">${today ? today + ' today' : 'nothing today'}${sum ? ' &middot; ' + num(sum.attemptsTotal) + ' in total' : ''} ${trend}</span>
         </div>
         <div class="small-note" style="margin:.2rem 0 .5rem">Weakest so far: <b>${weak}</b></div>
         <div class="field">
@@ -9400,7 +10048,7 @@ function renderNamePrompt(){
     <div class="compose">
       <div class="ex-body"><b>Welcome!</b> Tap your name.</div>
       <div class="mc-options" role="group" style="margin-top:.6rem">${roster.map(n => `
-        <button class="mc-option" onclick="pickName('${n.replace(/'/g,"\\'")}')">
+        <button class="mc-option" onclick="pickName('${escapeAttrArg(n)}')">
           <span>${escapeHtml(n)}</span></button>`).join('')}</div>
       <div class="ex-actions" style="margin-top:.7rem">
         <button class="btn ghost sm" onclick="showTypeNameInstead()">My name isn't here</button>
@@ -10494,6 +11142,7 @@ function finishExam(reason){
   if(!ex || ex.finished) return;
   stopExamClock();
   clearPracticeTimer();
+  releaseVoiceClip();
   unmountExamBar();
   ex.finished = true;
   ex.finishedAt = Date.now();
@@ -10634,7 +11283,7 @@ function submitReview(section){
       <p class="small-note" style="color:var(--accent)"><b>Thank you — that is genuinely the useful part.</b></p>
       <textarea rows="7" aria-label="Section review, ready to copy" readonly onclick="this.select()" style="width:100%">${escapeHtml(body)}</textarea>
       <div class="ex-actions" style="margin-top:.5rem">
-        <button class="btn sm" onclick="mailReview(${JSON.stringify(JSON.stringify(body))})">Open an email with this</button>
+        <button class="btn sm" onclick="mailReview('${escapeAttrArg(body)}')">Open an email with this</button>
         <button class="btn ghost sm" onclick="leaveExam()">Done</button>
       </div>`;
   }
@@ -10719,6 +11368,7 @@ function backToMyPage(){
   // rather than a clock the student is already behind on.
   window._startedItems = null;
   clearPracticeTimer();
+  releaseVoiceClip();
   const wrap = document.getElementById('practice-wrap');
   if(wrap) wrap.innerHTML = '';
   renderStudent();
@@ -10962,6 +11612,11 @@ function renderPracticeInner(){
   const wrap = document.getElementById('practice-wrap');
   const item = currentItem();
   clearPracticeTimer();
+  // The screen is about to be replaced, so whatever was recorded into it
+  // belongs to nothing now. Released here rather than inside
+  // clearPracticeTimer because checkInterviewAnswer() clears the clock and
+  // then still needs the clip the student is about to play back.
+  releaseVoiceClip();
   if(!item){ wrap.innerHTML=''; return; }
 
   // One guard, above all twelve branches. Putting it in each renderer is how
@@ -11660,7 +12315,8 @@ function renderInterviewStep(item){
   const wrap = document.getElementById('practice-wrap');
   const st = window._interviewState;
   const q = item.data.questions[st.step];
-  window._interviewTiming = null;
+  window._interviewFluency = null;
+  window._interviewFluencyPending = null;
   const classroom = isSharedClassroomAudio();
   const myTurn = isMyTurnToSpeak();
   const turnList = speakingTurnList();
@@ -11699,10 +12355,12 @@ function renderInterviewStep(item){
       <div id="interview-question-reveal"></div>
       <div class="ex-actions" style="margin-top:.7rem">
         ${listensLeft > 0 ? `<button class="btn sound" onclick="playInterviewQuestion()">🔊 Listen again (last time — pauses the clock)</button>` : listensSpentNote('answer')}
-        ${myTurn ? `<button class="btn ${supportsSTT()?'':'ghost'}" onclick="tryAnswer()" ${supportsSTT()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
+        ${myTurn ? `<button class="btn ${canPracticeAloud()?'':'ghost'}" id="interview-mic" onclick="tryAnswer()" ${canPracticeAloud()?'':'disabled'}>🎙️ Answer by voice</button>` : ''}
       </div>
-      ${(myTurn && !supportsSTT()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
-      <textarea id="interview-answer" rows="4" aria-label="Your answer to this question" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="window._interviewTiming = null; window._interviewState.draft = this.value">${escapeHtml(st.draft || '')}</textarea>
+      ${(myTurn && !supportsSTT() && supportsVoiceCapture()) ? '<p class="small-note">This browser cannot write out what you say, so type your answer as well — but it can record you, so your pace and pauses are still measured and you can hear the answer back.</p>' : ''}
+      ${(myTurn && !canPracticeAloud()) ? '<p class="small-note">Voice input isn\'t available in this browser/preview — type your answer below instead.</p>' : ''}
+      <div id="interview-playback"></div>
+      <textarea id="interview-answer" rows="4" aria-label="Your answer to this question" placeholder="${myTurn ? 'Or type your spoken answer here...' : 'Type your answer here — the mic is for the student(s) called on this round...'}" style="margin-top:.6rem" oninput="interviewDraftChanged(this.value)">${escapeHtml(st.draft || '')}</textarea>
       <div id="paste-note" class="small-note" role="alert" style="display:none;color:var(--red);font-weight:600"></div>
       <div class="ex-actions" style="margin-top:.6rem">
         <button class="btn sm" onclick="checkInterviewAnswer()">Check my answer</button>
@@ -12150,10 +12808,10 @@ function renderListenRepeatStep(item){
   // on every device and 13 phones firing at once was a mess. Now that
   // every device plays the same pre-rendered clip, that whole special
   // case is unnecessary: whoever wants to play it, presses play.
-  const esc = s.text.replace(/'/g,"\\'");
+  const esc = escapeAttrArg(s.text);
   const listenControls = !myTurn ? '' : `
     <button class="btn sound" id="lr-play" onclick="lrPlay('${esc}')">🔊 Play${st.played ? ' again' : ''}</button>
-    ${st.played ? `<button class="btn ghost sm" onclick="lrRecord('${esc}', ${s.seconds})" ${supportsSTT()?'':'disabled'}>🎙️ Restart recording</button>` : ''}`;
+    ${st.played ? `<button class="btn ghost sm" onclick="lrRecord('${esc}', ${s.seconds})" ${canPracticeAloud()?'':'disabled'}>🎙️ Restart recording</button>` : ''}`;
   wrap.innerHTML = `
     <div class="compose">
       <div class="wordcount">Sentence ${s.index} of 7 &middot; recording window: ${s.seconds}s (official ${RECORD_SECONDS_OFFICIAL[s.index-1]}s + ${PRACTICE_BUFFER_SECONDS}s buffer for natural speaking pace)</div>
@@ -12166,11 +12824,19 @@ function renderListenRepeatStep(item){
       </div>
       ${!myTurn ? '' : (supportsSTT()
         ? '<p class="small-note">Press play, then repeat the sentence out loud — recording starts by itself the moment the sentence ends, with no extra tap, exactly like the real test.</p>'
+        : supportsVoiceCapture()
+        // Firefox, and Safari without Dictation. This browser cannot turn
+        // speech into text, so there is no word-by-word score — but it can
+        // record, and hearing yourself straight after the model is the part
+        // of this exercise that actually teaches. Before, these students
+        // were handed a disabled button and told to move on.
+        ? '<p class="small-note">This browser cannot turn your speech into text, so there is no word-by-word score here — but it can record you. Press play, repeat the sentence, then hear yourself against the model.</p>'
         : '<p class="small-note">This browser cannot record your voice, so your repetition will not be scored — you can still play each sentence and practice out loud, then use "Mark as practiced" to move on.</p>')}
       <div id="lr-timer" class="wordcount"></div>
       <div id="lr-result" role="status" aria-live="polite"></div>
+      <div id="lr-playback"></div>
       <div class="ex-actions" style="margin-top:.8rem">
-        <button class="btn ghost sm" onclick="lrSkip()">${(myTurn && supportsSTT()) ? 'Skip' : 'Mark as practiced'} →</button>
+        <button class="btn ghost sm" onclick="lrSkip()">${(myTurn && canPracticeAloud()) ? 'Skip' : 'Mark as practiced'} →</button>
       </div>
     </div>`;
 }
@@ -12185,36 +12851,121 @@ function lrPlay(text){
   renderListenRepeatStep(item);
   speak(text, () => lrRecord(s.text, s.seconds));
 }
+// Opening the microphone is now the FIRST thing that happens, and the
+// countdown starts after it — see startVoiceClip() for why that order is
+// the whole design. On the first ever recording it means a permission
+// dialog is answered on the student's own time instead of out of their
+// recording window; on every later one the promise resolves immediately
+// and nothing about the clock changes.
 function lrRecord(target, seconds){
   const timerEl = document.getElementById('lr-timer');
-  let left = seconds;
+  const resultEl = document.getElementById('lr-result');
+  lrMountPlayback('');
+  if(timerEl) timerEl.textContent = '';
+  if(resultEl) resultEl.innerHTML = '<p class="small-note">Opening the microphone…</p>';
+  startVoiceClip().then(cap => lrRunRecording(target, seconds, cap));
+}
+function lrRunRecording(target, seconds, cap){
+  const timerEl = document.getElementById('lr-timer');
+  const resultEl = document.getElementById('lr-result');
+  // The student can walk off the screen while the permission dialog is
+  // open. There is nothing left to draw into, and a microphone to give back.
+  if(!timerEl || !resultEl){ releaseVoiceClip(); return; }
+  let settled = false, tick = null, left = seconds;
+  const finish = (transcript, err) => {
+    if(settled) return;
+    settled = true;
+    window._lrStop = null;
+    if(tick) clearInterval(tick);
+    const t = document.getElementById('lr-timer');
+    if(t) t.textContent = '';
+    stopVoiceClip().then(clip => lrShowResult(target, transcript, err, clip, cap));
+  };
+  window._lrStop = () => finish(null, '');
   timerEl.textContent = `Recording… ${left}s`;
-  const tick = setInterval(()=>{ left--; if(left>=0) timerEl.textContent = `Recording… ${left}s`; if(left<=0) clearInterval(tick); }, 1000);
-  document.getElementById('lr-result').innerHTML = '<p class="small-note">Listening…</p>';
-  listenOnce(
-    transcript => {
-      clearInterval(tick); timerEl.textContent='';
-      const res = repeatAccuracy(target, transcript);
-      const score = res.score;
-      window._lrState.results.push({ index: currentItem().data.set[window._lrState.step].index, score, transcript });
-      const bits = [];
-      if(res.contentErr) bits.push(`${res.contentErr} key word${res.contentErr>1?'s':''} missing or wrong`);
-      if(res.funcErr) bits.push(`${res.funcErr} small word${res.funcErr>1?'s':''} (like "the", "of") off`);
-      if(res.markerErr) bits.push(`${res.markerErr} word ending${res.markerErr>1?'s':''} off (e.g. plural or past tense)`);
-      if(res.transposed) bits.push(`${res.transposed} pair of words swapped`);
-      if(res.extra) bits.push(`${res.extra} extra word${res.extra>1?'s':''} added`);
-      document.getElementById('lr-result').innerHTML = `
+  resultEl.innerHTML = '<p class="small-note">Listening…</p>';
+  tick = setInterval(() => {
+    left--;
+    if(left >= 0) timerEl.textContent = `Recording… ${left}s`;
+    // Recognition ends the recording by itself. Without it — Firefox, or
+    // Safari with Dictation off — nothing would, so the window closing IS
+    // the end of the take. The microphone is never left open past it.
+    if(left <= 0){ clearInterval(tick); tick = null; if(!supportsSTT()) finish(null, ''); }
+  }, 1000);
+  if(supportsSTT()){
+    listenOnce(transcript => finish(transcript, ''), err => finish(null, err));
+    return;
+  }
+  if(!cap.ok){ finish(null, voiceClipReasonNote(cap.reason) || 'This browser cannot record your voice. Play the sentence and repeat it out loud, then mark it as practiced.'); return; }
+  resultEl.innerHTML = '<p class="small-note">Recording your voice…</p>';
+  lrMountPlayback('<div class="ex-actions" style="margin-top:.6rem"><button class="btn ghost sm" onclick="lrStopRecording()">⏹ Stop and hear it</button></div>');
+}
+function lrStopRecording(){ if(window._lrStop) window._lrStop(); }
+function lrMountPlayback(html){
+  const el = document.getElementById('lr-playback');
+  if(el) el.innerHTML = html;
+}
+// Hearing your own voice straight after the model is the part of this that
+// teaches. A number from 0 to 5 tells a student they were wrong; the two
+// clips back to back tell them HOW, and it costs nothing to run.
+function lrPlaybackHtml(target, clip, cap){
+  if(voiceClipIsUsable(clip)){
+    // The sentence travels as a data attribute, never interpolated into an
+    // attribute — one quotation mark in reported speech would end the
+    // attribute early and leave a button that silently does nothing. That
+    // exact bug is why speakButtonHtml exists.
+    return `<div class="ex-actions" style="margin-top:.6rem">
+        <button class="btn ghost sm" onclick="playMyVoice()">🔁 Hear my voice</button>
+        ${speakButtonHtml(target, 'Hear the model sentence again', { cls:'btn ghost sm', face:'🔊 Hear the model again' })}
+      </div>
+      <p class="small-note">Your recording stays on this device: it is never uploaded, never saved, and it is gone the moment you leave this screen.</p>`;
+  }
+  // Nothing was captured. Say which of the reasons it was, rather than
+  // offering a play button that plays silence.
+  const why = (cap && !cap.ok) ? voiceClipReasonNote(cap.reason)
+            : clip ? voiceClipReasonNote('lost') : '';
+  return why ? `<p class="small-note">${why}</p>` : '';
+}
+function lrShowResult(target, transcript, err, clip, cap){
+  const resultEl = document.getElementById('lr-result');
+  if(!resultEl) return;
+  const playback = lrPlaybackHtml(target, clip, cap);
+  if(err){
+    resultEl.innerHTML = `<p class="small-note">${err}</p>`;
+    lrMountPlayback(playback);
+    return;
+  }
+  if(transcript === null || transcript === undefined){
+    // Recorded with no recogniser behind it. No score is possible and none
+    // is shown — but the student now has their own voice next to the
+    // model, which is what they came to this exercise for.
+    resultEl.innerHTML = '<p class="small-note">Recorded. This browser cannot turn speech into text, so there is no Repeat Accuracy score here — listen to yourself against the model and take the difference to your teacher.</p>';
+    lrMountPlayback(playback);
+    return;
+  }
+  const res = repeatAccuracy(target, transcript);
+  const score = res.score;
+  window._lrState.results.push({ index: currentItem().data.set[window._lrState.step].index, score, transcript });
+  const bits = [];
+  if(res.contentErr) bits.push(`${res.contentErr} key word${res.contentErr>1?'s':''} missing or wrong`);
+  if(res.funcErr) bits.push(`${res.funcErr} small word${res.funcErr>1?'s':''} (like "the", "of") off`);
+  if(res.markerErr) bits.push(`${res.markerErr} word ending${res.markerErr>1?'s':''} off (e.g. plural or past tense)`);
+  if(res.transposed) bits.push(`${res.transposed} pair of words swapped`);
+  if(res.extra) bits.push(`${res.extra} extra word${res.extra>1?'s':''} added`);
+  resultEl.innerHTML = `
         <p class="small-note" style="margin-bottom:.3rem">You said: <i>"${escapeHtml(transcript)}"</i></p>
         ${repeatDiffHtml(res)}
         <div class="result-msg ${score>=4?'ok':'no'}">Repeat Accuracy: ${score} / 5${bits.length ? ' — ' + bits.join(', ') : ' — exact repetition'}</div>
         <p class="small-note">This checks word accuracy only, using our own scoring modelled on the published criteria. Pronunciation, rhythm and intonation are <b>not</b> measured here — that needs your teacher's ear.</p>`;
-    },
-    err => { clearInterval(tick); timerEl.textContent=''; document.getElementById('lr-result').innerHTML = `<p class="small-note">${err}</p>`; }
-  );
+  lrMountPlayback(playback);
 }
 function lrSkip(){
   const item = currentItem();
   const st = window._lrState;
+  // Sentence eight of seven on an old phone is where this matters: each
+  // take holds a blob and an object URL, and nothing else on this path
+  // goes through renderPractice to drop them.
+  releaseVoiceClip();
   if(st.step < item.data.set.length - 1){
     st.step++; st.played = false;
     renderListenRepeatStep(item);
@@ -12224,33 +12975,141 @@ function lrSkip(){
     document.getElementById('practice-wrap').innerHTML = `
       <div class="compose">
         <div class="ex-body"><b>Set complete.</b> Average Repeat Accuracy (approx.): ${avg} / 5 across ${st.results.length} scored sentence(s).</div>
-        <p class="small-note">This score reflects word-for-word match only. The official exam also judges fluency, clarity of speech, language use and organisation — all of which need audio analysis this free prototype cannot do yet.</p>
+        <p class="small-note">This score reflects word-for-word match only. The official exam also judges fluency, clarity of speech, language use and organization — none of which is scored here. Seven short sentences are too little speech to measure a pace from, and pronunciation needs your teacher's ear. Playing your own recording against the model is what this exercise gives you instead of a number.</p>
         <div class="ex-actions"><button class="btn ghost sm" onclick="practiceAgain()">🔄 New set of 7 sentences</button></div>
       </div>`;
   }
 }
+// The microphone is opened first and awaited, then recognition starts on
+// top of the same device — the order is argued in startVoiceClip(). The
+// recording exists for two things the transcript alone could never give:
+// the student hears their own answer back, and the pauses are measured in
+// the waveform instead of on the clock.
 function tryAnswer(){
-  document.getElementById('interview-answer').placeholder = 'Listening…';
-  const startedAt = Date.now();
-  listenOnce(
-    transcript => {
-      document.getElementById('interview-answer').value = transcript;
-      // Wall-clock time from mic-open to transcript-back is our only free,
-      // honest proxy for speaking rate (words per minute) — real fluency
-      // scoring needs actual audio/prosody analysis, which this offline
-      // prototype doesn't have.
-      window._interviewTiming = { elapsedSec: Math.max(1, (Date.now() - startedAt) / 1000) };
-    },
-    err => { document.getElementById('interview-answer').placeholder = err; }
-  );
+  const box = document.getElementById('interview-answer');
+  if(!box) return;
+  window._interviewFluency = null;
+  window._interviewFluencyPending = null;
+  interviewMountPlayback('');
+  box.placeholder = 'Opening the microphone…';
+  startVoiceClip().then(cap => interviewRunRecording(cap));
+}
+function interviewRunRecording(cap){
+  const box = document.getElementById('interview-answer');
+  // Walked off the screen while the permission dialog was open.
+  if(!box){ releaseVoiceClip(); return; }
+  let settled = false;
+  const finish = (transcript, err) => {
+    if(settled) return;
+    settled = true;
+    window._interviewStop = null;
+    interviewMicLabel(false);
+    const live = document.getElementById('interview-answer');
+    if(live){
+      if(transcript){
+        live.value = transcript;
+        if(window._interviewState) window._interviewState.draft = transcript;
+      }
+      if(err) live.placeholder = err;
+      else if(!transcript) live.placeholder = 'Recorded. This browser cannot write out what you said — type your answer here, then check it.';
+    }
+    // The measurement is kicked off the instant the recording stops, and
+    // "Check my answer" waits on THIS promise rather than racing it. A
+    // fluency line that sometimes appears and sometimes does not, for the
+    // same answer, is worse than one that takes half a second.
+    window._interviewFluencyPending = stopVoiceClip()
+      .then(clip => interviewFluencyFor(clip, transcript, cap))
+      .then(f => { window._interviewFluency = f; return f; });
+  };
+  window._interviewStop = () => finish('', '');
+  interviewMicLabel(true);
+  if(supportsSTT()){
+    listenOnce(transcript => finish(transcript, ''), err => finish('', err));
+    return;
+  }
+  if(!cap.ok){ finish('', voiceClipReasonNote(cap.reason) || 'The microphone could not be opened — type your answer here instead.'); return; }
+  // Firefox, and Safari with Dictation off. Nothing will end the take on
+  // its own, so the student ends it — and the hard cap in startVoiceClip
+  // ends it for them if they forget.
+  box.placeholder = 'Recording… press Stop when you have finished, then type what you said.';
+}
+function interviewStopRecording(){ if(window._interviewStop) window._interviewStop(); }
+// The button changes, not the screen. Re-rendering the step here would
+// replace the answer box under the student's cursor and lose the draft
+// they are part-way through.
+function interviewMicLabel(recording){
+  const mic = document.getElementById('interview-mic');
+  if(!mic) return;
+  mic.textContent = recording ? '⏹ Stop recording' : '🎙️ Answer by voice';
+  mic.setAttribute('onclick', recording ? 'interviewStopRecording()' : 'tryAnswer()');
+}
+function interviewMountPlayback(html){
+  const el = document.getElementById('interview-playback');
+  if(el) el.innerHTML = html;
+}
+async function interviewFluencyFor(clip, transcript, cap){
+  if(!voiceClipIsUsable(clip)){
+    interviewMountPlayback('');
+    return { state:'unavailable',
+             why: (cap && !cap.ok) ? voiceClipReasonNote(cap.reason) : voiceClipReasonNote('lost') };
+  }
+  interviewMountPlayback('<div class="ex-actions" style="margin-top:.5rem"><button class="btn ghost sm" onclick="playMyVoice()">🔁 Hear my answer</button></div><p class="small-note">Your recording stays on this device: it is never uploaded, never saved, and it is gone the moment you leave this screen.</p>');
+  const f = await analyseFluency(clip.blob, transcript);
+  // A container this browser can record but cannot read back. "Not
+  // measured" is the honest outcome; a number guessed from the clock is
+  // what this change exists to remove.
+  if(!f) return { state:'unavailable', why:'This browser could not read the recording back, so pace and pauses are not measured for this answer.' };
+  return Object.assign({ state:'ready' }, f);
+}
+// The Fluency line, written from the recording.
+//
+// What it replaced: the wall clock between opening the microphone and the
+// transcript coming back, which on a school connection is mostly the round
+// trip to the recogniser. There is deliberately no fallback to it — a pace
+// measured from the network is not a rougher fluency, it is a different
+// quantity wearing the name, and it made slow-connection students read as
+// hesitant.
+//
+// What this is NOT: the exam's Fluency score. It is two signals a waveform
+// can honestly carry — how fast the words came while the student was
+// actually speaking, and how the silences fell between them. Hesitation
+// quality, self-correction and repair are a person's judgement.
+function interviewFluencyNote(f){
+  if(!f) return '<b>Fluency:</b> only measurable when you answer by voice — a typed answer has no speaking in it to measure. It is read from the recording itself, not from the clock, so a slow connection cannot make you look hesitant.';
+  if(f.state !== 'ready') return '<b>Fluency:</b> ' + (f.why || 'not measured for this answer.');
+  if(f.silent) return '<b>Fluency:</b> the recording came back silent — nothing reached the microphone, so pace and pauses are not measured. Check the microphone is not muted, then answer again.';
+  const spoke = `you spoke for about ${f.speechSec.toFixed(1)}s of the recording`;
+  const pauseBit = f.pauses === 0
+    ? 'with no pause longer than a breath'
+    : `with ${f.pauses} pause${f.pauses>1?'s':''} of ${FLUENCY_PAUSE_MS/1000}s or more (longest ${f.longestPauseSec.toFixed(1)}s)`;
+  if(f.wpm === null){
+    // Audio present, too few words to divide by. One word over a fraction
+    // of a second is a pace of anything you like, so no pace is stated.
+    return `<b>Fluency (from your recording):</b> ${spoke}, ${pauseBit}. Too few words came back to state a speaking pace — a fuller answer is what makes that number mean anything.`;
+  }
+  const verdict = (f.wpm >= 110 && f.wpm <= 190) ? 'Comfortably in range.'
+    : f.wpm < 110 ? 'Slower than a natural conversation — but pauses to think are normal, and this is one signal, not a verdict.'
+    : 'Faster than a natural conversation — clarity matters more than speed.';
+  return `<b>Fluency (from your recording):</b> about ${f.wpm} words a minute while actually speaking (natural conversational pace is roughly 130–160), ${pauseBit}. ${verdict} Measured in the audio on this device — pace and pauses only, not the exam's full Fluency judgement.`;
+}
+// Typing over the answer drops the measurement with it: those numbers
+// describe a recording of a different answer, and showing them beside text
+// the student typed instead would attach a speaking measurement to
+// something nobody said. The wall-clock proxy was cleared here for the
+// same reason before it was deleted.
+function interviewDraftChanged(value){
+  window._interviewFluency = null;
+  window._interviewFluencyPending = null;
+  if(window._interviewState) window._interviewState.draft = value;
 }
 
 // Real ETS rubric for Take an Interview: Fluency, Intelligibility, Language
-// Use, Organization (0-5 each). This free prototype can only honestly
-// approximate two of the four with text/timing signals — the other two
-// (Intelligibility/pronunciation, true grammar accuracy) need real audio
-// and language analysis, flagged explicitly rather than faked.
-function checkInterviewAnswer(){
+// Use, Organization (0-5 each). Three of the four are approximated here and
+// each says on the screen what it is: Organization and Language Use from
+// the text, Fluency from pace and pauses read out of the student's own
+// recording. Intelligibility is the one that genuinely needs an acoustic
+// model, and it is flagged as not measured rather than faked.
+async function checkInterviewAnswer(){
   const text = (document.getElementById('interview-answer').value || '').trim();
   const box = document.getElementById('interview-feedback');
   if(!text){ box.innerHTML = '<p class="small-note">Answer the question first — by voice or typed — then check.</p>'; return; }
@@ -12267,12 +13126,10 @@ function checkInterviewAnswer(){
   const notes = [];
   notes.push(`<b>Organization:</b> ${wordCount>=80 && wordCount<=220 && sentenceCount>=3 ? `good length (${wordCount} words, ~${sentenceCount} sentences) — close to the ~150-word, 4–6 sentence target.` : `${wordCount} words in ~${sentenceCount} sentence(s) — aim for about 110 words across 4–6 sentences to fully develop your answer.`}`);
   notes.push(`<b>Language Use (vocabulary proxy):</b> ${uniqueRatio>0.6 ? `good word variety (${Math.round(uniqueRatio*100)}% unique words) — you're not just repeating the same few words.` : `${Math.round(uniqueRatio*100)}% unique words — try varying your vocabulary a bit more instead of repeating the same words.`} Grammar accuracy itself isn't checked yet — that needs real language analysis.`);
-  if(window._interviewTiming){
-    const wpm = Math.round(wordCount / (window._interviewTiming.elapsedSec/60));
-    notes.push(`<b>Fluency (pace proxy):</b> approx. ${wpm} words per minute (natural conversational pace is roughly 130–160). ${wpm>=110 && wpm<=190 ? 'Comfortably in range.' : wpm<110 ? 'A bit slow/hesitant for this proxy — but pauses to think are normal, this is only a rough signal.' : 'Quite fast for this proxy — clarity matters more than speed.'}`);
-  } else {
-    notes.push(`<b>Fluency:</b> only measurable when you answer by voice (needs real speaking time) — type-only answers skip this dimension.`);
-  }
+  // Waits for the measurement rather than racing it, so the line is the
+  // same line for the same answer every time.
+  if(window._interviewFluencyPending){ try{ await window._interviewFluencyPending; }catch(err){ window._interviewFluency = null; } }
+  notes.push(interviewFluencyNote(window._interviewFluency));
   notes.push(`<b>Intelligibility (pronunciation):</b> not measured in this free prototype — genuinely needs real audio analysis, planned for the hosted/local upgrade.`);
 
   box.innerHTML = `<div class="feedback"><span class="feedback-label">Assistant draft feedback, written against our own criteria and informed by the published exam dimensions — your teacher's judgment is what actually counts</span><ul>${notes.map(n=>`<li>${n}</li>`).join('')}</ul></div>`;
@@ -12851,6 +13708,10 @@ function renderWhoAmI(){
 let currentView = 'welcome';
 function setView(v){
   currentView = v;
+  // Any change of screen abandons a recording in progress. The microphone
+  // light must go out with the screen it belongs to, not stay on over
+  // whatever the student went to look at.
+  releaseVoiceClip();
   if(v==='teacher') clearPracticeTimer();
   document.getElementById('view-welcome').classList.toggle('active', v==='welcome');
   /* Two screens exist to ask one question, and everything else on them is
@@ -12880,7 +13741,12 @@ function setView(v){
   const contact = document.getElementById('pre-login-contact');
   if(contact) contact.style.display = signedOut ? '' : 'none';
   document.querySelectorAll('.masthead').forEach(el => { el.style.display = hideAll ? 'none' : ''; });
-  ['.padrao-c', '.tech-note'].forEach(sel => {
+  /* The day's band goes with them, and for the account screen it is the same
+     sentence again: a quotation and three vocabulary cards above a pair of
+     sign-in buttons are three things in the way of one decision. On the cover
+     it would also put the week in front of somebody who has not said who they
+     are, which is the rule #welcome-clock exists to keep. */
+  ['.padrao-c', '.tech-note', '#daily-band'].forEach(sel => {
     document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
   });
   /* And it holds on every route in, not only on the two doors.
@@ -13029,10 +13895,17 @@ const TASK_BRIEF = {
    textContent puts the words in the DOM as text, where no character means
    anything. One listener on document handles every one of them, so a
    thirteenth site cannot be built the old way by accident. */
-function speakButtonHtml(text, label){
+function speakButtonHtml(text, label, opts){
+  opts = opts || {};
   const holder = document.createElement('span');
   holder.textContent = String(text == null ? '' : text);
-  return `<button class="btn sound sm" data-speak="${holder.innerHTML.replace(/"/g, '&quot;')}" aria-label="${escapeHtml(label)}">🔊</button>`;
+  // The class and the visible words are options because the twelve original
+  // sites are bare 🔊 icons and the playback row beside a student's own
+  // recording has to say WHICH voice it plays. What must not become an
+  // option is where the text travels: through the data attribute, always.
+  const cls = opts.cls || 'btn sound sm';
+  const face = opts.face || '🔊';
+  return `<button class="${cls}" data-speak="${holder.innerHTML.replace(/"/g, '&quot;')}" aria-label="${escapeHtml(label)}">${escapeHtml(face)}</button>`;
 }
 document.addEventListener('click', e => {
   const btn = e.target && e.target.closest ? e.target.closest('[data-speak]') : null;
@@ -15415,6 +16288,20 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// A value that lands inside a JS string that is itself inside an HTML
+// attribute -- an onclick whose argument is quoted. TWO layers, and the old
+// spelling
+// (name.replace(/'/g, "\\'")) only did one: it escaped the apostrophe and
+// left the double quote free to END THE ATTRIBUTE and open a new one. That
+// was fine while the roster was typed by the teacher; it stopped being fine
+// when the name became something the student writes about themselves.
+// Order matters and is not interchangeable: escape for the JS string first,
+// then for HTML, because the browser HTML-decodes the attribute BEFORE the
+// JS parser ever sees it. Newlines go too -- a raw one ends a JS string.
+function escapeAttrArg(s){
+  return escapeHtml(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/[\r\n\u2028\u2029]/g, ' '));
+}
+
 /* =========================================================
    TEACHER -> STUDENT ANNOUNCEMENT — one-way broadcast riding
    the same share link as the batch (no live channel exists, so
@@ -15462,7 +16349,7 @@ function renderWelcomeBack(){
   el.innerHTML = `
     <div class="panel" style="background:var(--accent-soft);border:none;margin-bottom:1rem">
       <b>👋 Welcome back, ${escapeHtml(name)}!</b>
-      <div class="small-note" style="margin-top:.2rem">${s.total} exercise${s.total>1?'s':''} logged so far${bits.length ? ' — ' + bits.join(', ') : ''}. <a href="javascript:void(0)" onclick="showInsights()">See your full patterns →</a></div>
+      <div class="small-note" style="margin-top:.2rem">${s.total} exercise${s.total>1?'s':''} logged so far${bits.length ? ' — ' + bits.join(', ') : ''}. <a href="#" onclick="showInsights();return false">See your full patterns →</a></div>
     </div>`;
 }
 
