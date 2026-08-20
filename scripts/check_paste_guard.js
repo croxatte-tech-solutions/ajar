@@ -20,7 +20,15 @@ const list = [...guarded.matchAll(/'([^']+)'/g)].map(m => m[1]);
 
 assert('the writing answer is guarded', list.includes('response'));
 assert('the typed interview answer is guarded', list.includes('interview-answer'));
-assert('exactly the two produced-answer fields are guarded', list.length === 2);
+assert('the named list is exactly the two long-answer fields', list.length === 2);
+// The gaps in Complete the Words are produced answers too -- the student
+// supplies the letters -- and they arrive as a dozen ids rather than one, so
+// the guard matches them by class. Covering the long answers and leaving the
+// short ones open would not be a guard, it would be a preference about typing.
+assert('and every gap in Complete the Words is guarded with them',
+  /classList\.contains\(['"]cw-gap['"]\)/.test(html));
+assert('the gaps really are that class, so the guard is not aimed at nothing',
+  /class="cw-gap"/.test(html) || /class=.cw-gap/.test(html));
 
 // The fields a guard must NOT touch. Each is a place someone legitimately
 // pastes: the teacher composing, or a student writing feedback in their

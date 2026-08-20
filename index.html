@@ -279,14 +279,39 @@ select:focus,textarea:focus,input:focus{ outline:2px solid var(--accent); outlin
 .cw-passage{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.88rem; line-height:2; letter-spacing:.02em; }
 .cw-passage .blank{ font-weight:700; color:var(--accent); }
 .cw-passage .blank-marks{ letter-spacing:3px; }
-.cw-inputs{ display:grid; gap:.5rem; }
-.cw-input-row{ display:flex; align-items:center; gap:.6rem; flex-wrap:wrap; }
-.cw-input-num{ font-size:.76rem; font-weight:700; color:var(--text-dim); min-width:1.1em; }
-.cw-input-hint{ font-family:'SF Mono','Menlo','Consolas',monospace; font-size:.82rem; color:var(--text-dim); min-width:5ch; }
-.cw-blank-input{ flex:1; }
-.cw-blank-input.cw-ok{ border-color:var(--green); background:var(--green-soft); color:var(--green); }
-.cw-blank-input.cw-no{ border-color:var(--red); background:var(--red-soft); color:var(--red); }
-.cw-answer-reveal{ flex-basis:100%; margin-left:1.7em; font-size:.78rem; font-weight:700; color:var(--red); }
+/* THE GAP, TYPED INTO THE PASSAGE ITSELF.
+   The brief at the top of this task says it out loud -- "you type only the
+   missing letters" -- and until now the app said that and then asked for the
+   whole word in a list underneath. The stem was drawn twice and the student
+   did the mapping between them in their head, which the real test does not
+   charge for.
+
+   Five things make it work on a phone, and four of them were found by putting
+   it on one rather than by reasoning about it:
+     width in ch, never the `size` attribute, which is only approximate;
+     the remaining marks drawn from the RIGHT, so their left edge sits exactly
+       where the typed letters stop -- a letter lands on a mark and spends it;
+     16px, because iOS Safari ZOOMS THE PAGE IN below that and the student
+       loses the left margin of the passage in the middle of answering;
+     line-height 1.15, because inheriting the passage's made the box as tall
+       as the line and dropped the marks far below the letters;
+     and the stem and its gap wrapped so a line break can never put them on
+       different lines, which is unreadable. */
+.cw-word{ white-space:nowrap; display:inline-block; }
+.cw-gap{
+  font:inherit; font-size:16px; font-weight:700; line-height:1.15;
+  color:var(--accent); border:0; padding:0; margin:0;
+  background-color:transparent; vertical-align:baseline; text-align:left;
+  width:calc(var(--n) * 1ch);
+  background-image:repeating-linear-gradient(to right,
+    currentColor 0 .72ch, transparent .72ch 1ch);
+  background-repeat:no-repeat; background-position:right bottom;
+  background-size:calc(max(var(--n) - var(--typed, 0), 0) * 1ch) 2px;
+}
+.cw-gap:focus{ outline:2px solid var(--accent); outline-offset:3px; border-radius:2px; }
+.cw-gap.cw-ok{ color:var(--green); }
+.cw-gap.cw-no{ color:var(--red); }
+.cw-answer-reveal{ font-size:.78rem; font-weight:700; color:var(--red); white-space:nowrap; }
 .interview-scenario{ background:var(--accent-soft); border-radius:10px; padding:.7rem .85rem; margin-bottom:.7rem; font-size:.84rem; line-height:1.5; }
 .interview-scenario-label{ display:block; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:.25rem; }
 .interview-figure{ width:100%; max-width:260px; margin:.2rem 0 .8rem; border:1px solid var(--border); border-radius:10px; overflow:hidden; }
@@ -12737,7 +12762,13 @@ const PASTE_MAX_CHARS = 25;          // a word, or a short fix
 const GUARDED_FIELDS = ['response', 'interview-answer'];
 
 function isGuardedField(el){
-  return !!el && GUARDED_FIELDS.includes(el.id);
+  // Two named fields, plus every gap in Complete the Words. The gaps are
+  // produced answers exactly like the other two -- the student is meant to
+  // supply the letters -- and they arrived as a dozen ids rather than one, so
+  // they are matched by class instead of being listed. A guard that covers the
+  // long answers and leaves the short ones open is not a guard, it is a
+  // preference about typing.
+  return !!el && (GUARDED_FIELDS.includes(el.id) || el.classList.contains('cw-gap'));
 }
 
 function pasteBlockedNote(el, n){
@@ -12828,24 +12859,40 @@ function discussionPromptHtml(d){
 // every exercise type inline and was pushing right up against the engine's
 // per-function bytecode-size ceiling that caused the earlier silent
 // "code length overflow" failure (same class of bug, different function).
+/* The passage with the gaps typed into it, built from the SAME `display` the
+   preview uses -- one source, so a change to how a blank is drawn cannot make
+   the two disagree. The ids stay cw-blank-N, which is why checkCompleteWords
+   and the answer reveals below need no change at all.
+
+   autocorrect/autocapitalize/spellcheck are off on every gap, and that is not
+   tidiness: the phone otherwise capitalises the first letter and offers a
+   completion, and the student is then being tested on refusing their keyboard
+   rather than on knowing the word. */
+function completeWordsPassageHtml(item){
+  let i = -1;
+  return item.data.display.replace(
+    /<span class="blank">([^<]*)<span class="blank-marks">(_+)<\/span><\/span>/g,
+    (_, shown, marks) => {
+      i += 1;
+      const n = marks.length;
+      return '<span class="cw-word">' + shown +
+        '<input type="text" id="cw-blank-' + i + '" class="cw-gap" style="--n:' + n + '"' +
+        ' maxlength="' + n + '" inputmode="text" enterkeyhint="next"' +
+        ' autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"' +
+        ' oninput="this.style.setProperty(\'--typed\', this.value.length)"' +
+        ' aria-label="gap ' + (i + 1) + ', the word starts ' + shown + ', ' + n + ' letters missing">' +
+        '<span id="cw-answer-' + i + '" class="cw-answer-reveal"></span></span>';
+    });
+}
+
 function completeWordsHtml(item){
-  const inputsHtml = item.data.words.map((w,i) => {
-    const { shown, hiddenCount } = blankInfo(w);
-    return `<div class="cw-input-row">
-      <span class="cw-input-num">${i+1}</span>
-      <span class="cw-input-hint">${shown}${'_'.repeat(hiddenCount)}</span>
-      <input type="text" id="cw-blank-${i}" class="cw-blank-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="type the word">
-      <span id="cw-answer-${i}" class="cw-answer-reveal"></span>
-    </div>`;
-  }).join('');
   return `
     <div class="compose">
       ${timerBadgeHtml(item.type)}
       <div id="time-up-note" class="small-note" style="display:none;color:var(--red);font-weight:600">⏰ Time's up — on the real test this item would be scored as-is now. Moving to the next exercise…</div>
       ${taskBriefHtml('complete-words')}
-      <div class="ex-body cw-passage">${item.data.display}</div>
-      <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type only the missing words, in order — capitalization and punctuation don't matter</label>
-      <div class="cw-inputs">${inputsHtml}</div>
+      <div class="ex-body cw-passage">${completeWordsPassageHtml(item)}</div>
+      <label style="font-size:.72rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;display:block;margin:.8rem 0 .4rem;">Type the missing letters — capitalization and punctuation don't matter</label>
       <div class="ex-actions"><button class="btn sm" onclick="checkCompleteWords()">Check</button></div>
       <div id="cw-result" role="status" aria-live="polite"></div>
     </div>`;

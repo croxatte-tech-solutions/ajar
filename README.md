@@ -95,7 +95,7 @@ One identifier deliberately keeps the pre-rebrand string because it is infrastru
 sh scripts/qa.sh
 ```
 
-**3,800+ assertions across 46 files**, all green, run by a pre-commit hook and again by GitHub Actions. They run on a machine that has only `node` — no framework, no fixtures, no network.
+**3,880+ assertions across 47 files**, all green, run by a pre-commit hook and again by GitHub Actions. They run on a machine that has only `node` — no framework, no fixtures, no network.
 
 ```bash
 AJAR_RULES=1 sh scripts/qa.sh
