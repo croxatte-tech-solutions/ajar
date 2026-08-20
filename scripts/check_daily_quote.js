@@ -312,10 +312,13 @@ assert('the explainer no longer calls the audio the browser\'s own Text-to-Speec
 
 // The band is hidden on the two screens that ask a single question, the same
 // way the other two notices are.
-{
-  const m = html.match(/\['\.tech-note', '#daily-band'\]/);
-  assert('the band is hidden on the cover and on the sign-in screen', !!m);
-}
+// Behaviour, not spelling. This used to grep for the literal selector array
+// setView passed to querySelectorAll, so it broke the moment the SAME rule was
+// expressed as a function -- it was testing how a line had been typed. The
+// band is decided in one place now, and the cases that matter are driven for
+// real in the sandbox below.
+assert('the band asks one function where it belongs, rather than each caller deciding',
+  /function dailyBandVisible\s*\(/.test(html) && /function syncDailyBand\s*\(/.test(html));
 
 // Announced as one thing with a meaning, not as four loose fragments.
 assert('the words are a labelled section, so a screen reader announces the box',
@@ -416,6 +419,32 @@ const testScript = `
     if(!c && detail !== undefined) results.push('    got: ' + String(detail).slice(0, 200));
   }
   const at = iso => new Date(iso);
+
+  // WHERE THE BAND BELONGS. On a phone the sentence and six cards are most of
+  // the screen, so this is not cosmetic: a student who has just opened an
+  // exercise is looking for the exercise, and in a timed section the clock is
+  // running while they scroll past six definitions.
+  {
+    const was = [currentView, selectedId];
+    currentView = 'student'; selectedId = null;
+    assert('the band is there on the student list, which is the moment it is for',
+      dailyBandVisible());
+    currentView = 'student'; selectedId = 'ex_7';
+    assert('and gone the moment an exercise is open', !dailyBandVisible());
+    currentView = 'student'; selectedId = '__exam__';
+    assert('and gone in a timed section, where the clock is the only thing that matters',
+      !dailyBandVisible());
+    currentView = 'student'; selectedId = '__self__';
+    assert('and gone in free practice too', !dailyBandVisible());
+    currentView = 'teacher'; selectedId = null;
+    assert('but kept on her screen, which is projected for the room to read',
+      dailyBandVisible());
+    currentView = 'welcome'; selectedId = null;
+    assert('the cover asks one question and the band is not part of it', !dailyBandVisible());
+    currentView = 'account'; selectedId = null;
+    assert('nor is it part of signing in', !dailyBandVisible());
+    currentView = was[0]; selectedId = was[1];
+  }
   const box = document.getElementById('daily-today');
   const quoteBox = document.getElementById('daily-quote');
   const wordBox = document.getElementById('daily-words');

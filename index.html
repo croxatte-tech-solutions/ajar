@@ -9064,6 +9064,38 @@ function hideDailyBand(){
   _dailyDrawnKey = '';
 }
 
+/* WHERE THE BAND BELONGS, AND WHERE IT IS IN THE WAY.
+
+   It is a minute before the work, not a column beside it. On a phone the
+   sentence and six cards are most of the screen, and a student who has just
+   opened an exercise is looking for the exercise. Worse in Reading, where six
+   definitions above the passage are English competing with the English being
+   tested; worse again in a timed section, where the clock runs while they
+   scroll past it.
+
+   So it goes the moment anything is open, and `selectedId` is that: an
+   exercise id, '__self__' for free practice, '__exam__' for a section being
+   sat. Null is the list, which is exactly the moment this is for.
+
+   Her screen keeps it always. Hers is projected on the TV for the room to
+   read, she is not sitting an exercise on it, and the two minutes of class it
+   buys is why the band was built.
+
+   KNOWN GAP, left open deliberately: a student who scans the QR on the wall
+   lands straight in an exercise and never passes the list, so on that route
+   they do not meet the band at all. Closing it needs per-session state in a
+   single-file app with no build, and a wrong version of that pops the band
+   over a running exam clock -- worse than the gap it fixes. */
+function dailyBandVisible(){
+  if(currentView === 'teacher') return true;
+  if(currentView !== 'student') return false;
+  return !selectedId;
+}
+function syncDailyBand(){
+  const el = document.getElementById('daily-band');
+  if(el) el.style.display = dailyBandVisible() ? '' : 'none';
+}
+
 async function renderDailyBand(now){
   try{
     const box = document.getElementById('daily-today');
@@ -10535,6 +10567,7 @@ function hideStudentSkeleton(){
   if(el) el.remove();
 }
 function renderStudent(){
+  syncDailyBand();
   hideStudentSkeleton();   // some em QUALQUER caminho de saida deste render
 
   // A code that named an exercise and could not reach it owns the screen.
@@ -11606,6 +11639,10 @@ function renderPractice(){
   mountBackBar();
   bringPracticeIntoView();
   restoreFocusAfterRender();
+  // Last, not first: check_student_page pins the OPENING sequence of this
+  // wrapper, because the footer and the section clock once went missing from
+  // some of the twelve branches and not others. Anything new goes after it.
+  syncDailyBand();
 }
 
 /* NOTHING STARTS UNTIL THE STUDENT SAYS SO
@@ -13967,9 +14004,8 @@ function setView(v){
      sign-in buttons are three things in the way of one decision. On the cover
      it would also put the week in front of somebody who has not said who they
      are, which is the rule #welcome-clock exists to keep. */
-  ['.tech-note', '#daily-band'].forEach(sel => {
-    document.querySelectorAll(sel).forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
-  });
+  document.querySelectorAll('.tech-note').forEach(el => { el.style.display = hideNotices ? 'none' : ''; });
+  syncDailyBand();
   /* And it holds on every route in, not only on the two doors.
 
      A shared link, a reload, a bookmark and history.back() all reach setView
